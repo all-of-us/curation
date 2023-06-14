@@ -146,10 +146,10 @@ else:
         ignore_index=True)
 df1
 
-# b. non null cause_concept_id, cause_source_value, cause_source_concept_id in death table:
+# b. non null cause_concept_id, cause_source_value, cause_source_concept_id in AOU_DEATH table:
 
 query = JINJA_ENV.from_string("""
-SELECT COUNT(*) AS non_null_values FROM `{{project_id}}.{{rt_cdr_deid}}.death`
+SELECT COUNT(*) AS non_null_values FROM `{{project_id}}.{{rt_cdr_deid}}.aou_death`
 WHERE cause_concept_id IS NOT NULL OR cause_source_value IS NOT NULL OR cause_source_concept_id IS NOT NULL
 """)
 q = query.render(project_id=project_id, rt_cdr_deid=rt_cdr_deid)
@@ -158,7 +158,7 @@ if df1.loc[0].sum() == 0:
     df = df.append(
         {
             'query':
-                'Query3b non null cause_concept_id, cause_source_value, cause_source_concept_id in death table',
+                'Query3b non null cause_concept_id, cause_source_value, cause_source_concept_id in aou_death table',
             'result':
                 'PASS'
         },
@@ -167,7 +167,7 @@ else:
     df = df.append(
         {
             'query':
-                'Query3b non null cause_concept_id, cause_source_value, cause_source_concept_id in death table',
+                'Query3b non null cause_concept_id, cause_source_value, cause_source_concept_id in aou_death table',
             'result':
                 ''
         },

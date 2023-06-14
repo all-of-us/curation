@@ -31,8 +31,8 @@ project_id = ""
 com_cdr = ""
 deid_cdr = ""
 deid_questionnaire_response_map_dataset = ""
-pipeline=""
-run_as=""
+pipeline = ""
+run_as = ""
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
@@ -42,7 +42,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # -
 
 # df will have a summary in the end
-df = pd.DataFrame(columns = ['query', 'result']) 
+df = pd.DataFrame(columns=['query', 'result'])
 
 # + [markdown] papermill={"duration": 0.02327, "end_time": "2021-02-02T22:30:32.708257", "exception": false, "start_time": "2021-02-02T22:30:32.684987", "status": "completed"} tags=[]
 # # 1 DS_1 Verify that the field identified to follow the date shift rule as de-identification action in OBSERVATION table have been randomly date shifted.
@@ -63,14 +63,23 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query1 OBSERVATION', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query1 OBSERVATION',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query1 OBSERVATION', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query1 OBSERVATION',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 # -
 
@@ -91,16 +100,24 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3 OBSERVATION_PERIOD', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query3 OBSERVATION_PERIOD',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query3 OBSERVATION_PERIOD', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query3 OBSERVATION_PERIOD',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
-
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 4 DS_4 Verify that the field identified to follow the date shift rule as de-identification action in PERSON table have been randomly date shifted.
@@ -119,14 +136,23 @@ ON d.person_id = m.research_id
 SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query4 Person table', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query4 Person table',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query4 Person table', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query4 Person table',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 
 # -
@@ -148,18 +174,27 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query5 SPECIMEN', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query5 SPECIMEN',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query5 SPECIMEN', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query5 SPECIMEN',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 # -
 
-# # 6 DS_6 Verify that the field identified to follow the date shift rule as de-identification action in DEATH table have been randomly date shifted. 
+# # 6 DS_6 Verify that the field identified to follow the date shift rule as de-identification action in AOU_DEATH table have been randomly date shifted.
 
 query = JINJA_ENV.from_string("""
 
@@ -167,9 +202,9 @@ WITH df1 AS (
 SELECT 
 DATE_DIFF(DATE(i.death_date), DATE(d.death_date),day)-m.shift as diff
 FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-JOIN `{{project_id}}.{{com_cdr}}.death` i
+JOIN `{{project_id}}.{{com_cdr}}.aou_death` i
 ON m.person_id = i.person_id
-JOIN `{{project_id}}.{{deid_cdr}}.death` d
+JOIN `{{project_id}}.{{deid_cdr}}.aou_death` d
 ON m.research_id = d.person_id 
 AND i.death_type_concept_id = d.death_type_concept_id
  )
@@ -177,18 +212,27 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query6 Death', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query6 AOU_DEATH',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query6 Death', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query6 AOU_DEATH',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 
 # + [markdown] papermill={"duration": 0.023411, "end_time": "2021-02-02T22:30:39.091846", "exception": false, "start_time": "2021-02-02T22:30:39.068435", "status": "completed"} tags=[]
-# # 7 DS_7 Verify that the field identified to follow the date shift rule as de-identification action in VISIT OCCURENCE table have been randomly date shifted. 
+# # 7 DS_7 Verify that the field identified to follow the date shift rule as de-identification action in VISIT OCCURENCE table have been randomly date shifted.
 # -
 
 query = JINJA_ENV.from_string("""
@@ -205,14 +249,23 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query7 Visit', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query7 Visit',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query7 Visit', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query7 Visit',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 
 # # 8 DS_8 Verify that the field identified to follow the date shift rule as de-identification action in PROCEDURE OCCURENCE table have been randomly date shifted.
@@ -232,14 +285,23 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query8 PROCEDURE', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query8 PROCEDURE',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query8 PROCEDURE', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query8 PROCEDURE',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 
 # # 9 DS_9 Verify that the field identified to follow the date shift rule as de-identification action in DRUG EXPOSURE table have been randomly date shifted.
@@ -258,18 +320,26 @@ ON i.drug_exposure_id = d.drug_exposure_id
 SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr) 
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query9 Drug table', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query9 Drug table',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query9 Drug table', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query9 Drug table',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 # -
-
 
 # # 10 DS_10 Verify that the field identified to follow the date shift rule as de-identification action in DEVICE EXPOSURE table have been randomly date shifted.
 
@@ -286,14 +356,23 @@ ON i.device_exposure_id = d.device_exposure_id
 SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query10 Device', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query10 Device',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query10 Device', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query10 Device',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 
 # # 11 DS_11 Verify that the field identified to follow the date shift rule as de-identification action in CONDITION OCCURENCE table have been randomly date shifted.
@@ -312,14 +391,23 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query11 Condition table', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query11 Condition table',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query11 Condition table', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query11 Condition table',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 
 # # 12 DS_12 Verify that the field identified to follow the date shift rule as de-identification action in MEASUREMENT table have been randomly date shifted.
@@ -339,15 +427,24 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query12 Measurement', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query12 Measurement',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query12 Measurement', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query12 Measurement',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 # -
 
@@ -370,15 +467,24 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query13 Survey Conduct', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query13 Survey Conduct',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query13 Survey Conduct', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query13 Survey Conduct',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1
 # -
 
@@ -390,14 +496,25 @@ FROM  `{{project_id}}.{{pipeline}}.primary_pid_rid_mapping`
 WHERE shift NOT BETWEEN 1 AND 364
 
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query14 date shifted in non_deid', 'result' : 'PASS'},
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query14 date shifted in non_deid',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query14 date shifited in non_deid', 'result' : 'Failure'},
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query14 date shifited in non_deid',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 df1
 
 # # Q15 DS_15 Verify that  person_id has been replaced by research_id
@@ -491,14 +608,29 @@ JOIN df8 USING(n_row_not_pass)
 
 
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query15 person_id replaed by research_id in other 8 tables', 'result' : 'PASS'},
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query15 person_id replaed by research_id in other 8 tables',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query15 person_id replaed by research_id in other 8 tables', 'result' : 'Failure'},
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query15 person_id replaed by research_id in other 8 tables',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
 df1
 
 # # Q16 Verify that  questionnaire_response_id/survey_conduct_id has been replaced by research_response_id
@@ -535,25 +667,41 @@ JOIN df2 USING(n_row_not_pass)
 JOIN df3 USING(n_row_not_pass)
 
 """)
-q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,deid_questionnaire_response_map_dataset=deid_questionnaire_response_map_dataset)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id,
+                 pipeline=pipeline,
+                 com_cdr=com_cdr,
+                 deid_cdr=deid_cdr,
+                 deid_questionnaire_response_map_dataset=
+                 deid_questionnaire_response_map_dataset)
+df1 = execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query16 questionnaire_response_id/survey_conduct_id/survey_source_identifier replaced by research_response_id', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query16 questionnaire_response_id/survey_conduct_id/survey_source_identifier replaced by research_response_id',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query16 questionnaire_response_id/survey_conduct_id/survey_source_identifier replaced by research_response_id', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query16 questionnaire_response_id/survey_conduct_id/survey_source_identifier replaced by research_response_id',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
 df1
 
-
 # # Summary_dateshift
+
 
 # +
 def highlight_cells(val):
     color = 'red' if 'Failure' in val else 'white'
-    return f'background-color: {color}' 
+    return f'background-color: {color}'
+
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
 # -
-
-

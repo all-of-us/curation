@@ -27,8 +27,8 @@ pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
 project_id = ""
-deid_cdr=""
-run_as=""
+deid_cdr = ""
+run_as = ""
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
@@ -38,7 +38,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # -
 
 # df will have a summary in the end
-df = pd.DataFrame(columns = ['query', 'result']) 
+df = pd.DataFrame(columns=['query', 'result'])
 
 # # 1 Verify the following columns in the OBSERVATION table have been set to null:
 # value_as_string,
@@ -61,15 +61,21 @@ SUM(CASE WHEN unit_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_unit_source_
 
 FROM `{{project_id}}.{{deid_cdr}}.observation` 
  """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query1 observation', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query1 observation',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query1 observation', 'result' :  'Failure'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query1 observation',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
 df1.T
 # -
 
@@ -97,15 +103,21 @@ SUM(CASE WHEN ethnicity_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_ethnici
 SUM(CASE WHEN ethnicity_source_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_ethnicity_source_concept_id_not_null
 FROM `{{project_id}}.{{deid_cdr}}.person` 
     """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query2 Person', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query2 Person',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query2 Person', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1.T              
+    df = df.append({
+        'query': 'Query2 Person',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
+df1.T
 
 # # 3 Verify the following columns in the MEASUREMENT table have been set to null:
 
@@ -118,35 +130,46 @@ SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_sourc
 
 FROM `{{project_id}}.{{deid_cdr}}.measurement`
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query3 Measurement', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query3 Measurement',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query3 Measurement', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1.T  
+    df = df.append({
+        'query': 'Query3 Measurement',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
+df1.T
 
-# # 4 Verify the following columns in the DEATH table have been set to null:
+# # 4 Verify the following columns in the AOU_DEATH table have been set to null:
 
 query = JINJA_ENV.from_string("""
 SELECT
 SUM(CASE WHEN cause_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_cause_concept_id_not_null,
 SUM(CASE WHEN cause_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_cause_source_value_not_null,
 SUM(CASE WHEN cause_source_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_cause_source_concept_id_not_null
-
-FROM `{{project_id}}.{{deid_cdr}}.death`
+FROM `{{project_id}}.{{deid_cdr}}.aou_death`
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query4 Death', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query4 AOU_DEATH',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query4 Death', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1        
+    df = df.append({
+        'query': 'Query4 AOU_DEATH',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
+df1
 
 # # 5 Verify the following columnsin the CONDITION_OCCURRENCE table have been set to null:
 
@@ -155,15 +178,22 @@ SELECT
 SUM(CASE WHEN provider_id IS NOT NULL THEN 1 ELSE 0 END) AS n_provider_id_not_null
 FROM `{{project_id}}.{{deid_cdr}}.condition_occurrence`
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query5 Condition provider_id', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query5 Condition provider_id',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query5 Condition provider_id', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1        
+    df = df.append(
+        {
+            'query': 'Query5 Condition provider_id',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+df1
 
 # # 6 Verify the following columns in the DEVICE_EXPOSURE table have been set to null:
 #
@@ -172,7 +202,7 @@ df1
 # +
 # query6 has error
 # no this column called visit_detail_id?
-    
+
 query = JINJA_ENV.from_string("""
 SELECT
 SUM(CASE WHEN provider_id IS NOT NULL THEN 1 ELSE 0 END) AS n_provider_id_not_null,
@@ -180,15 +210,22 @@ SUM(CASE WHEN visit_detail_id IS NOT NULL THEN 1 ELSE 0 END) AS n_visit_detail_i
 
 FROM `{{project_id}}.{{deid_cdr}}.device_exposure`
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query6 provider_id in Device', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query6 provider_id in Device',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query6 provider_id in Device', 'result' :  'Failure'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query6 provider_id in Device',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 df1
 # -
 
@@ -196,7 +233,7 @@ df1
 # provider_id
 #
 # <font color='red'> no visit_detail_id in old CDR?
-#     
+#
 #  Uncomment below when visit_detail_id is available in 2022 CDR
 
 query = JINJA_ENV.from_string("""
@@ -205,15 +242,21 @@ SUM(CASE WHEN provider_id IS NOT NULL THEN 1 ELSE 0 END) AS n_provider_id_not_nu
 SUM(CASE WHEN visit_detail_id IS NOT NULL THEN 1 ELSE 0 END) AS n_visit_detail_id_not_null
 FROM `{{project_id}}.{{deid_cdr}}.drug_exposure`
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query7 provider_id in Drug', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query7 provider_id in Drug',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query7 provider_id in Drug', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1        
+    df = df.append({
+        'query': 'Query7 provider_id in Drug',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
+df1
 
 # # 8 Verify the following columns in the VISIT_OCCURRENCE table have been set to null:
 
@@ -223,15 +266,21 @@ SUM(CASE WHEN provider_id IS NOT NULL THEN 1 ELSE 0 END) AS n_provider_id_not_nu
 SUM(CASE WHEN care_site_id IS NOT NULL THEN 1 ELSE 0 END) AS n_care_site_id_not_null
 FROM `{{project_id}}.{{deid_cdr}}.visit_occurrence`
  """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query8 Visit', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query8 Visit',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query8 Visit', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1        
+    df = df.append({
+        'query': 'Query8 Visit',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
+df1
 
 # # 9 Verify the following columns in the PROCEDURE_OCCURRENCE table have been set to null:
 
@@ -240,15 +289,22 @@ SELECT
 SUM(CASE WHEN provider_id IS NOT NULL THEN 1 ELSE 0 END) AS n_provider_id_not_null
 FROM `{{project_id}}.{{deid_cdr}}.procedure_occurrence`
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query9 Procedure provider_id', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query9 Procedure provider_id',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query9 Procedure provider_id', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1        
+    df = df.append(
+        {
+            'query': 'Query9 Procedure provider_id',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+df1
 
 # # 10 Verify the following columns in the SPECIMEN  table have been set to null:
 
@@ -262,15 +318,21 @@ SUM(CASE WHEN anatomic_site_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_ana
 
 FROM `{{project_id}}.{{deid_cdr}}.specimen`
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query10 Specimen', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query10 Specimen',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query10 Specimen', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1.T        
+    df = df.append({
+        'query': 'Query10 Specimen',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
+df1.T
 
 # # 11 Verify the following columns in the CARE_SITE  table have been set to null
 
@@ -284,15 +346,21 @@ SUM(CASE WHEN place_of_service_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_
 
 FROM `{{project_id}}.{{deid_cdr}}.care_site`
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query11 Care_site', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query11 Care_site',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query11 Care_site', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1      
+    df = df.append({
+        'query': 'Query11 Care_site',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
+df1
 
 # # 12 Verify the NOTE table is suppressed
 
@@ -300,15 +368,21 @@ query = JINJA_ENV.from_string("""
 SELECT COUNT (*) AS n_row_not_pass
 FROM `{{project_id}}.{{deid_cdr}}.note`
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query12 Note table', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query12 Note table',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query12 Note table', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1     
+    df = df.append({
+        'query': 'Query12 Note table',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
+df1
 
 # # 13 Verify the NOTE_NLP table  is suppressed
 # DC-2372 fixed
@@ -318,22 +392,29 @@ SELECT row_count
 FROM `{{project_id}}.{{deid_cdr}}.__TABLES__`
 WHERE table_id='note_nlp'
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)  
-df1=execute(client, q) 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query13 Note_NLP table', 'result' : 'PASS'},  
-                ignore_index = True) 
+q = query.render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, q)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query13 Note_NLP table',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query13 Note_NLP table', 'result' :  'Failure'},  
-                ignore_index = True) 
-df1    
-
+    df = df.append({
+        'query': 'Query13 Note_NLP table',
+        'result': 'Failure'
+    },
+                   ignore_index=True)
+df1
 
 # # Summary_column_suppression
+
 
 # +
 def highlight_cells(val):
     color = 'red' if 'Failure' in val else 'white'
-    return f'background-color: {color}' 
+    return f'background-color: {color}'
+
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
