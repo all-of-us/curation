@@ -207,7 +207,7 @@ def generate_combined_mapping_tables(client: BigQueryClient, domain_table: str,
     :param combined_sandbox: combined_sandbox dataset identifier
     :return:
     """
-    if domain_table in combine_consts.DOMAIN_TABLES + [SURVEY_CONDUCT]:
+    if domain_table in combine_consts.DOMAIN_TABLES + [SURVEY_CONDUCT, PERSON]:
         q = mapping_query(domain_table, rdr_dataset, unioned_ehr_dataset,
                           combined_sandbox)
         mapping_table = mapping_table_for(domain_table)
