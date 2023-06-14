@@ -272,7 +272,7 @@ if df1.loc[0].sum() == 0:
     df = df.append(
         {
             'query':
-                'Query8 cause_source_concept_id/cause_concept_id is null in dealth table',
+                'Query8 cause_source_concept_id/cause_concept_id is null in aou_death table',
             'result':
                 'PASS'
         },
@@ -281,7 +281,7 @@ else:
     df = df.append(
         {
             'query':
-                'Query8 cause_source_concept_id/cause_concept_id is null in dealth table',
+                'Query8 cause_source_concept_id/cause_concept_id is null in aou_death table',
             'result':
                 'Failure'
         },
