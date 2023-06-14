@@ -48,8 +48,8 @@ pd.options.display.width = None
 
 # -
 
-# ## Check for duplicates across all unique identifier fields. 
-# This query gathers any duplicates of the {table}_id from each OMOP table listed. 
+# ## Check for duplicates across all unique identifier fields.
+# This query gathers any duplicates of the {table}_id from each OMOP table listed.
 # The OMOP tables `death` and `fact_relationship` are excluded from the check because they do not have primary key fields.
 # The output of this query should be empty. If any duplicates are found there may be a bug in the pipeline.
 #
@@ -68,37 +68,37 @@ SET tables = ["observation", "observation_period", "condition_occurrence",
 "care_site", "condition_era", "device_cost", "device_exposure", "dose_era",
 "drug_exposure", "location", "measurement", "note", "note_nlp", "person",
 "procedure_cost", "procedure_occurrence", "provider", "specimen",
-"survey_conduct", "visit_cost", "visit_detail", "visit_occurrence"];
+"survey_conduct", "visit_cost", "visit_detail", "visit_occurrence", "aou_death"];
 
 CREATE TEMPORARY TABLE non_unique_primary_keys(table_name STRING, key_column int64);
 
-LOOP 
+LOOP
   SET i = i + 1;
 
   IF i > ARRAY_LENGTH(tables) THEN LEAVE; END IF;
 
   EXECUTE IMMEDIATE '''
-    INSERT 
+    INSERT
         non_unique_primary_keys
-    SELECT 
+    SELECT
         "''' || tables[ORDINAL(i)] || '''" AS table_name,
         ''' || tables[ORDINAL(i)] || '''_id AS key_column
-    FROM 
+    FROM
         `{DATASET_ID}.''' || tables[ORDINAL(i)] || '''` o
-    WHERE 
+    WHERE
         ''' || tables[ORDINAL(i)] || '''_id IN (
               SELECT ''' || tables[ORDINAL(i)] || '''_id
               FROM `{DATASET_ID}.''' || tables[ORDINAL(i)] || '''`
               GROUP BY 1
               HAVING COUNT(''' || tables[ORDINAL(i)] || '''_id) > 1
                 )
-    ORDER BY 
+    ORDER BY
         ''' || tables[ORDINAL(i)] || '''_id''';
 
 END LOOP;
 
-SELECT * 
-FROM non_unique_primary_keys 
+SELECT *
+FROM non_unique_primary_keys
 ORDER BY 2 DESC;
 
 SELECT table_name, COUNT(DISTINCT table_name) AS full_count, COUNT(DISTINCT table_name)/2 AS half_count
@@ -117,7 +117,7 @@ execute(client, query)
 
 tpl = JINJA_ENV.from_string('''
 {% for table_name, date_field in date_fields.items() %}
-SELECT 
+SELECT
  "{{table_name}}"     AS table_name
 ,"{{date_field}}"     AS date_field
 ,t.{{date_field}}     AS date_value
@@ -125,7 +125,7 @@ SELECT
 FROM `{{dataset_id}}.{{table_name}}` t
  JOIN `{{dataset_id}}.person` p
   USING (person_id)
-WHERE 
+WHERE
 (
  -- age <= 0y --
  t.{{date_field}} < DATE(p.birth_datetime)
@@ -144,12 +144,14 @@ execute(client, query)
 # ## PPI records should never follow death date
 # Make sure no one could die before the program began or have PPI records after their death.
 
+# +
+query = JINJA_ENV.from_string("""
 query = f'''
-WITH 
+WITH
 
  ppi_concept AS
  (SELECT concept_id
-  FROM `{DATASET_ID}.concept` c
+  FROM `{{dataset}}.concept` c
   WHERE vocabulary_id = 'PPI')
 
 ,pid_ppi AS
@@ -162,18 +164,32 @@ WITH
   -- in case of multiple death rows, use earliest for most rigid check --
   ,MIN(d.death_date)       AS min_death_date
 
-  FROM `{DATASET_ID}.death` d
-   JOIN `{DATASET_ID}.observation` o
+  FROM `{{dataset}}.aou_death` d
+   JOIN `{{dataset}}.observation` o
     USING (person_id)
    JOIN ppi_concept c
     ON o.observation_source_concept_id = c.concept_id
   GROUP BY person_id)
 
-SELECT * 
+SELECT *
 FROM pid_ppi
 WHERE min_death_date < max_ppi_date
+""").render(dataset=DATASET_ID)
+df = execute(client, query)
+
+success_msg = 'No PPI records follow death date.'
+failure_msg = '''
+    Some PPI are recorded after death date. Potential causes:
+        1. The participant's non-primary record (primary_death_record=FALSE) occurs before the PPI.
+           It can be because the source death record has incorrect death date. Discuss within Curation
+           about next steps (e.g., move forward CDR generation or hot-fix the non-primary death record).
+        2. The participant's primary record (primary_death_record=TRUE) occurs before the PPI.
+           This should not happen, since the CR NoDataAfterDeath cleans such records before this QC run.
+           Investigate and discuss within Curation about next steps.
+        3. None of the above. Investigate and discuss within Curation about next steps.
 '''
-execute(client, query)
+render_message(df, success_msg, failure_msg)
+# -
 
 # ## Consent required for EHR Data
 # If EHR records are found for participants who have not consented this may
@@ -193,12 +209,12 @@ DECLARE query STRING;
 
 -- PIDs whose last EHR consent response was affirmative --
 CREATE OR REPLACE TEMP TABLE consented AS
-( 
-  WITH 
+(
+  WITH
 
   -- For each pid, the latest EHR consent record --
   pid_last_consent_response AS
-  (SELECT DISTINCT 
+  (SELECT DISTINCT
      p.person_id
     ,LAST_VALUE(o.value_source_concept_id)
       OVER (
@@ -212,10 +228,10 @@ CREATE OR REPLACE TEMP TABLE consented AS
    WHERE observation_source_concept_id = {{EHR_CONSENT_PERMISSION_CONCEPT_ID}})
 
   -- Only store pids where the latest response is YES --
-  SELECT 
+  SELECT
    person_id
   FROM pid_last_consent_response
-  WHERE 
+  WHERE
       last_value_source_concept_id = {{YES_CONCEPT_ID}}
 );
 
@@ -231,7 +247,7 @@ SET query = (
       || ',t.person_id           AS person_id '
       || ',m.src_hpo_id          AS hpo_id '
       || 'FROM `' || table_schema || '.' || table_name || '` t '
-      || 'JOIN `' || table_schema || '.' || table_id || '` m ' 
+      || 'JOIN `' || table_schema || '.' || table_id || '` m '
       || 'USING (' || table_name ||'_id) '
       || 'LEFT JOIN consented c '
       || ' USING (person_id)'
@@ -285,10 +301,10 @@ execute(client, query)
 
 query = f'''
 DECLARE query DEFAULT (
-    WITH 
+    WITH
 
      field_comparison AS
-     (SELECT 
+     (SELECT
        d.table_schema AS table_schema
       ,d.table_name   AS table_name
       ,pk.column_name AS key_field
@@ -306,7 +322,7 @@ DECLARE query DEFAULT (
 
     SELECT
      STRING_AGG(
-      '(SELECT ' 
+      '(SELECT '
          || '"' || table_name        || '" AS table_name '
          || ',' || key_field         || '  AS row_id '
          || ',"' || date_field       || '" AS date_field '
@@ -348,7 +364,7 @@ pbar = tqdm(MAPPED_CLINICAL_DATA_TABLES)
 row_counts = []
 for mapped_table in pbar:
     pbar.set_description(mapped_table)
-    
+
     query = f'''
         WITH rows_counts AS (
           SELECT
@@ -365,17 +381,18 @@ for mapped_table in pbar:
         )
         SELECT
           '{mapped_table}' tablename, *
-        FROM 
+        FROM
         (SELECT cat, row_count FROM rows_counts o)
         PIVOT(SUM(row_count) FOR cat IN ('Clinical', 'Mapping', 'Extension'))
     '''
 
     row_count = execute(client, query)
     row_counts.append(row_count)
-    
+
 row_counts = pd.concat(row_counts)
 row_counts = row_counts.set_index('tablename')
-row_counts['cond1'] = row_counts.eq(row_counts.iloc[:, 0], axis=0).all(1).astype(bool) 
+row_counts['cond1'] = row_counts.eq(row_counts.iloc[:, 0],
+                                    axis=0).all(1).astype(bool)
 # -
 
 # #### Condition 2
@@ -386,7 +403,7 @@ row_counts['cond1'] = row_counts.eq(row_counts.iloc[:, 0], axis=0).all(1).astype
 overlaps = []
 pbar = tqdm(MAPPED_CLINICAL_DATA_TABLES)
 for mapped_table in pbar:
-    
+
     pbar.set_description(mapped_table)
     query = f'''
     WITH overlap AS (
@@ -395,12 +412,12 @@ for mapped_table in pbar:
           WHEN m.{mapped_table}_id IS NOT NULL THEN
             CASE
               WHEN mm.{mapped_table}_id IS NOT NULL THEN
-                CASE 
+                CASE
                   WHEN ext.{mapped_table}_id IS NOT NULL THEN 'ABC'
                   ELSE 'AB'
                 END
             ELSE
-              CASE 
+              CASE
                 WHEN ext.{mapped_table}_id IS NOT NULL THEN 'AC'
                 ELSE 'A'
               END
@@ -420,11 +437,11 @@ for mapped_table in pbar:
     )
     SELECT
       '{mapped_table}' tablename, *
-    FROM 
+    FROM
     (SELECT cat FROM overlap o)
     PIVOT(COUNT(1) FOR cat IN ('A', 'B', 'AB', 'C', 'AC', 'BC', 'ABC'));
     '''
-    
+
     overlap = execute(client, query)
     overlaps.append(overlap)
 
@@ -444,31 +461,30 @@ fig, axes = plt.subplots(rows, cols, figsize=(5, 5), squeeze=False)
 k = 0
 while k < total_plots:
     i, j = k // cols, k % cols
-    
+
     row = overlaps.iloc[k]
     axes[i][j].set_title(row.name, fontdict={'fontweight': 'bold'})
-    
-    Abc, aBc, ABc, abC, AbC, aBC, ABC = row['A'], row['B'], row['AB'], row['C'], row['AC'], row['BC'], row['ABC']
-    v = venn3_unweighted(
-        subsets = (Abc, aBc, ABc, abC, AbC, aBC, ABC),
-        set_labels=('Clinical', 'Mapping', 'Extension'),
-        ax=axes[i][j],
-        subset_areas=[5] * 7
-    )
-    
+
+    Abc, aBc, ABc, abC, AbC, aBC, ABC = row['A'], row['B'], row['AB'], row[
+        'C'], row['AC'], row['BC'], row['ABC']
+    v = venn3_unweighted(subsets=(Abc, aBc, ABc, abC, AbC, aBC, ABC),
+                         set_labels=('Clinical', 'Mapping', 'Extension'),
+                         ax=axes[i][j],
+                         subset_areas=[5] * 7)
+
     if Abc + aBc + ABc + abC + AbC + aBC > 0:
         axes[i][j].title.set_color('red')
 
     k += 1
-    
+
 while k < rows * cols:
     i, j = k // cols, k % cols
     fig.delaxes(axes[i][j])
-    
+
     k += 1
-    
+
 overlaps = overlaps.rename(
-    columns = {
+    columns={
         'A': 'Clinical',
         'B': 'Mapping',
         'C': 'Extension',
@@ -476,9 +492,7 @@ overlaps = overlaps.rename(
         'AC': 'Clinical/Extension',
         'BC': 'Mapping/Extension',
         'ABC': 'Clinical/Mapping/Extension'
-    }
-)
-
+    })
 
 # -
 
@@ -499,7 +513,7 @@ display(
         {'<p>Check/run the <a href="https://github.com/all-of-us/curation/blob/develop/data_steward/cdr_cleaner/cleaning_rules/clean_mapping.py">CleanMappingExtTables</a> cleaning rule as a potential remedy.</p>' if not is_success else ''}
         <div>
             <h5>
-                Condition 1 (All row counts are equal):&nbsp     
+                Condition 1 (All row counts are equal):&nbsp
                 <span style="color: {'red' if not is_cond1_success else 'green'}">
                     {'Failed' if not is_cond1_success else 'Success'}
                 </span>
@@ -509,7 +523,7 @@ display(
         <br/>
         <div>
             <h5>
-                Condition 2 (All sets of primary keys are the same):&nbsp 
+                Condition 2 (All sets of primary keys are the same):&nbsp
                 <span style="color: {'red' if not is_cond2_success else 'green'}">
                     {'Failed' if not is_cond2_success else 'Success'}
                 </span>
@@ -518,6 +532,7 @@ display(
         </div>
     '''))
 fig
+
 # -
 
 # ---
@@ -598,7 +613,7 @@ tpl = JINJA_ENV.from_string('''
 -- where concept_id fields have an invalid value and reports --
 -- the row count per site --
 DECLARE ddl DEFAULT("""
-CREATE TABLE IF NOT EXISTS `{{DATASET_ID}}_sandbox.invalid_concept` 
+CREATE TABLE IF NOT EXISTS `{{DATASET_ID}}_sandbox.invalid_concept`
 (table_name  STRING NOT NULL OPTIONS(description="Identifies the table")
 ,column_name STRING NOT NULL OPTIONS(description="Identifies the concept_id field")
 ,src_hpo_id  STRING NOT NULL OPTIONS(description="Identifies the HPO that supplied the records")
@@ -610,7 +625,7 @@ OPTIONS
 """);
 
 DECLARE query DEFAULT (
-    SELECT 
+    SELECT
  STRING_AGG('SELECT '
      || '"' || table_name  || '" AS table_name '
      || ',"' || column_name || '" AS column_name '
@@ -636,8 +651,8 @@ WHERE 1=1
   AND t.row_count > 0
   -- there is an associated mapping table --
   AND EXISTS (
-       SELECT 1 
-       FROM `{{DATASET_ID}}_backup.INFORMATION_SCHEMA.COLUMNS` 
+       SELECT 1
+       FROM `{{DATASET_ID}}_backup.INFORMATION_SCHEMA.COLUMNS`
       WHERE table_name = '_mapping_' || c.table_name
         AND column_name = c.table_name || '_id'
   )
@@ -657,7 +672,7 @@ execute(client, query)
 query = f'''
 -- The results are invalid concepts that had increased usage since the baseline dataset. --
 -- Inform EHR OPS of these results. --
-WITH 
+WITH
  baseline AS
  (SELECT * FROM `{BASELINE_DATASET_ID}_sandbox.invalid_concept`)
 ,latest AS
@@ -692,7 +707,7 @@ execute(client, query)
 
 # +
 query_null_check = JINJA_ENV.from_string("""
-SELECT survey_conduct_id, person_id 
+SELECT survey_conduct_id, person_id
 FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
 WHERE survey_conduct_id IS NULL
 """).render(project_id=PROJECT_ID, dataset_id=DATASET_ID)
@@ -710,15 +725,15 @@ WHERE survey_conduct_id NOT IN (
 success_null_check = '''No NULL values found for survey_conduct_id.'''
 failure_null_check = '''
 There are <b>{code_count}</b> NULL survey_conduct_ids in survey_conduct.
-Manually remove those NULL records as the short term resolution. 
+Manually remove those NULL records as the short term resolution.
 Create an investigation ticket for root cause and the long term resolution.
 '''
 
 success_orphaned_check = '''No orphaned survey_conduct_id found.'''
 failure_orphaned_check = '''
-There are <b>{code_count}</b> survey_conduct_ids in survey_conduct that cannot 
+There are <b>{code_count}</b> survey_conduct_ids in survey_conduct that cannot
 be joined to an existing observation.questionnaire_response_id value.
-Manually remove those orphaned survey_conduct records as the short term resolution. 
+Manually remove those orphaned survey_conduct records as the short term resolution.
 Create an investigation ticket for root cause and the long term resolution.
 '''
 
@@ -735,3 +750,71 @@ render_message(df_orphaned_check,
                failure_orphaned_check,
                failure_msg_args={'code_count': len(df_orphaned_check)})
 # -
+
+# # QC for AOU_DEATH table
+
+# From CDR V8, Curation generates the AOU_DEATH table in Combined. AOU_DEATH has the death records from
+# both EHR and RDR, and it can have more than one death record per participant. It has the column `primary_death_record` and
+# it flags the primary records for each participant. The logic for deciding which is primary comes from the following
+# business requirements:
+# - If multiple death records exist from across sources, provide the first date EHR death record in the death table
+# - If death_datetime is not available and multiple death records exist for the same death_date, provide the fullest record in the death table
+# - Example: Order by HPO site name and insert the first into the death table
+#
+# This QC confirms that the logic for the primary records are applied as expected in the `AOU_DEATH` table.
+
+# +
+query = JINJA_ENV.from_string("""
+WITH qc_aou_death AS (
+    SELECT 
+        aou_death_id, 
+        CASE WHEN aou_death_id IN (
+            SELECT aou_death_id FROM `{{project_id}}.{{dataset_id}}.aou_death`
+            QUALIFY RANK() OVER (
+                PARTITION BY person_id 
+                ORDER BY
+                    LOWER(src_id) NOT LIKE '%healthpro%' DESC, -- EHR records are chosen over HealthPro ones --
+                    death_date ASC, -- Earliest death_date records are chosen over later ones --
+                    death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
+                    src_id ASC -- EHR site that alphabetically comes first is chosen --
+            ) = 1   
+        ) THEN TRUE ELSE FALSE END AS primary_death_record
+    FROM `{{project}}.{{dataset}}.aou_death`    
+)
+SELECT ad.aou_death_id
+FROM `{{project_id}}.{{dataset}}.aou_death` ad
+LEFT JOIN qc_aou_death qad
+ON ad.aou_death_id = qad.aou_death_id
+WHERE ad.primary_death_record != qad.primary_death_record
+""").render(project_id=PROJECT_ID, dataset=DATASET_ID)
+df = execute(client, query)
+
+success_msg = 'All death records have the correct `primary_death_record` values.'
+failure_msg = '''
+    <b>{code_count}</b> records do not have the correct `primary_death_record` values. 
+    Investigate and confirm if (a) any logic is incorrect, (b) the requirement has changed, or (c) something else.
+'''
+render_message(df,
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
+# -
+
+# # QC for DEATH table
+
+# From CDR V8, Combined data stage will have all the death records in the AOU_DEATH table. The DEATH table must exist but must have no records.
+# This QC confirms that the DEATH table is there and is empty.
+
+# +
+query_if_empty = JINJA_ENV.from_string("""
+SELECT COUNT(*)
+FROM `{{project_id}}.{{dataset}}.death`
+HAVING COUNT(*) > 0
+""").render(project_id=PROJECT_ID, dataset=DATASET_ID)
+df_if_empty = execute(client, query_if_empty)
+
+success_msg_if_empty = 'Death table is empty.'
+failure_msg_if_empty = '''
+    Death table is NOT empty. We expect DEATH table to be empty in Combined. Investigate why DEATH is not empty and fix it.
+'''
+render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
