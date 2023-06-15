@@ -133,7 +133,7 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
 
         device_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}` 
-            (person_id, date, last_sync_time)
+            (person_id, device_date, last_sync_time)
             VALUES
                 -- The date occurs on or after the cutoff. Sandboxed and dropped. --
             (111, date('2020-11-26'), (DATETIME '2018-11-26 00:00:00')),
@@ -208,7 +208,7 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                 table for table in self.fq_sandbox_table_names
                 if DEVICE in table
             ][0],
-            'fields': ['person_id', 'date', 'last_sync_time'],
+            'fields': ['person_id', 'device_date', 'last_sync_time'],
             'loaded_ids': [111, 111, 222, 222, 333, 333],
             'sandboxed_ids': [111, 111, 222, 333],
             'cleaned_values': [(222, parser.parse('2017-11-26').date(),

@@ -35,7 +35,7 @@ class TruncateFitbitDataTest(unittest.TestCase):
         self.table_namer = None
         self.truncation_date = '2019-11-26'
 
-        self.date_fields = ['date', 'last_sync_time']
+        self.date_fields = ['device_date', 'last_sync_time']
         self.updated_date_fields = [
             f'COALESCE({field}, DATE("1900-01-01"))'
             for field in self.date_fields
