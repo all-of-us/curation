@@ -12,6 +12,7 @@ from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from gcloud.bq import BigQueryClient
+from utils import auth, pipeline_logging
 import app_identity
 import bq_utils
 from resources import mapping_table_for
@@ -19,6 +20,9 @@ from utils import auth, pipeline_logging
 from common import (CDR_SCOPES, DEATH, MAPPING_PREFIX, METADATA,
                     PID_RID_MAPPING, QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
                     FACT_RELATIONSHIP, COPE_SURVEY_MAP)
+from utils import auth
+from utils import pipeline_logging
+from common import CDR_SCOPES, FACT_RELATIONSHIP, METADATA, DEATH
 
 LOGGER = logging.getLogger(__name__)
 
@@ -130,7 +134,7 @@ def main(raw_args=None):
             if domain_table not in [METADATA, FACT_RELATIONSHIP]:
                 logging.info(f'Mapping {domain_table}...')
                 mapping(bq_client, datasets.get("staging"), domain_table)
-            # TODO function to remove src_id column
+            drop_src_id(bq_client, datasets.get("staging"), domain_table)
 
     # clean the RDR staging dataset
     cleaning_args = [
@@ -199,6 +203,22 @@ def create_datasets(client, rdr_dataset, release_tag):
     LOGGER.info(f'Created dataset `{client.project}.{rdr_clean}`')
 
     return {'clean': rdr_clean, 'staging': rdr_staging, 'sandbox': rdr_sandbox}
+
+
+def drop_src_id(client, dataset, table):
+    """
+    Drop the src_id field from a table
+
+    :param client: a BigQueryClient
+    :param dataset: identifies the BQ dataset containing the input table
+    :param table: identifies the table containing the src_id field
+    """
+    query = f'''
+        ALTER TABLE `{client.project}.{dataset}.{table}`
+        DROP COLUMN src_id
+    '''
+    query_job = client.query(query)
+    query_job.result()
 
 
 def mapping(client, input_dataset_id, domain_table):
