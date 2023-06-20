@@ -1,7 +1,7 @@
 """
 If there is a death_date listed for a person_id, ensure that no temporal fields
 (see the CDR cleaning spreadsheet tab labeled all temporal here) for that person_id exist more than
-30 days after the earliest death_date.
+30 days after the death_date of the primary death record.
 """
 
 # Python Imports
@@ -45,7 +45,7 @@ TEMPORAL_TABLES_WITH_DATE = {
 }
 
 # Join AOU_DEATH to domain_table ON person_id
-# check date field is not more than 30 days after the earliest death date
+# check date field is not more than 30 days after the death date of the primary death record.
 # select domain_table_id from the result
 # use the above generated domain_table_ids as a list
 # select rows in a domain_table where the domain_table_ids not in above generated list of ids
@@ -58,6 +58,7 @@ JOIN `{{project}}.{{dataset}}.aou_death` AS d
 ON ma.person_id = d.person_id
 WHERE date_diff(GREATEST(CAST(COALESCE(ma.{{start_date}}, ma.{{end_date}}) AS DATE), 
 CAST(COALESCE(ma.{{end_date}}, ma.{{start_date}}) AS DATE)), d.death_date, DAY) > 30
+AND d.primary_death_record = TRUE
 )
 """)
 
@@ -68,6 +69,7 @@ FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
 JOIN `{{project}}.{{dataset}}.aou_death` AS d
 ON ma.person_id = d.person_id
 WHERE date_diff(CAST({{date_column}} AS DATE), death_date, DAY) > 30
+AND d.primary_death_record = TRUE
 )
 """)
 
@@ -149,7 +151,8 @@ class NoDataAfterDeath(BaseCleaningRule):
         desc = (
             'If there is a death_date listed for a person_id, ensure that no temporal fields'
             '(see the CDR cleaning spreadsheet tab labeled all temporal here) for that '
-            'person_id exist more than30 days after the death_date.')
+            'person_id exist more than 30 days after the death_date of the primary death record.'
+        )
 
         # get all affected tables by combining the two dicts
 
