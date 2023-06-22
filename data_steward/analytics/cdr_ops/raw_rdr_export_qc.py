@@ -24,7 +24,7 @@ rdr_cutoff_date = ""
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
-from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES
+from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID, SRC_ID_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
@@ -856,4 +856,43 @@ if len(df_if_empty) == 0 and len(df_if_duplicate) == 0:
                    success_msg,
                    failure_msg,
                    failure_msg_args={'code_count': len(df)})
+# -
+
+# # Check src_ids
+# Check that every record contains a valid src_id. The check passes if no records are returned.
+
+# +
+queries = []
+ids_template = JINJA_ENV.from_string("""
+with ids as (
+  SELECT 
+    hpo_id 
+  FROM
+    `{{project_id}}.{{pipeline}}.{{site_maskings}}`
+  WHERE NOT
+    REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
+)
+""")
+src_ids_table = ids_template.render(project_id=project_id,
+                                    pipeline=PIPELINE_TABLES,
+                                    site_maskings=SITE_MASKING_TABLE_ID)
+for table in SRC_ID_TABLES:
+    tpl = JINJA_ENV.from_string("""
+    SELECT
+      \'{{table_name}}\' AS table_name,
+      src_id,
+      count(*) as n_violations
+    FROM
+      `{{project_id}}.{{new_rdr}}.{{table_name}}`
+    WHERE
+    (
+      LOWER(src_id) NOT IN
+        (SELECT * FROM ids) OR src_id IS NULL
+    )
+    GROUP BY 1,2
+  """)
+    query = tpl.render(project_id=project_id, new_rdr=new_rdr, table_name=table)
+    queries.append(query)
+all_queries = '\nUNION ALL\n'.join(queries)
+execute(client, f'{src_ids_table}\n{all_queries}')
 # -
