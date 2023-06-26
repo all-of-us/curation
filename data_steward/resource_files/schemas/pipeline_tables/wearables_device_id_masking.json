@@ -1,0 +1,28 @@
+[
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "Identifies a participant. person_id pre-deidentification."
+  },  {
+    "type": "string",
+    "name": "device_id",
+    "mode": "required",
+    "description": "Identifies a device. device_id pre-deidentification."
+  },  {
+    "type": "string",
+    "name": "research_device_id",
+    "mode": "required",
+    "description": "Identifies a person_id/device_id pairing. Generated via Curation cleaning rule."
+  },  {
+    "type": "string",
+    "name": "wearable_type",
+    "mode": "required",
+    "description": "Identifies the type of wearable at the brand level"
+  },  {
+    "type": "date",
+    "name": "import_date",
+    "mode": "required",
+    "description": "Date the CR ran and identified this mapping. Used for partitioning."
+  }
+]
