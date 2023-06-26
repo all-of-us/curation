@@ -31,6 +31,9 @@ impersonation_creds = auth.get_impersonation_credentials(
 client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 # +
+# All date/datetime fields in the fitbit tables should be represented in one of the following dictionaries.
+
+# The first date type column of the table
 date_columns = {
     'activity_summary': 'date',
     'heart_rate_summary': 'date',
@@ -98,6 +101,11 @@ execute(client, union_all_query)
 # -
 
 # ## Identify person_ids that are not in the person table
+# This check verifies that person_ids are valid. That they exist in the CDM person table and are not null. There should be no bad rows.
+#
+# In case of failure:
+# - If the person_id is not in the CDM person table. Check that `RemoveNonExistingPids` was applied.
+# - If the person_ids are NULL contact the DST team. It should not be possible for person_id to be null.
 
 # +
 non_existent_pids_check = JINJA_ENV.from_string('''
@@ -112,6 +120,7 @@ WHERE
     person_id
   FROM
     `{{project}}.{{source_dataset}}.person`)
+  OR person_id IS NULL
 ''')
 
 queries_list = []
@@ -193,8 +202,6 @@ execute(client, union_all_query)
 
 # ## Check for src_id to exist for all records
 # Fitbit tables will require a src_id in future CDRs. Each record should have a defined source.
-#
-# When the exact src_id values are known update and uncomment the OR statement below.
 
 # +
 src_check = JINJA_ENV.from_string('''
@@ -205,7 +212,7 @@ FROM
   `{{project}}.{{dataset}}.{{table_name}}` t
 WHERE
   t.src_id IS NULL
--- OR t.src_id NOT IN ['vibrent','ce'] --
+OR t.src_id NOT IN ['vibrent','ce']
 ''')
 
 queries_list = []
