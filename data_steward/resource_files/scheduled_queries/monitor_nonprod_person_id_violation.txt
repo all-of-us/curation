@@ -65,21 +65,24 @@ BEGIN
     
     -- 2-1. Collect info about tables (1) with person_id (2) that are last updated within 3 days into a temp table.
     EXECUTE IMMEDIATE CONCAT(
-    "  CREATE OR REPLACE TEMP TABLE tmp_tables_with_person_id (project_id STRING, dataset_id STRING, table_id STRING, row_num INT64)",
+    "  CREATE OR REPLACE TEMP TABLE tmp_tables_with_person_id (project_id STRING, dataset_id STRING, table_id STRING, partition_date_column STRING, row_num INT64)",
     "  AS ", 
-    "  SELECT project_id, dataset_id, table_id, ROW_NUMBER() OVER (ORDER BY project_id, dataset_id, table_id) AS row_num",
+    "  SELECT project_id, dataset_id, table_id, partition_date_column, ROW_NUMBER() OVER (ORDER BY project_id, dataset_id, table_id) AS row_num",
     "  FROM (", (SELECT STRING_AGG(CONCAT(
     "  SELECT",
-    "    table_catalog AS project_id,",
-    "    table_schema AS dataset_id,",
-    "    table_name AS table_id",
-    "  FROM `", project_id, ".", dataset_id, ".INFORMATION_SCHEMA.COLUMNS`",
-    "  WHERE LOWER(COLUMN_NAME) = 'person_id'",
-    "  AND table_name IN (",
+    "    c.table_catalog AS project_id,",
+    "    c.table_schema AS dataset_id,",
+    "    c.table_name AS table_id,",
+    "    p.column_name AS partition_date_column",
+    "  FROM `", project_id, ".", dataset_id, ".INFORMATION_SCHEMA.COLUMNS` c ",
+    "  LEFT JOIN (SELECT * FROM `", project_id, ".", dataset_id, ".INFORMATION_SCHEMA.COLUMNS` WHERE is_partitioning_column = 'YES') p ",
+    "  ON c.table_name = p.table_name ",
+    "  WHERE LOWER(c.column_name) = 'person_id'",
+    "  AND c.table_name IN (",
     "    SELECT table_id FROM `", project_id, ".", dataset_id, ".__TABLES__`",
     "    WHERE TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), TIMESTAMP_MILLIS(last_modified_time), DAY) <= 3",
     "  )", 
-    "  AND table_name NOT IN (",
+    "  AND c.table_name NOT IN (",
     "    SELECT table_name FROM `", project_id, ".", dataset_id, ".INFORMATION_SCHEMA.TABLES`",
     "    WHERE table_type = 'VIEW'",
     "  )"),
@@ -129,9 +132,13 @@ BEGIN
       "    WHERE CAST(person_id AS INT64) IN (", 
       "      SELECT person_id FROM `", proj_prod, ".", mapping_dataset, ".primary_pid_rid_mapping`",
       "    )",
+      CASE 
+          WHEN partition_date_column IS NOT NULL THEN CONCAT("AND ", partition_date_column, " BETWEEN '1800-01-01' AND '9999-12-31'")
+          ELSE "" 
+      END,
       "    HAVING count(*) > 0"), 
       "    UNION ALL \n") FROM (
-        SELECT project_id, dataset_id, table_id 
+        SELECT project_id, dataset_id, table_id, partition_date_column
         FROM tmp_tables_with_person_id
         WHERE row_num BETWEEN sub_head AND sub_tail
       )), 
@@ -148,9 +155,13 @@ BEGIN
       "    WHERE CAST(person_id AS INT64) IN (", 
       "      SELECT research_id FROM `", proj_prod, ".", mapping_dataset, ".primary_pid_rid_mapping`",
       "    )",
+      CASE 
+          WHEN partition_date_column IS NOT NULL THEN CONCAT("AND ", partition_date_column, " BETWEEN '1800-01-01' AND '9999-12-31'")
+          ELSE "" 
+      END,
       "    HAVING count(*) > 0"), 
       "    UNION ALL \n") FROM (
-        SELECT project_id, dataset_id, table_id 
+        SELECT project_id, dataset_id, table_id, partition_date_column
         FROM tmp_tables_with_person_id 
         WHERE row_num BETWEEN sub_head AND sub_tail
       )), 

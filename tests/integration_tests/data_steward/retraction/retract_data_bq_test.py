@@ -578,11 +578,13 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.rdr_id
 
-        with self.assertLogs(level='WARNING') as cm:
+        with self.assertLogs(level='INFO') as cm:
             run_bq_retraction(project_id, sandbox_id, self.lookup_table_id,
                               NONE, [dataset_id], RETRACTION_ONLY_EHR, False,
                               self.client)
-        self.assertTrue(f"Skipping retraction" in cm.output[0])
+
+        self.assertTrue(
+            any(f"Skipping retraction" in output for output in cm.output))
 
     @mock_patch_bundle
     def test_retract_ehr_rdr_and_ehr(self, mock_ru_get_dataset_type,
@@ -830,11 +832,13 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.fitbit_id
 
-        with self.assertLogs(level='WARNING') as cm:
+        with self.assertLogs(level='INFO') as cm:
             run_bq_retraction(project_id, sandbox_id, self.lookup_table_id,
                               NONE, [dataset_id], RETRACTION_ONLY_EHR, False,
                               self.client)
-        self.assertTrue(f"Skipping retraction" in cm.output[0])
+
+        self.assertTrue(
+            any(f"Skipping retraction" in output for output in cm.output))
 
     @mock_patch_bundle
     def test_retract_deid_fitbit_rdr_and_ehr(
@@ -889,11 +893,13 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.fitbit_id
 
-        with self.assertLogs(level='WARNING') as cm:
+        with self.assertLogs(level='INFO') as cm:
             run_bq_retraction(project_id, sandbox_id, self.lookup_table_id,
                               NONE, [dataset_id], RETRACTION_ONLY_EHR, False,
                               self.client)
-        self.assertTrue(f"Skipping retraction" in cm.output[0])
+
+        self.assertTrue(
+            any(f"Skipping retraction" in output for output in cm.output))
 
     @mock_patch_bundle
     def test_retract_other(self, mock_ru_get_dataset_type,

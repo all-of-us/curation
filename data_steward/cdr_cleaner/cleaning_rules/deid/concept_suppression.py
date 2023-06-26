@@ -163,6 +163,7 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
                  affected_datasets,
                  affected_tables,
                  concept_suppression_lookup_table,
+                 exclude_source_concept_id=False,
                  table_namer=None):
         """
         Initialize the class with proper info.
@@ -182,6 +183,7 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
                          table_namer=table_namer)
 
         self._concept_suppression_lookup_table = concept_suppression_lookup_table
+        self.exclude_source_concept_id = exclude_source_concept_id
 
     @property
     def concept_suppression_lookup_table(self):
@@ -212,6 +214,9 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
         suppression concept table 
 
         :param table_name: 
+        :param exclude_source_concept_id: True if `_source_concept_id` columns must
+            be excluded from the return value. ex) MissingConceptRecordSuppression
+            must exclude source concepts from suppression.
         :return: 
         """
         suppression_record_sandbox_query = self.BQ_LOOKUP_TABLE_SANDBOX_QUERY_TEMPLATE.render(
@@ -219,7 +224,8 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
             domain_table=table_name,
-            concept_fields=get_concept_id_fields(table_name),
+            concept_fields=get_concept_id_fields(
+                table_name, self.exclude_source_concept_id),
             suppression_concept=self.concept_suppression_lookup_table)
 
         return {

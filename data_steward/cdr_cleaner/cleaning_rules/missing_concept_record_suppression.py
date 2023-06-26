@@ -61,6 +61,7 @@ class MissingConceptRecordSuppression(AbstractBqLookupTableConceptSuppression):
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
             concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE,
+            exclude_source_concept_id=True,
             table_namer=table_namer)
 
     def get_missing_concepts(self, client, tables):

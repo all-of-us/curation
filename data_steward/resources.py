@@ -500,18 +500,30 @@ def get_domain(domain_table):
     return domain
 
 
-def get_concept_id_fields(table_name) -> List[str]:
+def get_concept_id_fields(table_name: str,
+                          exclude_source_concept_id: bool = False) -> List[str]:
     """
     Get a list of concept_id columns in the table.
 
     :param table_name:
-    :return: all *concept_id schemas given a table
+    :param exclude_source_concept_id: True if `_source_concept_id` columns must
+        be excluded from the return value. ex) MissingConceptRecordSuppression
+        must exclude source concepts from suppression.
+    :return: *concept_id schemas (w/ or w/o source concepts) given a table
     """
-    return [
+    concept_id_fields = [
         field_name['name']
         for field_name in fields_for(table_name)
         if field_name['name'].endswith('concept_id')
     ]
+
+    if exclude_source_concept_id:
+        concept_id_fields = [
+            field for field in concept_id_fields
+            if 'source_concept_id' not in field
+        ]
+
+    return concept_id_fields
 
 
 def get_date_fields(table_name) -> List[str]:

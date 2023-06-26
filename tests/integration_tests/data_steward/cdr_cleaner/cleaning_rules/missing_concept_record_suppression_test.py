@@ -71,8 +71,6 @@ class MissingConceptRecordSuppressionTest(BaseTest.CleaningRulesTestBase):
         """
         queries = []
 
-        #Append some queries
-
         create_concepts_query_tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.concept`
                 (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, concept_code, valid_start_date, valid_end_date)
@@ -96,35 +94,23 @@ class MissingConceptRecordSuppressionTest(BaseTest.CleaningRulesTestBase):
                 -- Dropped due to unknown observation_concept_id --
                 (3, 3, 50000000, date('2020-05-05'), 441840, 441840, 441840, 441840, 441840, 441840),
                 -- Dropped due to unknown observation_type_concept_id --
-                (4, 4, 4297377, date('2020-05-05'), 19, 441840, 441840, 441840, 441840, 441840)
+                (4, 4, 4297377, date('2020-05-05'), 19, 441840, 441840, 441840, 441840, 441840),
+                -- NOT dropped. `_source_concept_id` columns can have unknown concepts --
+                (5, 5, 4225432, date('2020-05-05'), 441840, 441840, 441840, 441840, 50000000, 441840),
+                (6, 6, 4225432, date('2020-05-05'), 441840, 441840, 441840, 441840, 50000001, 441840)
             """).render(fq_dataset_name=self.fq_dataset_name)
 
         queries.append(create_observations_query_tmpl)
 
         self.load_test_data(queries)
 
-        #Uncomment below and fill
-
         tables_and_counts = [{
-            'fq_table_name':
-                f'{self.fq_dataset_name}.observation',
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[0],
-            'loaded_ids': [1, 2, 3, 4],
+            'fq_table_name': f'{self.fq_dataset_name}.observation',
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
+            'loaded_ids': [1, 2, 3, 4, 5, 6],
             'sandboxed_ids': [3, 4],
-            'fields': [
-                'observation_id', 'person_id', 'observation_concept_id',
-                'observation_date', 'observation_type_concept_id',
-                'value_as_concept_id', 'qualifier_concept_id',
-                'unit_concept_id', 'observation_source_concept_id',
-                'value_source_concept_id'
-            ],
-            'cleaned_values': [
-                (1, 1, 4225432, self.date, 441840, 441840, 441840, 441840,
-                 441840, 441840),
-                (2, 2, 4297377, self.date, 441840, 441840, 441840, 441840,
-                 441840, 441840),
-            ]
+            'fields': ['observation_id'],
+            'cleaned_values': [(1,), (2,), (5,), (6,)]
         }]
 
         self.default_test(tables_and_counts)

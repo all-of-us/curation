@@ -1,74 +1,74 @@
 [
   {
     "name": "person_id",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "sleep_date",
-    "type": "DATE",
-    "mode": "NULLABLE",
+    "type": "date",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "is_main_sleep",
-    "type": "STRING",
-    "mode": "NULLABLE",
+    "type": "string",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "minute_in_bed",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "minute_asleep",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "minute_after_wakeup",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "minute_awake",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "minute_restless",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "minute_deep",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "minute_light",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "minute_rem",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": ""
   },
   {
     "name": "minute_wake",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": ""
   }
 ]

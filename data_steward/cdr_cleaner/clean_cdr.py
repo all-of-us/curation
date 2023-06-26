@@ -136,6 +136,7 @@ from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import Deidenti
 import constants.global_variables
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY, CRON_RETRACTION
+from cdr_cleaner.cleaning_rules.generate_research_device_ids import GenerateResearchDeviceIds
 
 # Third party imports
 
@@ -249,6 +250,7 @@ FITBIT_CLEANING_CLASSES = [
     (CleanDigitalHealthStatus,),
     (DropInvalidSleepLevelRecords,),
     (RemoveNonExistingPids,),  # assumes combined dataset is ready for reference
+    (GenerateResearchDeviceIds,),
 ]
 
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [

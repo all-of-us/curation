@@ -333,7 +333,7 @@ def get_tables_to_retract(
 
     LOGGER.info(f'Checking tables to retract in {client.project}.{dataset}...')
     if is_ehr_dataset(dataset) and (not hpo_id or hpo_id == NONE):
-        LOGGER.warning(
+        LOGGER.info(
             f'{dataset} is an EHR dataset but hpo_id is not specified or set to {NONE}. '
             f'Retraction will run against all the tables with person_id in {dataset}. '
             'It will take a while since there are more tables in EHR datasets than other datasets.'
@@ -443,7 +443,7 @@ def skip_dataset_retraction(dataset_id, retraction_type) -> bool:
 
     if retraction_type == RETRACTION_ONLY_EHR:
         if is_rdr_dataset(dataset_id) or is_fitbit_dataset(dataset_id):
-            LOGGER.warning(f'{msg_skip}{msg_no_ehr}')
+            LOGGER.info(f'{msg_skip}{msg_no_ehr}')
             return True
 
     return False

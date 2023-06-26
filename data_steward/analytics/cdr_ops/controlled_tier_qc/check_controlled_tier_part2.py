@@ -264,8 +264,9 @@ person_id,c.{{column_name}},
 DATE_ADD(d.death_date, INTERVAL 30 DAY) AS after_death_30_days
  
 FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
-FULL JOIN `{{project_id}}.{{ct_dataset}}.death` d USING (person_id) 
+FULL JOIN `{{project_id}}.{{ct_dataset}}.aou_death` d USING (person_id) 
 WHERE  DATE(c.{{column_name}}) > d.death_date
+AND d.primary_death_record = TRUE
 AND c.{{table_name}}_concept_id NOT IN (4013886, 4135376, 4271761)
 )
 
@@ -325,8 +326,9 @@ SELECT
 c.{{column_name}},
 DATE_ADD(d.death_date, INTERVAL 30 DAY) AS after_death_30_days
  FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
- JOIN `{{project_id}}.{{ct_dataset}}.death` d USING (person_id) 
+ JOIN `{{project_id}}.{{ct_dataset}}.aou_death` d USING (person_id) 
 WHERE  DATE(c.{{column_name}}) > d.death_date
+AND d.primary_death_record = TRUE
 )
 
 SELECT

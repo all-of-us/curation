@@ -1,38 +1,38 @@
 [
   {
-    "mode": "NULLABLE",
+    "mode": "nullable",
     "name": "person_id",
-    "type": "INTEGER",
+    "type": "integer",
     "description": ""
   },
   {
-    "mode": "NULLABLE",
+    "mode": "nullable",
     "name": "sleep_date",
-    "type": "DATE",
+    "type": "date",
     "description": ""
   },
   {
-    "mode": "NULLABLE",
+    "mode": "nullable",
     "name": "is_main_sleep",
-    "type": "STRING",
+    "type": "string",
     "description": ""
   },
   {
-    "mode": "NULLABLE",
+    "mode": "nullable",
     "name": "level",
-    "type": "STRING",
+    "type": "string",
     "description": ""
   },
   {
-    "mode": "NULLABLE",
+    "mode": "nullable",
     "name": "start_datetime",
-    "type": "DATETIME",
+    "type": "datetime",
     "description": ""
   },
   {
-    "mode": "NULLABLE",
+    "mode": "nullable",
     "name": "duration_in_min",
-    "type": "FLOAT",
+    "type": "float",
     "description": ""
   }
 ]
