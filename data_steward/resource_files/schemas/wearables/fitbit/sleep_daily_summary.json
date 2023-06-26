@@ -3,72 +3,72 @@
     "name": "person_id",
     "type": "integer",
     "mode": "nullable",
-    "description": ""
+    "description": "A foreign key identifier to the person for whom the data was recorded."
   },
   {
     "name": "sleep_date",
     "type": "date",
     "mode": "nullable",
-    "description": ""
+    "description": "The date the sleep log ended"
   },
   {
     "name": "is_main_sleep",
     "type": "string",
     "mode": "nullable",
-    "description": ""
+    "description": "Defines a record as being the 'main sleep' record. Boolean value: true or false"
   },
   {
     "name": "minute_in_bed",
     "type": "integer",
     "mode": "nullable",
-    "description": ""
+    "description": "Total number of minutes the user was in bed"
   },
   {
     "name": "minute_asleep",
     "type": "integer",
     "mode": "nullable",
-    "description": ""
+    "description": "Total number of minutes the user was asleep across all sleep records in the sleep log."
   },
   {
     "name": "minute_after_wakeup",
     "type": "integer",
     "mode": "nullable",
-    "description": ""
+    "description": "The total number of minutes after the user woke up"
   },
   {
     "name": "minute_awake",
     "type": "integer",
     "mode": "nullable",
-    "description": ""
+    "description": "The total number of minutes the user was awake"
   },
   {
     "name": "minute_restless",
     "type": "integer",
     "mode": "nullable",
-    "description": ""
+    "description": "The total number of minutes the user was restless"
   },
   {
     "name": "minute_deep",
     "type": "integer",
     "mode": "nullable",
-    "description": ""
+    "description": "The total number of minutes the user was in deep sleep stage"
   },
   {
     "name": "minute_light",
     "type": "integer",
     "mode": "nullable",
-    "description": ""
+    "description": "The total number of minutes the user was in light sleep stage"
   },
   {
     "name": "minute_rem",
     "type": "integer",
     "mode": "nullable",
-    "description": ""
+    "description": "The total number of minutes the user was in rem (rapid eye movement) sleep stage"
   },
   {
     "name": "minute_wake",
     "type": "integer",
     "mode": "nullable",
-    "description": ""
+    "description": "The total number of minutes the user was in wake stage."
   }
 ]

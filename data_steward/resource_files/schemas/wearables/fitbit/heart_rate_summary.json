@@ -3,42 +3,42 @@
     "type": "integer",
     "name": "person_id",
     "mode": "nullable",
-    "description": ""
+    "description": "A foreign key identifier to the person for whom the data was recorded."
   },
   {
     "type": "date",
     "name": "date",
     "mode": "nullable",
-    "description": ""
+    "description": "Date of the heart rate log"
   },
   {
     "type": "string",
     "name": "zone_name",
     "mode": "nullable",
-    "description": ""
+    "description": "Name of the custom heart rate zone. The possible values for heart rate zone are: out of range, fat burn, cardio, and peak"
   },
   {
     "type": "integer",
     "name": "min_heart_rate",
     "mode": "nullable",
-    "description": ""
+    "description": "Minimum range for the custom heart rate zone."
   },
   {
     "type": "integer",
     "name": "max_heart_rate",
     "mode": "nullable",
-    "description": ""
+    "description": "Maximum range for the custom heart rate zone."
   },
   {
     "type": "integer",
     "name": "minute_in_zone",
     "mode": "nullable",
-    "description": ""
+    "description": "Number minutes within the specified heart rate zone."
   },
   {
     "type": "float",
     "name": "calorie_count",
     "mode": "nullable",
-    "description": ""
+    "description": "Number calories burned within the custom heart rate zone."
   }
 ]

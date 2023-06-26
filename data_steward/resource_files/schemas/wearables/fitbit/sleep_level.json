@@ -3,36 +3,36 @@
     "mode": "nullable",
     "name": "person_id",
     "type": "integer",
-    "description": ""
+    "description": "A foreign key identifier to the person for whom the data was recorded."
   },
   {
     "mode": "nullable",
     "name": "sleep_date",
     "type": "date",
-    "description": ""
+    "description": "The date the sleep log ended"
   },
   {
     "mode": "nullable",
     "name": "is_main_sleep",
     "type": "string",
-    "description": ""
+    "description": "Defines a record as being the 'main sleep' record. Boolean value: true or false"
   },
   {
     "mode": "nullable",
     "name": "level",
     "type": "string",
-    "description": ""
+    "description": "The sleep level the user entered. The possible values returned for the sleep levels are: restless, asleep, awake, deep, light, rem, wake and unknown"
   },
   {
     "mode": "nullable",
     "name": "start_datetime",
     "type": "datetime",
-    "description": ""
+    "description": "Timestamp the user started in sleep level."
   },
   {
     "mode": "nullable",
     "name": "duration_in_min",
     "type": "float",
-    "description": ""
+    "description": "Total number of minutes the user appeared in the sleep level."
   }
 ]
