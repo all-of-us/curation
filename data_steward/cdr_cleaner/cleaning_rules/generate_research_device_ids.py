@@ -4,7 +4,11 @@ Generate research_device_ids for each fitbit person_id/device_id pair.
 Original Issue: DC-3229
 
 Device_id is required by privacy to be deidentified in RT and CT. This CR updates the mapping table with newly generated
- research_device_ids.
+research_device_ids.
+
+The 'wearables_device_id_masking' table might be appended to with maskings of other wearable_types. Therefore a
+person_id/device_id pair could have multiple research_device_ids. This should only occur when multiple wearable_types
+are involved.
 """
 
 # Python Imports
@@ -29,11 +33,18 @@ SELECT
   GENERATE_UUID() as research_device_id, 
   'fitbit' as wearable_type, 
   CURRENT_DATE() as import_date
-FROM (SELECT DISTINCT person_id, device_id 
-      FROM `{{project_id}}.{{fitbit_dataset}}.device`) d
-LEFT JOIN `{{project_id}}.{{pipeline_tables}}.wearables_device_id_masking` wdim
+FROM 
+  (SELECT DISTINCT person_id, device_id 
+  FROM `{{project_id}}.{{fitbit_dataset}}.device`
+  WHERE (person_id IS NOT NULL AND device_id IS NOT NULL)
+  ) AS d
+LEFT JOIN 
+  (SELECT * 
+  FROM`{{project_id}}.{{pipeline_tables}}.wearables_device_id_masking`
+  WHERE wearable_type = 'fitbit'
+  ) AS wdim         
 ON wdim.person_id = d.person_id AND wdim.device_id = d.device_id
-WHERE wdim.person_id IS NULL  AND wdim.device_id IS NULL
+WHERE wdim.person_id IS NULL AND wdim.device_id IS NULL
 """)
 
 

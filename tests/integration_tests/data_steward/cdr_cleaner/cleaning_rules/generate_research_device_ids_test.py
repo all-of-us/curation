@@ -1,6 +1,6 @@
 # Python imports
 import os
-import datetime
+from datetime import datetime, timezone
 
 # Third party imports
 import mock
@@ -72,16 +72,11 @@ class GenerateResearchDeviceIdsTest(BaseTest.CleaningRulesTestBase):
                 (2, 'CCC', 'high')
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        # Alters the masking table schema. research_device_id mode from REQUIRED to NULLABLE for the test.
         wearables_device_id_masking_query = self.jinja_env.from_string("""
-            ALTER TABLE `{{project_id}}.{{dataset_id}}.wearables_device_id_masking`
-            ALTER COLUMN research_device_id
-            DROP NOT NULL;
-            
             INSERT INTO `{{project_id}}.{{dataset_id}}.wearables_device_id_masking` (
                     person_id, device_id, research_device_id, wearable_type, import_date)
             VALUES
-                    (2, 'CCC', 'UUID_HERE', 'fitbit', '2022-01-01');
+                (2, 'CCC', 'UUID_HERE', 'fitbit', '2022-01-01');
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # load the test data
@@ -104,11 +99,11 @@ class GenerateResearchDeviceIdsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [2],
             'sandboxed_ids': [],
             'cleaned_values': [
-                (1, 'AAA', 'fitbit', datetime.datetime.now().date()),
-                (1, 'BBB', 'fitbit', datetime.datetime.now().date()),
-                (2, 'CCC', 'fitbit',
-                 datetime.datetime.strptime('2022-01-01', '%Y-%m-%d').date()),
-                (2, 'BBB', 'fitbit', datetime.datetime.now().date())
+                (1, 'AAA', 'fitbit', datetime.now(timezone.utc).date()),
+                (1, 'BBB', 'fitbit', datetime.now(timezone.utc).date()),
+                (2, 'CCC', 'fitbit', datetime.strptime('2022-01-01',
+                                                       '%Y-%m-%d').date()),
+                (2, 'BBB', 'fitbit', datetime.now(timezone.utc).date())
             ]
         }]
 
