@@ -38,8 +38,22 @@ fitbit_dataset = ""
 run_as=""
 
 # +
+date_columns = {
+    'activity_summary': 'date',
+    'heart_rate_summary': 'date',
+    'heart_rate_minute_level': 'datetime',
+    'steps_intraday': 'datetime',
+    'sleep_level': 'sleep_date',
+    'sleep_daily_summary': 'sleep_date',
+    'device': 'date',
+}
 
+secondary_date_column = {
+    'device': 'last_sync_time',
+    'sleep_level': 'start_datetime',
+}
 
+# +
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 
