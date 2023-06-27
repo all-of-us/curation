@@ -172,7 +172,7 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
                                           count='new_row_count',
                                           days='0'))
 
-    for start in range(0, len(queries_list), 200):
+    for start in range(0, len(old_row_counts_queries_list), 200):
 
         old_row_counts_union_all_query = f"{'  UNION ALL  '.join(old_row_counts_queries_list[start:start+200])};"
         new_row_counts_union_all_query = f"{'  UNION ALL  '.join(new_row_counts_queries_list[start:start+200])};"
