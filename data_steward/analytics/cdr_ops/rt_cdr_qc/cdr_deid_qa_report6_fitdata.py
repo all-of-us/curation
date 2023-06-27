@@ -31,7 +31,7 @@ deid_cdr_fitbit="" # fitbit dataset post deidentification(either tier)
 deid_cdr="" # deidentified dataset within the current cdr. For valid person_ids
 combined_cdr=""  # fully identified dataset within the current cdr
 truncation_date="" # Current cdr cutoff date
-maximum_age=89 # Maximum age 
+maximum_age=89 # Maximum age
 fitbit_sandbox_dataset = ""
 sleep_level_sandbox_table = ""
 fitbit_dataset = ""
@@ -129,7 +129,6 @@ for table in FITBIT_TABLES:
         query.render(project_id=project_id,
                                             dataset_id=non_deid_fitbit,
                                             table_name=table,
-                                            # truncation_date=truncation_date,
                                             combined_cdr=combined_cdr,
                                             maximum_age=maximum_age,
                                             pipeline=pipeline))
@@ -145,10 +144,9 @@ execute(client, union_all_query)
 #
 # objective:
 #
-# find the difference between the non-deid date and the deid date to validate that the dateshift is applied as specified in the map .
+# find the difference between the non-deid date and the deid date to validate that the dateshift is applied as specified in the map.  the original code uses min(date) to have the difference, but not sure why min(), not max(), or any date.
 #
-# the original code uses min(date) to have the difference, but not sure why min(), not max(), or any date.
-#
+# **Note:  Should a failure occur during this (long) query, it is advisable to replace `FITBIT_TABLES` with the table in question**
 #
 # [DC-1786] date shifting should be checked against activity_summary, heart_rate_summary, heart_rate_minute_level, and steps_intraday.
 
@@ -170,20 +168,22 @@ WHERE d_newc NOT IN (SELECT
       ON m.person_id = i.person_id)
 """)
 
-queries_list = []
-for table in FITBIT_TABLES:
-    queries_list.append(
-        query.render(project_id=project_id,
+query_list = []
+results = []
+for table in ["heart_rate_summary", "activity_summary"]:
+    q = (query.render(project_id=project_id,
                       table=table,
                       pipeline=pipeline,
                       date_type=date_columns[table],
+                      combined_cdr=combined_cdr,
+                      deid_cdr=deid_cdr,
                       non_deid_fitbit=non_deid_fitbit,
                       deid_cdr_fitbit=deid_cdr_fitbit))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 df2 = execute(client, union_all_query)
 
-if sum(df2['bad_rows']) == 0:    
+if sum(df2['bad_rows']) == 0:
     df = df.append(
         {
             'query': 'Date Shift Query',
@@ -197,7 +197,7 @@ else:
             'result': 'Failure'
         },
         ignore_index=True)
-df2   
+df2
 
 # -
 
@@ -235,7 +235,7 @@ for table in FITBIT_TABLES:
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 df2 = execute(client, union_all_query)
 
-if sum(df2['bad_rows']) == 0:    
+if sum(df2['bad_rows']) == 0:
     df = df.append(
         {
             'query': 'Pid Rid Query',
@@ -249,7 +249,7 @@ else:
             'result': 'Failure'
         },
         ignore_index=True)
-df2  
+df2
 # -
 
 # # Verify all person_ids in fitbit datasets exsit in deid_cdr person table
@@ -280,7 +280,7 @@ for table in FITBIT_TABLES:
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 df2 = execute(client, union_all_query)
 
-if sum(df2['bad_rows']) == 0:    
+if sum(df2['bad_rows']) == 0:
     df = df.append(
         {
             'query': 'Valid person_ids Query',
@@ -294,7 +294,7 @@ else:
             'result': 'Failure'
         },
         ignore_index=True)
-df2  
+df2
 # -
 
 # # Verify that all records with invalid level values are being dropped from sleep_level table
@@ -368,6 +368,3 @@ def highlight_cells(val):
     return f'background-color: {color}'
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
-# -
-
-
