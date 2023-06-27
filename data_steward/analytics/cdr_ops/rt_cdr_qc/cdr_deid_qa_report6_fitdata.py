@@ -130,7 +130,6 @@ for table in FITBIT_TABLES:
         query.render(project_id=project_id,
                                             dataset_id=non_deid_fitbit,
                                             table_name=table,
-                                            # truncation_date=truncation_date,
                                             combined_cdr=combined_cdr,
                                             maximum_age=maximum_age,
                                             pipeline=pipeline))
@@ -146,63 +145,58 @@ execute(client, union_all_query)
 #
 # objective:
 #
-# find the difference between the non-deid date and the deid date to validate that the dateshift is applied as specified in the map .
+# find the difference between the non-deid date and the deid date to validate that the dateshift is applied as specified in the map.  the original code uses min(date) to have the difference, but not sure why min(), not max(), or any date.
 #
-# the original code uses min(date) to have the difference, but not sure why min(), not max(), or any date.
-#
+# **Note:  Should a failure occur during this (long) query, it is advisable to replace `FITBIT_TABLES` with the table in question**
 #
 # [DC-1786] date shifting should be checked against activity_summary, heart_rate_summary, heart_rate_minute_level, and steps_intraday.
 
 # +
 query = JINJA_ENV.from_string("""
-WITH non_shifted_tables AS (
-SELECT m.research_id,
-CONCAT(m.research_id, '_', i.{{date_type}}) as i_newc
-FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-JOIN `{{project_id}}.{{non_deid_fitbit}}.{{table}}` i
-ON m.person_id = i.person_id
-),
 
-deid_and_reverse_shifted AS (
-SELECT d.person_id,
-CONCAT(d.person_id, '_', DATE_ADD(d.{{date_type}}, INTERVAL m.shift DAY)) AS d_newc
-FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-JOIN `{{project_id}}.{{deid_cdr_fitbit}}.{{table}}` d
-ON m.research_id = d.person_id
-)
-
-SELECT COUNT (*) n_row_not_pass FROM deid_and_reverse_shifted
-WHERE d_newc NOT IN (SELECT i_newc FROM non_shifted_tables)
+SELECT
+  \'{{table}}\' as table,
+  COUNT(1) bad_rows
+FROM (SELECT d.person_id,
+      CONCAT(d.person_id, '_', DATE_ADD(d.{{date_type}}, INTERVAL m.shift DAY)) AS d_newc
+      FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
+      JOIN `{{project_id}}.{{deid_cdr_fitbit}}.{{table}}` d
+      ON m.research_id = d.person_id)
+WHERE d_newc NOT IN (SELECT
+      CONCAT(m.research_id, '_', i.{{date_type}}) as i_newc
+      FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
+      JOIN `{{project_id}}.{{non_deid_fitbit}}.{{table}}` i
+      ON m.person_id = i.person_id)
 """)
 
-query_list = []
-results = []
+queries_list = []
 for table in FITBIT_TABLES:
-    q = (query.render(project_id=project_id,
+    queries_list.append(
+        query.render(project_id=project_id,
                       table=table,
                       pipeline=pipeline,
                       date_type=date_columns[table],
-                      combined_cdr=combined_cdr,
-                      deid_cdr=deid_cdr,
                       non_deid_fitbit=non_deid_fitbit,
-                      deid_cdr_fitbit=deid_cdr_fitbit,
-                      truncation_date=truncation_date,
-                      maximum_age=maximum_age))
+                      deid_cdr_fitbit=deid_cdr_fitbit))
 
-    results.append(execute(client, q))
+union_all_query = '\nUNION ALL\n'.join(queries_list)
+df2 = execute(client, union_all_query)
 
-res_list = []
-for query in query_list:
-    res_list.append(execute(client, query))
-    if res.eq(0).any().any():
-         df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'PASS'},
-                ignore_index = True)
-    else:
-         df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'Failure'},
-                ignore_index = True)
-
-
-display(results)
+if sum(df2['bad_rows']) == 0:
+    df = df.append(
+        {
+            'query': 'Date Shift Query',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Date Shift Query',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+df2
 # -
 
 # # Verify all person_ids in fitbit datasets exsit in deid_cdr person table
@@ -320,6 +314,3 @@ def highlight_cells(val):
     return f'background-color: {color}'
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
-# -
-
-
