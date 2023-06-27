@@ -28,14 +28,11 @@ project_id = "" # aou project id
 pipeline="" # pipeline tables dataset
 non_deid_fitbit="" # fitbt dataset prior to deidentification
 deid_cdr_fitbit="" # fitbit dataset post deidentification(either tier)
-deid_cdr="" # deidentified dataset within the current cdr. For valid person_ids
+deid_cdr="" # deidentified dataset within the current cdr.
 combined_cdr=""  # fully identified dataset within the current cdr
 truncation_date="" # Current cdr cutoff date
 maximum_age=89 # Maximum age
-fitbit_sandbox_dataset = ""
-sleep_level_sandbox_table = ""
-fitbit_dataset = ""
-run_as=""
+run_as="" # # using impersonation, run all these queries as this service account"
 # -
 
 date_columns = {
@@ -73,11 +70,11 @@ df = pd.DataFrame(columns = ['query', 'result'])
 # by adding m.shift back to deid_table and see if any date is newer than cutoff date.
 
 # +
-health_sharing_consent_check = JINJA_ENV.from_string('''SELECT
-  \'{{table_name}}\' as table,
+query = JINJA_ENV.from_string('''SELECT
+  \'{{table}}\' as table,
   COUNT(1) bad_rows
 FROM
-  `{{project_id}}.{{dataset_id}}.{{table_name}}` a
+  `{{project_id}}.{{dataset_id}}.{{table}}` a
   JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.research_id = a.person_id
 WHERE DATE_ADD(date({{column_date}}), INTERVAL m.shift DAY) > '{{truncation_date}}'
@@ -85,19 +82,35 @@ WHERE DATE_ADD(date({{column_date}}), INTERVAL m.shift DAY) > '{{truncation_date
   OR DATE_ADD(date({{secondary_date_column}}), INTERVAL m.shift DAY) > '{{truncation_date}}'
   {% endif %}
 ''')
+
 queries_list = []
 for table in FITBIT_TABLES:
-    queries_list.append(
-        health_sharing_consent_check.render(project_id=project_id,
-                                            dataset_id=non_deid_fitbit,
-                                            table_name=table,
-                                            column_date=date_columns[table],
-                                            secondary_date_column=secondary_date_column.get(table),
-                                            truncation_date=truncation_date,
-                                            pipeline=pipeline))
+    queries_list.append(query.render(project_id=project_id,
+                                      dataset_id=non_deid_fitbit,
+                                      table=table,
+                                      column_date=date_columns[table],
+                                      secondary_date_column=secondary_date_column.get(table),
+                                      truncation_date=truncation_date,
+                                      pipeline=pipeline))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
-execute(client, union_all_query)
+df2 = execute(client, union_all_query)
+
+if sum(df2['bad_rows']) == 0:
+    df = df.append(
+        {
+            'query': 'Data Truncation Query',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Data Truncation Query',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+df2
 # -
 
 # # Verify if that the fitdata data is removed FROM the fitbit tables for participants exceeding allowable age (maximum_age, i.e.,89). ((row counts = 0))
@@ -111,10 +124,10 @@ execute(client, union_all_query)
 query = JINJA_ENV.from_string(
 """
 SELECT
-  \'{{table_name}}\' as table,
+  \'{{table}}\' as table,
   COUNT(1) bad_rows
 FROM
-    `{{project_id}}.{{dataset_id}}.{{table_name}}` a
+    `{{project_id}}.{{dataset_id}}.{{table}}` a
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.research_id = a.person_id
 JOIN `{{project_id}}.{{combined_cdr}}.person` i
@@ -125,16 +138,32 @@ WHERE FLOOR(DATE_DIFF(CURRENT_DATE(), DATE(i.birth_datetime), YEAR)) > {{maximum
 
 queries_list = []
 for table in FITBIT_TABLES:
-    queries_list.append(
-        query.render(project_id=project_id,
-                                            dataset_id=non_deid_fitbit,
-                                            table_name=table,
-                                            combined_cdr=combined_cdr,
-                                            maximum_age=maximum_age,
-                                            pipeline=pipeline))
+    queries_list.append(query.render(project_id=project_id,
+                                      dataset_id=non_deid_fitbit,
+                                      table=table,
+                                      combined_cdr=combined_cdr,
+                                      maximum_age=maximum_age,
+                                      pipeline=pipeline))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
-execute(client, union_all_query)
+df2 = execute(client, union_all_query)
+
+if sum(df2['bad_rows']) == 0:
+    df = df.append(
+        {
+            'query': 'Date Shift Query',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Date Shift Query',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+df2
+
 # -
 
 
@@ -168,14 +197,13 @@ WHERE d_newc NOT IN (SELECT
       ON m.person_id = i.person_id)
 """)
 
-query_list = []
-results = []
-for table in ["heart_rate_summary", "activity_summary"]:
-    q = (query.render(project_id=project_id,
+queries_list = []
+for table in FITBIT_TABLES:
+    queries_list.append(
+        query.render(project_id=project_id,
                       table=table,
                       pipeline=pipeline,
                       date_type=date_columns[table],
-                      combined_cdr=combined_cdr,
                       deid_cdr=deid_cdr,
                       non_deid_fitbit=non_deid_fitbit,
                       deid_cdr_fitbit=deid_cdr_fitbit))
@@ -273,7 +301,6 @@ for table in FITBIT_TABLES:
     queries_list.append(
         query.render(project_id=project_id,
                       table=table,
-                      pipeline=pipeline,
                       deid_cdr=deid_cdr,
                       deid_cdr_fitbit=deid_cdr_fitbit))
 
@@ -295,67 +322,6 @@ else:
         },
         ignore_index=True)
 df2
-# -
-
-# # Verify that all records with invalid level values are being dropped from sleep_level table
-#
-# DC-2606
-#
-# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that
-# are being dropped due to invalid level values. It also outputs any records in the sleep_level table that should
-# have been dropped but were not.
-
-# +
-query = JINJA_ENV.from_string("""
-
-WITH df1 AS (
-  SELECT
-    level, 'dropped' AS dropped_status, count(*) as n_violations
-  FROM
-    `{{project_id}}.{{fitbit_sandbox_dataset}}.{{sleep_level_sandbox_table}}`
-  GROUP BY 1, 2
-  ORDER BY n_violations
-),
-
-df2 AS (
-  SELECT
-    level, 'not dropped' AS dropped_status, count(*) as n_violations
-  FROM
-    `{{project_id}}.{{fitbit_dataset}}.sleep_level`
-  WHERE
-  (
-      LOWER(level) NOT IN
-          ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL
-  )
-  GROUP BY 1, 2
-)
-
-select *
-from df1
-UNION ALL
-select *
-from df2
-""")
-
-q =query.render(project_id=project_id,fitbit_sandbox_dataset=fitbit_sandbox_dataset,fitbit_dataset=fitbit_dataset,sleep_level_sandbox_table=sleep_level_sandbox_table)
-
-df2 = execute(client, q)
-
-if 'not dropped' not in set(df2['dropped_status']):
-    df = df.append(
-        {
-            'query': 'Query6 no invalid level records in sleep_level table',
-            'result': 'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query6 no invalid level records in sleep_level table',
-            'result': 'Failure'
-        },
-        ignore_index=True)
-df2
 
 
 # -
@@ -368,3 +334,5 @@ def highlight_cells(val):
     return f'background-color: {color}'
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
+# -
+
