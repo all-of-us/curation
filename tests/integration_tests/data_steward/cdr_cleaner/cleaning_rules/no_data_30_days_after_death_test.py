@@ -46,10 +46,10 @@ VISIT_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.visit_occurrence`
 (visit_occurrence_id, person_id, visit_start_date, visit_end_date, visit_concept_id, visit_type_concept_id)
 VALUES
-    -- Cleand. visit_[start|end]_date are after the primary death date. --
+    -- Cleaned. visit_[start|end]_date are after the primary death date. --
     (11, 1, '2000-01-01', '2000-01-02', 0, 0),
     (12, 1, '2000-01-02', '2000-01-03', 0, 0),
-    -- Cleand. visit_end_date is after the primary death date. --
+    -- Cleaned. visit_end_date is after the primary death date. --
     (21, 2, '2000-01-01', '2020-03-01', 0, 0),
     -- No change --
     (31, 3, '2000-01-01', '2020-03-01', 0, 0),
@@ -60,7 +60,7 @@ OBSERVATION_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
 (observation_id, person_id, observation_date, observation_concept_id, observation_type_concept_id)
 VALUES
-    -- Cleand. observation_date is after the primary death date. --
+    -- Cleaned. observation_date is after the primary death date. --
     (11, 1, '2000-01-01', 0, 0),
     (12, 1, '2000-01-02', 0, 0),
     (21, 2, '2020-03-01', 0, 0),
@@ -75,7 +75,7 @@ CONDITION_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence`
 (condition_occurrence_id, person_id, condition_concept_id, condition_start_date, condition_start_datetime, condition_end_date, condition_end_datetime, condition_type_concept_id)
 VALUES
-    -- Cleand. condition_[start|end]_date are after the primary death date. --
+    -- Cleaned. condition_[start|end]_date are after the primary death date. --
     (11, 1, 80502, '1969-08-20', '1969-08-20 00:00:00 UTC', null, null, 38000245),
     (21, 2, 321661, '2020-09-10', '2020-09-10 00:00:00 UTC', '2020-10-10', null, 38000245),
     -- No change --
@@ -87,7 +87,7 @@ DEVICE_EXPOSURE_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.device_exposure`
 (device_exposure_id, person_id, device_concept_id, device_exposure_start_date, device_exposure_start_datetime, device_exposure_end_date, device_type_concept_id)
 VALUES
-    -- Cleand. device_exposure_[start|end]_date are after the primary death date. --
+    -- Cleaned. device_exposure_[start|end]_date are after the primary death date. --
     (11, 1, 4206863, '1969-05-15', TIMESTAMP('2015-07-15'), null, 44818707),
     (21, 2, 320128, '2021-07-15', TIMESTAMP('2015-07-15'), null, 99999),
     -- No change --
