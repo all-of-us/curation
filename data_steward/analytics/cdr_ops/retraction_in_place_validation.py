@@ -20,9 +20,11 @@
 # - `rdr_and_ehr`: combined/ combined release datasets
 # - `rdr_and_ehr`: CT deid base/ clean datasets
 # - `rdr_and_ehr`: RT deid base/ clean datasets
+#
 # This notebook does NOT validate the following datasets:
 # - `only_ehr`: All datasets except EHR and Unioned EHR datasets
 # - For the datasets above, use `ehr_retraction_in_place_validation.py` instead.
+#
 # This notebook is not tested against the following datasets. Use it carefully:
 # - `rdr_and_ehr`: Backup datasets
 # - `rdr_and_ehr`: Sandbox datasets
@@ -44,6 +46,9 @@ from common import JINJA_ENV, CDM_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, provenance_table_for
+
+pd.options.display.max_rows = 1000
+# -
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
@@ -110,22 +115,25 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
                                      dataset=dataset,
                                      table_name=table))
 
-    union_all_query = '\nUNION ALL\n'.join(queries_list)
+    for start in range(0, len(queries_list), 300):
 
-    retraction_status_query = (f'{rids_query}\n{union_all_query}'
-                               if is_deidentified == 'true' else
-                               f'{pids_query}\n{union_all_query}')
-    result = execute(client, retraction_status_query)
-    all_results.append(result)
+        union_all_query = f"{'  UNION ALL  '.join(queries_list[start:start+300])} ORDER BY retraction_status;"
 
-for result, dataset in zip(all_results, datasets):
-    print(dataset)
+        retraction_status_query = (f'{rids_query}\n{union_all_query}'
+                                   if is_deidentified == 'true' else
+                                   f'{pids_query}\n{union_all_query}')
+        result = execute(client, retraction_status_query)
+        all_results.append((dataset, result))
+
+for i, (dataset, result) in enumerate(all_results):
+    print(f'{dataset} - {i+1}')
     ICD.display(result)
     print("\n")
 # -
 
 # ## 2. Verify Row counts of source dataset minus the retracted participants  data is equal to the
 
+# +
 all_results = []
 for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_row_counts_query = JINJA_ENV.from_string('''
@@ -164,47 +172,51 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
                                           count='new_row_count',
                                           days='0'))
 
-    old_row_counts_union_all_query = '\nUNION ALL\n'.join(
-        old_row_counts_queries_list)
+    for start in range(0, len(old_row_counts_queries_list), 200):
 
-    new_row_counts_union_all_query = '\nUNION ALL\n'.join(
-        new_row_counts_queries_list)
+        old_row_counts_union_all_query = f"{'  UNION ALL  '.join(old_row_counts_queries_list[start:start+200])};"
+        new_row_counts_union_all_query = f"{'  UNION ALL  '.join(new_row_counts_queries_list[start:start+200])};"
 
-    old_retraction_table_count_query = (
-        f'{rids_query}\n{old_row_counts_union_all_query}'
-        if is_deidentified == 'true' else
-        f'{pids_query}\n{old_row_counts_union_all_query}')
+        old_retraction_table_count_query = (
+            f'{rids_query}\n{old_row_counts_union_all_query}'
+            if is_deidentified == 'true' else
+            f'{pids_query}\n{old_row_counts_union_all_query}')
 
-    new_retraction_table_count_query = (
-        f'{rids_query}\n{new_row_counts_union_all_query}'
-        if is_deidentified == 'true' else
-        f'{pids_query}\n{new_row_counts_union_all_query}')
+        new_retraction_table_count_query = (
+            f'{rids_query}\n{new_row_counts_union_all_query}'
+            if is_deidentified == 'true' else
+            f'{pids_query}\n{new_row_counts_union_all_query}')
 
-    old_count = execute(client, old_retraction_table_count_query)
-    new_count = execute(client, new_retraction_table_count_query)
+        old_count = execute(client, old_retraction_table_count_query)
+        new_count = execute(client, new_retraction_table_count_query)
 
-    results = pd.merge(old_count, new_count, on='table_id', how='outer')
+        results = pd.merge(old_count, new_count, on='table_id', how='outer')
 
-    conditions = [
-        (results['old_minus_aian_row_count'] == results['new_row_count']) |
-        (results['old_minus_aian_row_count'] is None) &
-        (results['new_row_count'] is None),
-        (results['old_minus_aian_row_count'] is not None) &
-        (results['new_row_count'] is None),
-        (results['old_minus_aian_row_count'] is None) &
-        (results['new_row_count'] is not None)
-    ]
-    table_count_status = ['OK', 'POTENTIAL PROBLEM', 'PROBLEM']
-    results['table_count_status'] = np.select(conditions,
-                                              table_count_status,
-                                              default='PROBLEM')
-    all_results.append(results)
-for result, dataset in zip(all_results, datasets):
-    print(dataset)
+        conditions = [
+            (results['old_minus_aian_row_count'] == results['new_row_count']) |
+            (results['old_minus_aian_row_count'] is None) &
+            (results['new_row_count'] is None),
+            (results['old_minus_aian_row_count'] is not None) &
+            (results['new_row_count'] is None),
+            (results['old_minus_aian_row_count'] is None) &
+            (results['new_row_count'] is not None)
+        ]
+        table_count_status = ['OK', 'POTENTIAL PROBLEM', 'PROBLEM']
+        results['table_count_status'] = np.select(conditions,
+                                                  table_count_status,
+                                                  default='PROBLEM')
+
+        all_results.append((dataset, results))
+
+for i, (dataset, result) in enumerate(all_results):
+    print(f'{dataset} - {i+1}')
     ICD.display(result)
     print("\n")
 
+# -
+
 # ## 3. Verify if retracted participants are dropped from fact_relationship table.
+# No need to run this check for EHR dataset.
 
 all_results = []
 for dataset in datasets:
@@ -243,6 +255,7 @@ for result, dataset in zip(all_results, datasets):
     print("\n")
 
 # ## 4. Verify if mapping/ext tables are cleaned after retraction
+# No need to run this check for EHR dataset
 
 all_results = []
 for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
