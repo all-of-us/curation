@@ -4,9 +4,6 @@ Integration test for NoDataAfterDeath
 
 # Python Imports
 import os
-import datetime
-import pytz
-from dateutil import parser
 
 # Project Imports
 from common import (AOU_DEATH, PERSON, VISIT_OCCURRENCE, OBSERVATION,
