@@ -10,7 +10,9 @@ from collections import ChainMap
 
 # Project Imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from constants.cdr_cleaner import clean_cdr as cdr_consts
+from constants.cdr_cleaner.clean_cdr import (COMBINED,
+                                             CONTROLLED_TIER_DEID_CLEAN, QUERY,
+                                             REGISTERED_TIER_DEID_CLEAN)
 from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
@@ -158,7 +160,10 @@ class NoDataAfterDeath(BaseCleaningRule):
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_datasets=[
+                             COMBINED, CONTROLLED_TIER_DEID_CLEAN,
+                             REGISTERED_TIER_DEID_CLEAN
+                         ],
                          affected_tables=get_affected_tables(),
                          project_id=project_id,
                          dataset_id=dataset_id,
@@ -210,10 +215,9 @@ class NoDataAfterDeath(BaseCleaningRule):
         queries = []
 
         for table in get_affected_tables():
-            queries.append(
-                {cdr_consts.QUERY: self.get_sandbox_query_for(table)})
+            queries.append({QUERY: self.get_sandbox_query_for(table)})
 
-            queries.append({cdr_consts.QUERY: self.get_query_for(table)})
+            queries.append({QUERY: self.get_query_for(table)})
         return queries
 
     def setup_rule(self, client, *args, **keyword_args):
