@@ -222,7 +222,6 @@ COMBINED_CLEANING_CLASSES = [
     # wiping out the needed consent related data for cleaning.
     (
         ValidDeathDates,),
-    (NoDataAfterDeath,),
     (RemoveEhrDataWithoutConsent,),
     (DedupMeasurementValueAsConceptId,),
     (DrugRefillsDaysSupply,),
@@ -241,6 +240,7 @@ COMBINED_CLEANING_CLASSES = [
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (PopulateSurveyConductExt,),
     (CalculatePrimaryDeathRecord,),
+    (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -306,6 +306,7 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
     (CalculatePrimaryDeathRecord,),
+    (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -362,6 +363,7 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
     (CalculatePrimaryDeathRecord,),
+    (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
