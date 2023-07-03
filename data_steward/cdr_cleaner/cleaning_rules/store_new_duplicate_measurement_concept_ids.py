@@ -32,7 +32,7 @@ CREATE OR REPLACE TABLE
   `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
   WITH
     data_concepts_totals AS(
-      -- get total record count for each value_as_concept_id
+      -- get total record count for each value_as_concept_id --
     SELECT
       value_as_concept_id,
       COUNT(*) AS n_total_records
@@ -100,7 +100,9 @@ CREATE OR REPLACE TABLE
       dupes.concept_name_in_table AS vac_name,
       dupes.concept_vocab_in_table AS vac_vocab,
       COALESCE(CASE
-          WHEN dupes.concept_vocab_in_table NOT IN ('LOINC', 'NAACCR') THEN ( SELECT MAX(value_as_concept_id) FROM and_cn_dupes AS t2 WHERE t2.concept_name_in_table = dupes.concept_name_in_table AND t2.concept_vocab_in_table = 'LOINC' )
+          WHEN dupes.concept_vocab_in_table NOT IN ('LOINC', 'NAACCR') THEN
+           ( SELECT MAX(value_as_concept_id) FROM and_cn_dupes AS t2 WHERE 
+           t2.concept_name_in_table = dupes.concept_name_in_table AND t2.concept_vocab_in_table = 'LOINC' )
         ELSE
         dupes.value_as_concept_id
       END
