@@ -21,10 +21,8 @@ person_id (as research_id) can be pulled from the person table
 import unittest
 
 # Project imports
-from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable, PERSON_EXT_TABLE_QUERY, tables
-from constants.bq_utils import WRITE_TRUNCATE
+from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable, PERSON_EXT_TABLE_QUERY
 from constants.cdr_cleaner import clean_cdr as clean_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 
 class CreatePersonExtTableTest(unittest.TestCase):

@@ -61,7 +61,8 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
         for table_name in [
-                'observation', 'observation_ext', 'concept', 'person'
+                'observation', 'observation_ext', 'concept', 'person',
+                'person_ext'
         ]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
@@ -97,6 +98,19 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
               (910, 0, 1983, 0, 0),
               (1112, 0, 1984, 0, 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
+
+        person_ext_data_query = self.jinja_env.from_string("""
+                    INSERT INTO
+                      `{{project_id}}.{{dataset_id}}.person_ext` 
+                    (person_id, src_id, state_of_residence_concept_id, state_of_residence_source_value, sex_at_birth_concept_id, sex_at_birth_source_concept_id, sex_at_birth_source_value)
+                    VALUES
+                      (123, 'PPI/PM', 0, '', 0, 0, ''),
+                      (345, 'PPI/PM', 0, '', 0, 0, ''),
+                      (678, 'PPI/PM', 0, '', 0, 0, ''),
+                      (910, 'PPI/PM', 0, '', 0, 0, ''),
+                      (1112, 'PPI/PM', 0, '', 0, 0, '')
+                    """).render(project_id=self.project_id,
+                                dataset_id=self.dataset_id)
 
         # test data for observation table
         observation_data_query = self.jinja_env.from_string("""
@@ -156,8 +170,8 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                                 dataset_id=self.dataset_id)
 
         self.load_test_data([
-            person_data_query, observation_data_query, concept_data_query,
-            observation_ext_data_query
+            person_data_query, person_ext_data_query, observation_data_query,
+            concept_data_query, observation_ext_data_query
         ])
 
     def test_person_ext_creation(self):
@@ -176,7 +190,7 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                 'state_of_residence_source_value', 'sex_at_birth_concept_id',
                 'sex_at_birth_source_concept_id', 'sex_at_birth_source_value'
             ],
-            'loaded_ids': [],
+            'loaded_ids': [123, 345, 678, 910, 1112],
             'cleaned_values': [(123, 'PPI/PM', 1585266, 'PII State: CA',
                                 45878463, 1585847, 'SexAtBirth_Female'),
                                (345, 'PPI/PM', 1585266, 'PII State: CA',

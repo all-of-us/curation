@@ -9,7 +9,6 @@ Cleaning rule script to run AFTER deid. This needs to happen in deid_base. It de
 deid to be correctly de-identified.
 This cleaning rule will populate the person_ext table
 The following fields will need to be copied from the observation table:
-src_id (from observation_ext, should all be “PPI/PM”)
 state_of_residence_concept_id: the value_source_concept_id field in the OBSERVATION table row where
 observation_source_concept_id  = 1585249 (StreetAddress_PIIState)
 state_of_residence_source_value: the concept_name from the concept table for the state_of_residence_concept_id
@@ -30,46 +29,43 @@ LOGGER = logging.getLogger(__name__)
 
 # Query to create person_ext table
 PERSON_EXT_TABLE_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE
-  `{{project}}.{{dataset}}.person_ext` AS (
-  SELECT
-    p.person_id,
-    e.src_id,
-    o.value_source_concept_id AS state_of_residence_concept_id,
-    c.concept_name AS state_of_residence_source_value,
-    coalesce(os.value_as_concept_id,
-      0) AS sex_at_birth_concept_id,
-    coalesce(os.value_source_concept_id,
-      0) AS sex_at_birth_source_concept_id,
-    coalesce(sc.concept_code,
-      'No matching concept') AS sex_at_birth_source_value
-  FROM
-    `{{project}}.{{dataset}}.person` p
-  LEFT JOIN
-    `{{project}}.{{dataset}}.observation` o
-  ON
-    p.person_id = o.person_id
-    AND o.observation_source_concept_id = 1585249
-  LEFT JOIN
-    `{{project}}.{{dataset}}.concept` c
-  ON
-    o.value_source_concept_id = c.concept_id
-    AND o.observation_source_concept_id = 1585249
-  LEFT JOIN
-    `{{project}}.{{dataset}}.observation_ext` e
-  ON
-    o.observation_id = e.observation_id
-    AND o.observation_source_concept_id = 1585249
-  LEFT JOIN
-    `{{project}}.{{dataset}}.observation` os
-  ON
-    p.person_id = os.person_id
-    AND os.observation_source_concept_id = 1585845
-  LEFT JOIN
-    `{{project}}.{{dataset}}.concept` sc
-  ON
-    os.value_source_concept_id = sc.concept_id
-    AND os.observation_source_concept_id = 1585845)
+UPDATE
+  `{{project}}.{{dataset}}.person_ext` AS t
+SET
+  t.state_of_residence_concept_id = o.value_source_concept_id,
+  t.state_of_residence_source_value = c.concept_name,
+  t.sex_at_birth_concept_id = COALESCE(os.value_as_concept_id, 0),
+  t.sex_at_birth_source_concept_id = COALESCE(os.value_source_concept_id, 0),
+  t.sex_at_birth_source_value = COALESCE(sc.concept_code, 'No matching concept')
+FROM
+  `{{project}}.{{dataset}}.person` p
+LEFT JOIN
+  `{{project}}.{{dataset}}.observation` o
+ON
+  p.person_id = o.person_id
+  AND o.observation_source_concept_id = 1585249
+LEFT JOIN
+  `{{project}}.{{dataset}}.concept` c
+ON
+  o.value_source_concept_id = c.concept_id
+  AND o.observation_source_concept_id = 1585249
+LEFT JOIN
+  `{{project}}.{{dataset}}.observation_ext` e
+ON
+  o.observation_id = e.observation_id
+  AND o.observation_source_concept_id = 1585249
+LEFT JOIN
+  `{{project}}.{{dataset}}.observation` os
+ON
+  p.person_id = os.person_id
+  AND os.observation_source_concept_id = 1585845
+LEFT JOIN
+  `{{project}}.{{dataset}}.concept` sc
+ON
+  os.value_source_concept_id = sc.concept_id
+  AND os.observation_source_concept_id = 1585845
+WHERE
+    t.person_id = p.person_id
 """)
 
 tables = ['person_ext']
@@ -141,7 +137,6 @@ class CreatePersonExtTable(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-
         return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
