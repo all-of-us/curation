@@ -11,6 +11,9 @@ In order to improve the user experience, we need to essentially â€œde-duplicateâ
 After we make our changes, a user should be able to provide a single value into queries and see a single summary when
 grouping by value_as_concept_id for a given concept.
 
+NAACCR duplicated concept ids are ignored in this rule as NAACCR is vocabulary for cancer registry and cannot be
+rolled up to standard LOINC concept ids.
+
 These records will be appended to the pipeline_tables.IDENTICAL_LABS_LOOKUP_TABLE table in BigQuery.
 Duplicate mappings are not allowed.
 """
@@ -24,7 +27,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
-NEW_DUPLICATES_SANDBOX_QUERY = JINJA_ENV.from_string("""
+ALL_DUPLICATES_SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
   `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
   WITH
@@ -42,24 +45,15 @@ CREATE OR REPLACE TABLE
       1
     ORDER BY
       1 ),
-    distinct_vaci_mc AS(
-      -- gets distinct pairs which can be used to determine number of distinct measurement_concept_ids
-    SELECT
-      DISTINCT value_as_concept_id,
-      measurement_concept_id
-    FROM
-      `{{project_id}}.{{dataset_id}}.measurement`
-    WHERE
-      value_as_concept_id IS NOT NULL
-      AND value_as_concept_id > 0
-    ORDER BY
-      1 ),
     num_mc_per_vaci AS (
     SELECT
       value_as_concept_id,
-      COUNT(*) AS n_distinct_measurement_concept_ids
+      COUNT(DISTINCT measurement_concept_id) AS n_distinct_measurement_concept_ids
     FROM
-      distinct_vaci_mc
+      `{{project_id}}.{{dataset_id}}`
+    WHERE
+      value_as_concept_id IS NOT NULL
+      AND value_as_concept_id > 0
     GROUP BY
       1 ),
     data_concept_info AS(
@@ -171,8 +165,6 @@ class StoreNewDuplicateMeasurementConceptIds(BaseCleaningRule):
             f'The table will be read to load into the primary pipeline table,'
             f'pipeline_tables.IDENTICAL_LABS_LOOKUP_TABLE.')
 
-        namer = dataset_id if not namer else namer
-
         super().__init__(issue_numbers=['DC2716'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
@@ -189,7 +181,7 @@ class StoreNewDuplicateMeasurementConceptIds(BaseCleaningRule):
         :return: a list of SQL strings to run
         """
 
-        sandbox_query = NEW_DUPLICATES_SANDBOX_QUERY.render(
+        sandbox_query = ALL_DUPLICATES_SANDBOX_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
