@@ -13,7 +13,7 @@ from google.cloud.exceptions import GoogleCloudError
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import AbstractBqLookupTableConceptSuppression
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, CDM_TABLES
+from common import AOU_DEATH, JINJA_ENV, CDM_TABLES
 from utils import pipeline_logging
 from resources import get_concept_id_fields
 
@@ -56,7 +56,7 @@ class MissingConceptRecordSuppression(AbstractBqLookupTableConceptSuppression):
             issue_numbers=['DC1601'],
             description=desc,
             affected_datasets=[cdr_consts.COMBINED],
-            affected_tables=CDM_TABLES,
+            affected_tables=CDM_TABLES + [AOU_DEATH],
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
