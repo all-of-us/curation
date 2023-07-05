@@ -727,24 +727,31 @@ def my_sql(table_name, column_name):
     query = JINJA_ENV.from_string("""
 
 with df_person AS (
-SELECT distinct person_id,
-state_of_residence_concept_id as state_id_1,
-state_of_residence_source_value
+    SELECT distinct person_id,
+    state_of_residence_concept_id as state_id_1,
+    state_of_residence_source_value
 
-FROM `{{project_id}}.{{rt_cdr_deid_clean}}.person_ext` p
-JOIN `{{project_id}}.{{reg_combine}}._mapping_src_hpos_to_allowed_states` ON value_source_concept_id=state_of_residence_concept_id
-JOIN `{{project_id}}.{{deid_sand}}.site_maskings` m ON hpo_id=src_hpo_id
-WHERE state_of_residence_concept_id IS NOT NULL
+    FROM `{{project_id}}.{{rt_cdr_deid_clean}}.person_ext` p
+    JOIN `{{project_id}}.{{reg_combine}}._mapping_src_hpos_to_allowed_states` ON value_source_concept_id=state_of_residence_concept_id
+    JOIN `{{project_id}}.{{deid_sand}}.site_maskings` m ON hpo_id=src_hpo_id
+    WHERE state_of_residence_concept_id IS NOT NULL
 ),
 
 df_omop AS (
-SELECT distinct person_id,ext.src_id,m.src_id,hpo_id,mhpo.src_hpo_id,m.hpo_id,
-State,mhpo.value_source_concept_id as state_id_2
-FROM `{{project_id}}.{{rt_cdr_deid_clean}}.{{table_name}}`
-JOIN `{{project_id}}.{{rt_cdr_deid_clean}}.{{table_name}}_ext` ext USING ({{column_name}})
-JOIN `{{project_id}}.{{deid_sand}}.site_maskings` m ON ext.src_id=m.src_id
-JOIN `{{project_id}}.{{reg_combine}}._mapping_src_hpos_to_allowed_states` mhpo ON mhpo.src_hpo_id=m.hpo_id
-WHERE ext.src_id !='PPI/PM'
+    SELECT distinct person_id,ext.src_id,m.src_id,hpo_id,mhpo.src_hpo_id,m.hpo_id,
+    State,mhpo.value_source_concept_id as state_id_2
+    FROM `{{project_id}}.{{rt_cdr_deid_clean}}.{{table_name}}`
+    JOIN `{{project_id}}.{{rt_cdr_deid_clean}}.{{table_name}}_ext` ext USING ({{column_name}})
+    JOIN `{{project_id}}.{{deid_sand}}.site_maskings` m ON ext.src_id=m.src_id
+    JOIN `{{project_id}}.{{reg_combine}}._mapping_src_hpos_to_allowed_states` mhpo ON mhpo.src_hpo_id=m.hpo_id
+    WHERE ext.src_id NOT IN (
+        SELECT 
+            src_id
+        FROM
+            `{{project_id}}.pipeline_tables.site_maskings`
+        WHERE NOT
+            REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
+    )
 )
 
 SELECT '{{table_name}}' AS table_name,
