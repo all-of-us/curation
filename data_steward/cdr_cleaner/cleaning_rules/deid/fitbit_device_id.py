@@ -63,9 +63,8 @@ class DeidFitbitDeviceId(BaseCleaningRule):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = ('foo '
-                'bar '
-                'baz')
+        desc = ("""Every person_id/device_id pair should be given a unique id """
+                """that will be stable across CDR versions""")
         super().__init__(description=desc,
                          issue_numbers=ISSUE_NUMBERS,
                          project_id=project_id,
