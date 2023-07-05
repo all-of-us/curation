@@ -473,7 +473,14 @@ JOIN `{{project_id}}.{{ct_dataset}}.observation_ext` USING(observation_id)
 WHERE observation_concept_id NOT IN (40766240,43528428,1585389) 
 AND concept_class_id='Module'
 AND concept_name IN ('The Basics') 
-AND src_id='PPI/PM'
+AND src_id IN (
+  SELECT 
+    src_id
+  FROM
+    `{{project_id}}.pipeline_tables.site_maskings`
+  WHERE NOT
+    REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
+)
 AND questionnaire_response_id is not null)
 
 SELECT 
@@ -518,47 +525,90 @@ else:
 
 # +
 query = JINJA_ENV.from_string("""
-WITH person_ehr as (
+WITH src_ids as (
+  SELECT 
+    src_id
+  FROM
+    `{{project_id}}.pipeline_tables.site_maskings`
+  WHERE NOT
+    REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
+),
 
-SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.observation`
-JOIN `{{project_id}}.{{ct_dataset}}.observation_ext` USING (observation_id)
-WHERE   src_id !='PPI/PM'
+person_ehr as (
+  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.observation`
+  JOIN `{{project_id}}.{{ct_dataset}}.observation_ext` USING (observation_id)
+  WHERE src_id NOT IN (
+    SELECT
+      *
+    FROM
+      src_ids
+  )
 
-UNION DISTINCT
+  UNION DISTINCT
 
-SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.measurement`
-JOIN `{{project_id}}.{{ct_dataset}}.measurement_ext` USING (measurement_id)
-WHERE   src_id !='PPI/PM'
+  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.measurement`
+  JOIN `{{project_id}}.{{ct_dataset}}.measurement_ext` USING (measurement_id)
+  WHERE src_id NOT IN (
+    SELECT
+      *
+    FROM
+      src_ids
+  )
 
-UNION DISTINCT
+  UNION DISTINCT
 
-SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.condition_occurrence`
-JOIN `{{project_id}}.{{ct_dataset}}.condition_occurrence_ext` USING (condition_occurrence_id)
-WHERE   src_id !='PPI/PM'
+  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.condition_occurrence`
+  JOIN `{{project_id}}.{{ct_dataset}}.condition_occurrence_ext` USING (condition_occurrence_id)
+  WHERE src_id NOT IN (
+    SELECT
+      *
+    FROM
+      src_ids
+  )
 
-UNION DISTINCT
+  UNION DISTINCT
 
-SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.device_exposure`
-JOIN `{{project_id}}.{{ct_dataset}}.device_exposure_ext` USING (device_exposure_id)
-WHERE   src_id !='PPI/PM'
+  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.device_exposure`
+  JOIN `{{project_id}}.{{ct_dataset}}.device_exposure_ext` USING (device_exposure_id)
+  WHERE src_id NOT IN (
+    SELECT
+      *
+    FROM
+      src_ids
+  )
 
-UNION DISTINCT
+  UNION DISTINCT
 
-SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.drug_exposure`
-JOIN `{{project_id}}.{{ct_dataset}}.drug_exposure_ext` USING (drug_exposure_id)
-WHERE   src_id !='PPI/PM'
+  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.drug_exposure`
+  JOIN `{{project_id}}.{{ct_dataset}}.drug_exposure_ext` USING (drug_exposure_id)
+  WHERE src_id NOT IN (
+    SELECT
+      *
+    FROM
+      src_ids
+  )
 
-UNION DISTINCT
+  UNION DISTINCT
 
-SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.visit_occurrence`
-JOIN `{{project_id}}.{{ct_dataset}}.visit_occurrence_ext` USING (visit_occurrence_id)
-WHERE   src_id !='PPI/PM'
+  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.visit_occurrence`
+  JOIN `{{project_id}}.{{ct_dataset}}.visit_occurrence_ext` USING (visit_occurrence_id)
+  WHERE src_id NOT IN (
+    SELECT
+      *
+    FROM
+      src_ids
+  )
 ),
 
 person_yes as (
-SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.observation`
-WHERE  observation_concept_id =1586099
-AND value_source_concept_id =1586100
+  SELECT 
+    distinct person_id 
+  FROM 
+    `{{project_id}}.{{ct_dataset}}.observation`
+  WHERE  
+    observation_concept_id = 1586099
+  AND 
+    value_source_concept_id = 1586100
 )
 
 SELECT 
