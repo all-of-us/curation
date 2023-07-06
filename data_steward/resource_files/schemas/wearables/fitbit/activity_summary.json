@@ -21,7 +21,7 @@
     "type": "float",
     "name": "calories_out",
     "mode": "nullable",
-    "description": "Total calories burned for the day"
+    "description": "Total calories burned for the day."
   },
   {
     "type": "float",

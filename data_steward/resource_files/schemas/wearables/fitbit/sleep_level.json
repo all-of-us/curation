@@ -9,7 +9,7 @@
     "mode": "nullable",
     "name": "sleep_date",
     "type": "date",
-    "description": "The date the sleep log ended"
+    "description": "The date the sleep log ended."
   },
   {
     "mode": "nullable",
@@ -21,7 +21,7 @@
     "mode": "nullable",
     "name": "level",
     "type": "string",
-    "description": "The sleep level the user entered. The possible values returned for the sleep levels are: restless, asleep, awake, deep, light, rem, wake and unknown"
+    "description": "The sleep level the user entered. The possible values returned for the sleep levels are: restless, asleep, awake, deep, light, rem, wake and unknown."
   },
   {
     "mode": "nullable",

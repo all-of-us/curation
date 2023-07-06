@@ -3,13 +3,13 @@
     "type": "datetime",
     "name": "datetime",
     "mode": "nullable",
-    "description": "Timestamp for intraday step count data"
+    "description": "Timestamp for intraday step count data."
   },
   {
     "type": "numeric",
     "name": "steps",
     "mode": "nullable",
-    "description": "Number of steps on a minute level"
+    "description": "Number of steps on a minute level."
   },
   {
     "type": "integer",

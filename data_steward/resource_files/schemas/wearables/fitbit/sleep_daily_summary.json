@@ -9,7 +9,7 @@
     "name": "sleep_date",
     "type": "date",
     "mode": "nullable",
-    "description": "The date the sleep log ended"
+    "description": "The date the sleep log ended."
   },
   {
     "name": "is_main_sleep",
@@ -21,7 +21,7 @@
     "name": "minute_in_bed",
     "type": "integer",
     "mode": "nullable",
-    "description": "Total number of minutes the user was in bed"
+    "description": "Total number of minutes the user was in bed."
   },
   {
     "name": "minute_asleep",
@@ -33,37 +33,37 @@
     "name": "minute_after_wakeup",
     "type": "integer",
     "mode": "nullable",
-    "description": "The total number of minutes after the user woke up"
+    "description": "The total number of minutes after the user woke up."
   },
   {
     "name": "minute_awake",
     "type": "integer",
     "mode": "nullable",
-    "description": "The total number of minutes the user was awake"
+    "description": "The total number of minutes the user was awake."
   },
   {
     "name": "minute_restless",
     "type": "integer",
     "mode": "nullable",
-    "description": "The total number of minutes the user was restless"
+    "description": "The total number of minutes the user was restless."
   },
   {
     "name": "minute_deep",
     "type": "integer",
     "mode": "nullable",
-    "description": "The total number of minutes the user was in deep sleep stage"
+    "description": "The total number of minutes the user was in deep sleep stage."
   },
   {
     "name": "minute_light",
     "type": "integer",
     "mode": "nullable",
-    "description": "The total number of minutes the user was in light sleep stage"
+    "description": "The total number of minutes the user was in light sleep stage."
   },
   {
     "name": "minute_rem",
     "type": "integer",
     "mode": "nullable",
-    "description": "The total number of minutes the user was in rem (rapid eye movement) sleep stage"
+    "description": "The total number of minutes the user was in rem (rapid eye movement) sleep stage."
   },
   {
     "name": "minute_wake",

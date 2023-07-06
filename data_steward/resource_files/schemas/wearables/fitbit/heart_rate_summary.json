@@ -9,13 +9,13 @@
     "type": "date",
     "name": "date",
     "mode": "nullable",
-    "description": "Date of the heart rate log"
+    "description": "Date of the heart rate log."
   },
   {
     "type": "string",
     "name": "zone_name",
     "mode": "nullable",
-    "description": "Name of the custom heart rate zone. The possible values for heart rate zone are: out of range, fat burn, cardio, and peak"
+    "description": "Name of the custom heart rate zone. The possible values for heart rate zone are: out of range, fat burn, cardio, and peak."
   },
   {
     "type": "integer",
