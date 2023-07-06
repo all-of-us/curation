@@ -19,14 +19,15 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
-TABLE_NAME = 'DEVICE_ID'
+DEVICE_ID = 'device_id'
+DEVICE = 'device'
 
-DEID_FITBIT = JINJA_ENV.from_string("""
-UPDATE `{{project_id}}.{{dataset_id}}.device` AS d
-SET d.device_id = sub.research_device_id
+DEID_FITBIT_DEVICE_ID = JINJA_ENV.from_string("""
+UPDATE `{{project_id}}.{{dataset_id}}.{{device}}` AS d
+SET d.{{device_id}} = sub.research_device_id
 FROM `{{project_id}}.{{pipeline_tables}}.wearables_device_id_masking` AS wdim
 WHERE d.person_id = wdim.person_id
-AND d.device_id = wdim.device_id
+AND d.{{device_id}} = wdim.{{device_id}}
 AND wearables_type = 'fitbit'
 """)
 
@@ -72,11 +73,12 @@ class DeidFitbitDeviceId(BaseCleaningRule):
                          affected_datasets=(
                          cdr_consts.REGISTERED_TIER_DEID,
                          cdr_consts.CONTROLLED_TIER_DEID,
-                         ):
+                         ))
         # setting default values for these variables based on table schema
         # definition files and table naming conventions.  These values will be
         # reset when setup_rule is executed.
         tables = get_mapping_tables()
+
         self.mapping_tables = [
             table for table in tables if table.startswith(MAPPING_PREFIX)
         ]
@@ -91,6 +93,16 @@ class DeidFitbitDeviceId(BaseCleaningRule):
         instantiate the class properly.
         """
         raise NotImplementedError('Not Required.')
+
+    def get_query_specs():
+
+        return [{ cdr_consts.QUERY: DEID_FITBIT_DEVICE_ID.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            pipeline_tables=PIPELINE_TABLES,
+            device=DEVICE,
+            device_id=DEVICE_ID,),
+            }]
 
     def setup_validation(self, client):
         """
