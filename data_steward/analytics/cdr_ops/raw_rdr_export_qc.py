@@ -845,17 +845,15 @@ failure_msg = '''
 '''
 render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 
-if len(df_if_empty) == 0:
-    render_message(df_if_duplicate,
-                   success_msg_if_duplicate,
-                   failure_msg_if_duplicate,
-                   failure_msg_args={'code_count': len(df_if_duplicate)})
+render_message(df_if_duplicate,
+                success_msg_if_duplicate,
+                failure_msg_if_duplicate,
+                failure_msg_args={'code_count': len(df_if_duplicate)})
 
-if len(df_if_empty) == 0 and len(df_if_duplicate) == 0:
-    render_message(df,
-                   success_msg,
-                   failure_msg,
-                   failure_msg_args={'code_count': len(df)})
+render_message(df,
+                success_msg,
+                failure_msg,
+                failure_msg_args={'code_count': len(df)})
 # -
 
 # # Check src_ids

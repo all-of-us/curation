@@ -1,7 +1,7 @@
 """
 If there is a death_date listed for a person_id, ensure that no temporal fields
 (see the CDR cleaning spreadsheet tab labeled all temporal here) for that person_id exist more than
-30 days after the earliest death_date.
+30 days after the death_date of the primary death record.
 """
 
 # Python Imports
@@ -10,7 +10,9 @@ from collections import ChainMap
 
 # Project Imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from constants.cdr_cleaner import clean_cdr as cdr_consts
+from constants.cdr_cleaner.clean_cdr import (COMBINED,
+                                             CONTROLLED_TIER_DEID_CLEAN, QUERY,
+                                             REGISTERED_TIER_DEID_CLEAN)
 from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
@@ -45,7 +47,7 @@ TEMPORAL_TABLES_WITH_DATE = {
 }
 
 # Join AOU_DEATH to domain_table ON person_id
-# check date field is not more than 30 days after the earliest death date
+# check date field is not more than 30 days after the death date of the primary death record.
 # select domain_table_id from the result
 # use the above generated domain_table_ids as a list
 # select rows in a domain_table where the domain_table_ids not in above generated list of ids
@@ -58,6 +60,7 @@ JOIN `{{project}}.{{dataset}}.aou_death` AS d
 ON ma.person_id = d.person_id
 WHERE date_diff(GREATEST(CAST(COALESCE(ma.{{start_date}}, ma.{{end_date}}) AS DATE), 
 CAST(COALESCE(ma.{{end_date}}, ma.{{start_date}}) AS DATE)), d.death_date, DAY) > 30
+AND d.primary_death_record = TRUE
 )
 """)
 
@@ -68,6 +71,7 @@ FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
 JOIN `{{project}}.{{dataset}}.aou_death` AS d
 ON ma.person_id = d.person_id
 WHERE date_diff(CAST({{date_column}} AS DATE), death_date, DAY) > 30
+AND d.primary_death_record = TRUE
 )
 """)
 
@@ -149,13 +153,17 @@ class NoDataAfterDeath(BaseCleaningRule):
         desc = (
             'If there is a death_date listed for a person_id, ensure that no temporal fields'
             '(see the CDR cleaning spreadsheet tab labeled all temporal here) for that '
-            'person_id exist more than30 days after the death_date.')
+            'person_id exist more than 30 days after the death_date of the primary death record.'
+        )
 
         # get all affected tables by combining the two dicts
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_datasets=[
+                             COMBINED, CONTROLLED_TIER_DEID_CLEAN,
+                             REGISTERED_TIER_DEID_CLEAN
+                         ],
                          affected_tables=get_affected_tables(),
                          project_id=project_id,
                          dataset_id=dataset_id,
@@ -207,10 +215,9 @@ class NoDataAfterDeath(BaseCleaningRule):
         queries = []
 
         for table in get_affected_tables():
-            queries.append(
-                {cdr_consts.QUERY: self.get_sandbox_query_for(table)})
+            queries.append({QUERY: self.get_sandbox_query_for(table)})
 
-            queries.append({cdr_consts.QUERY: self.get_query_for(table)})
+            queries.append({QUERY: self.get_query_for(table)})
         return queries
 
     def setup_rule(self, client, *args, **keyword_args):

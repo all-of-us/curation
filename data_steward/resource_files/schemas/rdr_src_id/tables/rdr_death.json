@@ -8,14 +8,14 @@
   {
     "type": "date",
     "name": "death_date",
-    "mode": "required",
-    "description": "The date the person was deceased. If the precise date including day or month is not known or not allowed, December is used as the default month, and the last day of the month the default day."
+    "mode": "nullable",
+    "description": "The date the person was deceased. This column is required for DEATH in OMOP CDM. But here it is nullable, as HeathPro deceased data sometimes does not contain this info."
   },
   {
     "type": "timestamp",
     "name": "death_datetime",
     "mode": "nullable",
-    "description": "The date and time the person was deceased. If the precise date including day or month is not known or not allowed, December is used as the default month, and the last day of the month the default day."
+    "description": "The date and time the person was deceased."
   },
   {
     "type": "integer",
