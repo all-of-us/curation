@@ -104,11 +104,11 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                       `{{project_id}}.{{dataset_id}}.person_ext` 
                     (person_id, src_id, state_of_residence_concept_id, state_of_residence_source_value, sex_at_birth_concept_id, sex_at_birth_source_concept_id, sex_at_birth_source_value)
                     VALUES
-                      (123, 'vibrent', 0, '', 0, 0, ''),
-                      (345, 'vibrent', 0, '', 0, 0, ''),
-                      (678, 'careevolution', 0, '', 0, 0, ''),
-                      (910, 'careevolution', 0, '', 0, 0, ''),
-                      (1112, 'vibrent', 0, '', 0, 0, '')
+                      (123, 'PTSC', 0, '', 0, 0, ''),
+                      (345, 'PTSC', 0, '', 0, 0, ''),
+                      (678, 'TPC', 0, '', 0, 0, ''),
+                      (910, 'TPC', 0, '', 0, 0, ''),
+                      (1112, 'PTSC', 0, '', 0, 0, '')
                     """).render(project_id=self.project_id,
                                 dataset_id=self.dataset_id)
 
@@ -161,11 +161,11 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                 src_id
               )
             VALUES
-              (111, 'vibrent'),
-              (222, 'vibrent'),
-              (333, 'careevolution'),
-              (444, 'careevolution'),
-              (9910, 'vibrent')
+              (111, 'PTSC'),
+              (222, 'PTSC'),
+              (333, 'TPC'),
+              (444, 'TPC'),
+              (9910, 'PTSC')
                     """).render(project_id=self.project_id,
                                 dataset_id=self.dataset_id)
 
@@ -191,15 +191,15 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                 'sex_at_birth_source_concept_id', 'sex_at_birth_source_value'
             ],
             'loaded_ids': [123, 345, 678, 910, 1112],
-            'cleaned_values': [(123, 'vibrent', 1585266, 'PII State: CA',
-                                45878463, 1585847, 'SexAtBirth_Female'),
-                               (345, 'vibrent', 1585266, 'PII State: CA',
-                                45878463, 1585847, 'SexAtBirth_Female'),
-                               (678, 'careevolution', 1585266, 'PII State: CA',
-                                45878463, 1585847, 'SexAtBirth_Female'),
-                               (910, 'careevolution', 1585266, 'PII State: CA',
-                                45878463, 1585847, 'SexAtBirth_Female'),
-                               (1112, 'vibrent', 1585266, 'PII State: CA',
+            'cleaned_values': [(123, 'PTSC', 1585266, 'PII State: CA', 45878463,
+                                1585847, 'SexAtBirth_Female'),
+                               (345, 'PTSC', 1585266, 'PII State: CA', 45878463,
+                                1585847, 'SexAtBirth_Female'),
+                               (678, 'TPC', 1585266, 'PII State: CA', 45878463,
+                                1585847, 'SexAtBirth_Female'),
+                               (910, 'TPC', 1585266, 'PII State: CA', 45878463,
+                                1585847, 'SexAtBirth_Female'),
+                               (1112, 'PTSC', 1585266, 'PII State: CA',
                                 45878463, 1585848, 'No matching concept')]
         }]
 
