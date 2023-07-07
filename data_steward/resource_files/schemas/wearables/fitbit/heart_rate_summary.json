@@ -45,7 +45,6 @@
     "type": "string",
     "name": "src_id",
     "mode": "nullable",
-    "description": "This id functions as a denotation to signify the provenance of a datum."
-    "description": "Number calories burned within the custom heart rate zone."
+    "description": "Flag indicating the participant portal that this record originated from."
   }
 ]

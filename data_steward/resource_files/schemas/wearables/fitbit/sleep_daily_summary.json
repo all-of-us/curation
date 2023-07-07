@@ -75,9 +75,6 @@
     "type": "string",
     "name": "src_id",
     "mode": "nullable",
-    "description": "This id functions as a denotation to signify the provenance of this entry"
-    "type": "integer",
-    "mode": "nullable",
-    "description": "The total number of minutes the user was in wake stage."
+    "description": "Flag indicating the participant portal that this record originated from."
   }
 ]

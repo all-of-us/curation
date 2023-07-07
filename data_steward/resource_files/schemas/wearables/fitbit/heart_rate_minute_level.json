@@ -21,6 +21,6 @@
     "type": "string",
     "name": "src_id",
     "mode": "nullable",
-    "description": "This id functions as a denotation to signify the provenance of this entry"
+    "description": "Flag indicating the participant portal that this record originated from."
   }
 ]
