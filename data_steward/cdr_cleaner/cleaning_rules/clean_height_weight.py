@@ -556,7 +556,7 @@ DROP_ROWS_QUERY = JINJA_ENV.from_string("""
         SELECT 
           src_id
         FROM
-          `{{project_id}}.{{pipeline_tables}}.site_maskings`
+          `{{project_id}}.pipeline_tables.site_maskings`
         WHERE NOT
           REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
     )
