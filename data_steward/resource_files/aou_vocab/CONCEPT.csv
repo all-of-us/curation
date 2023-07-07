@@ -21,8 +21,8 @@ concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concep
 2100000005	COPE Survey November 2020	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeNovember2020	20201027	20991231	
 2100000006	COPE Survey December 2020	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeDecember2020	20201208	20991231	
 2100000007	COPE Survey February 2021	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeFebruary2021	20210209	20991231	
-2100000008	No	Observation	AoU_Custom	Answer	S	WEAR_No	20230706	20991231	
-2100000009	Yes	Observation	AoU_Custom	Answer	S	WEAR_Yes	20230706	20991231	
-2100000010	Do you consent to participate in the WEAR study?	Observation	AoU_Custom	Question	S	resultsconsent_wear	20230706	20991231	
-2100000011	WEAR Consent	Metadata	AoU_Custom	Module		wear_consent	20230706	20991231
-2100000012	WEAR Consent PTSC	Metadata	AoU_Custom	Module		wear_consent_ptsc	20230706	20991231
+2100000008	No	Observation	AoU_Custom	Answer	S	WEAR_No	20190101	20991231	
+2100000009	Yes	Observation	AoU_Custom	Answer	S	WEAR_Yes	20190101	20991231	
+2100000010	Do you consent to participate in the WEAR study?	Observation	AoU_Custom	Question	S	resultsconsent_wear	20190101	20991231	
+2100000011	WEAR Consent	Metadata	AoU_Custom	Module		wear_consent	20190101	20991231	
+2100000012	WEAR Consent PTSC	Metadata	AoU_Custom	Module		wear_consent_ptsc	20190101	20991231	
