@@ -244,68 +244,6 @@ def process_api_data_to_df(api_data: List[Dict], columns: List[str],
     df.rename(column_map, axis='columns', inplace=True)
     return df
 
-
-def process_digital_health_data_to_json(api_data: List[Dict],
-                                        columns: List[str],
-                                        column_map: Dict) -> List[Dict]:
-    """
-    Converts digital health data retrieved from PS API to curation convention formatted json objects
-
-    :param api_data: digital_health_sharing_status data retrieved from PS API
-    :param columns: columns of interest
-    :param column_map: columns to be renamed as {old_name: new_name, ..}
-    :return: list of json objects with supplied columns and renamed as per column_map
-    """
-    participant_records = []
-
-    for full_participant_record in api_data:
-        resource = full_participant_record.get('resource', {})
-        # loop over fields that exist in both resource_dict and columns and save reformatted key-value pairs
-        limited_participant_record = {
-            camel_to_snake_case(col): resource[col]
-            for col in resource.keys() & columns
-        }
-
-        # re-map for columns that are to be mapped
-        for col in column_map & limited_participant_record.keys():
-            limited_participant_record[
-                column_map[col]] = limited_participant_record.pop(col)
-
-        # convert participant id to integer
-        limited_participant_record['person_id'] = participant_id_to_int(
-            limited_participant_record.get('person_id'))
-
-        # Extract all wearables data into a list of dicts
-        wearables_data = limited_participant_record.pop(
-            DIGITAL_HEALTH_SHARING_STATUS)
-
-        # loop over all wearables data
-        for wearable, latest_record in wearables_data.items():
-            # Set type of wearable
-            limited_participant_record['wearable'] = wearable
-
-            # Update participant record with re-formatted keys and latest_record
-            # This will also update the participant record to the next wearable if it exists
-            limited_participant_record.update({
-                camel_to_snake_case(col): val
-                for col, val in latest_record.items()
-            })
-
-            # Extract all historical records for the current wearable
-            historical_records = []
-            for record in limited_participant_record.get('history', []):
-                historical_records.append({
-                    camel_to_snake_case(col): val
-                    for col, val in record.items()
-                })
-            limited_participant_record['history'] = historical_records
-
-            # Store new participant record for each wearable
-            participant_records.append(limited_participant_record.copy())
-
-    return participant_records
-
-
 def get_deactivated_participants(api_project_id: str,
                                  columns: List[str]) -> pandas.DataFrame:
     """
@@ -581,54 +519,6 @@ def store_participant_data(df: pandas.DataFrame,
     job = client.load_table_from_dataframe(df,
                                            destination_table,
                                            job_config=load_job_config)
-    job.result()
-
-    return job.job_id
-
-
-def store_digital_health_status_data(client: BigQueryClient,
-                                     json_data: List[Dict],
-                                     destination_table: str,
-                                     schema=None):
-    """
-    Stores the fetched digital_health_sharing_status data in a BigQuery dataset.
-
-    If the table doesn't exist, it will create that table. If the table does exist,
-    it will create a partition in the designated table or append to the same partition.
-    This is necessary for storing data has "RECORD" type fields which do not conform to a dataframe.
-    The data is stored using a JSON file object since it is one of the ways BigQuery expects it.
-    :param client: a BigQueryClient
-    :param json_data: list of json objects retrieved from process_digital_health_data_to_json
-    :param destination_table: fully qualified destination table name as 'project.dataset.table'
-    :param schema: a list of SchemaField objects corresponding to the destination table
-
-    :return: returns the bq job_id for the loading of digital health data
-    """
-
-    # Parameter check
-    if not client:
-        raise RuntimeError(f'A bigquery client is needed to create the table')
-
-    if not schema:
-        schema = client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
-
-    client.delete_table(destination_table, not_found_ok=True)
-    LOGGER.info(f'Creating table {destination_table}')
-
-    table = Table(destination_table, schema=schema)
-    table = client.create_table(table)
-
-    file_obj = StringIO()
-    for json_obj in json_data:
-        json.dump(json_obj, file_obj)
-        file_obj.write('\n')
-    job_config = LoadJobConfig(
-        source_format=SourceFormat.NEWLINE_DELIMITED_JSON, schema=schema)
-    job = client.load_table_from_file(file_obj,
-                                      table,
-                                      rewind=True,
-                                      job_config=job_config,
-                                      job_id_prefix='ps_digital_health_load_')
     job.result()
 
     return job.job_id

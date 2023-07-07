@@ -42,39 +42,7 @@ date_columns = {
 # ## verify all participants have digital health sharing consent
 
 # +
-health_sharing_consent_check = JINJA_ENV.from_string('''
-SELECT
-  \'{{table_name}}\' as table,
-  COUNT(1) bad_rows
-FROM
-  `{{project}}.{{dataset}}.{{table_name}}`
-WHERE
-  person_id NOT IN (
-  SELECT
-    person_id
-  FROM
-    `{{project}}.{{sandbox_dataset}}.digital_health_sharing_status` d
-  WHERE
-    status = 'YES'
-    AND d.wearable = 'fitbit')
-''')
 
-queries_list = []
-for table in FITBIT_TABLES:
-    queries_list.append(
-        health_sharing_consent_check.render(project=project_id,
-                                            dataset=new_fitbit_dataset,
-                                            table_name=table,
-                                            sandbox_dataset=sandbox_dataset))
-
-union_all_query = '\nUNION ALL\n'.join(queries_list)
-
-execute(client, union_all_query)
-# -
-
-# ## Identify person_ids that are not in the person table
-
-# +
 non_existent_pids_check = JINJA_ENV.from_string('''
 SELECT
   \'{{table_name}}\' as table,
