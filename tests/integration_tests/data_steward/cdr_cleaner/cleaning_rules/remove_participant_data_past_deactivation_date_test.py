@@ -186,7 +186,7 @@ class RemoveParticipantDataPastDeactivationDateTest(
             DEVICE:
                 JINJA_ENV.from_string("""
         INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
-        (person_id, device_id, date, last_sync_time)
+        (person_id, device_id, device_date, last_sync_time)
         VALUES
         (1, '11', '2010-01-01', '2010-01-01T00:00:00'),
         (1, '12', '2008-11-18', '2008-11-18T05:00:00'),
