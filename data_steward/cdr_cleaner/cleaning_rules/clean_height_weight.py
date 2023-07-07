@@ -560,6 +560,7 @@ DROP_ROWS_QUERY = JINJA_ENV.from_string("""
         WHERE NOT
           REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
     )
+  )
 """)
 
 INSERT_NEW_ROWS_QUERY = JINJA_ENV.from_string("""
