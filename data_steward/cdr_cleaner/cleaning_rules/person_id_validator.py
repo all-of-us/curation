@@ -15,7 +15,7 @@ from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC391', 'DC584']
+ISSUE_NUMBERS = ['DC391', 'DC584','DC3266']
 
 NON_EHR_CONSENT_LOOKUP = f'non_ehr_consented'
 
