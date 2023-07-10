@@ -3,18 +3,18 @@
     "type": "datetime",
     "name": "datetime",
     "mode": "nullable",
-    "description": ""
+    "description": "Timestamp for intraday step count data."
   },
   {
     "type": "numeric",
     "name": "steps",
     "mode": "nullable",
-    "description": ""
+    "description": "Number of steps on a minute level."
   },
   {
     "type": "integer",
     "name": "person_id",
     "mode": "nullable",
-    "description": ""
+    "description": "A foreign key identifier to the person for whom the data was recorded."
   }
 ]

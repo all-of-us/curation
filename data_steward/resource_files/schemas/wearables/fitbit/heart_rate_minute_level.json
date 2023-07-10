@@ -3,18 +3,18 @@
     "type": "datetime",
     "name": "datetime",
     "mode": "nullable",
-    "description": ""
+    "description": "Timestamp for the intraday heart rate data."
   },
   {
     "type": "integer",
     "name": "heart_rate_value",
     "mode": "nullable",
-    "description": ""
+    "description": "Heart rate value on a minute level."
   },
   {
     "type": "integer",
     "name": "person_id",
     "mode": "nullable",
-    "description": ""
+    "description": "A foreign key identifier to the person for whom the data was recorded."
   }
 ]
