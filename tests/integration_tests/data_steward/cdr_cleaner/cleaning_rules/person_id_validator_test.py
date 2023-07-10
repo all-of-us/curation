@@ -78,14 +78,14 @@ class PersonIdValidationTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{project_id}}.{{dataset_id}}.observation_ext`
                 (observation_id, src_id, survey_version_concept_id)
             VALUES
-                (100, 'PPI/PM', null),
-                (101, 'PPI/PM', null),
+                (100, 'PT', null),
+                (101, 'HEALTH', null),
                 (102, 'site bar', null),
-                (201, 'PPI/PM', null),
-                (202, 'PPI/PM', null),
+                (201, 'HEALTH', null),
+                (202, 'TC', null),
                 (203, 'site baz', null),
                 (301, 'site raz', null),
-                (302, 'PPI/PM', null)
+                (302, 'PT', null)
             """)
 
         observation_query = observation_tmpl.render(project_id=self.project_id,
