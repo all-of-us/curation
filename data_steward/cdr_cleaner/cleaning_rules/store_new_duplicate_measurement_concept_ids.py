@@ -50,7 +50,7 @@ CREATE OR REPLACE TABLE
       value_as_concept_id,
       COUNT(DISTINCT measurement_concept_id) AS n_distinct_measurement_concept_ids
     FROM
-      `{{project_id}}.{{dataset_id}}`
+      `{{project_id}}.{{dataset_id}}.measurement`
     WHERE
       value_as_concept_id IS NOT NULL
       AND value_as_concept_id > 0
