@@ -66,6 +66,10 @@ class DeidFitbitDeviceId(BaseCleaningRule):
         """
         desc = ("""Every person_id/device_id pair should be given a unique id """
                 """that will be stable across CDR versions""")
+
+        self.project_id = project_id
+        self.dataset_id = dataset_id
+
         super().__init__(description=desc,
                          issue_numbers=ISSUE_NUMBERS,
                          project_id=project_id,
@@ -74,14 +78,8 @@ class DeidFitbitDeviceId(BaseCleaningRule):
                          cdr_consts.REGISTERED_TIER_DEID,
                          cdr_consts.CONTROLLED_TIER_DEID,
                          ))
-        # setting default values for these variables based on table schema
-        # definition files and table naming conventions.  These values will be
-        # reset when setup_rule is executed.
-        tables = get_mapping_tables()
 
-        self.mapping_tables = [
-            table for table in tables if table.startswith(MAPPING_PREFIX)
-        ]
+
 
         self.client = BigQueryClient(project_id=project_id)
 
@@ -126,12 +124,14 @@ class DeidFitbitDeviceId(BaseCleaningRule):
         """
         raise NotImplementedError('Not Required.')
 
-    def run_rule():
-        update_query = DEID_FITBIT.render(project_id=project_id,
-                                          dataset_id=dataset_id,
+    def run_rule(self):
+        update_query = DEID_FITBIT.render(project_id=self.project_id,
+                                          dataset_id=self.dataset_id,
                                           pipeline_tables=PIPELINE_TABLES)
 
         self.client.query(update_query)
+
+        # 
 
 
 
