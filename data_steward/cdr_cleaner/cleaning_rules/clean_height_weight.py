@@ -75,14 +75,7 @@ WITH
     WHERE (m.measurement_concept_id IN ({{measurement_concept_ids}}))
       AND m.value_as_number IS NOT NULL
       AND m.value_as_number != 0
-      AND s.src_id NOT IN (
-        SELECT 
-          src_id
-        FROM
-          `{{project_id}}.{{pipeline_tables}}.site_maskings`
-        WHERE NOT
-          REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
-      ) -- site could use measurement_source_concept_id 903133 but we still need to include them --
+      AND NOT REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)') -- site could use measurement_source_concept_id 903133 but we still need to include them --
   ),
   condition_occ AS (
     SELECT
@@ -287,14 +280,7 @@ WITH
     WHERE (m.measurement_concept_id IN ({{measurement_concept_ids}}))
       AND m.value_as_number IS NOT NULL
       AND m.value_as_number != 0
-      AND s.src_id NOT IN (
-        SELECT 
-          src_id
-        FROM
-          `{{project_id}}.{{pipeline_tables}}.site_maskings`
-        WHERE NOT
-          REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
-      ) -- site could use measurement_source_concept_id 903121 but we still need to include them --
+      AND NOT REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)') -- site could use measurement_source_concept_id 903121 but we still need to include them --
   ),
   condition_occ AS (
     SELECT
@@ -552,14 +538,7 @@ DROP_ROWS_QUERY = JINJA_ENV.from_string("""
     LEFT JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS me
     USING (measurement_id)
     WHERE m.measurement_concept_id IN ({{ids_to_drop}})
-    AND me.src_id NOT IN (
-        SELECT 
-          src_id
-        FROM
-          `{{project_id}}.pipeline_tables.site_maskings`
-        WHERE NOT
-          REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
-    )
+    AND NOT REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
   )
 """)
 
