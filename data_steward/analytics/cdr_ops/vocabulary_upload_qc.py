@@ -15,17 +15,19 @@
 #
 # # Purpose:
 # This notebook is used to validate new uploads of the OMOP vocabularys prior to implementing in production.<br>
-#
-#
-#  **Link to get the latest custom concepts [HERE](https://github.com/all-of-us/curation/blame/develop/data_steward/resource_files/aou_vocab/CONCEPT.csv).**
-#
 
+# +
 # # + Import packages
 from common import JINJA_ENV
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+
 import pandas as pd
+
+# get current custom concepts
+custom_concepts_csv_directory = ".\..\\..\\resource_files\\aou_vocab\\CONCEPT.csv"
+custom_concepts=pd.read_csv(custom_concepts_csv_directory, delimiter='\t')
 
 # + tags=["parameters"]
 project_id = ''
@@ -34,8 +36,8 @@ new_vocabulary = ''
 run_as = ''
 # -
 
-# These are the AoU_Custom and AoU_General concepts. Look for added concepts in the aou_vocab/CONCEPT.csv. Link Above.
-custom_concepts = list(range(2000000000,2000000013+1)) + list(range(2100000000,2100000007+1))
+# These are the AoU_Custom and AoU_General concepts.
+custom_concept_ids = custom_concepts.iloc[:, 0].tolist()
 
 vocabulary_dataset_old = f'{project_id}.{old_vocabulary}'
 vocabulary_dataset_new = f'{project_id}.{new_vocabulary}'
@@ -131,7 +133,7 @@ if len(df) != len(custom_concepts):
     print(' \n FAILING! Look in the check description for more.')
     display(df)
 else:
-    print(' \n This check passes!')
+    print(' \n PASS, All custom concepts accounted for.')
 # -
 
 # # Vocabulary Summary Queries
