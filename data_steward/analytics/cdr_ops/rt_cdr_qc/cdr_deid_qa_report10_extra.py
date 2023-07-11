@@ -744,14 +744,7 @@ df_omop AS (
     JOIN `{{project_id}}.{{rt_cdr_deid_clean}}.{{table_name}}_ext` ext USING ({{column_name}})
     JOIN `{{project_id}}.{{deid_sand}}.site_maskings` m ON ext.src_id=m.src_id
     JOIN `{{project_id}}.{{reg_combine}}._mapping_src_hpos_to_allowed_states` mhpo ON mhpo.src_hpo_id=m.hpo_id
-    WHERE ext.src_id NOT IN (
-        SELECT 
-            src_id
-        FROM
-            `{{project_id}}.pipeline_tables.site_maskings`
-        WHERE NOT
-            REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
-    )
+    WHERE REGEXP_CONTAINS(src_id, r'(?i)EHR site')
 )
 
 SELECT '{{table_name}}' AS table_name,
