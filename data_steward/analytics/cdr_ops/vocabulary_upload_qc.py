@@ -124,16 +124,23 @@ OR concept_code IN ('AOU generated')
 ORDER BY concept_id
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
-                   vocabulary_dataset_new=vocabulary_dataset_new,
-                  custom_concepts=custom_concepts)
+                   vocabulary_dataset_new=vocabulary_dataset_new)
 df = execute(client, query, max_rows=True)
 
+missing_items = [item for item in custom_concept_ids if item not in df['concept_id'].values]
 
-if len(df) != len(custom_concepts):
+if missing_items:
     print(' \n FAILING! Look in the check description for more.')
-    display(df)
+    display(missing_items)
 else:
     print(' \n PASS, All custom concepts accounted for.')
+    display(missing_items)
+
+# +
+
+missing_items = [item for item in custom_concept_ids if item not in df['concept_id'].values]
+
+missing_items
 # -
 
 # # Vocabulary Summary Queries
