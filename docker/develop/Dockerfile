@@ -23,13 +23,18 @@ RUN apt update \
     && apt install -y \
       curl \
       git \
-      python3.11 \
-      python3.11-venv \
-      python3-pip \
-      python3-wheel \
-      wget \
+      wget
+
+
+RUN cd /usr/src \
+    && wget https://www.python.org/ftp/python/3.11.0/Python-3.11.4.tgz \
+    && tar -xzf Python-3.11.4.tgz \
+    && cd Python-3.11.4 \
+    && ./configure --enable-optimizations \
+    && make altinstall \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+
 
 ## BUILD ARGS
 
