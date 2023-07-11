@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 LABEL org.opencontainers.image.authors="daniel.p.carbone@vumc.org"
 LABEL org.opencontainers.image.url="https://github.com/all-of-us/curation"
 LABEL org.opencontainers.image.documentation="https://github.com/all-of-us/curation"
@@ -23,17 +23,12 @@ RUN apt update \
     && apt install -y \
       curl \
       git \
-      wget
-
-
-RUN cd /usr/src \
-    && wget https://www.python.org/ftp/python/3.11.0/Python-3.11.4.tgz \
-    && tar -xzf Python-3.11.4.tgz \
-    && cd Python-3.11.4 \
-    && ./configure --enable-optimizations \
-    && make altinstall \
-    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
-    && update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+      wget \
+    && apt install -y \
+    python3.10-dev \
+    python3.10-venv \
+    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 
 
 ## BUILD ARGS
