@@ -9,11 +9,9 @@ Cleaning rule script to run AFTER deid. This needs to happen in deid_base. It de
 deid to be correctly de-identified.
 This cleaning rule will populate the person_ext table
 The following fields will need to be copied from the observation table:
-src_id (from observation_ext, should all be “PPI/PM”)
 state_of_residence_concept_id: the value_source_concept_id field in the OBSERVATION table row where
 observation_source_concept_id  = 1585249 (StreetAddress_PIIState)
 state_of_residence_source_value: the concept_name from the concept table for the state_of_residence_concept_id
-person_id (as research_id) can be pulled from the person table
 sex_at_birth_concept_id: value_as_concept_id in observation where observation_source_concept_id = 1585845
 sex_at_birth_source_concept_id: value_source_concept_id in observation where observation_source_concept_id = 1585845
 sex_at_birth_source_value: concept_code in the concept table where joining from observation where 

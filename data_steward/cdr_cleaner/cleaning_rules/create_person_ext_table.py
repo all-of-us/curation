@@ -1,5 +1,5 @@
 """
-Original Issues: DC-1012, DC-1514
+Original Issues: DC-1012, DC-1514, DC-3260
 
 Background
 In order to avoid further changes to the standard OMOP person table, five non-standard fields will be housed in a
@@ -12,7 +12,6 @@ The following fields will need to be copied from the observation table:
 state_of_residence_concept_id: the value_source_concept_id field in the OBSERVATION table row where
 observation_source_concept_id  = 1585249 (StreetAddress_PIIState)
 state_of_residence_source_value: the concept_name from the concept table for the state_of_residence_concept_id
-person_id (as research_id) can be pulled from the person table
 sex_at_birth_concept_id: value_as_concept_id in observation where observation_source_concept_id = 1585845
 sex_at_birth_source_concept_id: value_source_concept_id in observation where observation_source_concept_id = 1585845
 sex_at_birth_source_value: concept_code in the concept table where joining from observation where 
@@ -90,7 +89,7 @@ class CreatePersonExtTable(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = ('Create person_ext table')
-        super().__init__(issue_numbers=['DC1012', 'DC1514'],
+        super().__init__(issue_numbers=['DC1012', 'DC1514', 'DC3260'],
                          description=desc,
                          affected_datasets=[
                              cdr_consts.REGISTERED_TIER_DEID_BASE,
