@@ -23,6 +23,9 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
         super().initialize_class_vars()
         super().setUpClass()
 
+    def get_sandbox_tablenames(self):
+        pass
+
     def setUp(self):
 
         map_query = self.jinja_env.from_string("""
