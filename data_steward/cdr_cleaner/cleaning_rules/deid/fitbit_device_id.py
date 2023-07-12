@@ -56,10 +56,10 @@ class DeidFitbitDeviceId(BaseCleaningRule):
                          issue_numbers=ISSUE_NUMBERS,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         affected_datasets=(
+                         affected_datasets=[
                             cdr_consts.REGISTERED_TIER_DEID,
                             cdr_consts.CONTROLLED_TIER_DEID,
-                         ))
+                         ])
 
         self.client = BigQueryClient(project_id=project_id)
 
