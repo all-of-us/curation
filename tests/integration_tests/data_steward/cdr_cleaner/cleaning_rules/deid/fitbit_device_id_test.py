@@ -17,44 +17,56 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
         print(cls.__name__)
         print('**************************************************************')
 
-        self.project_id='aou-res-curation-test'
-        self.dataset_id='??'
+        self.project_id=os.getenvC('PROJECT_ID')
+        self.dataset_id=os.environ['FITBIT_DATASET_ID']
 
         super().initialize_class_vars()
         super().setUpClass()
 
     def setUp(self):
 
-        query = self.jinja_env.from_string("""
+        map_query = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_table}}`
+            (person_id, device_id, research_device_id)
+            VALUES
+                (21, 19, 54),
+                (22, 18, 53),
+                (23, 17, 52),
+                (24, 16, 51)""").render(fq_table=self.fq_deid_map_table)
+
+        self.client.query(map_query)
+
+        device_query = self.jinja_env.from_string("""
         INSERT INTO `{{project_id}}.{{dataset_id}}.device`
-        (person_id, research_device_id, device_id, wearable_type)
+        (person_id, device_id)
         VALUES
-            (1, 234, 432, 'fitbit'),
-            (2, 678, 876, 'fitbit'),
-            (3, 345, 543, 'fitbit'),
-            (4, 789, 987, 'fitbit'),""").render(
+            (21, 19),
+            (22, 18),
+            (23, 17),
+            (24, 16)""").render(
             project_id=self.project_id,
             dataset_id=self.dataset_id
             )
+
+        self.load_test_data([map_query, device_query])
 
         super().setUp()
 
     def test_field_cleaning(self):
 
-        # Expected results list
         tables_and_counts = [
         {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, DEVICE]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[5],
-            'fields': ['person_id', 'research_id', 'device_id'],
-            'loaded_ids': [1, 2, 3, 4],
+            'fields': ['person_id', 'device_id' 'research_device_id'],
+            'loaded_ids': [21, 22, 23, 24],
             'cleaned_values': [
-                (1, 234, 234),
-                (2, 678, 678),
-                (3, 345, 345),
-                (4, 789, 789,)
+                (21, 19, 19),
+                (22, 18, 18),
+                (23, 17, 17),
+                (24, 16, 16,),
             ]
         }]
 
