@@ -40,7 +40,8 @@ class DeidFitbitDeviceId(BaseCleaningRule):
 
     def __init__(self,
                  project_id,
-                 dataset_id):
+                 dataset_id,
+                 sandbox_dataset_id):
         """
         Initialize the class with proper info.
 
@@ -56,12 +57,14 @@ class DeidFitbitDeviceId(BaseCleaningRule):
                          issue_numbers=ISSUE_NUMBERS,
                          project_id=project_id,
                          dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
                          affected_datasets=[
                             cdr_consts.REGISTERED_TIER_DEID,
                             cdr_consts.CONTROLLED_TIER_DEID,
                          ])
 
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
+        sandbox_dataset_id
         self.client = BigQueryClient(project_id=project_id)
 
     def setup_rule(self, client):
