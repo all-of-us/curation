@@ -5,7 +5,7 @@ Original Issue: DC-3254 ???
 
 #! locate verbose summary
 """
-
+import os
 import logging
 
 from common import PIPELINE_TABLES, DEVICE, JINJA_ENV
@@ -61,6 +61,7 @@ class DeidFitbitDeviceId(BaseCleaningRule):
                             cdr_consts.CONTROLLED_TIER_DEID,
                          ])
 
+        self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.client = BigQueryClient(project_id=project_id)
 
     def setup_rule(self, client):
