@@ -27,8 +27,8 @@ AND d.{{device_id}} = wdim.{{device_id}}
 AND wearables_type = 'fitbit'
 """)
 
+ISSUE_NUMBERS = ['DC-3254']  #! LOCATE
 
-ISSUE_NUMBERS = ['DC-3254'] #! LOCATE
 
 class DeidFitbitDeviceId(BaseCleaningRule):
 
@@ -38,10 +38,7 @@ class DeidFitbitDeviceId(BaseCleaningRule):
     # that exist after the dataset has been fully cleaned.
     # """
 
-    def __init__(self,
-                 project_id,
-                 dataset_id,
-                 sandbox_dataset_id):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper info.
 
@@ -50,8 +47,9 @@ class DeidFitbitDeviceId(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
 
-        desc = ("""Every person_id/device_id pair should be given a unique id """
-                """that will be stable across CDR versions""")
+        desc = (
+            """Every person_id/device_id pair should be given a unique id """
+            """that will be stable across CDR versions""")
 
         super().__init__(description=desc,
                          issue_numbers=ISSUE_NUMBERS,
@@ -59,11 +57,10 @@ class DeidFitbitDeviceId(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_datasets=[
-                            cdr_consts.REGISTERED_TIER_DEID,
-                            cdr_consts.CONTROLLED_TIER_DEID,
+                             cdr_consts.REGISTERED_TIER_DEID,
+                             cdr_consts.CONTROLLED_TIER_DEID,
                          ])
 
-        self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         sandbox_dataset_id
         self.client = BigQueryClient(project_id=project_id)
 
@@ -81,12 +78,15 @@ class DeidFitbitDeviceId(BaseCleaningRule):
 
     def get_query_specs(self):
 
-        return [{ cdr_consts.QUERY: DEID_FITBIT_DEVICE_ID.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            pipeline_tables=PIPELINE_TABLES,
-            device_id=DEVICE_ID,),
-            }]
+        return [{
+            cdr_consts.QUERY:
+                DEID_FITBIT_DEVICE_ID.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    pipeline_tables=PIPELINE_TABLES,
+                    device_id=DEVICE_ID,
+                ),
+        }]
 
     def setup_validation(self, client):
         """
