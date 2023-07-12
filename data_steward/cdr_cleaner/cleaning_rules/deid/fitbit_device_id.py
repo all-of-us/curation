@@ -72,6 +72,9 @@ class DeidFitbitDeviceId(BaseCleaningRule):
         """
         pass
 
+    def get_sandbox_tablenames(self):
+        pass
+
     def get_query_specs(self):
 
         return [{ cdr_consts.QUERY: DEID_FITBIT_DEVICE_ID.render(
