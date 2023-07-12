@@ -1,9 +1,7 @@
 # Python Imports
 import os
-from datetime import datetime
 
 # Project Imports
-from app_identity import PROJECT_ID
 import cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map as pr
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import DEVICE
@@ -22,9 +20,6 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
 
         super().initialize_class_vars()
         super().setUpClass()
-
-    def get_sandbox_tablenames(self):
-        pass
 
     def setUp(self):
 
