@@ -27,6 +27,8 @@ RUN apt update \
     && apt install -y \
     python3.10-dev \
     python3.10-venv \
+    gcc && \
+    apt-get clean \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 
@@ -45,7 +47,7 @@ ARG CURATION_HOME="/home/${CURATION_USER}"
 ARG GSDK_VERSION
 ARG GSDK_CHECKSUM
 ARG GSDK_INSTALL_PATH="${CURATION_HOME}/google-cloud-sdk"
-ARG GSDK_TAR_FILE="google-cloud-sdk-${GSDK_VERSION}-linux-x86_64.tar.gz"
+ARG GSDK_TAR_FILE="google-cloud-cli-${GSDK_VERSION}-linux-x86_64.tar.gz"
 ARG GSDK_DOWNLOAD="https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GSDK_TAR_FILE}"
 
 # circleci cli args
