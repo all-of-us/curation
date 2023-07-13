@@ -119,15 +119,17 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
                 n_measurement_concept_id,n_measurement,date_added)
         VALUES
         -- Test for existing records --
-            (1000011, 'Increased', 'LOINC', 100001, 6,5000, '2022-01-01'),
-            (1000012, 'Increased', 'SNOMED',1000011, 6,100, '2022-01-01'),
-            (1000013, 'Increased', 'NAACCR',1000011, 6,100, '2022-01-01')
+            (100011, 'Increased', 'LOINC', 100011, 6,100, '2022-01-01'),
+            (100012, 'Increased', 'SNOMED',100011, 6,100, '2022-01-01'),
+            (100013, 'Increased', 'NAACCR',100011, 6,100, '2022-01-01')
         """).render(project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     lookup_table=IDENTICAL_LABS_LOOKUP_TABLE)
 
         self.load_test_data(
             [MEASUREMENT_TEMPLATE, CONCEPT_TEMPLATE, P_LOOKUP_TEMPLATE])
+
+        self.maxDiff = None
 
         tables_and_counts = [{
             'fq_table_name':
@@ -139,9 +141,33 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
                 'aou_standard_vac', 'n_measurement_concept_id', 'n_measurement',
                 'date_added'
             ],
-            'loaded_ids': [1000011, 1000012, 1000013],
-            'cleaned_values': [(1, 'Negative', 'SNOMED', 100001, 2, 2,
-                                datetime.now(timezone.utc).date())]
+            'loaded_ids': [100011, 100012, 100013],
+            'sandboxed_ids': [
+                100001, 100002, 100004, 100005, 100006, 100007, 100008
+            ],
+            'cleaned_values': [(100001, 'Negative', 'LOINC', 100001, 1, 1,
+                                datetime.now(timezone.utc).date()),
+                               (100002, 'Negative', 'NAACCR', 100002, 1, 1,
+                                datetime.now(timezone.utc).date()),
+                               (100004, 'Positive', 'LOINC', 100004, 1, 1,
+                                datetime.now(timezone.utc).date()),
+                               (100005, 'Positive', 'NAACCR', 100005, 1, 1,
+                                datetime.now(timezone.utc).date()),
+                               (100006, 'Decreased', 'LOINC', 100006, 1, 1,
+                                datetime.now(timezone.utc).date()),
+                               (100007, 'Decreased', 'NAACCR', 100007, 1, 1,
+                                datetime.now(timezone.utc).date()),
+                               (100008, 'Decreased', 'NAACCR', 100008, 1, 1,
+                                datetime.now(timezone.utc).date()),
+                               (100011, 'Increased', 'LOINC', 100011, 6, 100,
+                                datetime.strptime('2022-01-01',
+                                                  '%Y-%m-%d').date()),
+                               (100012, 'Increased', 'SNOMED', 100011, 6, 100,
+                                datetime.strptime('2022-01-01',
+                                                  '%Y-%m-%d').date()),
+                               (100013, 'Increased', 'NAACCR', 100011, 6, 100,
+                                datetime.strptime('2022-01-01',
+                                                  '%Y-%m-%d').date())]
         }]
 
         # mock the PIPELINE_TABLES variable

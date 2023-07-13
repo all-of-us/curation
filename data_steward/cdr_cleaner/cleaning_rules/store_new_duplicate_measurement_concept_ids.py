@@ -140,12 +140,16 @@ INSERT INTO
     vac_name,
     vac_vocab,
     aou_standard_vac,
+    n_measurement_concept_id,
+    n_measurement,
     date_added)
 SELECT
   value_as_concept_id,
   vac_name,
   vac_vocab,
   aou_standard_vac,
+  n_measurement_concept_id,
+  n_measurement,
   date_added
 FROM
     `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`
