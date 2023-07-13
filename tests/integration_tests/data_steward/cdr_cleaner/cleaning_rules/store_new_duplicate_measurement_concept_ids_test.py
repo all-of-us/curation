@@ -85,8 +85,10 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
           (811, 121, 100011, '2019-01-01', 45905771, null, 100011),
           (812, 122, 100012, '2019-01-01', 45905771, null, 100012),
           (813, 123, 100013, '2019-01-01', 45905771, null, 100013),
-        -- Test function of multiple measurements per duplicate type --
-          (814, 124, 100014, '2019-01-01', 45905771, null, 100014)
+        -- Test function of multiple measurement_concept_id per value_as_concept_id --
+          (814, 124, 100014, '2019-01-01', 45905771, null, 100001),
+        -- Test function of multiple value_as_concept_id per measurement_concept_id --
+          (815, 125, 100001, '2019-01-01', 45905771, null, 100015)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         CONCEPT_TEMPLATE = JINJA_ENV.from_string("""
@@ -145,7 +147,7 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
             'sandboxed_ids': [
                 100001, 100002, 100004, 100005, 100006, 100007, 100008
             ],
-            'cleaned_values': [(100001, 'Negative', 'LOINC', 100001, 1, 1,
+            'cleaned_values': [(100001, 'Negative', 'LOINC', 100001, 2, 2,
                                 datetime.now(timezone.utc).date()),
                                (100002, 'Negative', 'NAACCR', 100002, 1, 1,
                                 datetime.now(timezone.utc).date()),
