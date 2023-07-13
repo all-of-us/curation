@@ -27,8 +27,7 @@ RUN apt update \
     && apt install -y \
     python3.10-dev \
     python3.10-venv \
-    gcc && \
-    apt-get clean \
+    gcc \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 
