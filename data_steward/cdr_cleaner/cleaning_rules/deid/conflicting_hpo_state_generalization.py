@@ -31,7 +31,7 @@ HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   USING
     ({{table}}_id)
   WHERE
-    NOT REGEXP_CONTAINS(src_id, r'(?i)(ppi)|(pm)')
+    NOT REGEXP_CONTAINS(src_id, r'(?i)(Portal)')
 """)
 
 LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
