@@ -15,8 +15,8 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
         print(cls.__name__)
         print('**************************************************************')
 
-        self.project_id=os.getenvC('PROJECT_ID')
-        self.dataset_id=os.environ['FITBIT_DATASET_ID']
+        self.project_id = os.getenv('PROJECT_ID')
+        self.dataset_id = os.environ['FITBIT_DATASET_ID']
 
         super().initialize_class_vars()
         super().setUpClass()
@@ -41,10 +41,8 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
             (21, 19),
             (22, 18),
             (23, 17),
-            (24, 16)""").render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id
-            )
+            (24, 16)""").render(project_id=self.project_id,
+                                dataset_id=self.dataset_id)
 
         self.load_test_data([map_query, device_query])
 
@@ -52,19 +50,23 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
 
     def test_field_cleaning(self):
 
-        tables_and_counts = [
-        {
+        tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, DEVICE]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[5],
-            'fields': ['person_id', 'device_id' 'research_device_id'],
+            'fields': ['person_id', 'device_id'
+                       'research_device_id'],
             'loaded_ids': [21, 22, 23, 24],
             'cleaned_values': [
                 (21, 19, 19),
                 (22, 18, 18),
                 (23, 17, 17),
-                (24, 16, 16,),
+                (
+                    24,
+                    16,
+                    16,
+                ),
             ]
         }]
 

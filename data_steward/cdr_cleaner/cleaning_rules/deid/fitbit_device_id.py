@@ -61,7 +61,7 @@ class DeidFitbitDeviceId(BaseCleaningRule):
                              cdr_consts.CONTROLLED_TIER_DEID,
                          ])
 
-        sandbox_dataset_id
+        # sandbox_dataset_id
         self.client = BigQueryClient(project_id=project_id)
 
     def setup_rule(self, client):
