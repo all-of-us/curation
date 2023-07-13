@@ -204,7 +204,7 @@ class StoreNewDuplicateMeasurementConceptIds(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         return [IDENTICAL_LABS_LOOKUP_TABLE]
 
-    def setup_rule(self):
+    def setup_rule(self, client):
         pass
 
     def setup_validation(self):

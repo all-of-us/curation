@@ -16,7 +16,8 @@ from cdr_cleaner.cleaning_rules.store_new_duplicate_measurement_concept_ids impo
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
-class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase):
+class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
+                                                ):
 
     @classmethod
     def setUpClass(cls):
@@ -86,8 +87,7 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase)
           (813, 123, 100013, '2019-01-01', 45905771, null, 100013),
         -- Test function of multiple measurements per duplicate type --
           (814, 124, 100014, '2019-01-01', 45905771, null, 100014)
-            """).render(project_id=self.project_id,
-                        dataset_id=self.dataset_id)
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         CONCEPT_TEMPLATE = JINJA_ENV.from_string("""
         INSERT INTO `{{project_id}}.{{dataset_id}}.concept`
@@ -122,9 +122,12 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase)
             (1000011, 'Increased', 'LOINC', 100001, 6,5000, '2022-01-01'),
             (1000012, 'Increased', 'SNOMED',1000011, 6,100, '2022-01-01'),
             (1000013, 'Increased', 'NAACCR',1000011, 6,100, '2022-01-01')
-        """).render(project_id=self.project_id, dataset_id=self.dataset_id,lookup_table=IDENTICAL_LABS_LOOKUP_TABLE)
+        """).render(project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    lookup_table=IDENTICAL_LABS_LOOKUP_TABLE)
 
-        self.load_test_data([MEASUREMENT_TEMPLATE, CONCEPT_TEMPLATE, P_LOOKUP_TEMPLATE])
+        self.load_test_data(
+            [MEASUREMENT_TEMPLATE, CONCEPT_TEMPLATE, P_LOOKUP_TEMPLATE])
 
         tables_and_counts = [{
             'fq_table_name':
@@ -132,11 +135,13 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase)
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'fields': [
-                'value_as_concept_id','vac_name','vac_vocab','aou_standard_vac',
-                'n_measurement_concept_id','n_measurement','date_added'],
-            'cleaned_values': [
-                (1, 'Negative', 'SNOMED',100001, 2,2, datetime.now(timezone.utc).date())
-            ]
+                'value_as_concept_id', 'vac_name', 'vac_vocab',
+                'aou_standard_vac', 'n_measurement_concept_id', 'n_measurement',
+                'date_added'
+            ],
+            'loaded_ids': [1000011, 1000012, 1000013],
+            'cleaned_values': [(1, 'Negative', 'SNOMED', 100001, 2, 2,
+                                datetime.now(timezone.utc).date())]
         }]
 
         # mock the PIPELINE_TABLES variable
