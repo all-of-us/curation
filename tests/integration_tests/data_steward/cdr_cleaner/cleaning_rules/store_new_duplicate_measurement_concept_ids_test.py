@@ -88,7 +88,9 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
         -- Test function of multiple measurement_concept_id per value_as_concept_id --
           (814, 124, 100014, '2019-01-01', 45905771, null, 100001),
         -- Test function of multiple value_as_concept_id per measurement_concept_id --
-          (815, 125, 100001, '2019-01-01', 45905771, null, 100015)
+          (815, 125, 100001, '2019-01-01', 45905771, null, 100015),
+        -- Test no affect to NAACCR concept mapping --
+          (816, 126, 100016, '2019-01-01', 45905771, null, 100016)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         CONCEPT_TEMPLATE = JINJA_ENV.from_string("""
@@ -97,41 +99,41 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
         VALUES
         -- Test function on concept_name duplicates --
           (100001, 'Negative', 'LOINC',  'Measurement', 'Lab test', '1-1','2000-01-01', '2099-01-01'),
-          (100002, 'Negative', 'NAACCR',  'Measurement', 'Lab test', '1-2','2000-01-01', '2099-01-01'),
+          (100002, 'Negative', 'SNOMED',  'Measurement', 'Lab test', '1-2','2000-01-01', '2099-01-01'),
         -- Test function on concept_name duplicates and casing --
-          (100003, 'negative', 'LOINC',  'Measurement', 'Lab test', '1-3','2000-01-01', '2099-01-01'),
+          (100003, 'negative', 'SNOMED',  'Measurement', 'Lab test', '1-3','2000-01-01', '2099-01-01'),
         -- Test function on concept_class_ids --
           (100004, 'Positive', 'LOINC',  'Measurement', 'Lab test', '1-4','2000-01-01', '2099-01-01'),
-          (100005, 'Positive', 'NAACCR', 'Measurement', 'Clinical Observation', '1-5','2000-01-01', '2099-01-01'),
+          (100005, 'Positive', 'SNOMED', 'Measurement', 'Clinical Observation', '1-5','2000-01-01', '2099-01-01'),
         -- Test for duplicates within one vocabulary --
           (100006, 'Decreased', 'LOINC',  'Measurement', 'Lab test', '1-4','2000-01-01', '2099-01-01'),
-          (100007, 'Decreased', 'NAACCR', 'Measurement', 'Clinical Observation', '1-7','2000-01-01', '2099-01-01'),
-          (100008, 'Decreased', 'NAACCR', 'Measurement', 'Clinical Observation', '1-8','2000-01-01', '2099-01-01'),
+          (100007, 'Decreased', 'SNOMED', 'Measurement', 'Clinical Observation', '1-7','2000-01-01', '2099-01-01'),
+          (100008, 'Decreased', 'SNOMED', 'Measurement', 'Clinical Observation', '1-8','2000-01-01', '2099-01-01'),
         -- Test function without duplciates --
-          (100009, 'One Thousand mg', 'LOINC', 'Measurement', 'Lab test', '1-9','2000-01-01', '2099-01-01'),
+          (100009, 'One Thousand mg', 'SNOMED', 'Measurement', 'Lab test', '1-9','2000-01-01', '2099-01-01'),
         -- Test no overwrite or duplicate creation in lookup table --
-          (1000011, 'Increased', 'LOINC',  'Measurement', 'Lab test', '1-11','2000-01-01', '2099-01-01'),
-          (1000012, 'Increased', 'SNOMED', 'Measurement', 'Lab test', '1-12','2000-01-01', '2099-01-01'),
-          (1000013, 'Increased', 'NAACCR', 'Measurement', 'Lab test', '1-13','2000-01-01', '2099-01-01')
+          (100011, 'Increased', 'LOINC',  'Measurement', 'Lab test', '1-11','2000-01-01', '2099-01-01'),
+          (100012, 'Increased', 'SNOMED', 'Measurement', 'Lab test', '1-12','2000-01-01', '2099-01-01'),
+          (100013, 'Increased', 'SNOMED', 'Measurement', 'Lab test', '1-13','2000-01-01', '2099-01-01'),
+        -- Test no affect to NAACCR concept mapping --
+          (1000016, 'Increased', 'NAACCR', 'Measurement', 'Lab test', '1-14','2000-01-01', '2099-01-01')
+   
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         P_LOOKUP_TEMPLATE = JINJA_ENV.from_string("""
         INSERT INTO `{{project_id}}.{{dataset_id}}.{{lookup_table}}`
         (value_as_concept_id,vac_name,vac_vocab,aou_standard_vac,
-                n_measurement_concept_id,n_measurement,date_added)
+               date_added)
         VALUES
         -- Test for existing records --
-            (100011, 'Increased', 'LOINC', 100011, 6,100, '2022-01-01'),
-            (100012, 'Increased', 'SNOMED',100011, 6,100, '2022-01-01'),
-            (100013, 'Increased', 'NAACCR',100011, 6,100, '2022-01-01')
+            (100011, 'Increased', 'LOINC', 100011, '2022-01-01'),
+            (100012, 'Increased', 'SNOMED',100011, '2022-01-01')
         """).render(project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     lookup_table=IDENTICAL_LABS_LOOKUP_TABLE)
 
         self.load_test_data(
             [MEASUREMENT_TEMPLATE, CONCEPT_TEMPLATE, P_LOOKUP_TEMPLATE])
-
-        self.maxDiff = None
 
         tables_and_counts = [{
             'fq_table_name':
@@ -140,36 +142,35 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
                 self.fq_sandbox_table_names[0],
             'fields': [
                 'value_as_concept_id', 'vac_name', 'vac_vocab',
-                'aou_standard_vac', 'n_measurement_concept_id', 'n_measurement',
-                'date_added'
+                'aou_standard_vac', 'date_added'
             ],
-            'loaded_ids': [100011, 100012, 100013],
+            'loaded_ids': [100011, 100012],
             'sandboxed_ids': [
-                100001, 100002, 100004, 100005, 100006, 100007, 100008
+                100001, 100002, 100004, 100005, 100006, 100007, 100008, 100011,
+                100012, 100013
             ],
-            'cleaned_values': [(100001, 'Negative', 'LOINC', 100001, 2, 2,
+            'cleaned_values': [(100001, 'Negative', 'LOINC', 100001,
                                 datetime.now(timezone.utc).date()),
-                               (100002, 'Negative', 'NAACCR', 100002, 1, 1,
+                               (100002, 'Negative', 'SNOMED', 100001,
                                 datetime.now(timezone.utc).date()),
-                               (100004, 'Positive', 'LOINC', 100004, 1, 1,
+                               (100004, 'Positive', 'LOINC', 100004,
                                 datetime.now(timezone.utc).date()),
-                               (100005, 'Positive', 'NAACCR', 100005, 1, 1,
+                               (100005, 'Positive', 'SNOMED', 100004,
                                 datetime.now(timezone.utc).date()),
-                               (100006, 'Decreased', 'LOINC', 100006, 1, 1,
+                               (100006, 'Decreased', 'LOINC', 100006,
                                 datetime.now(timezone.utc).date()),
-                               (100007, 'Decreased', 'NAACCR', 100007, 1, 1,
+                               (100007, 'Decreased', 'SNOMED', 100006,
                                 datetime.now(timezone.utc).date()),
-                               (100008, 'Decreased', 'NAACCR', 100008, 1, 1,
+                               (100008, 'Decreased', 'SNOMED', 100006,
                                 datetime.now(timezone.utc).date()),
-                               (100011, 'Increased', 'LOINC', 100011, 6, 100,
+                               (100011, 'Increased', 'LOINC', 100011,
                                 datetime.strptime('2022-01-01',
                                                   '%Y-%m-%d').date()),
-                               (100012, 'Increased', 'SNOMED', 100011, 6, 100,
+                               (100012, 'Increased', 'SNOMED', 100011,
                                 datetime.strptime('2022-01-01',
                                                   '%Y-%m-%d').date()),
-                               (100013, 'Increased', 'NAACCR', 100011, 6, 100,
-                                datetime.strptime('2022-01-01',
-                                                  '%Y-%m-%d').date())]
+                               (100013, 'Increased', 'SNOMED', 100011,
+                                datetime.now(timezone.utc).date())]
         }]
 
         # mock the PIPELINE_TABLES variable

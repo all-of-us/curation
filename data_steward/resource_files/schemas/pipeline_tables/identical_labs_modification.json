@@ -19,20 +19,10 @@
     "name": "aou_standard_vac",
     "mode": "nullable",
     "description": "The proposed 'All of Us Standard Value Concept ID' for the given concept_id. Blank by default."
-  },  {
-    "type": "integer",
-    "name": "n_measurement_concept_id",
-    "mode": "nullable",
-    "description": "The number of distinct measurement_concept_ids this value is used in"
-  },  {
-    "type": "integer",
-    "name": "n_measurement",
-    "mode": "nullable",
-    "description": "The number of measurement rows this concept id is used in."
-  },  {
+  }, {
     "type": "date",
     "name": "date_added",
     "mode": "nullable",
-    "description": "Date the CR ran and identified this mapping. Used for partitioning."
+    "description": "The Date when the Duplicates check was ran and new concepts_ids were added to the table."
   }
 ]
