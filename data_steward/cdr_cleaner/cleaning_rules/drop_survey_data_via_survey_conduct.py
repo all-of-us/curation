@@ -231,4 +231,3 @@ if __name__ == '__main__':
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
                                    [(DropViaSurveyConduct,)])
-        
