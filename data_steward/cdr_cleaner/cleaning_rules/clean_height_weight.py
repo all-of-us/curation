@@ -22,7 +22,7 @@ from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-416', 'DC-701', 'DC2456']
+ISSUE_NUMBERS = ['DC-416', 'DC-701', 'DC2456', 'DC3264']
 
 HEIGHT_TABLE = 'height_table'
 WEIGHT_TABLE = 'weight_table'
