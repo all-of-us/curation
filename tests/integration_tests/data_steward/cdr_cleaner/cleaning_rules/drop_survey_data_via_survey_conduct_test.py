@@ -1,5 +1,5 @@
 """
-Integration test for drop_unverified_survey_data.py
+Integration test for drop_survey_data_via_survey_conduct.py
 
 """
 
@@ -14,11 +14,11 @@ import pytz
 # Project imports
 from common import JINJA_ENV
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.drop_unverified_survey_data import DropUnverifiedSurveyData, DOMAIN_TABLES
+from cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct import DropViaSurveyConduct, DOMAIN_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest\
 
 
-class DropUnverifiedSurveyDataTest(BaseTest.CleaningRulesTestBase):
+class DropViaSurveyConductTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -39,8 +39,8 @@ class DropUnverifiedSurveyDataTest(BaseTest.CleaningRulesTestBase):
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
 
-        cls.rule_instance = DropUnverifiedSurveyData(project_id, dataset_id,
-                                                     sandbox_id)
+        cls.rule_instance = DropViaSurveyConduct(project_id, dataset_id,
+                                                 sandbox_id)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
@@ -66,15 +66,17 @@ class DropUnverifiedSurveyDataTest(BaseTest.CleaningRulesTestBase):
         (observation_id, person_id, observation_date, observation_concept_id,
          observation_type_concept_id, questionnaire_response_id)
         VALUES
-              -- affected --
+            -- 0 survey_source_concept_id. Cleaned --
               (1, 1, '2020-01-01', 1, 1, 1),
-              
-              -- not affected --
-              (2, 1, '2020-01-01', 2, 2, 2),
-              (3, 2, '2020-01-01', 3, 3, 5),
-              
-              -- affected --
-              (4, 2, '2020-01-01', 3, 3, 3)
+            -- Valid survey_conduct. Not cleaned --
+              (2, 1, '2020-01-01', 1, 1, 2),
+            -- No associated survey_conduct_id. Represents a problem with the export. Not cleaned --
+              (15, 1, '2020-01-01', 1, 1, 15),
+            -- 0 survey_concept_id. Cleaned --
+              (3, 1, '2020-01-01', 1, 1, 3),
+            -- Associated with WEAR consent survey. Cleaned --
+              (4, 1, '2020-01-01', 1, 1, 4),
+              (5, 1, '2020-01-01', 1, 1, 5)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         SURVEY_CONDUCT_TEMPLATE = JINJA_ENV.from_string("""
@@ -83,9 +85,15 @@ class DropUnverifiedSurveyDataTest(BaseTest.CleaningRulesTestBase):
         respondent_type_concept_id, timing_concept_id, collection_method_concept_id,
         survey_source_concept_id, validated_survey_concept_id)
         VALUES
-              (1, 1, 11, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111, 0, 111111111),
-              (2, 2, 22, '2020-01-01 00:00:00 UTC', 222, 2222, 22222, 222222, 22222222, 222222222),
-              (3, 3, 0, '2020-01-01 00:00:00 UTC', 333, 3333, 33333, 333333, 33333333, 333333333)
+            -- 0 survey_source_concept_id. Cleaned --
+              (1, 1, 33333333, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 0, 111),
+            -- Valid survey_conduct. Not cleaned --
+              (2, 1, 33333333, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 33333333, 111),
+            -- 0 survey_concept_id. Cleaned --  
+              (3, 1, 0, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 33333333, 111),
+            -- If either concept_id are associated with WEAR modules. Clean --
+              (4, 1, 2100000011, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 33333333, 111),
+              (5, 1, 33333333, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 2100000012, 111)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         self.load_test_data([OBSERVATION_TEMPLATE, SURVEY_CONDUCT_TEMPLATE])
@@ -100,10 +108,10 @@ class DropUnverifiedSurveyDataTest(BaseTest.CleaningRulesTestBase):
                 'observation_concept_id', 'observation_type_concept_id',
                 'questionnaire_response_id'
             ],
-            'loaded_ids': [1, 2, 3, 4],
-            'sandboxed_ids': [1, 4],
-            'cleaned_values': [(2, 1, date(2020, 1, 1), 2, 2, 2),
-                               (3, 2, date(2020, 1, 1), 3, 3, 5)]
+            'loaded_ids': [1, 2, 15, 3, 4, 5],
+            'sandboxed_ids': [1, 3, 4, 5],
+            'cleaned_values': [(2, 1, date(2020, 1, 1), 1, 1, 2),
+                               (15, 1, date(2020, 1, 1), 1, 1, 15)]
         }, {
             'fq_table_name':
                 self.fq_table_names[1],
@@ -116,12 +124,12 @@ class DropUnverifiedSurveyDataTest(BaseTest.CleaningRulesTestBase):
                 'collection_method_concept_id', 'survey_source_concept_id',
                 'validated_survey_concept_id'
             ],
-            'loaded_ids': [1, 2, 3],
-            'sandboxed_ids': [1, 3],
+            'loaded_ids': [1, 2, 3, 4, 5],
+            'sandboxed_ids': [1, 3, 4, 5],
             'cleaned_values': [
-                (2, 2, 22,
-                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 222,
-                 2222, 22222, 222222, 22222222, 222222222)
+                (2, 1, 33333333,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 111, 111, 111, 33333333, 111)
             ]
         }]
 

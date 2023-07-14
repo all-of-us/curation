@@ -1,5 +1,6 @@
 """
-Remove unverified survey data from the survey_conduct and observation tables.
+Drops records from observation and survey_conduct due to their listed, or lack of, module in survey_conduct.
+
 
 Only data from verified surveys which are NIH and IRB approved(Basics, SDOH, ...) should move to the next stage
 of the pipeline. These surveys are given an OMOP concept_id or in some cases an AoU_Custom concept_id.
@@ -8,11 +9,14 @@ Data exists in rdr which are not associated with any verified survey, but instea
 associated with a verified survey, will be sandboxed and removed by this cleaning rule.
 
 Every questionnaire_response_id from the observation toble should join with a survey_conduct_id in the survey_conduct
-table. Verified surveys will have an assigned concept_id in survey_concept_id and survey_source_concept_id(SEE NOTE)
+table. Verified surveys will have an assigned concept_id in survey_concept_id and survey_source_concept_id
 while unverified surveys will not.
 
 This cleaning rule assumes that the AoU_Custom concept_ids have been inserted prior to its running as well as
 survey_concept_id and survey_source_concept_id both being populated when the survey is valid.
+
+Wear consent responses are associated with a module concept_id but will also be suppressed from
+the survey_conduct and observation tables. DC-3330
 
 Original Issues: DC-2775
 """
@@ -28,7 +32,7 @@ from common import JINJA_ENV, OBSERVATION, SURVEY_CONDUCT
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC2775']
+JIRA_ISSUE_NUMBERS = ['DC2775', 'DC3336']
 
 DOMAIN_TABLES = [OBSERVATION, SURVEY_CONDUCT]
 
@@ -38,7 +42,8 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_i
     FROM `{{project_id}}.{{dataset_id}}.observation` o
     LEFT JOIN `{{project_id}}.{{dataset_id}}.survey_conduct` sc
     ON sc.survey_conduct_id = o.questionnaire_response_id 
-    WHERE sc.survey_source_concept_id = 0 OR sc.survey_concept_id = 0
+    WHERE sc.survey_source_concept_id IN (0,2100000011,2100000012) 
+    OR sc.survey_concept_id IN (0,2100000011,2100000012)
 )
 """)
 
@@ -46,7 +51,8 @@ SANDBOX_SURVEY_CONDUCT = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS (
     SELECT *
     FROM `{{project_id}}.{{dataset_id}}.survey_conduct`  sc
-    WHERE sc.survey_source_concept_id = 0 OR sc.survey_concept_id = 0
+    WHERE sc.survey_source_concept_id IN (0,2100000011,2100000012) 
+    OR sc.survey_concept_id IN (0,2100000011,2100000012)
 )
 """)
 
@@ -77,7 +83,7 @@ WHERE sc.survey_source_concept_id = 0 OR sc.survey_concept_id = 0
 """)
 
 
-class DropUnverifiedSurveyData(BaseCleaningRule):
+class DropViaSurveyConduct(BaseCleaningRule):
 
     def __init__(self,
                  project_id,
@@ -217,11 +223,12 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(DropUnverifiedSurveyData,)])
+                                                 [(DropViaSurveyConduct,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(DropUnverifiedSurveyData,)])
+                                   [(DropViaSurveyConduct,)])
+
