@@ -1,8 +1,6 @@
 # Python imports
 import os
 
-# Third party imports
-
 # Project imports
 import common
 from app_identity import PROJECT_ID
