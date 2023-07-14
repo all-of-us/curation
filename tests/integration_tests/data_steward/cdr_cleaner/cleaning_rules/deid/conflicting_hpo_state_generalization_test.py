@@ -1,7 +1,7 @@
 """
  Integration test for generalization of conflicting HPO States.
 
- Original Issue: DC-512
+ Original Issue: DC-512, DC3268
  """
 # Python imports
 import mock
