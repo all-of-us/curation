@@ -22,7 +22,7 @@ from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-416', 'DC-701', 'DC2456']
+ISSUE_NUMBERS = ['DC-416', 'DC-701', 'DC2456', 'DC3264']
 
 HEIGHT_TABLE = 'height_table'
 WEIGHT_TABLE = 'weight_table'
@@ -75,7 +75,7 @@ WITH
     WHERE (m.measurement_concept_id IN ({{measurement_concept_ids}}))
       AND m.value_as_number IS NOT NULL
       AND m.value_as_number != 0
-      AND s.src_id != 'PPI/PM' -- site could use measurement_source_concept_id 903133 but we still need to include them --
+      AND REGEXP_CONTAINS(s.src_id, r'(?i)EHR site') -- site could use measurement_source_concept_id 903133 but we still need to include them --
   ),
   condition_occ AS (
     SELECT
@@ -280,7 +280,7 @@ WITH
     WHERE (m.measurement_concept_id IN ({{measurement_concept_ids}}))
       AND m.value_as_number IS NOT NULL
       AND m.value_as_number != 0
-      AND s.src_id != 'PPI/PM' -- site could use measurement_source_concept_id 903121 but we still need to include them --
+      AND REGEXP_CONTAINS(s.src_id, r'(?i)EHR site') -- site could use measurement_source_concept_id 903121 but we still need to include them --
   ),
   condition_occ AS (
     SELECT
@@ -538,7 +538,8 @@ DROP_ROWS_QUERY = JINJA_ENV.from_string("""
     LEFT JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS me
     USING (measurement_id)
     WHERE m.measurement_concept_id IN ({{ids_to_drop}})
-    AND me.src_id != 'PPI/PM')
+    AND REGEXP_CONTAINS(me.src_id, r'(?i)EHR site')
+  )
 """)
 
 INSERT_NEW_ROWS_QUERY = JINJA_ENV.from_string("""
