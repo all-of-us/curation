@@ -1,9 +1,18 @@
 """
-#! locate little baby/summary
+deidentify 'device_id' in RT and CT
 
-Original Issue: DC-3254 ???
+Original Issue: DC-3262
 
-#! locate verbose summary
+The new fitbit device table contains a device_id field that has a privacy requirement associated
+with it. Every person_id/device_id pair should be given a unique id that will be stable across CDR
+versions.
+
+A lookup table will have been created in pipeline_tables. DC-3262: Create the `
+pipeline_tables.wearables_device_id_masking` table
+
+A cleaning rule will have been created to keep the lookup table updated at each run of the CDR.
+DC-3229: Create a CR to update 'device_id_mapping' in pipeline_tables
+
 """
 import os
 import logging
@@ -27,16 +36,13 @@ AND d.{{device_id}} = wdim.{{device_id}}
 AND wearables_type = 'fitbit'
 """)
 
-ISSUE_NUMBERS = ['DC-3254']  #! LOCATE
+ISSUE_NUMBERS = ['DC-3254']
 
 
 class DeidFitbitDeviceId(BaseCleaningRule):
-
-    #! locate update docstring
-    # """
-    # Ensures each domain mapping table only contains records for domain tables
-    # that exist after the dataset has been fully cleaned.
-    # """
+    """
+    Every person_id/device_id pair should be given a unique ID
+    """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
@@ -108,29 +114,4 @@ class DeidFitbitDeviceId(BaseCleaningRule):
         pass
 
     def run_rule(self):
-        #! locate is this needed !!
-        # update_query = DEID_FITBIT.render(project_id=self.project_id,
-        #                                   dataset_id=self.dataset_id,
-        #                                   pipeline_tables=PIPELINE_TABLES)
-
-        # self.client.query(update_query)
         pass
-
-
-if __name__ == '__main__':
-    import cdr_cleaner.args_parser as parser
-    import cdr_cleaner.clean_cdr_engine as clean_engine
-
-    ARGS = parser.parse_args()
-
-    if ARGS.list_queries:
-        clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 [(DeidFitbitDeviceId,)])
-        for query in query_list:
-            LOGGER.info(query)
-    else:
-        clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   [(DeidFitbitDeviceId,)])
