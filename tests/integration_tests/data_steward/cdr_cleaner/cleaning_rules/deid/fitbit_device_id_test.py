@@ -23,6 +23,9 @@ class FitbitDeviceIdTest():
 
     def setUp(self):
 
+        fq_dataset_name = self.fq_table_names[0].split('.')
+        self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
+
         map_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_table}}`
             (person_id, device_id, research_device_id)
