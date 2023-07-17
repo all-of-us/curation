@@ -58,7 +58,9 @@ WEAR_SURVEY_CODES = ['havesmartphone',
                       'email_help_consent',
                       'timeofday',
                       'wearconsent_signature',
-                      'wearconsent_todaysdate']
+                      'wearconsent_todaysdate',
+                      'wear_consent',
+                      'wear_consent_ptsc']
 
 # # Table comparison
 # The export should generally contain the same tables from month to month.
