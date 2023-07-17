@@ -15,13 +15,14 @@ class FitbitDeviceIdTest():
         print(cls.__name__)
         print('**************************************************************')
 
-        self.project_id = os.getenv('PROJECT_ID')
-        self.dataset_id = os.environ['FITBIT_DATASET_ID']
-
         super().initialize_class_vars()
         super().setUpClass()
 
     def setUp(self):
+        self.project_id = os.getenv('PROJECT_ID')
+        self.dataset_id = os.environ['FITBIT_DATASET_ID']
+
+    def test_field_cleaning(self):
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
