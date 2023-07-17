@@ -7,7 +7,7 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 from common import DEVICE
 
 
-class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
+class FitbitDeviceIdTest():
 
     @classmethod
     def setUpClass(cls):
