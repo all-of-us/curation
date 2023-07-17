@@ -50,7 +50,8 @@ TEMPLATES_PATH = os.path.join(resource_files_path, 'templates')
 HPO_REPORT_HTML = 'hpo_report.html'
 html_boilerplate_path = os.path.join(TEMPLATES_PATH, HPO_REPORT_HTML)
 CRON_TPL_YAML = 'cron.tpl.yaml'
-old_map_short_codes_path = os.path.join(resource_files_path, 'old_map_short_codes.csv')
+old_map_short_codes_path = os.path.join(resource_files_path,
+                                        'old_map_short_codes.csv')
 
 achilles_images_path = os.path.join(achilles_index_path, 'images')
 achilles_data_path = os.path.join(achilles_index_path, 'data')
