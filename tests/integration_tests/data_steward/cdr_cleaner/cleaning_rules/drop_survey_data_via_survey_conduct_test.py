@@ -56,7 +56,7 @@ class DropViaSurveyConductTest(BaseTest.CleaningRulesTestBase):
         # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
 
-    def test_drop_unverified_survey_data(self):
+    def test_drop_via_survey_conduct(self):
         """
         Tests unit_normalization for the loaded test data
         """
@@ -91,7 +91,7 @@ class DropViaSurveyConductTest(BaseTest.CleaningRulesTestBase):
               (2, 1, 33333333, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 33333333, 111),
             -- 0 survey_concept_id. Cleaned --  
               (3, 1, 0, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 33333333, 111),
-            -- If either concept_id are associated with WEAR modules. Clean --
+            -- If either concept_id are associated with WEAR modules. Cleaned --
               (4, 1, 2100000011, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 33333333, 111),
               (5, 1, 33333333, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 2100000012, 111)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
