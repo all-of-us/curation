@@ -32,8 +32,6 @@ class FitbitDeviceIdTest():
                 (23, 17, 52),
                 (24, 16, 51)""").render(fq_table=self.fq_deid_map_table)
 
-        self.client.query(map_query)
-
         device_query = self.jinja_env.from_string("""
         INSERT INTO `{{project_id}}.{{dataset_id}}.device`
         (person_id, device_id)
