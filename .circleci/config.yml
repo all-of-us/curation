@@ -41,7 +41,7 @@ commands:
             - DOCKER_BUILDKIT: 1
             - COMPOSE_DOCKER_CLI_BUILD: 1
           command: |
-            docker-compose build --no-cache \
+            docker-compose build \
               --build-arg UID=$(id -u) \
               --build-arg GID=$(id -g) \
               --progress plain \
