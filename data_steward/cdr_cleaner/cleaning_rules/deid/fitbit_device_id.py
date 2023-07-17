@@ -61,9 +61,6 @@ class DeidFitbitDeviceId(BaseCleaningRule):
                              cdr_consts.CONTROLLED_TIER_DEID,
                          ])
 
-        # sandbox_dataset_id
-        self.client = BigQueryClient(project_id=project_id)
-
     def setup_rule(self, client):
         """
         Function to run any data upload options before executing a query.
