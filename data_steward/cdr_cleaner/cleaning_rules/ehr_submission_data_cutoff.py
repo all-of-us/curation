@@ -39,6 +39,28 @@ SELECT * FROM `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}`
 """)
 
 
+def get_affected_tables():
+    """
+    This method gets all the tables that are affected by this cleaning rule which are all the CDM tables
+        except for the person table. The birth date field in the person table will be cleaned in another
+        cleaning rule where all participants under the age of 18 will be dropped. Ignoring this table will
+        optimize this cleaning rule's runtime.
+
+    :return: list of affected tables
+    """
+    tables = []
+    for table in AOU_REQUIRED:
+
+        # skips the person table
+        if table == 'person':
+            continue
+
+        # appends all CDM tables except for the person table
+        else:
+            tables.append(table)
+    return tables
+
+
 class EhrSubmissionDataCutoff(BaseCleaningRule):
     """
     All rows of data in the RDR ETL with dates after the cutoff date should be sandboxed and dropped
@@ -74,28 +96,8 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
                          affected_datasets=[cdr_consts.UNIONED],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
-
-    def get_affected_tables(self):
-        """
-        This method gets all the tables that are affected by this cleaning rule which are all the CDM tables
-            except for the person table. The birth date field in the person table will be cleaned in another
-            cleaning rule where all participants under the age of 18 will be dropped. Ignoring this table will
-            optimize this cleaning rule's runtime.
-
-        :return: list of affected tables
-        """
-        tables = []
-        for table in AOU_REQUIRED:
-
-            # skips the person table
-            if table == 'person':
-                continue
-
-            # appends all CDM tables except for the person table
-            else:
-                tables.append(table)
-        return tables
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=get_affected_tables())
 
     def get_query_specs(self, *args, **keyword_args):
         """
