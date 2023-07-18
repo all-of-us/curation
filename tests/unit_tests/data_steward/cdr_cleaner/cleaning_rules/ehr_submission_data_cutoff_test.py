@@ -45,7 +45,9 @@ class EhrSubmissionDataCutoffTest(unittest.TestCase):
         ]
         self.cutoff_date = str(datetime.now().date())
 
-        get_affected_tables_patch = patch('cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_affected_tables')
+        get_affected_tables_patch = patch(
+            'cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_affected_tables'
+        )
         mock_get_affected_tables = get_affected_tables_patch.start()
         mock_get_affected_tables.return_value = [common.VISIT_OCCURRENCE]
         self.addCleanup(mock_get_affected_tables.stop)
