@@ -111,7 +111,7 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
         queries_list = []
         sandbox_queries_list = []
 
-        for table in self.get_affected_tables():
+        for table in self.affected_tables:
             # gets all fields from the affected table
             fields = fields_for(table)
 
