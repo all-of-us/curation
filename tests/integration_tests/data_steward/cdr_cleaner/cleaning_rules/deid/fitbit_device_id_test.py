@@ -7,7 +7,7 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 from common import DEVICE
 
 
-class FitbitDeviceIdTest():
+class FitbitDeviceIdTest(BaseTest):
 
     @classmethod
     def setUpClass(cls):
@@ -15,7 +15,6 @@ class FitbitDeviceIdTest():
         print(cls.__name__)
         print('**************************************************************')
 
-        super().initialize_class_vars()
         super().setUpClass()
 
     def setUp(self):
