@@ -131,7 +131,11 @@ def get_class_info(instance: object, fields_list: list) -> dict:
             LOGGER.exception(
                 f'An error occurred trying to get the value for {field}')
             rule_info[field] = report_consts.UNKNOWN
-
+        except NotImplementedError:
+            # some methods like get_sandbox_tablenames are not implemented for all rules
+            LOGGER.exception(
+                f'A NotImplementedError occurred trying to get the value for {field}')
+            rule_info[field] = report_consts.UNKNOWN
     return rule_info
 
 
