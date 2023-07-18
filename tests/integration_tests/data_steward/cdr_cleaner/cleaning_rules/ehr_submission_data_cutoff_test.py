@@ -75,7 +75,7 @@ class EhrSubmissionDataCutoffTest(BaseTest.CleaningRulesTestBase):
 
         super().setUp()
 
-    @patch.object(EhrSubmissionDataCutoff, 'get_affected_tables')
+    @patch('cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_affected_tables')
     def test_ehr_submission_data_cutoff(self, mock_get_affected_tables):
         """
         Validates pre conditions, tests execution, and post conditions based on the load
