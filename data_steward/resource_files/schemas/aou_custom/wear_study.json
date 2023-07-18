@@ -1,0 +1,26 @@
+[
+  {
+    "type": "integer",
+    "name": "research_id",
+    "mode": "required",
+    "description": "The participant's research_id."
+  },
+  {
+    "type": "string",
+    "name": "resultsconsent_wear",
+    "mode": "required",
+    "description": "This field indicates a participant's explicit consent to share their wear study data. Expected values: 'Yes'."
+  },
+  {
+    "type": "date",
+    "name": "wear_consent_start_date",
+    "mode": "required",
+    "description": "The date of consent."
+  },
+  {
+    "type": "date",
+    "name": "wear_consent_end_date",
+    "mode": "nullable",
+    "description": "The date of consent removal."
+  }
+]
