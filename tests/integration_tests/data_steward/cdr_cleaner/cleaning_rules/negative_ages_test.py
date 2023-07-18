@@ -122,11 +122,17 @@ class NegativeAgesTest(BaseTest.CleaningRulesTestBase):
                 `{{project_id}}.{{dataset_id}}.aou_death`
                 (aou_death_id, person_id, death_date, death_type_concept_id, src_id, primary_death_record)
             VALUES
+                -- Dropped. The date is before its birth date. --
                 ('a5', 5, date('1915-05-05'), 0, 'rdr', False),
+                -- Not dropped. The date is after its birth date. --
                 ('b5', 5, date('2020-08-15'), 0, 'hpo_b', False),
+                -- Dropped. The date is before its birth date. --
                 ('c5', 5, date('1900-05-05'), 0, 'hpo_c', True),
+                -- Not dropped. The date is after its birth date. --
                 ('d5', 5, date('2022-08-15'), 0, 'hpo_d', False),
-                ('a6', 6, date('2020-08-15'), 0, 'rdr', False)
+                ('a6', 6, date('2020-08-15'), 0, 'rdr', False),
+                -- Not dropped. NULL death_date records will be kept. --
+                ('b6', 6, NULL, 0, 'healthpro', False)                
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         self.load_test_data([
@@ -169,8 +175,8 @@ class NegativeAgesTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name': '.'.join([self.fq_dataset_name, AOU_DEATH]),
             'fields': ['aou_death_id'],
-            'loaded_ids': ['a5', 'b5', 'c5', 'd5', 'a6'],
-            'cleaned_values': [('b5',), ('d5',), ('a6',)]
+            'loaded_ids': ['a5', 'b5', 'c5', 'd5', 'a6', 'b6'],
+            'cleaned_values': [('b5',), ('d5',), ('a6',), ('b6',)]
         }]
 
         self.default_test(tables_and_counts)
