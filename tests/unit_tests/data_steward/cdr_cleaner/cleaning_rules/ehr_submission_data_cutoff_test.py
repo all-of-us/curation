@@ -58,7 +58,7 @@ class EhrSubmissionDataCutoffTest(unittest.TestCase):
 
         # No errors are raised, nothing will happen
 
-    @patch.object(data_cutoff.EhrSubmissionDataCutoff, 'get_affected_tables')
+    @patch('cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_affected_tables')
     def test_get_query_specs(self, mock_get_affected_tables):
         # Pre conditions
         mock_get_affected_tables.return_value = [common.VISIT_OCCURRENCE]
