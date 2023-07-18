@@ -39,7 +39,6 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
 
             super().setUp()
 
-
     def test_field_cleaning(self):
 
         fq_dataset_name = self.fq_table_names[0].split('.')
