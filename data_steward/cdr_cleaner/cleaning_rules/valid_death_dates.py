@@ -6,6 +6,8 @@ Original Issues: DC-431, DC-822
 The intent is to ensure there are no death dates that occur before the start of the AoU program or after the current
 date. A death date is considered "valid" if it is after the program start date and before the current date. Allowing for
  more flexibility, we chose Jan 1, 2017 as the program start date.
+
+For AOU_DEATH, records with NULL death_date are valid and this CR does not remove such records.
 """
 
 # Python imports
@@ -24,6 +26,7 @@ current_date = 'CURRENT_DATE()'
 
 # Keeps any rows where the death_date is after the AoU program start or before the current date by comparing person_ids
 # of the death table and sandbox tables. If the person_id is not in the sandbox table the row is kept, else, dropped.
+# For AOU_DEATH, null death_date records will be kept.
 KEEP_VALID_DEATH_DATE_ROWS = JINJA_ENV.from_string("""
 SELECT * FROM `{{project_id}}.{{dataset_id}}.{{table}}` 
 {% if table == 'death' %}
@@ -35,7 +38,7 @@ FROM `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`)
 """)
 
 # Selects all the invalid rows. Invalid means the death_date occurs before the AoU program start
-# or after the current date.
+# or after the current date. Null death_date records are valid for AOU_DEATH.
 SANDBOX_INVALID_DEATH_DATE_ROWS = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS (
 SELECT d.*
