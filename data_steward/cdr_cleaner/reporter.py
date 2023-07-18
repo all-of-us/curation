@@ -256,6 +256,10 @@ def format_values(rules_values, fields_list):
         for field, value in rule_values.items():
             if isinstance(value, list):
                 try:
+                    if field == 'dependencies':
+                        # then value is list of class types (implicit str conversion fails with error)
+                        # get human-friendly names explicitly
+                        value = map(lambda x: x.__name__, value)
                     value = ', '.join(value)
                 except TypeError:
                     LOGGER.exception(f"erroneous field is {field}\n"
