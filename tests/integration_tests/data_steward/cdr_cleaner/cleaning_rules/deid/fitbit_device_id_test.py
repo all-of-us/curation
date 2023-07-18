@@ -2,7 +2,7 @@
 import os
 
 # Project Imports
-from common import DEVICE
+from common import DEVICE, DEID_MAP
 from app_identity import PROJECT_ID
 
 import cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map as pr
@@ -39,7 +39,6 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
             fully qualified (fq) dataset name string to load the data.
             """
             self.value_as_number = None
-            fq_deid_map_table
 
             fq_dataset_name = self.fq_table_names[0].split('.')
             self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
@@ -94,8 +93,4 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
 
         super().setUp()
 
-    def test_field_cleaning(self):
-
-        pass
-
-        #self.default_test(tables_and_counts)
+        self.default_test(tables_and_counts)
