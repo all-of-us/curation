@@ -2,9 +2,11 @@
 import os
 
 # Project Imports
+from common import DEVICE
+from app_identity import PROJECT_ID
+
 import cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map as pr
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import DEVICE
 
 
 class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
@@ -24,6 +26,10 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        mapping_table_id = DEID_MAP
+
+        cls.mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.fq_deid_map_table = f'{cls.project_id}.{mapping_dataset_id}.{mapping_table_id}'
 
         def setUp(self):
             """
@@ -33,6 +39,7 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
             fully qualified (fq) dataset name string to load the data.
             """
             self.value_as_number = None
+            fq_deid_map_table
 
             fq_dataset_name = self.fq_table_names[0].split('.')
             self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
