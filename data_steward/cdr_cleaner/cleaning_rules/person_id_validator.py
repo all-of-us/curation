@@ -15,7 +15,7 @@ from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC391', 'DC584']
+ISSUE_NUMBERS = ['DC391', 'DC584', 'DC3266']
 
 NON_EHR_CONSENT_LOOKUP = f'non_ehr_consented'
 
@@ -51,10 +51,17 @@ CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
     -- Need to use Jinja templates to make this decision --
     {% if dataset[0].isalpha() %}
     -- should expect extension tables --
-     and lower(moe.src_id) <> 'ppi/pm'
+     and NOT REGEXP_CONTAINS(lower(moe.src_id), r'(?i)(Portal)')
     {% else %}
     -- should expect mapping tables --
-     and lower(moe.src_hpo_id) <> 'rdr'
+     and lower(moe.src_hpo_id) NOT IN (
+        SELECT 
+            hpo_id
+        FROM
+            `{{project_id}}.pipeline_tables.site_maskings`
+        WHERE NOT
+            REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
+     )
     {% endif %}
 )
 """)
