@@ -114,6 +114,8 @@ from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSupp
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
 from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMappings
+from cdr_cleaner.cleaning_rules.store_new_duplicate_measurement_concept_ids import \
+    StoreNewDuplicateMeasurementConceptIds
 from cdr_cleaner.cleaning_rules.update_invalid_zip_codes import UpdateInvalidZipCodes
 from cdr_cleaner.cleaning_rules.deid.survey_version_info import COPESurveyVersionTask
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
@@ -224,6 +226,7 @@ COMBINED_CLEANING_CLASSES = [
     (
         ValidDeathDates,),
     (RemoveEhrDataWithoutConsent,),
+    (StoreNewDuplicateMeasurementConceptIds,),
     (DedupMeasurementValueAsConceptId,),
     (DrugRefillsDaysSupply,),
     (PopulateRouteIds,),
