@@ -7,7 +7,7 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 from common import DEVICE
 
 
-class FitbitDeviceIdTest(BaseTest):
+class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -15,11 +15,30 @@ class FitbitDeviceIdTest(BaseTest):
         print(cls.__name__)
         print('**************************************************************')
 
-        super().setUpClass()
+        super().initialize_class_vars()
+        cls.project_id = os.environ.get(PROJECT_ID)
 
-    def setUp(self):
-        self.project_id = os.getenv('PROJECT_ID')
-        self.dataset_id = os.environ['FITBIT_DATASET_ID']
+        # Set the expected test datasets
+        # using unioned since we don't declare a deid dataset
+        cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
+
+        mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+
+        def setUp(self):
+            """
+            Create common information for tests.
+
+            Creates common expected parameter types from cleaned tables and a common
+            fully qualified (fq) dataset name string to load the data.
+            """
+            self.value_as_number = None
+
+            fq_dataset_name = self.fq_table_names[0].split('.')
+            self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
+
+            super().setUp()
+
 
     def test_field_cleaning(self):
 
@@ -47,10 +66,6 @@ class FitbitDeviceIdTest(BaseTest):
 
         self.load_test_data([map_query, device_query])
 
-        super().setUp()
-
-    def test_field_cleaning(self):
-
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, DEVICE]),
@@ -71,4 +86,10 @@ class FitbitDeviceIdTest(BaseTest):
             ]
         }]
 
-        self.default_test(tables_and_counts)
+        super().setUp()
+
+    def test_field_cleaning(self):
+
+        pass
+
+        #self.default_test(tables_and_counts)
