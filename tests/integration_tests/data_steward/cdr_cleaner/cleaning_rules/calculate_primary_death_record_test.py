@@ -62,10 +62,12 @@ class CalculatePrimaryDeathRecordTest(BaseTest.CleaningRulesTestBase):
             ('a5', 5, '2020-01-01', '2020-01-01 12:00:00', 0, 'hpo_a', False),
             ('c5', 5, '2020-01-01', '2020-01-01 00:00:00', 0, 'hpo_c', False),
             ('h5', 5, '2010-01-01', '2010-01-01 00:00:00', 0, 'Staff Portal: HealthPro', False),
-            ('h6', 6, '2010-01-01', '2010-01-01 00:00:00', 0, 'Staff Portal: HealthPro', False),
-            ('h7', 7, NULL, NULL, 0, 'Staff Portal: HealthPro', False),
-            ('h8-1', 8, NULL, NULL, 0, 'Staff Portal: HealthPro', False),
-            ('h8-2', 8, NULL, NULL, 0, 'Staff Portal: HealthPro', False)
+            ('h6-1', 6, '2010-01-02', '2010-01-02 00:00:00', 0, 'Staff Portal: HealthPro', False),
+            ('h6-2', 6, '2010-01-01', '2010-01-01 00:00:00', 0, 'Staff Portal: HealthPro', False),
+            ('h6-3', 6, NULL, NULL, 0, 'Staff Portal: HealthPro', False),
+            ('h7-1', 7, NULL, NULL, 0, 'Staff Portal: HealthPro', False),
+            ('h7-2', 7, NULL, NULL, 0, 'Staff Portal: HealthPro', False),
+            ('h7-3', 7, NULL, NULL, 0, 'Staff Portal: HealthPro', False)
         """).render(project=self.project_id, dataset=self.dataset_id)
 
         self.load_test_data([insert_aou_death])
@@ -78,9 +80,8 @@ class CalculatePrimaryDeathRecordTest(BaseTest.CleaningRulesTestBase):
         person_id = 3: The only difference between hpo_a and hpo_b is hpo_b has non-NULL death_datetime. hpo_b becomes primary.
         person_id = 4: hpo_c's death_date is earlier than hpo_a. hpo_c becomes primary.
         person_id = 5: hpo_c's death_datetime is earlier than hpo_a. hpo_c becomes primary.
-        person_id = 6: Only one record from HealthPro. That record becomes primary.
-        person_id = 7: Only one record from HealthPro but it has NULL death_date. No record becomes primary.
-        person_id = 8: Multiple records from HealthPro but they have NULL death_date. No record becomes primary.
+        person_id = 6: Multiple recoreds from HealthPro. The one with the earliest death_date becomes primary.
+        person_id = 7: Multiple records from HealthPro but they all have NULL death_date. No record becomes primary.
         """
 
         tables_and_counts = [{
@@ -90,20 +91,21 @@ class CalculatePrimaryDeathRecordTest(BaseTest.CleaningRulesTestBase):
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [
                 'a1', 'h1', 'a2', 'b2', 'h2', 'a3', 'b3', 'h3', 'a4', 'c4',
-                'h4', 'a5', 'c5', 'h5', 'h6', 'h7', 'h8-1', 'h8-2'
+                'h4', 'a5', 'c5', 'h5', 'h6-1', 'h6-2', 'h6-3', 'h7-1', 'h7-2',
+                'h7-3'
             ],
-            'sandboxed_ids': ['a1', 'h1', 'a2', 'b2', 'b3', 'c4', 'c5', 'h6'],
+            'sandboxed_ids': ['a1', 'h1', 'a2', 'b2', 'b3', 'c4', 'c5', 'h6-2'],
             'fields': ['aou_death_id', 'person_id', 'primary_death_record'],
-            'cleaned_values': [('a1', 1, True),
-                               ('h1', 1, False), ('a2', 2, True),
-                               ('b2', 2, False), ('h2', 2, False),
-                               ('a3', 3, False), ('b3', 3, True),
-                               ('h3', 3, False), ('a4', 4, False),
-                               ('c4', 4, True), ('h4', 4, False),
-                               ('a5', 5, False), ('c5', 5, True),
-                               ('h5', 5, False), ('h6', 6, True),
-                               ('h7', 7, False), ('h8-1', 8, False),
-                               ('h8-2', 8, False)]
+            'cleaned_values': [('a1', 1, True), ('h1', 1, False),
+                               ('a2', 2, True), ('b2', 2, False),
+                               ('h2', 2, False), ('a3', 3, False),
+                               ('b3', 3, True), ('h3', 3, False),
+                               ('a4', 4, False), ('c4', 4, True),
+                               ('h4', 4, False), ('a5', 5, False),
+                               ('c5', 5, True), ('h5', 5, False),
+                               ('h6-1', 6, False), ('h6-2', 6, True),
+                               ('h6-3', 6, False), ('h7-1', 7, False),
+                               ('h7-2', 7, False), ('h7-3', 7, False)]
         }]
 
         self.default_test(tables_and_counts)
