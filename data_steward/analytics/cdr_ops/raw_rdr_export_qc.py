@@ -36,14 +36,6 @@ impersonation_creds = auth.get_impersonation_credentials(
 
 client = BigQueryClient(project_id, credentials=impersonation_creds)
 
-# +
-# get current short_codes
-old_map_csv=pd.read_csv(old_map_short_codes_path)
-
-# These are the long codes expected in the rdr export.
-LONG_CODES = old_map_csv.iloc[:, 1].str.lower().tolist()
-# -
-
 # wear_consent and wear_consent_ptsc concepts that are not associated with an OMOP concept_id.
 WEAR_SURVEY_CODES = ['havesmartphone',
                       'wearwatch',
@@ -179,8 +171,6 @@ execute(client, query)
 # They are excluded here by filtering out snap codes in the Public PPI Codebook
 # which were loaded into `curation_sandbox.snap_codes`.
 #
-# Long codes are not OMOP concepts and are not expected to have concept_ids. This issue is accounted for in the RDR cleaning class `SetConceptIdsForSurveyQuestionsAnswers`.
-#
 # Wear codes. Most concept codes in the wear survey modules do not have an OMOP concept_id. This is expected as these records will not be included in the CDR.
 
 tpl = JINJA_ENV.from_string("""
@@ -194,13 +184,12 @@ FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_source_value IS NOT NULL
 AND observation_source_value != ''
 AND observation_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
-AND LOWER(observation_source_value) NOT IN UNNEST ({{long_codes}})
 AND LOWER(observation_source_value) NOT IN UNNEST ({{wear_codes}})
 GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id,long_codes=LONG_CODES, wear_codes=WEAR_SURVEY_CODES)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id, wear_codes=WEAR_SURVEY_CODES)
 execute(client, query)
 
 # # Answer codes should have mapped `concept_id`s
