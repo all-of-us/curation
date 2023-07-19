@@ -78,6 +78,7 @@ VALUES
     ('b1', 1, date('2021-05-05'), 0, 0, 0, 'hpo_b', False),
     ('a2', 2, date('2020-05-05'), 0, 0, 0, 'hpo_a', False),
     ('b2', 2, date('2021-05-05'), 0, 0, 0, 'hpo_b', False),
+    ('h2', 2, NULL, 0, 0, 0, 'healthpro', False),
     -- Dropped. Within the same year or +1 as participant's year of birth. --
     ('c1', 1, date('1970-12-31'), 0, 0, 0, 'hpo_c', True),
     ('d1', 1, date('1971-12-31'), 0, 0, 0, 'hpo_d', False),
@@ -163,10 +164,12 @@ class SuppressYearOfBirthRecordsTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(AOU_DEATH)}',
-            'loaded_ids': ['a1', 'b1', 'c1', 'd1', 'a2', 'b2', 'c2', 'd2'],
+            'loaded_ids': [
+                'a1', 'b1', 'c1', 'd1', 'a2', 'b2', 'h2', 'c2', 'd2'
+            ],
             'sandboxed_ids': ['c1', 'd1', 'c2', 'd2'],
             'fields': ['aou_death_id'],
-            'cleaned_values': [('a1',), ('b1',), ('a2',), ('b2',)]
+            'cleaned_values': [('a1',), ('b1',), ('a2',), ('b2',), ('h2',)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{VISIT_OCCURRENCE}',
