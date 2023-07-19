@@ -24,10 +24,25 @@ rdr_cutoff_date = ""
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
+import pandas as pd
 from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID, SRC_ID_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
+from resources import old_map_short_codes_path
+
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+
+# +
+# get current short_codes
+old_map_csv=pd.read_csv(old_map_short_codes_path)
+
+# These are the long codes expected in the rdr export.
+LONG_CODES = old_map_csv.iloc[:, 1].str.lower().tolist()
+# -
 
 # # Table comparison
 # The export should generally contain the same tables from month to month.
@@ -147,9 +162,12 @@ execute(client, query)
 # The table below lists codes having rows where either field is null or zero and the number of rows where this occurs.
 # This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 #
-# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export.
+# Snap codes are not modeled in the vocabulary but may be used in the RDR export.
 # They are excluded here by filtering out snap codes in the Public PPI Codebook
 # which were loaded into `curation_sandbox.snap_codes`.
+#
+# Long codes are not OMOP concepts and are not expected to have concept_ids. This issue is accounted for in the RDR cleaning class `SetConceptIdsForSurveyQuestionsAnswers`.
+#
 
 tpl = JINJA_ENV.from_string("""
 SELECT
@@ -162,11 +180,12 @@ FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_source_value IS NOT NULL
 AND observation_source_value != ''
 AND observation_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
+AND LOWER(observation_source_value) NOT IN UNNEST ({{long_codes}})
 GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id,long_codes=LONG_CODES)
 execute(client, query)
 
 # # Answer codes should have mapped `concept_id`s
