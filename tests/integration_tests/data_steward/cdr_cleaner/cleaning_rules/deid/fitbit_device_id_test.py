@@ -91,6 +91,4 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
             ]
         }]
 
-        super().setUp()
-
         self.default_test(tables_and_counts)
