@@ -80,7 +80,7 @@ class CalculatePrimaryDeathRecordTest(BaseTest.CleaningRulesTestBase):
         person_id = 3: The only difference between hpo_a and hpo_b is hpo_b has non-NULL death_datetime. hpo_b becomes primary.
         person_id = 4: hpo_c's death_date is earlier than hpo_a. hpo_c becomes primary.
         person_id = 5: hpo_c's death_datetime is earlier than hpo_a. hpo_c becomes primary.
-        person_id = 6: Multiple recoreds from HealthPro. The one with the earliest death_date becomes primary.
+        person_id = 6: Multiple records from HealthPro. The one with the earliest death_date becomes primary.
         person_id = 7: Multiple records from HealthPro but they all have NULL death_date. No record becomes primary.
         """
 
