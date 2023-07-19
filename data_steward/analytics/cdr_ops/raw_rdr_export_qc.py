@@ -29,7 +29,6 @@ from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TA
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
-from resources import old_map_short_codes_path
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
@@ -878,11 +877,9 @@ render_message(df,
                 failure_msg,
                 failure_msg_args={'code_count': len(df)})
 # -
-
 # # Check src_ids
 # Check that every record contains a valid src_id. The check passes if no records are returned.
 
-# +
 queries = []
 ids_template = JINJA_ENV.from_string("""
 with ids as (
@@ -916,4 +913,35 @@ for table in SRC_ID_TABLES:
     queries.append(query)
 all_queries = '\nUNION ALL\n'.join(queries)
 execute(client, f'{src_ids_table}\n{all_queries}')
-# -
+
+
+# # Check Wear Consent Counts
+#
+# `Wear_consent` and `wear_consent_ptsc` records should be seen in the export.
+#
+# Results expectations: The result should be roughly 16 rows. Differences here most likely aren't an issue.
+#
+# **Visual check:** <br>
+# * **PASS**   The result **includes** observation_source_value: `resultsconsent_wear` <br>
+# * **FAIL**   The result **does not include** observation_source_value: `resultsconsent_wear`.  If this row does not exist, confirm the finding, and report to RDR. These records are required for proper suppression of wear fitbit records.
+
+# Get counts of wear_consent records
+query = JINJA_ENV.from_string("""
+SELECT
+  observation_source_value,
+  COUNT(*) AS n
+FROM
+  `{{project_id}}.{{new_rdr}}.observation` o
+  LEFT JOIN   `{{project_id}}.{{new_rdr}}.survey_conduct` sc
+  ON sc.survey_conduct_id = o.questionnaire_response_id
+WHERE sc.survey_concept_id IN (2100000011,2100000012) -- captures questions asked in multiple surveys --
+OR LOWER(observation_source_value) IN UNNEST ({{wear_codes}}) -- captures those that might be missing from survey_conduct --
+GROUP BY 1
+
+""").render(project_id=project_id,
+            new_rdr=new_rdr,
+            wear_codes=WEAR_SURVEY_CODES)
+execute(client, query)
+
+
+
