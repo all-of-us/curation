@@ -205,8 +205,7 @@ GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id,long_codes=LONG_CODES)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id, wear_codes=WEAR_SURVEY_CODES)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id,long_codes=LONG_CODES, wear_codes=WEAR_SURVEY_CODES)
 execute(client, query)
 
 # # Answer codes should have mapped `concept_id`s
