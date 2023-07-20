@@ -43,7 +43,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # df will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
 
-# wear_consent and wear_consent_ptsc question and module concepts that are not associated with an OMOP concept_id. 
+# wear_consent and wear_consent_ptsc question and module concepts.
 WEAR_SURVEY_CODES = ['havesmartphone',
                       'wearwatch',
                       'usetracker',
@@ -597,7 +597,7 @@ if df1['bad_rows'].sum()==0:
  df = df.append({'query' : 'Query14 wear_consent records are cleaned as expected.', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query13 wear_consent records have not been cleaned as expected.', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query14 wear_consent records have not been cleaned as expected.', 'result' : 'Failure'},
                 ignore_index = True) 
 df1
 
