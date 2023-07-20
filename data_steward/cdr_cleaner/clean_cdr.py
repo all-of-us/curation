@@ -288,6 +288,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (CalculatePrimaryDeathRecord,),
+    (DropViaSurveyConduct,), # should run after wear study table creation
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -347,6 +348,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (FreeTextSurveyResponseSuppression,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
+    (DropViaSurveyConduct,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run

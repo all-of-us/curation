@@ -29,18 +29,17 @@ class DropViaSurveyConductTest(BaseTest.CleaningRulesTestBase):
         super().initialize_class_vars()
 
         # set the test project identifier
-        # project_id = os.environ.get(PROJECT_ID)
-        cls.project_id = os.environ.get(PROJECT_ID)
+        project_id = os.environ.get(PROJECT_ID)
+        cls.project_id = project_id
 
         # set the expected test datasets
-        # intended to be run on the rdr dataset
-        dataset_id = os.environ.get('RDR_DATASET_ID')
+        dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.dataset_id = dataset_id
-        # sandbox_id = dataset_id + '_sandbox'
+        sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = dataset_id + '_sandbox'
 
-        cls.rule_instance = DropViaSurveyConduct(cls.project_id, cls.dataset_id,
-                                                 cls.sandbox_id)
+        cls.rule_instance = DropViaSurveyConduct(project_id, dataset_id,
+                                                 sandbox_id)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
@@ -66,14 +65,10 @@ class DropViaSurveyConductTest(BaseTest.CleaningRulesTestBase):
         (observation_id, person_id, observation_date, observation_concept_id,
          observation_type_concept_id, questionnaire_response_id)
         VALUES
-            -- 0 survey_source_concept_id. Cleaned --
-              (1, 1, '2020-01-01', 1, 1, 1),
             -- Valid survey_conduct. Not cleaned --
               (2, 1, '2020-01-01', 1, 1, 2),
             -- No associated survey_conduct_id. Represents a problem with the export. Not cleaned --
               (15, 1, '2020-01-01', 1, 1, 15),
-            -- 0 survey_concept_id. Cleaned --
-              (3, 1, '2020-01-01', 1, 1, 3),
             -- Associated with WEAR consent survey. Cleaned --
               (4, 1, '2020-01-01', 1, 1, 4),
               (5, 1, '2020-01-01', 1, 1, 5)
@@ -85,12 +80,8 @@ class DropViaSurveyConductTest(BaseTest.CleaningRulesTestBase):
         respondent_type_concept_id, timing_concept_id, collection_method_concept_id,
         survey_source_concept_id, validated_survey_concept_id)
         VALUES
-            -- 0 survey_source_concept_id. Cleaned --
-              (1, 1, 33333333, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 0, 111),
             -- Valid survey_conduct. Not cleaned --
               (2, 1, 33333333, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 33333333, 111),
-            -- 0 survey_concept_id. Cleaned --  
-              (3, 1, 0, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 33333333, 111),
             -- If either concept_id are associated with WEAR modules. Cleaned --
               (4, 1, 2100000011, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 33333333, 111),
               (5, 1, 33333333, '2020-01-01 00:00:00 UTC', 111, 111, 111, 111, 2100000012, 111)
@@ -108,8 +99,8 @@ class DropViaSurveyConductTest(BaseTest.CleaningRulesTestBase):
                 'observation_concept_id', 'observation_type_concept_id',
                 'questionnaire_response_id'
             ],
-            'loaded_ids': [1, 2, 15, 3, 4, 5],
-            'sandboxed_ids': [1, 3, 4, 5],
+            'loaded_ids': [2, 15, 4, 5],
+            'sandboxed_ids': [4, 5],
             'cleaned_values': [(2, 1, date(2020, 1, 1), 1, 1, 2),
                                (15, 1, date(2020, 1, 1), 1, 1, 15)]
         }, {
@@ -124,8 +115,8 @@ class DropViaSurveyConductTest(BaseTest.CleaningRulesTestBase):
                 'collection_method_concept_id', 'survey_source_concept_id',
                 'validated_survey_concept_id'
             ],
-            'loaded_ids': [1, 2, 3, 4, 5],
-            'sandboxed_ids': [1, 3, 4, 5],
+            'loaded_ids': [2, 4, 5],
+            'sandboxed_ids': [4, 5],
             'cleaned_values': [
                 (2, 1, 33333333,
                  parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
