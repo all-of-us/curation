@@ -57,6 +57,7 @@ WHERE survey_conduct_id IN (
     )
 """)
 
+
 class DropViaSurveyConduct(BaseCleaningRule):
 
     def __init__(self,
@@ -73,19 +74,18 @@ class DropViaSurveyConduct(BaseCleaningRule):
         """
         desc = (
             "Sandboxes and removes  'observation' and 'survey_conduct' records where associated with defined modules"
-            "in the survey_conduct table."
-        )
+            "in the survey_conduct table.")
 
-        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
-                         description=desc,
-                         affected_datasets=[REGISTERED_TIER_DEID, CONTROLLED_TIER_DEID],
-                         affected_tables=DOMAIN_TABLES,
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=None,
-                         table_namer=table_namer)
-
+        super().__init__(
+            issue_numbers=JIRA_ISSUE_NUMBERS,
+            description=desc,
+            affected_datasets=[REGISTERED_TIER_DEID, CONTROLLED_TIER_DEID],
+            affected_tables=DOMAIN_TABLES,
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            depends_on=None,
+            table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
