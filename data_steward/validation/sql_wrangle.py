@@ -68,9 +68,18 @@ def get_commands(sql_path):
 
 def qualify_tables(command, hpo_id=None):
     """
-    Replaces placeholder text with proper qualifiers and renames temp tables
+    Replaces placeholder text with proper qualifiers and renames temp tables.
+    
+    For the following special cases it renames death to aou_death:
+        - For unioned_ehr in EHR dataset, death table does not exist. Use aou_death instead.
+        - For non-EHR, death table exists but is empty. Use aou_death instead.
+        NOTE: RDR dataset does not have aou_death. But we do not run Achilles on them so it is not a problem.
+
     :param command:
-    :param hpo_id:
+    :param hpo_id: 
+        HPO ID used as a prefix for table names.
+        'unioned_ehr' for unioned EHR tables in EHR dataset.
+        None if the dataset is not EHR, as the table names do not have prefixes.
     :return:
     """
 
@@ -79,6 +88,13 @@ def qualify_tables(command, hpo_id=None):
         return resources.get_table_id(table_name, hpo_id=hpo_id)
 
     table_prefix = resources.get_table_id(table_name="", hpo_id=hpo_id)
+
+    if hpo_id == None:
+        command = command.replace(f'{PREFIX_PLACEHOLDER}death', 'aou_death')
+    elif hpo_id == 'unioned_ehr':
+        command = command.replace(f'{PREFIX_PLACEHOLDER}death',
+                                  f'unioned_ehr_aou_death')
+
     command = command.replace(PREFIX_PLACEHOLDER, table_prefix)
     command = re.sub('(temp\.[^\s])', temp_repl, command)
     return command
