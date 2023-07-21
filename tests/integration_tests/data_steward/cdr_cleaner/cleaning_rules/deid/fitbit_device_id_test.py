@@ -30,6 +30,13 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
 
         cls.mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.fq_deid_map_table = f'{cls.project_id}.{mapping_dataset_id}.{mapping_table_id}'
+        cls.fq_table_names = [
+            f'{cls.project_id}.{cls.dataset_id}.{table_id}'
+            for table_id in pr.FITBIT_TABLES
+        ] + [cls.fq_deid_map_table
+            ] + [f'{cls.project_id}.{mapping_dataset_id}.person']
+
+        super().setUpClass()
 
         def setUp(self):
             """
