@@ -39,6 +39,26 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # df will have a summary in the end
 df = pd.DataFrame(columns=['query', 'result'])
 
+# wear_consent and wear_consent_ptsc question and module concepts.
+WEAR_SURVEY_CODES = ['havesmartphone',
+                      'wearwatch',
+                      'usetracker',
+                      'wear12months',
+                      'receivesms',
+                      'frequency',
+                      'agreetoshare',
+                      'onlyparticipantinhousehold',
+                      'haveaddress',
+                      'resultsconsent_helpmewithconsent',
+                      'helpmewithconsent_name',
+                      'resultsconsent_wear',
+                      'email_help_consent',
+                      'timeofday',
+                      'wearconsent_signature',
+                      'wearconsent_todaysdate',
+                      'wear_consent',
+                      'wear_consent_ptsc']
+
 # # 1 Verify that if a person has multiple SELECTion(Hispanic + other race) in pre_deid_com_cdr, the output in deid_base_cdr observation table should result in two rows - one for Ethnicity AND one for race.
 #
 # test steps:
@@ -555,7 +575,7 @@ else:
         ignore_index=True)
 df1
 
-# # Qury 5 equal counts for sex_at_birth columns
+# # Query 5 equal counts for sex_at_birth columns
 #
 # to ensure that there are equal counts FROM both the observation and person_ext tables for the sex_at_birth_* columns that can be added to the RT validation notebook:
 #
@@ -609,6 +629,44 @@ else:
             'result': 'Failure'
         },
         ignore_index=True)
+df1
+
+# # Query 6 Check that wear_consent records are suppressed in the 'observation' and 'survey_conduct' tables
+
+# Get counts of wear_consent records
+query = JINJA_ENV.from_string("""
+SELECT
+  'observation' as table,
+  COUNT(*) AS bad_rows
+FROM
+  `{{project_id}}.{{deid_base_cdr}}.observation` o
+  LEFT JOIN   `{{project_id}}.{{deid_base_cdr}}.survey_conduct` sc
+  ON sc.survey_conduct_id = o.questionnaire_response_id
+WHERE sc.survey_concept_id IN (2100000011,2100000012) -- captures questions asked in multiple surveys --
+OR LOWER(observation_source_value) IN UNNEST ({{wear_codes}}) -- captures those that might be missing from survey_conduct --
+GROUP BY 1
+
+UNION ALL
+
+SELECT
+  'survey_conduct' as table,
+  COUNT(*) AS bad_rows
+FROM
+  `{{project_id}}.{{deid_base_cdr}}.survey_conduct` sc
+WHERE sc.survey_concept_id IN (2100000011,2100000012) 
+GROUP BY 1
+
+""")
+q = query.render(project_id=project_id,
+            deid_base_cdr=deid_base_cdr,
+            wear_codes=WEAR_SURVEY_CODES)
+df1=execute(client, q) 
+if df1['bad_rows'].sum()==0:
+ df = df.append({'query' : 'Query6 wear_consent records are cleaned as expected.', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query6 wear_consent records have not been cleaned as expected.', 'result' : 'Failure'},
+                ignore_index = True) 
 df1
 
 # # Summary_deid_base_validation
