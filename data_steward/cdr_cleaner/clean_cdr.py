@@ -139,6 +139,7 @@ import constants.global_variables
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY, CRON_RETRACTION
 from cdr_cleaner.cleaning_rules.generate_research_device_ids import GenerateResearchDeviceIds
+from cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct import DropViaSurveyConduct
 
 # Third party imports
 
@@ -287,6 +288,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (CalculatePrimaryDeathRecord,),
+    (DropViaSurveyConduct,),  # should run after wear study table creation
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -346,6 +348,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (FreeTextSurveyResponseSuppression,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
+    (DropViaSurveyConduct,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -373,6 +376,7 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
 CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (FitbitPIDtoRID,),
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
+    (DropViaSurveyConduct,),
 ]
 
 DATA_CONSISTENCY_CLEANING_CLASSES = [
