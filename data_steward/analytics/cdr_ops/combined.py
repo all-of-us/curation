@@ -821,3 +821,7 @@ failure_msg_if_empty = '''
 '''
 render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 # -
+
+# # Check for src_ids in ext tables
+
+# Check that every record contains a valid src_id. The check passes if no records are returned.
