@@ -102,7 +102,7 @@ CREATE OR REPLACE TABLE
       COALESCE(CASE
           WHEN dupes.concept_vocab_in_table NOT IN ('LOINC', 'NAACCR') THEN
            ( SELECT MAX(value_as_concept_id) FROM and_cn_dupes AS t2 WHERE 
-           t2.concept_name_in_table = dupes.concept_name_in_table AND t2.concept_vocab_in_table = 'LOINC' )
+           lower(t2.concept_name_in_table) = lower(dupes.concept_name_in_table) AND t2.concept_vocab_in_table = 'LOINC' )
         ELSE
         dupes.value_as_concept_id
       END
