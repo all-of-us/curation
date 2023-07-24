@@ -90,7 +90,7 @@ CREATE OR REPLACE TABLE
     JOIN
       `{{project_id}}.{{dataset_id}}.concept` c
     ON
-      dci.concept_name = c.concept_name
+      lower(dci.concept_name) = lower(c.concept_name)
       AND dci.concept_id <> c.concept_id
     ORDER BY
       dci.value_as_concept_id ),
