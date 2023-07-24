@@ -1225,6 +1225,105 @@ else:
 res2
 
 # # final summary result
+# -
+
+
+# # Q17 Wear study table
+#
+# DC-3340
+#
+# This check confirms that the wear_s.tudy table contains:
+# 1. Only one row per participant
+# 2. Wear study participants are also found in the CDR person table.
+# 3. Wear study participants have primary consent records in observation.
+# 4. Wear study start dates coincide with records in observation. Date shifted in RT.
+#
+# **If check fails:**<br> 
+# * The issue `participant with multiple records` means that those participants have multiple rows in the wear_study table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table. <br>
+# * The issue `not in person table` means that participants exist in the wear_study table that aren't in the person table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table.<br>
+# * The issue `no primary consent` means that participants exist in the wear_study table that do not have proper primary consent. Investigate the issue. It is possible that there is another way to determine primary consent. <br>
+# * The issue `incorrect_start_date` means that the wear_study start date does not match a record in the observation table. This is most likely due to improper date shift. Investigate the issue. Start with the CR that creates the wear_study table.    <br>
+
+# +
+query = JINJA_ENV.from_string("""
+
+WITH latest_primary_consent_records AS ( -- most current consent record per person --
+    SELECT person_id, observation_source_value, MAX(observation_date) AS latest_date,
+    FROM `{{project_id}}.{{rt_cdr_deid}}.observation` o
+    WHERE REGEXP_CONTAINS(observation_source_value, '(?i)extraconsent_agreetoconsent')
+    GROUP BY person_id, observation_source_value
+)
+
+SELECT
+  'participant with multiple records' as issue,
+  COUNT(research_id) as bad_rows
+FROM `{{project_id}}.{{rt_cdr_deid}}.wear_study` ws
+GROUP BY research_id
+HAVING COUNT(research_id)>1
+
+UNION ALL
+
+SELECT
+  'not in person table' as issue,
+  COUNT(research_id) as bad_rows
+FROM `{{project_id}}.{{rt_cdr_deid}}.wear_study` ws
+WHERE research_id not in ( -- person table --
+  SELECT person_id
+  FROM `{{project_id}}.{{rt_cdr_deid}}.person` o
+  )
+  
+UNION ALL
+
+SELECT
+  'no primary consent' as issue,
+  COUNT(research_id) as bad_rows
+FROM `{{project_id}}.{{rt_cdr_deid}}.wear_study` ws
+WHERE research_id not in (  -- aou consenting participants --
+  SELECT cte.person_id
+  FROM latest_primary_consent_records cte
+    LEFT JOIN ( -- any positive primary consent --
+      SELECT *
+      FROM `{{project_id}}.{{rt_cdr_deid}}.observation` o
+      WHERE REGEXP_CONTAINS(o.observation_source_value, '(?i)extraconsent_agreetoconsent')
+      AND o.value_as_concept_id = 45877994
+    ON cte.person_id = o.person_id
+    AND cte.latest_consent_date = o.observation_date
+  WHERE o.person_id IS NOT NULL
+  )
+
+UNION ALL
+
+SELECT
+  'incorrect_start_date' as issue,
+  COUNT(research_id) as bad_rows
+FROM `{{project_id}}.{{rt_cdr_deid}}.wear_study` ws
+LEFT JOIN ( -- all wear study consent records from observation -- 
+  SELECT * 
+  FROM `{{project_id}}.{{rt_cdr_deid}}.observation`
+  WHERE LOWER(observation_source_value) = 'resultsconsent_wear') o
+ON o.person_id = ws.person_id 
+AND o.observation_date = ws.wear_consent_start_date
+WHERE o.person_id IS NULL
+
+""")
+q = query.render(project_id=project_id,
+                 rt_cdr_deid=rt_cdr_deid)
+df1 = execute(client, q)
+
+if df1['bad_rows'].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query17  wear_study table is as expected.',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Query17 wear_study table is not as expected. See notes in the description.',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 
 
 # +

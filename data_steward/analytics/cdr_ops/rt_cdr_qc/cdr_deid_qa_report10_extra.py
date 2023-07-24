@@ -816,16 +816,16 @@ else:
 # 4. Wear study start dates coincide with records in observation. Date shifted in RT.
 #
 # **If check fails:**<br> 
-#     * The issue `participant with multiple records` means that those participants have multiple rows in the wear_study table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table. <br>
-#     * The issue `not in person table` means that participants exist in the wear_study table that aren't in the person table which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table.<br>
-#     * The issue `no primary consent` means that participants exist in the wear_study table that do not have proper primary consent. Investigate the issue. It is possible that there is another way to determine primary consent. <br>
-#     * The issue `incorrect_start_date` means that the wear_study start date does not match a record in the observation table. This is most likely due to improper date shift. Investigate the issue. Start with the CR that creates the wear_study table.    <br>
+# * The issue `participant with multiple records` means that those participants have multiple rows in the wear_study table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table. <br>
+# * The issue `not in person table` means that participants exist in the wear_study table that aren't in the person table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table.<br>
+# * The issue `no primary consent` means that participants exist in the wear_study table that do not have proper primary consent. Investigate the issue. It is possible that there is another way to determine primary consent. <br>
+# * The issue `incorrect_start_date` means that the wear_study start date does not match a record in the observation table. This is most likely due to improper date shift. Investigate the issue. Start with the CR that creates the wear_study table.    <br>
 
 # +
 query = JINJA_ENV.from_string("""
 
 WITH latest_primary_consent_records AS ( -- most current consent record per person --
-    SELECT person_id, observation_source_value, MAX(observation_datetime) AS latest_datetime,
+    SELECT person_id, observation_source_value, MAX(observation_date) AS latest_date,
     FROM `{{project_id}}.{{rt_cdr_deid}}.observation` o
     WHERE REGEXP_CONTAINS(observation_source_value, '(?i)extraconsent_agreetoconsent')
     GROUP BY person_id, observation_source_value
@@ -864,7 +864,7 @@ WHERE research_id not in (  -- aou consenting participants --
       WHERE REGEXP_CONTAINS(o.observation_source_value, '(?i)extraconsent_agreetoconsent')
       AND o.value_as_concept_id = 45877994
     ON cte.person_id = o.person_id
-    AND cte.latest_consent_datetime = o.observation_datetime
+    AND cte.latest_consent_date = o.observation_date
   WHERE o.person_id IS NOT NULL
   )
 
