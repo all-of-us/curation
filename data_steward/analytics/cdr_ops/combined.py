@@ -826,18 +826,37 @@ render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 
 # Check that every record contains a valid src_id. The check passes if no records are returned.
 
-# +
-queries = []
-ids_template = JINJA_ENV.from_string("""
-with ids as (
-  SELECT 
-    hpo_id 
-  FROM
-    `{{project_id}}.{{pipeline}}.{{site_maskings}}`
-  WHERE NOT
-    REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)')
-)
+ext_template = JINJA_ENV.from_string("""
+    SELECT
+      table_id
+    FROM 
+        `{{project_id}}.{{dataset}}.__TABLES__`
+    WHERE 
+        table_id LIKE '%_ext%'
 """)
-src_ids_table = ids_template.render(project_id=PROJECT_ID,
-                                    pipeline=PIPELINE_TABLES,
-                                    site_maskings=SITE_MASKING_TABLE_ID)
+ext_tables_query = ext_template.render(project_id=PROJECT_ID,
+                                       dataset=DATASET_ID)
+ext_tables = execute(client, ext_tables_query)
+
+result = []
+for index, row in ext_tables.iterrows():
+    tpl = JINJA_ENV.from_string("""
+      SELECT
+        \'{{table_name}}\' AS table_name,
+        src_id,
+        count(*) as n_violations
+      FROM
+        `{{project_id}}.{{dataset}}.{{table_name}}`
+      WHERE
+          NOT
+          REGEXP_CONTAINS(src_id, r'(?i)(Portal)|(EHR site)')
+      OR 
+        src_id IS NULL
+      GROUP BY 1,2
+  """)
+    query = tpl.render(project_id=PROJECT_ID,
+                       dataset=DATASET_ID,
+                       table_name=row['table_id'])
+    result.append(query)
+results = '\nUNION ALL\n'.join(result)
+execute(client, results)
