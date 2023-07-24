@@ -35,8 +35,8 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
         cls.fq_deid_map_table = f'{cls.project_id}.{mapping_dataset_id}.{mapping_table_id}'
 
         cls.rule_instance = fdi.DeidFitbitDeviceId(cls.project_id,
-                                                  cls.dataset_id,
-                                                  cls.sandbox_id)
+                                                   cls.dataset_id,
+                                                   cls.sandbox_id)
 
         cls.fq_sandbox_table_names = [
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_id)}'
