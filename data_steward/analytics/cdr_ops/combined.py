@@ -823,7 +823,6 @@ render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 # -
 
 # # Check for src_ids in ext tables
-
 # Check that every record contains a valid src_id. The check passes if no records are returned.
 
 ext_template = JINJA_ENV.from_string("""
@@ -837,7 +836,6 @@ ext_template = JINJA_ENV.from_string("""
 ext_tables_query = ext_template.render(project_id=PROJECT_ID,
                                        dataset=DATASET_ID)
 ext_tables = execute(client, ext_tables_query)
-
 result = []
 for index, row in ext_tables.iterrows():
     tpl = JINJA_ENV.from_string("""
