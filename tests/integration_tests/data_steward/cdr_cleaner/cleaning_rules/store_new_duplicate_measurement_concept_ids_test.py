@@ -146,8 +146,8 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
             ],
             'loaded_ids': [100011, 100012],
             'sandboxed_ids': [
-                100001, 100002, 100003, 100004, 100005, 100006, 100007, 100008, 100011,
-                100012, 100013
+                100001, 100002, 100003, 100004, 100005, 100006, 100007, 100008,
+                100011, 100012, 100013
             ],
             'cleaned_values': [(100001, 'Negative', 'LOINC', 100001,
                                 datetime.now(timezone.utc).date()),
