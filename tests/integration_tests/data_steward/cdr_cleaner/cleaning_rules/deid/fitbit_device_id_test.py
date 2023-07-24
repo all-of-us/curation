@@ -2,10 +2,10 @@
 import os
 
 # Project Imports
-from common import DEVICE, DEID_MAP
+from common import DEVICE, WEARABLES_DEVICE_ID_MASKING
 from app_identity import PROJECT_ID
 
-import cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map as pr
+import cdr_cleaner.cleaning_rules.deid.fitbit_device_id as fdi
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -26,13 +26,26 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        mapping_table_id = DEID_MAP
-
-        cls.mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        mapping_table_id = WEARABLES_DEVICE_ID_MASKING
+        cls.mapping_dataset_id = mapping_dataset_id
+        cls.kwargs.update({
+            'mapping_dataset_id': mapping_dataset_id,
+            'mapping_table_id': mapping_table_id
+        })
         cls.fq_deid_map_table = f'{cls.project_id}.{mapping_dataset_id}.{mapping_table_id}'
+
+        cls.rule_instance = fdi.DeidFitbitDeviceId(cls.project_id,
+                                                  cls.dataset_id,
+                                                  cls.sandbox_id)
+
+        cls.fq_sandbox_table_names = [
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_id)}'
+            for table_id in fdi.FITBIT_TABLES
+        ]
+
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{table_id}'
-            for table_id in pr.FITBIT_TABLES
+            for table_id in fdi.FITBIT_TABLES
         ] + [cls.fq_deid_map_table
             ] + [f'{cls.project_id}.{mapping_dataset_id}.person']
 
