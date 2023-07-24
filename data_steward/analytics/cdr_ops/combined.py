@@ -825,3 +825,19 @@ render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 # # Check for src_ids in ext tables
 
 # Check that every record contains a valid src_id. The check passes if no records are returned.
+
+# +
+queries = []
+ids_template = JINJA_ENV.from_string("""
+with ids as (
+  SELECT 
+    hpo_id 
+  FROM
+    `{{project_id}}.{{pipeline}}.{{site_maskings}}`
+  WHERE NOT
+    REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)')
+)
+""")
+src_ids_table = ids_template.render(project_id=PROJECT_ID,
+                                    pipeline=PIPELINE_TABLES,
+                                    site_maskings=SITE_MASKING_TABLE_ID)
