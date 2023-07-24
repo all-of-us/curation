@@ -23,7 +23,7 @@ RUN_AS = ''  # Service account email for impersonation
 # +
 import pandas as pd
 
-from common import JINJA_ENV, MAPPED_CLINICAL_DATA_TABLES
+from common import JINJA_ENV, MAPPED_CLINICAL_DATA_TABLES, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
 from utils import auth
 from gcloud.bq import BigQueryClient
@@ -820,3 +820,4 @@ failure_msg_if_empty = '''
     Death table is NOT empty. We expect DEATH table to be empty in Combined. Investigate why DEATH is not empty and fix it.
 '''
 render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
+# -
