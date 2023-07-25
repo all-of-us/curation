@@ -17,8 +17,7 @@ DC-3229: Create a CR to update 'device_id_mapping' in pipeline_tables
 import os
 import logging
 
-from common import PIPELINE_TABLES, DEVICE, JINJA_ENV
-from gcloud.bq import BigQueryClient
+from common import PIPELINE_TABLES, JINJA_ENV
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
@@ -29,11 +28,11 @@ DEVICE_ID = 'device_id'
 
 DEID_FITBIT_DEVICE_ID = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.device` AS d
-SET d.{{device_id}} = sub.research_device_id
+SET d.{{device_id}} = wdim.research_device_id
 FROM `{{project_id}}.{{pipeline_tables}}.wearables_device_id_masking` AS wdim
 WHERE d.person_id = wdim.person_id
 AND d.{{device_id}} = wdim.{{device_id}}
-AND wearables_type = 'fitbit'
+AND wearable_type = 'fitbit'
 """)
 
 ISSUE_NUMBERS = ['DC-3254']
@@ -115,3 +114,27 @@ class DeidFitbitDeviceId(BaseCleaningRule):
 
     def run_rule(self):
         pass
+
+
+#! locate add __main__
+
+if __name__ == '__main__':
+    import cdr_cleaner.args_parser as parser
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    ARGS = parser.default_parse_args()
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(DeidFitbitDeviceId,)])
+
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(DeidFitbitDeviceId,)])
