@@ -760,6 +760,7 @@ render_message(df_orphaned_check,
 # - If multiple death records exist from across sources, provide the first date EHR death record in the death table
 # - If death_datetime is not available and multiple death records exist for the same death_date, provide the fullest record in the death table
 # - Example: Order by HPO site name and insert the first into the death table
+# - Death records from HealthPro can have NULL death_date. Such records must be always `primary_death_record=False`.
 #
 # This QC confirms that the logic for the primary records are applied as expected in the `AOU_DEATH` table.
 
@@ -770,6 +771,7 @@ WITH qc_aou_death AS (
         aou_death_id, 
         CASE WHEN aou_death_id IN (
             SELECT aou_death_id FROM `{{project_id}}.{{dataset_id}}.aou_death`
+            WHERE death_date IS NOT NULL -- NULL death_date records must not become primary --
             QUALIFY RANK() OVER (
                 PARTITION BY person_id 
                 ORDER BY
