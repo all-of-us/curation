@@ -5,7 +5,7 @@ import os
 from common import DEVICE, WEARABLES_DEVICE_ID_MASKING
 from app_identity import PROJECT_ID
 
-import cdr_cleaner.cleaning_rules.deid.fitbit_device_id as fdi
+import cdr_cleaner.cleaning_rules.deid.fitbit_device_id as fit_dev_id
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -25,29 +25,17 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
-        mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        mapping_table_id = WEARABLES_DEVICE_ID_MASKING
-        cls.mapping_dataset_id = mapping_dataset_id
-        cls.kwargs.update({
-            'mapping_dataset_id': mapping_dataset_id,
-            'mapping_table_id': mapping_table_id
-        })
-        cls.fq_deid_map_table = f'{cls.project_id}.{mapping_dataset_id}.{mapping_table_id}'
-
-        cls.rule_instance = fdi.DeidFitbitDeviceId(cls.project_id,
+        cls.rule_instance = fit_dev_id.DeidFitbitDeviceId(cls.project_id,
                                                    cls.dataset_id,
                                                    cls.sandbox_id)
 
-        cls.fq_sandbox_table_names = [
-            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_id)}'
-            for table_id in fdi.FITBIT_TABLES
-        ]
+        # Store affected table names
+        affected_tables = [DEVICE]
 
         cls.fq_table_names = [
-            f'{cls.project_id}.{cls.dataset_id}.{table_id}'
-            for table_id in fdi.FITBIT_TABLES
-        ] + [cls.fq_deid_map_table
-            ] + [f'{cls.project_id}.{mapping_dataset_id}.person']
+            f'{cls.project_id}.{cls.dataset_id}.device',
+            f'{cls.project_id}.pipeline_tables.wearables_device_id_masking'
+        ]
 
         super().setUpClass()
 
@@ -58,57 +46,52 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
             Creates common expected parameter types from cleaned tables and a common
             fully qualified (fq) dataset name string to load the data.
             """
-            self.value_as_number = None
 
             fq_dataset_name = self.fq_table_names[0].split('.')
             self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
             super().setUp()
 
-    def test_field_cleaning(self):
+    def test_deid_device_id(self):  #! Locate to rename?
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
         map_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_table}}`
-            (person_id, device_id, research_device_id)
+            (person_id, device_id, research_device_id, wearable_type, import_date)
             VALUES
-                (21, 19, 54),
-                (22, 18, 53),
-                (23, 17, 52),
-                (24, 16, 51)""").render(fq_table=self.fq_deid_map_table)
+                (21, '19', '54', 'fitbit', '2021-01-10'),
+                (22, '18', '53', 'fitbit', '2021-01-09'),
+                (23, '17', '52', 'fitbit', '2021-01-08'),
+                (24, '16', '51', 'fitbit', '2021-01-07'),
+                (24, '15', '50', 'fitbit', '2021-01-07'),
+                (25, '14', '49', 'fitbit', '2021-01-06')
+                                               """).render(
+            fq_table=
+            f'{self.project_id}.pipeline_tables.wearables_device_id_masking')
 
         device_query = self.jinja_env.from_string("""
         INSERT INTO `{{project_id}}.{{dataset_id}}.device`
         (person_id, device_id)
         VALUES
-            (21, 19),
-            (22, 18),
-            (23, 17),
-            (24, 16)""").render(project_id=self.project_id,
-                                dataset_id=self.dataset_id)
+            (21, '19'),
+            (22, '18'),
+            (23, '17'),
+            (24, '16'),
+            (24, '15'),
+            (25, '14')
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         self.load_test_data([map_query, device_query])
 
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, DEVICE]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[5],
-            'fields': ['person_id', 'device_id'
-                       'research_device_id'],
-            'loaded_ids': [21, 22, 23, 24],
-            'cleaned_values': [
-                (21, 19, 19),
-                (22, 18, 18),
-                (23, 17, 17),
-                (
-                    24,
-                    16,
-                    16,
-                ),
-            ]
+            'fields': ['person_id', 'device_id'],
+            'loaded_ids': [21, 22, 23, 24, 24, 25],
+            'cleaned_values': [(21, '54'), (22, '53'), (23, '52'), (24, '51'),
+                               (24, '50'), (25, '49')]
         }]
 
         self.default_test(tables_and_counts)
