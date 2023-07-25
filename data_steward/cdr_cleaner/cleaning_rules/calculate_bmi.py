@@ -30,7 +30,8 @@ WITH self_reported_height AS (
         m.value_as_number,
         m.measurement_date,
         m.measurement_datetime,
-        m.measurement_time
+        m.measurement_time,
+        e.src_id
     FROM `{{project}}.{{dataset}}.measurement` m
     JOIN `{{project}}.{{dataset}}.measurement_ext` e
     ON m.measurement_id = e.measurement_id
@@ -41,7 +42,9 @@ WITH self_reported_height AS (
         m.measurement_id, 
         m.person_id, 
         m.visit_occurrence_id, 
-        m.value_as_number
+        m.value_as_number,
+        m.measurement_date,
+        e.src_id
     FROM `{{project}}.{{dataset}}.measurement` m
     JOIN `{{project}}.{{dataset}}.measurement_ext` e
     ON m.measurement_id = e.measurement_id
@@ -73,23 +76,48 @@ SELECT
     CAST(NULL AS STRING) AS measurement_source_value,
     NULL AS measurement_source_concept_id,
     'kg/m2' AS unit_source_value,
-    CAST(NULL AS STRING) AS value_source_value
+    CAST(NULL AS STRING) AS value_source_value,
+    h.src_id
 FROM self_reported_height h
 JOIN self_reported_weight w
-ON h.person_id = w.person_id AND h.visit_occurrence_id = w.visit_occurrence_id
+ON h.person_id = w.person_id 
+AND h.visit_occurrence_id = w.visit_occurrence_id
+AND h.measurement_date = w.measurement_date
+AND h.src_id = w.src_id
 )
 """)
 
 INSERT_BMI_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.measurement`
-SELECT * FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+SELECT
+    measurement_id,
+    person_id,
+    measurement_concept_id,
+    measurement_date,
+    measurement_datetime,
+    measurement_time,
+    measurement_type_concept_id,
+    operator_concept_id,
+    value_as_number,
+    value_as_concept_id,
+    unit_concept_id,
+    range_low,
+    range_high,
+    provider_id,
+    visit_occurrence_id,
+    visit_detail_id,
+    measurement_source_value,
+    measurement_source_concept_id,
+    unit_source_value,
+    value_source_value
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 """)
 
 INSERT_EXT_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.measurement_ext`
 SELECT 
     measurement_id,
-    'aou_drc' AS src_id
+    src_id
 FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 """)
 

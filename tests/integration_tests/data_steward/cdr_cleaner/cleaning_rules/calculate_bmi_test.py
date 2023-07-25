@@ -61,12 +61,14 @@ class CalculateBmiTest(BaseTest.CleaningRulesTestBase):
             (32, 3, 3025315, '2020-01-01', 32836, 301, 60, 9529, 'kg'),   -- self-reported weight --
             (33, 3, 3036277, '2020-01-01', 32836, 302, 170, 8582, 'cm'),  -- self-reported height --
             (34, 3, 3025315, '2020-01-01', 32836, 302, 85, 9529, 'kg'),   -- self-reported weight --
-            (39, 3, 3036277, '2020-01-01', 32836, 309, 170, 8582, 'cm'),  -- self-reported height - missing counterpart weight --
+            (39, 3, 3036277, '2020-01-01', 32836, 309, 170, 8582, 'cm'),  -- missing counterpart weight --
             (41, 4, 3036277, '2020-01-01', 32836, 401, 180, 8582, 'cm'),  -- self-reported height --
             (42, 4, 3025315, '2020-01-01', 32836, 401, 60, 9529, 'kg'),   -- self-reported weight --
             (43, 4, 3036277, '2020-01-01', 32836, 402, 170, 8582, 'cm'),  -- self-reported height --
             (44, 4, 3025315, '2020-01-01', 32836, 402, 85, 9529, 'kg'),   -- self-reported weight --
-            (49, 4, 3025315, '2020-01-01', 32836, 409, 85, 9529, 'kg')    -- self-reported weight - missing counterpart height --
+            (45, 4, 3036277, '2020-01-01', 32836, 403, 170, 8582, 'cm'),  -- pair exists but unmatching measurement_date --
+            (46, 4, 3025315, '2020-01-02', 32836, 403, 85, 9529, 'kg'),   -- pair exists but unmatching measurement_date --
+            (49, 4, 3025315, '2020-01-01', 32836, 409, 85, 9529, 'kg')    -- missing counterpart height --
         """).render(project=self.project_id, dataset=self.dataset_id)
 
         insert_meas_ext = self.jinja_env.from_string("""
@@ -79,19 +81,21 @@ class CalculateBmiTest(BaseTest.CleaningRulesTestBase):
             (22, 'HPO dummy'),
             (23, 'Participant Portal: PTSC'),
             (24, 'Participant Portal: PTSC'),
-            (25, 'Participant Portal: CE'),
-            (26, 'Participant Portal: CE'),
+            (25, 'Participant Portal: TPC'),
+            (26, 'Participant Portal: TPC'),
             (27, 'Participant Portal: PTSC'),
             (28, 'Participant Portal: PTSC'),
             (31, 'Participant Portal: PTSC'),
             (32, 'Participant Portal: PTSC'),
-            (33, 'Participant Portal: CE'),
-            (34, 'Participant Portal: CE'),
+            (33, 'Participant Portal: TPC'),
+            (34, 'Participant Portal: TPC'),
             (39, 'Participant Portal: PTSC'),
             (41, 'Participant Portal: PTSC'),
             (42, 'Participant Portal: PTSC'),
-            (43, 'Participant Portal: CE'),
-            (44, 'Participant Portal: CE'),
+            (43, 'Participant Portal: TPC'),
+            (44, 'Participant Portal: TPC'),
+            (45, 'Participant Portal: TPC'),
+            (46, 'Participant Portal: TPC'),
             (49, 'Participant Portal: PTSC')
         """).render(project=self.project_id, dataset=self.dataset_id)
 
@@ -100,10 +104,16 @@ class CalculateBmiTest(BaseTest.CleaningRulesTestBase):
     def test_calculate_bmi(self):
         """
         Test cases for BMI calculation:
-        person_id = 1: No self-reported height/weight data. Nothing happens.
-        person_id = 2: 3 self-reported height/weight pairs. BMIs are calculated for each pair.
-        person_id = 3: 2 self-reported height/weight pairs. BMIs are calculated for each pair. 1 height is missing its counterpart weight. No BMI for that.
-        person_id = 4: 2 self-reported height/weight pairs. BMIs are calculated for each pair. 1 weight is missing its counterpart weight. No BMI for that.
+        person_id = 1: 
+            No self-reported height/weight data. Nothing happens.
+        person_id = 2: 
+            3 self-reported height/weight pairs. BMIs are calculated for each pair.
+        person_id = 3: 
+            2 self-reported height/weight pairs. BMIs are calculated for each pair. 
+            1 height is missing its counterpart weight. No BMI for that.
+        person_id = 4: 
+            2 self-reported height/weight pairs. BMIs are calculated for each pair. 
+            1 weight is missing its counterpart weight and 1 pair not matching measurement_date. No BMI for those.
         """
         self.maxDiff = None
 
@@ -112,7 +122,7 @@ class CalculateBmiTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[0],
             'loaded_ids': [
                 11, 12, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33, 34, 39, 41,
-                42, 43, 44, 49
+                42, 43, 44, 45, 46, 49
             ],
             'fields': [
                 'measurement_id', 'measurement_concept_id',
@@ -139,6 +149,8 @@ class CalculateBmiTest(BaseTest.CleaningRulesTestBase):
                 (42, 3025315, 32836, 60, 401, 9529, 'kg'),
                 (43, 3036277, 32836, 170, 402, 8582, 'cm'),
                 (44, 3025315, 32836, 85, 402, 9529, 'kg'),
+                (45, 3036277, 32836, 170, 403, 8582, 'cm'),
+                (46, 3025315, 32836, 85, 403, 9529, 'kg'),
                 (49, 3025315, 32836, 85, 409, 9529, 'kg'),
                 (50, 3038553, 32865, 18.51851851851852, 201, 9531, 'kg/m2'),
                 (51, 3038553, 32865, 29.411764705882355, 202, 9531, 'kg/m2'),
@@ -153,7 +165,7 @@ class CalculateBmiTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[1],
             'loaded_ids': [
                 11, 12, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33, 34, 39, 41,
-                42, 43, 44, 49
+                42, 43, 44, 45, 46, 49
             ],
             'fields': ['measurement_id', 'src_id'],
             'cleaned_values': [
@@ -163,27 +175,29 @@ class CalculateBmiTest(BaseTest.CleaningRulesTestBase):
                 (22, 'HPO dummy'),
                 (23, 'Participant Portal: PTSC'),
                 (24, 'Participant Portal: PTSC'),
-                (25, 'Participant Portal: CE'),
-                (26, 'Participant Portal: CE'),
+                (25, 'Participant Portal: TPC'),
+                (26, 'Participant Portal: TPC'),
                 (27, 'Participant Portal: PTSC'),
                 (28, 'Participant Portal: PTSC'),
                 (31, 'Participant Portal: PTSC'),
                 (32, 'Participant Portal: PTSC'),
-                (33, 'Participant Portal: CE'),
-                (34, 'Participant Portal: CE'),
+                (33, 'Participant Portal: TPC'),
+                (34, 'Participant Portal: TPC'),
                 (39, 'Participant Portal: PTSC'),
                 (41, 'Participant Portal: PTSC'),
                 (42, 'Participant Portal: PTSC'),
-                (43, 'Participant Portal: CE'),
-                (44, 'Participant Portal: CE'),
+                (43, 'Participant Portal: TPC'),
+                (44, 'Participant Portal: TPC'),
+                (45, 'Participant Portal: TPC'),
+                (46, 'Participant Portal: TPC'),
                 (49, 'Participant Portal: PTSC'),
-                (50, 'aou_drc'),
-                (51, 'aou_drc'),
-                (52, 'aou_drc'),
-                (53, 'aou_drc'),
-                (54, 'aou_drc'),
-                (55, 'aou_drc'),
-                (56, 'aou_drc'),
+                (50, 'Participant Portal: PTSC'),
+                (51, 'Participant Portal: TPC'),
+                (52, 'Participant Portal: PTSC'),
+                (53, 'Participant Portal: PTSC'),
+                (54, 'Participant Portal: TPC'),
+                (55, 'Participant Portal: PTSC'),
+                (56, 'Participant Portal: TPC'),
             ]
         }]
 
