@@ -23,7 +23,7 @@ RUN_AS = ''  # Service account email for impersonation
 # +
 import pandas as pd
 
-from common import JINJA_ENV, MAPPED_CLINICAL_DATA_TABLES, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
+from common import JINJA_ENV, MAPPED_CLINICAL_DATA_TABLES
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
 from utils import auth
 from gcloud.bq import BigQueryClient
@@ -837,7 +837,7 @@ ext_tables_query = ext_template.render(project_id=PROJECT_ID,
                                        dataset=DATASET_ID)
 ext_tables = execute(client, ext_tables_query)
 result = []
-for index, row in ext_tables.iterrows():
+for _, row in ext_tables.iterrows():
     tpl = JINJA_ENV.from_string("""
       SELECT
         \'{{table_name}}\' AS table_name,
