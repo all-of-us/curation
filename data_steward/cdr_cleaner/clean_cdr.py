@@ -13,6 +13,7 @@ import cdr_cleaner.clean_cdr_engine as clean_engine
 from cdr_cleaner.cleaning_rules.backfill_lifestyle import BackfillLifestyle
 from cdr_cleaner.cleaning_rules.backfill_overall_health import BackfillOverallHealth
 from cdr_cleaner.cleaning_rules.backfill_the_basics import BackfillTheBasics
+from cdr_cleaner.cleaning_rules.calculate_bmi import CalculateBmi
 from cdr_cleaner.cleaning_rules.calculate_primary_death_record import CalculatePrimaryDeathRecord
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
@@ -308,6 +309,7 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
         MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
+    (CalculateBmi,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
     (CalculatePrimaryDeathRecord,),
@@ -366,6 +368,7 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
+    (CalculateBmi,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
     (CalculatePrimaryDeathRecord,),
