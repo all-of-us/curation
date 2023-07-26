@@ -63,7 +63,9 @@ AOU_DEATH_DATA_QUERY = JINJA_ENV.from_string("""
       ('a107', 101, '2019-01-01', 0, 'hpo_g', False),
       ('a108', 102, '2019-01-01', 0, 'hpo_h', False),
       -- record should be dropped because a PPI record exists after this date --
-      ('a109', 109, '2020-08-01', 0, 'hpo_i', True)
+      ('a109', 109, '2020-08-01', 0, 'hpo_i', True),
+      -- record won't be dropped because NULL death_date records should be kept for aou_death --
+      ('a110', 109, NULL, 0, 'hpo_e', False)
 """)
 
 INSERT_OBSERVATIONS_QUERY = JINJA_ENV.from_string("""
@@ -178,13 +180,13 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name': self.fq_sandbox_table_names[1],
             'loaded_ids': [
                 'a101', 'a102', 'a103', 'a104', 'a105', 'a106', 'a107', 'a108',
-                'a109'
+                'a109', 'a110'
             ],
             'sandboxed_ids': [
                 'a101', 'a102', 'a103', 'a104', 'a107', 'a108', 'a109'
             ],
             'fields': ['aou_death_id'],
-            'cleaned_values': [('a105',), ('a106',)]
+            'cleaned_values': [('a105',), ('a106',), ('a110',)]
         }]
 
         self.default_test(tables_and_counts)
