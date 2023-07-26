@@ -29,7 +29,7 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
             cls.project_id, cls.dataset_id, cls.sandbox_id)
 
         # Store affected table names
-        affected_tables = [DEVICE]
+        cls.affected_tables = [DEVICE]
 
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.device',
