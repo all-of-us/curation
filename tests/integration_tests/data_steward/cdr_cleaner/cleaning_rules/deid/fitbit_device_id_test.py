@@ -65,8 +65,7 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
                 (23, '17', '52', 'fitbit', '2021-01-08'),
                 (24, '16', '51', 'fitbit', '2021-01-07'),
                 (24, '15', '50', 'fitbit', '2021-01-07'),
-                (25, '14', '49', 'fitbit', '2021-01-06')
-                                               """).render(
+                (25, '14', '49', 'fitbit', '2021-01-06')""").render(
             fq_table=
             f'{self.project_id}.pipeline_tables.wearables_device_id_masking')
 
