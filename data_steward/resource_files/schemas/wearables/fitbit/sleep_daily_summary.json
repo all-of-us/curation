@@ -67,8 +67,8 @@
   },
   {
     "name": "minute_wake",
-    "type": "INTEGER",
-    "mode": "NULLABLE",
+    "type": "integer",
+    "mode": "nullable",
     "description": "The total number of minutes the user was in wake stage."
   },
   {
