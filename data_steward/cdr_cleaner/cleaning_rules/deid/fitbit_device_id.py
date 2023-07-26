@@ -115,9 +115,6 @@ class DeidFitbitDeviceId(BaseCleaningRule):
     def run_rule(self):
         pass
 
-
-#! locate add __main__
-
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine

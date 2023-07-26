@@ -25,9 +25,8 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
-        cls.rule_instance = fit_dev_id.DeidFitbitDeviceId(cls.project_id,
-                                                   cls.dataset_id,
-                                                   cls.sandbox_id)
+        cls.rule_instance = fit_dev_id.DeidFitbitDeviceId(
+            cls.project_id, cls.dataset_id, cls.sandbox_id)
 
         # Store affected table names
         affected_tables = [DEVICE]
@@ -52,7 +51,7 @@ class FitbitDeviceIdTest(BaseTest.CleaningRulesTestBase):
 
             super().setUp()
 
-    def test_deid_device_id(self):  #! Locate to rename?
+    def test_deid_device_id(self):
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
