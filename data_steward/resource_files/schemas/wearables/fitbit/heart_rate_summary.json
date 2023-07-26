@@ -39,7 +39,7 @@
     "type": "float",
     "name": "calorie_count",
     "mode": "nullable",
-    "description": ""
+    "description": "Number calories burned within the custom heart rate zone."
   },
   {
     "type": "string",
