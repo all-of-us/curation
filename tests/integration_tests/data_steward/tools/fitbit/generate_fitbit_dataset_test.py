@@ -11,14 +11,14 @@ from gcloud.bq import BigQueryClient
 
 table_query = JINJA_ENV.from_string("""
 CREATE TABLE {{project_id}}.{{dataset_id}}.{{table_id}}
- (person_id INT64, datetime DATETIME, steps NUMERIC) AS
-SELECT 1 as person_id, NULL as datetime, 10 as steps
+ (person_id INT64, datetime DATETIME, steps NUMERIC, src_id STRING) AS
+SELECT 1 as person_id, NULL as datetime, 10 as steps, 'ce' as src_id
 UNION ALL
-SELECT 2 as person_id, NULL as datetime, 20 as steps
+SELECT 2 as person_id, NULL as datetime, 20 as steps, 'ptsc' as src_id
 UNION ALL
-SELECT 3 as person_id, DATETIME('2021-01-01') as datetime, 30 as steps
+SELECT 3 as person_id, DATETIME('2021-01-01') as datetime, 30 as steps, 'ce' as src_id
 UNION ALL
-SELECT 4 as person_id, NULL as datetime, 40 as steps
+SELECT 4 as person_id, NULL as datetime, 40 as steps, 'ptsc' as src_id
 """)
 
 view_query = JINJA_ENV.from_string("""
@@ -57,11 +57,13 @@ class GenerateFitbitDatasetTest(TestCase):
         expected = [{
             'person_id': 3,
             'datetime': datetime.fromisoformat('2021-01-01'),
-            'steps': Decimal(30)
+            'steps': Decimal(30),
+            'src_id': 'ce',
         }, {
             'person_id': 4,
             'datetime': None,
-            'steps': Decimal(40)
+            'steps': Decimal(40),
+            'src_id': 'ptsc',
         }]
         create_table = table_query.render(project_id=self.project_id,
                                           dataset_id=self.dataset,
