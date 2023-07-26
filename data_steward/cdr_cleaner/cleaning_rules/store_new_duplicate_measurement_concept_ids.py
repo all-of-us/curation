@@ -90,7 +90,7 @@ CREATE OR REPLACE TABLE
     JOIN
       `{{project_id}}.{{dataset_id}}.concept` c
     ON
-      dci.concept_name = c.concept_name
+      lower(dci.concept_name) = lower(c.concept_name)
       AND dci.concept_id <> c.concept_id
     ORDER BY
       dci.value_as_concept_id ),
@@ -102,7 +102,7 @@ CREATE OR REPLACE TABLE
       COALESCE(CASE
           WHEN dupes.concept_vocab_in_table NOT IN ('LOINC', 'NAACCR') THEN
            ( SELECT MAX(value_as_concept_id) FROM and_cn_dupes AS t2 WHERE 
-           t2.concept_name_in_table = dupes.concept_name_in_table AND t2.concept_vocab_in_table = 'LOINC' )
+           lower(t2.concept_name_in_table) = lower(dupes.concept_name_in_table) AND t2.concept_vocab_in_table = 'LOINC' )
         ELSE
         dupes.value_as_concept_id
       END
@@ -204,7 +204,7 @@ class StoreNewDuplicateMeasurementConceptIds(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         return [IDENTICAL_LABS_LOOKUP_TABLE]
 
-    def setup_rule(self):
+    def setup_rule(self, client):
         pass
 
     def setup_validation(self):
