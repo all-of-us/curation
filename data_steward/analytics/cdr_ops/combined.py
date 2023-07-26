@@ -845,8 +845,7 @@ for _, row in ext_tables.iterrows():
         count(*) as n_violations
       FROM
         `{{project_id}}.{{dataset}}.{{table_name}}`
-      WHERE
-          NOT
+      WHERE NOT
           REGEXP_CONTAINS(src_id, r'(?i)(Portal)|(EHR site)')
       OR 
         src_id IS NULL
