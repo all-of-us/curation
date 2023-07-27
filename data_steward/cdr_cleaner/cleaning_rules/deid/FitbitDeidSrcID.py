@@ -15,8 +15,7 @@ class FitbitDeidSrcID(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 table_namer=None,
-                 reference_dataset_id=None):
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
