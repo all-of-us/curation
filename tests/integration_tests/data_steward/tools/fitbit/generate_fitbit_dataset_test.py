@@ -14,7 +14,7 @@ CREATE TABLE {{project_id}}.{{dataset_id}}.{{table_id}}
  (person_id INT64, datetime DATETIME, steps NUMERIC, src_id STRING) AS
 SELECT 1 as person_id, NULL as datetime, 10 as steps, 'ce' as src_id
 UNION ALL
-SELECT 2 as person_id, NULL as datetime, 20 as steps, 'ptsc' as src_id
+SELECT 2 as person_id, NULL as datetime, 20 as steps, 'vibrent' as src_id
 UNION ALL
 SELECT 3 as person_id, DATETIME('2021-01-01') as datetime, 30 as steps, 'ce' as src_id
 UNION ALL
