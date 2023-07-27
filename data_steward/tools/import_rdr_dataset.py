@@ -91,6 +91,11 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
         destination_table_id = f'{client.project}.{destination_dataset}.{table}'
         source_table_id = f'{rdr_project}.{rdr_source_dataset}.{table}'
 
+        # rdr consent table is ingested as consent_validation
+        if table == 'consent_validation':
+            consent_table = 'consent'
+            source_table_id = f'{rdr_project}.{rdr_source_dataset}.{consent_table}'
+
         schema_list = client.get_table_schema(table, schema)
         destination_table = bigquery.Table(destination_table_id,
                                            schema=schema_list)
