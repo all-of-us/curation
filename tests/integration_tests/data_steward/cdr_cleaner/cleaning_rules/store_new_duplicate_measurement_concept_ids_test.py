@@ -51,7 +51,8 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
         for table_name in affected_tables:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
-        cls.fq_table_names.append(f'{cls.project_id}.pipeline_tables.{IDENTICAL_LABS_LOOKUP_TABLE}')
+        cls.fq_table_names.append(
+            f'{cls.project_id}.pipeline_tables.{IDENTICAL_LABS_LOOKUP_TABLE}')
 
         # call super to set up the client, create datasets, and create
         # empty test tables
