@@ -6,7 +6,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import FITBIT_TABLES
 
-JIRA_ISSUE_NUMBERS = []
+ISSUE_NUMBERS = ['DC3337']
 
 
 class FitbitDeidSrcID(BaseCleaningRule):
@@ -26,7 +26,7 @@ class FitbitDeidSrcID(BaseCleaningRule):
         """
         desc = ('')
 
-        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.FITBIT],
                          affected_tables=FITBIT_TABLES,
