@@ -202,15 +202,15 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{project}}.{{dataset}}.{{obs_ext}}`
                 (observation_id, src_id, survey_version_concept_id)
             VALUES
-                (101, 'PPI/PM', NULL),
-                (102, 'PPI/PM', NULL),
-                (103, 'PPI/PM', NULL),
-                (104, 'PPI/PM', NULL),
-                (201, 'PPI/PM', NULL),
-                (202, 'PPI/PM', NULL),
-                (203, 'PPI/PM', NULL),
-                (204, 'PPI/PM', NULL),
-                (205, 'PPI/PM', NULL)
+                (101, 'Portal 1', NULL),
+                (102, 'Portal 2', NULL),
+                (103, 'Portal 3', NULL),
+                (104, 'Portal 4', NULL),
+                (201, 'Portal 1', NULL),
+                (202, 'Portal 2', NULL),
+                (203, 'Portal 3', NULL),
+                (204, 'Portal 4', NULL),
+                (205, 'Portal 5', NULL)
             """).render(project=self.project_id,
                         dataset=self.dataset_id,
                         obs_ext=OBS_EXT)
@@ -219,14 +219,14 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{project}}.{{incremental_dataset}}.{{obs_ext}}`
                 (observation_id, src_id, survey_version_concept_id)
             VALUES
-                (901, 'PPI/PM', NULL),
-                (902, 'PPI/PM', NULL),
-                (903, 'PPI/PM', NULL),
-                (904, 'PPI/PM', NULL),
-                (905, 'PPI/PM', NULL),
-                (906, 'PPI/PM', NULL),
-                (907, 'PPI/PM', NULL),
-                (999, 'PPI/PM', NULL)
+                (901, 'Portal 1', NULL),
+                (902, 'Portal 2', NULL),
+                (903, 'Portal 3', NULL),
+                (904, 'Portal 4', NULL),
+                (905, 'Portal 5', NULL),
+                (906, 'Portal 6', NULL),
+                (907, 'Portal 7', NULL),
+                (999, 'Portal 9', NULL)
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         obs_ext=OBS_EXT)
@@ -285,8 +285,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{project}}.{{dataset}}.{{sc_ext}}`
                 (survey_conduct_id, src_id, language)
             VALUES
-                (1001, 'PPI/PM', 'en'),
-                (1002, 'PPI/PM', 'en')
+                (1001, 'Portal 1', 'en'),
+                (1002, 'Portal 2', 'en')
             """).render(project=self.project_id,
                         dataset=self.dataset_id,
                         sc_ext=SC_EXT)
@@ -295,10 +295,10 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{project}}.{{incremental_dataset}}.{{sc_ext}}`
                 (survey_conduct_id, src_id, language)
             VALUES
-                (1002, 'PPI/PM', 'es'),
-                (1020, 'PPI/PM', 'es'),
-                (1003, 'PPI/PM', 'es'),
-                (9999, 'PPI/PM', 'es')
+                (1002, 'Portal 2', 'es'),
+                (1020, 'Portal 0', 'es'),
+                (1003, 'Portal 3', 'es'),
+                (9999, 'Portal 9', 'es')
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         sc_ext=SC_EXT)
@@ -840,7 +840,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{project}}.{{dataset}}.{{obs_ext}}`
                 (observation_id, src_id, survey_version_concept_id)
             VALUES
-                (200, 'PPI/PM', NULL)
+                (200, 'Portal 0', NULL)
             """).render(project=self.project_id,
                         dataset=self.dataset_id,
                         obs_ext=OBS_EXT)
