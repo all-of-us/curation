@@ -47,7 +47,7 @@ class FitbitDeidSrcID(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = ('')
+        desc = ('Update src_id values in fitbit tables.')
 
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
