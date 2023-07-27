@@ -15,7 +15,7 @@ UPDATE
 SET
     ft.src_id = sm.src_id
 FROM
-    `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` sm
+    `{{project_id}}.{{pipeline_tables}}.{{site_maskings}}` sm
 WHERE
     ft.src_id = sm.hpo_id
 """)
