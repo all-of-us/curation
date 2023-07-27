@@ -112,6 +112,10 @@ def create_rdr_tables(client, rdr_dataset, bucket, with_src_id=False):
         # path to bucketed csv file
         uri = f'gs://{bucket}/{table}.csv'
 
+        # rdr consent table is ingested as consent_validation
+        if table == 'consent_validation':
+            uri = f'gs://{bucket}/consent.csv'
+
         # job_id defined to the second precision
         job_id = f'rdr_load_{table.lower()}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
 
