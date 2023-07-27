@@ -1,0 +1,51 @@
+"""
+"""
+
+# Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from constants.cdr_cleaner import clean_cdr as cdr_consts
+from common import FITBIT_TABLES
+
+JIRA_ISSUE_NUMBERS = []
+
+
+class FitbitDeidSrcID(BaseCleaningRule):
+
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None,
+                 reference_dataset_id=None):
+        """
+        Initialize the class with proper information.
+
+        Set the issue numbers, description and affected datasets. As other tickets may affect
+        this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
+        desc = ('')
+
+        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[cdr_consts.FITBIT],
+                         affected_tables=FITBIT_TABLES,
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
+
+    def get_query_specs(self):
+        pass
+
+    def get_sandbox_tablenames(self):
+        pass
+
+    def setup_rule(self, client):
+        pass
+
+    def setup_validation(self, client):
+        pass
+
+    def validate_rule(self, client):
+        pass
