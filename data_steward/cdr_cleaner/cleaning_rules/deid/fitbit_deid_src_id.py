@@ -4,9 +4,21 @@
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import FITBIT_TABLES
+from common import FITBIT_TABLES, JINJA_ENV
 
 ISSUE_NUMBERS = ['DC3337']
+
+# Query template to update src_ids in fitbit tables
+UPDATE_SRC_IDS_QUERY = JINJA_ENV.from_string("""
+UPDATE 
+    `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` ft
+SET
+    ft.src_id = sm.src_id
+FROM
+    `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` sm
+WHERE
+    ft.src_id = sm.hpo_id
+""")
 
 
 class FitbitDeidSrcID(BaseCleaningRule):
