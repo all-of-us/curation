@@ -8,6 +8,18 @@ from common import FITBIT_TABLES, JINJA_ENV
 
 ISSUE_NUMBERS = ['DC3337']
 
+# Query template to sandbox records
+SANDBOX_SRC_IDS_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE 
+    `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` ft
+AS (
+    SELECT
+        *
+    FROM
+        `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
+)
+""")
+
 # Query template to update src_ids in fitbit tables
 UPDATE_SRC_IDS_QUERY = JINJA_ENV.from_string("""
 UPDATE 
