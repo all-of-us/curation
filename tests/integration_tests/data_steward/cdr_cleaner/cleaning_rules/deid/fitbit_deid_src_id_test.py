@@ -102,7 +102,7 @@ VALUES
 
 SITE_MASKINGS_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
-    `{{project_id}}.{{sandbox_dataset}}.{{temp_site_masking}}`
+    `{{project_id}}.{{dataset_id}}.{{temp_site_masking}}`
 (hpo_id, src_id, state, value_source_concept_id)
 VALUES
     ('tp', 'Portal 1', 'state1', 1),
