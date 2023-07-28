@@ -193,8 +193,8 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[0],
                 'fields': ['person_id', 'activity_calories', 'date'],
-                'loaded_ids': [1234, 5678, 2345, 6789, 3456, 3456],
-                'sandboxed_ids': [3456],
+                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (234, 100, datetime.fromisoformat('2020-08-17').date()),
                     (678, 200, datetime.fromisoformat('2020-08-17').date()),
@@ -209,8 +209,8 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[1],
                 'fields': ['person_id', 'heart_rate_value', 'datetime'],
-                'loaded_ids': [1234, 5678, 2345, 6789, 3456, 3456],
-                'sandboxed_ids': [3456],
+                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (234, 60, datetime.fromisoformat('2020-08-17 15:00:00')),
                     (678, 50, datetime.fromisoformat('2020-08-17 15:30:00')),
@@ -226,7 +226,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                     self.fq_sandbox_table_names[2],
                 'fields': ['person_id', 'date', 'calorie_count'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [3456],
+                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (234, datetime.fromisoformat('2020-08-17').date(), 100),
                     (678, datetime.fromisoformat('2020-08-17').date(), 200),
@@ -242,7 +242,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                     self.fq_sandbox_table_names[3],
                 'fields': ['person_id', 'datetime', 'steps'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [3456],
+                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (234, datetime.fromisoformat('2020-08-17 15:00:00'), 60),
                     (678, datetime.fromisoformat('2020-08-17 15:30:00'), 50),
@@ -258,7 +258,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                     self.fq_sandbox_table_names[4],
                 'fields': ['person_id', 'sleep_date', 'minute_in_bed'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [3456],
+                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (234, datetime.fromisoformat('2020-08-17').date(), 502),
                     (678, datetime.fromisoformat('2020-08-17').date(), 443),
@@ -274,7 +274,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                     self.fq_sandbox_table_names[5],
                 'fields': ['person_id', 'sleep_date', 'duration_in_min'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [3456],
+                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (234, datetime.fromisoformat('2020-08-17').date(), 42),
                     (678, datetime.fromisoformat('2020-08-17').date(), 15),
@@ -289,7 +289,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                     self.fq_sandbox_table_names[6],
                 'fields': ['person_id', 'device_date', 'battery'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [3456],
+                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (234, datetime.fromisoformat('2020-08-17').date(),
                      "Medium"),
