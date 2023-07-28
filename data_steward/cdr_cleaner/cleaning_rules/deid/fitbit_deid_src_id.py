@@ -59,7 +59,38 @@ class FitbitDeidSrcID(BaseCleaningRule):
                          table_namer=table_namer)
 
     def get_query_specs(self):
-        pass
+        """
+        Return a list of dictionary query specifications.
+
+        :return:  A list of dictionaries.  Each dictionary contains a
+            single query and a specification for how to execute that query.
+            The specifications are optional but the query is required.
+        """
+        update_queries, sandbox_queries = [], []
+
+        for table in self.affected_tables:
+            sandbox_query = {
+                cdr_consts.QUERY:
+                    SANDBOX_SRC_IDS_QUERY.render(
+                        project_id=self.project_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        sandbox_table=self.sandbox_table_for(table),
+                        dataset_id=self.dataset_id,
+                        fitbit_table=table)
+            }
+            update_query = {
+                cdr_consts.QUERY:
+                    UPDATE_SRC_IDS_QUERY.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        fitbit_table=table,
+                        pipeline_tables=PIPELINE_TABLES,
+                        site_maskings=SITE_MASKING_TABLE_ID)
+            }
+            sandbox_queries.append(sandbox_query)
+            update_queries.append(update_query)
+
+        return update_queries + sandbox_queries
 
     def get_sandbox_tablenames(self):
         pass
