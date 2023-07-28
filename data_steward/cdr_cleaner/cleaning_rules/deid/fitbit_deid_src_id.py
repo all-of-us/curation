@@ -95,7 +95,7 @@ class FitbitDeidSrcID(BaseCleaningRule):
             sandbox_queries.append(sandbox_query)
             update_queries.append(update_query)
 
-        return update_queries + sandbox_queries
+        return sandbox_queries + update_queries
 
     def get_sandbox_tablenames(self):
         """
