@@ -101,6 +101,15 @@ VALUES
     (3456, date('2020-08-17'), "Medium")
 """)
 
+SITE_MASKINGS_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO 
+    `{{project_id}}.{{sandbox_dataset}}.{{temp_site_masking}}`
+(hpo_id, src_id, state, value_source_concept_id)
+VALUES
+    ('tp', 'Portal 1', 'state1', 1),
+    ('pt', 'Portal 2', 'state2', 2)
+""")
+
 
 class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
 
