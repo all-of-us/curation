@@ -159,15 +159,15 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         super().setUp()
 
         # Create temp site_masking table
-        maskings_table = f'{self.project_id}.{self.sandbox_id}.{SITE_MASKING_TABLE_ID}'
+        maskings_table = f'{self.project_id}.{self.dataset_id}.{SITE_MASKING_TABLE_ID}'
         schema = self.client.get_table_schema(SITE_MASKING_TABLE_ID)
         self.client.create_table(Table(maskings_table, schema), exists_ok=True)
-        self.fq_sandbox_table_names.append(maskings_table)
+        self.fq_table_names.append(maskings_table)
 
         # Insert temp masking records
         site_maskings_query = SITE_MASKINGS_TEMPLATE.render(
             project_id=self.project_id,
-            sandbox_dataset=self.sandbox_id,
+            dataset_id=self.dataset_id,
             temp_site_masking=SITE_MASKING_TABLE_ID)
 
         # Insert test records into fitbit tables
