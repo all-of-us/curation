@@ -1,10 +1,15 @@
 """
 """
 
+#Python imports
+import logging
+
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import FITBIT_TABLES, JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
+
+LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3337']
 
