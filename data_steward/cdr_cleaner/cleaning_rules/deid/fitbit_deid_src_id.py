@@ -93,7 +93,7 @@ class FitbitDeidSrcID(BaseCleaningRule):
         return update_queries + sandbox_queries
 
     def get_sandbox_tablenames(self):
-        pass
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def setup_rule(self, client):
         pass
