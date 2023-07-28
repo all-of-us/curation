@@ -53,6 +53,7 @@ from cdr_cleaner.cleaning_rules.truncate_era_tables import TruncateEraTables
 from cdr_cleaner.cleaning_rules.remove_non_existing_pids import RemoveNonExistingPids
 from cdr_cleaner.cleaning_rules.drop_invalid_sleep_level_records import DropInvalidSleepLevelRecords
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
+from cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id import FitbitDeidSrcID
 from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
     RemoveFitbitDataIfMaxAgeExceeded
@@ -327,6 +328,7 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
     (DeidFitbitDeviceId,
     ),  # This rule must occur so that PID can map to device_id
     (FitbitPIDtoRID,),
+    (FitbitDeidSrcID,),
     (RemoveNonExistingPids,),  # assumes RT dataset is ready for reference
     (FitbitDateShiftRule,),
 ]
@@ -387,6 +389,7 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (DeidFitbitDeviceId,
     ),  # This rule must occur so that PID can map to device_id
     (FitbitPIDtoRID,),
+    (FitbitDeidSrcID,),
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
     (DropViaSurveyConduct,),
 ]
