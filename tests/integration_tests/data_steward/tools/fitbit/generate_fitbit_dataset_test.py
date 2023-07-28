@@ -63,7 +63,7 @@ class GenerateFitbitDatasetTest(TestCase):
             'person_id': 4,
             'datetime': None,
             'steps': Decimal(40),
-            'src_id': 'ptsc',
+            'src_id': 'vibrent',
         }]
         create_table = table_query.render(project_id=self.project_id,
                                           dataset_id=self.dataset,
