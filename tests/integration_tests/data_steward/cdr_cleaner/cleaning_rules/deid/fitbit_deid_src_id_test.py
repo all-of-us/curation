@@ -19,7 +19,7 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 ACTIVITY_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-(person_id,activity_calories,date)
+(person_id, activity_calories, date)
 VALUES
     (1234, 100, date('2020-08-17'), 'pt'),
     (5678, 200, date('2020-08-17'), 'tp'),
@@ -31,7 +31,7 @@ VALUES
 HEART_RATE_MINUTE_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-(person_id,heart_rate_value,datetime, src_id)
+(person_id, heart_rate_value, datetime, src_id)
 VALUES
     (1234, 60, (DATETIME '2020-08-17 15:00:00'), 'pt'),
     (5678, 50, (DATETIME '2020-08-17 15:30:00'), 'tp'),
@@ -79,7 +79,7 @@ VALUES
 SLEEP_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-(person_id,sleep_date,duration_in_min)
+(person_id, sleep_date, duration_in_min)
 VALUES
     (1234, date('2020-08-17'), 42, 'pt'),
     (5678, date('2020-08-17'), 15, 'tp'),
