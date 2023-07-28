@@ -47,10 +47,12 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
                 f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
         # Store affected table names
-        affected_tables = [IDENTICAL_LABS_LOOKUP_TABLE, MEASUREMENT, CONCEPT]
+        affected_tables = [MEASUREMENT, CONCEPT]
         for table_name in affected_tables:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
+        cls.fq_table_names.append(
+            f'{cls.project_id}.pipeline_tables.{IDENTICAL_LABS_LOOKUP_TABLE}')
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -121,7 +123,7 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         P_LOOKUP_TEMPLATE = JINJA_ENV.from_string("""
-        INSERT INTO `{{project_id}}.{{dataset_id}}.{{lookup_table}}`
+        INSERT INTO `{{project_id}}.pipeline_tables.{{lookup_table}}`
         (value_as_concept_id,vac_name,vac_vocab,aou_standard_vac,
                date_added)
         VALUES
@@ -129,7 +131,6 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
             (100011, 'Increased', 'LOINC', 100011, '2022-01-01'),
             (100012, 'Increased', 'SNOMED',100011, '2022-01-01')
         """).render(project_id=self.project_id,
-                    dataset_id=self.dataset_id,
                     lookup_table=IDENTICAL_LABS_LOOKUP_TABLE)
 
         self.load_test_data(
@@ -137,7 +138,7 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
 
         tables_and_counts = [{
             'fq_table_name':
-                self.fq_table_names[0],
+                self.fq_table_names[-1],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'fields': [
@@ -175,8 +176,4 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
                                 datetime.now(timezone.utc).date())]
         }]
 
-        # mock the PIPELINE_TABLES variable
-        with mock.patch(
-                'cdr_cleaner.cleaning_rules.store_new_duplicate_measurement_concept_ids.PIPELINE_TABLES',
-                self.dataset_id):
-            self.default_test(tables_and_counts)
+        self.default_test(tables_and_counts)
