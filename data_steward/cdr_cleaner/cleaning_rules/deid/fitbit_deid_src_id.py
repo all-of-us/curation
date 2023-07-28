@@ -111,13 +111,13 @@ class FitbitDeidSrcID(BaseCleaningRule):
 
     def setup_validation(self, client):
         """
-        Run required steps for validation setup
+        Run required steps for validation setup.
         """
         raise NotImplementedError("Please fix me.")
 
     def validate_rule(self, client):
         """
-        Validates the cleaning rule which deletes or updates the data from the tables
+        Validates the cleaning rule which deletes or updates the data from the tables.
         """
         raise NotImplementedError("Please fix me.")
 
