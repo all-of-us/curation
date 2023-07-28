@@ -21,11 +21,11 @@ INSERT INTO
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id,activity_calories,date)
 VALUES
-    (1234, 100, date('2020-08-17')),
-    (5678, 200, date('2020-08-17')),
-    (2345, 500, date('2020-08-17')),
-    (6789, 800, date('2020-08-17')),
-    (3456, 1000, date('2020-08-17'))
+    (1234, 100, date('2020-08-17'), 'pt'),
+    (5678, 200, date('2020-08-17'), 'tp'),
+    (2345, 500, date('2020-08-17'), 'pt'),
+    (6789, 800, date('2020-08-17'), 'tp'),
+    (3456, 1000, date('2020-08-17'), 'pt')
 """)
 
 HEART_RATE_MINUTE_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
@@ -33,11 +33,11 @@ INSERT INTO
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id,heart_rate_value,datetime, src_id)
 VALUES
-    (1234, 60, (DATETIME '2020-08-17 15:00:00')),
-    (5678, 50, (DATETIME '2020-08-17 15:30:00')),
-    (2345, 55, (DATETIME '2020-08-17 16:00:00')),
-    (6789, 40, (DATETIME '2020-08-17 16:30:00')),
-    (3456, 65, (DATETIME '2020-08-17 17:00:00'))
+    (1234, 60, (DATETIME '2020-08-17 15:00:00'), 'pt'),
+    (5678, 50, (DATETIME '2020-08-17 15:30:00'), 'tp'),
+    (2345, 55, (DATETIME '2020-08-17 16:00:00'), 'pt'),
+    (6789, 40, (DATETIME '2020-08-17 16:30:00'), 'tp'),
+    (3456, 65, (DATETIME '2020-08-17 17:00:00'), 'pt')
 """)
 
 HEART_RATE_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
@@ -45,11 +45,11 @@ INSERT INTO
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, date, calorie_count, src_id)
 VALUES
-    (1234, date('2020-08-17'), 100),
-    (5678, date('2020-08-17'), 200),
-    (2345, date('2020-08-17'), 500),
-    (6789, date('2020-08-17'), 800),
-    (3456, date('2020-08-17'), 1000)
+    (1234, date('2020-08-17'), 100, 'pt'),
+    (5678, date('2020-08-17'), 200, 'tp'),
+    (2345, date('2020-08-17'), 500, 'pt'),
+    (6789, date('2020-08-17'), 800, 'tp'),
+    (3456, date('2020-08-17'), 1000, 'pt')
 """)
 
 STEPS_INTRADAY_TEMPLATE = JINJA_ENV.from_string("""
@@ -57,11 +57,11 @@ INSERT INTO
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, steps, datetime, src_id)
 VALUES
-    (1234, 60, (DATETIME '2020-08-17 15:00:00')),
-    (5678, 50, (DATETIME '2020-08-17 15:30:00')),
-    (2345, 55, (DATETIME '2020-08-17 16:00:00')),
-    (6789, 40, (DATETIME '2020-08-17 16:30:00')),
-    (3456, 65, (DATETIME '2020-08-17 17:00:00'))
+    (1234, 60, (DATETIME '2020-08-17 15:00:00'), 'pt'),
+    (5678, 50, (DATETIME '2020-08-17 15:30:00'), 'tp'),
+    (2345, 55, (DATETIME '2020-08-17 16:00:00'), 'pt'),
+    (6789, 40, (DATETIME '2020-08-17 16:30:00'), 'tp'),
+    (3456, 65, (DATETIME '2020-08-17 17:00:00'), 'pt')
 """)
 
 SLEEP_DAILY_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
@@ -69,23 +69,23 @@ INSERT INTO
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, sleep_date, minute_in_bed, src_id)
 VALUES
-    (1234, date('2020-08-17'), 502),
-    (5678, date('2020-08-17'), 443),
-    (2345, date('2020-08-17'), 745),
-    (6789, date('2020-08-17'), 605),
-    (3456, date('2020-08-17'), 578)
+    (1234, date('2020-08-17'), 502, 'pt'),
+    (5678, date('2020-08-17'), 443, 'tp'),
+    (2345, date('2020-08-17'), 745, 'pt'),
+    (6789, date('2020-08-17'), 605, 'tp'),
+    (3456, date('2020-08-17'), 578, 'pt')
 """)
 
 SLEEP_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-(person_id, sleep_date, is_main_sleep, level, start_datetime, duration_in_min, src_id)
+(person_id,sleep_date,duration_in_min)
 VALUES
-    (1234, '2008-11-18','false', 'wake', '2008-11-18T00:00:00', 4.5),
-    (5678, '2010-01-01','true', 'light', '2010-01-01T00:00:00', 3.5),
-    (2345, '2012-01-01','true', 'invalid', '2010-01-01T00:00:00', 2.5),
-    (6789, '2010-11-18','false', 'rem', '2008-11-18T05:00:00', 7.5),
-    (3456, '2014-01-01','false', 'deep', '2014-01-01T05:00:00', 8.5)
+    (1234, date('2020-08-17'), 42, 'pt'),
+    (5678, date('2020-08-17'), 15, 'tp'),
+    (2345, date('2020-08-17'), 22, 'pt'),
+    (6789, date('2020-08-17'), 56, 'tp'),
+    (3456, date('2020-08-17'), 12, 'pt')
 """)
 
 DEVICE_TEMPLATE = JINJA_ENV.from_string("""
@@ -93,11 +93,11 @@ INSERT INTO
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, device_date, battery, src_id)
 VALUES
-    (1234, date('2020-08-17'), "Medium"),
-    (5678, date('2020-08-17'), "Medium"),
-    (2345, date('2020-08-17'), "Medium"),
-    (6789, date('2020-08-17'), "Medium"),
-    (3456, date('2020-08-17'), "Medium")
+    (1234, date('2020-08-17'), "Medium", 'pt'),
+    (5678, date('2020-08-17'), "Medium", 'tp'),
+    (2345, date('2020-08-17'), "Medium", 'pt'),
+    (6789, date('2020-08-17'), "Medium", 'tp'),
+    (3456, date('2020-08-17'), "Medium", 'pt')
 """)
 
 SITE_MASKINGS_TEMPLATE = JINJA_ENV.from_string("""
