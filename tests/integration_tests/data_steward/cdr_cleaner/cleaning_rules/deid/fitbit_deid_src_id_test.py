@@ -187,6 +187,10 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         self.load_test_data([site_maskings_query] + fitbit_test_queries)
 
     def test_field_cleaning(self):
+        """
+        Test updated src_id values
+        """
+
         # Expected results list
         tables_and_counts = [
             {
