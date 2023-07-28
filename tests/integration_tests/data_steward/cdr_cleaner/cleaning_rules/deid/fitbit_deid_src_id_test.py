@@ -5,6 +5,7 @@ Original Issues: DC-3337
 # Python Imports
 import os
 from unittest import mock
+from datetime import datetime
 
 # Third party imports
 from google.cloud.bigquery import Table
@@ -185,7 +186,123 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         self.load_test_data([site_maskings_query] + fitbit_test_queries)
 
     def test_field_cleaning(self):
-        tables_and_counts = []
+        # Expected results list
+        tables_and_counts = [
+            {
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name,
+                              FITBIT_TABLES[0]]),  # ACTIVITY_SUMMARY
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[0],
+                'fields': ['person_id', 'activity_calories', 'date'],
+                'loaded_ids': [1234, 5678, 2345, 6789, 3456, 3456],
+                'sandboxed_ids': [3456],
+                'cleaned_values': [
+                    (234, 100, datetime.fromisoformat('2020-08-17').date()),
+                    (678, 200, datetime.fromisoformat('2020-08-17').date()),
+                    (345, 500, datetime.fromisoformat('2020-08-17').date()),
+                    (789, 800, datetime.fromisoformat('2020-08-17').date())
+                ]
+            },
+            {
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name,
+                              FITBIT_TABLES[1]]),  # HEART_RATE_MINUTE_LEVEL
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[1],
+                'fields': ['person_id', 'heart_rate_value', 'datetime'],
+                'loaded_ids': [1234, 5678, 2345, 6789, 3456, 3456],
+                'sandboxed_ids': [3456],
+                'cleaned_values': [
+                    (234, 60, datetime.fromisoformat('2020-08-17 15:00:00')),
+                    (678, 50, datetime.fromisoformat('2020-08-17 15:30:00')),
+                    (345, 55, datetime.fromisoformat('2020-08-17 16:00:00')),
+                    (789, 40, datetime.fromisoformat('2020-08-17 16:30:00'))
+                ]
+            },
+            {
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name,
+                              FITBIT_TABLES[2]]),  # HEART_RATE_SUMMARY
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[2],
+                'fields': ['person_id', 'date', 'calorie_count'],
+                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [3456],
+                'cleaned_values': [
+                    (234, datetime.fromisoformat('2020-08-17').date(), 100),
+                    (678, datetime.fromisoformat('2020-08-17').date(), 200),
+                    (345, datetime.fromisoformat('2020-08-17').date(), 500),
+                    (789, datetime.fromisoformat('2020-08-17').date(), 800)
+                ]
+            },
+            {
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name,
+                              FITBIT_TABLES[3]]),  # STEPS_INTRADAY
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[3],
+                'fields': ['person_id', 'datetime', 'steps'],
+                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [3456],
+                'cleaned_values': [
+                    (234, datetime.fromisoformat('2020-08-17 15:00:00'), 60),
+                    (678, datetime.fromisoformat('2020-08-17 15:30:00'), 50),
+                    (345, datetime.fromisoformat('2020-08-17 16:00:00'), 55),
+                    (789, datetime.fromisoformat('2020-08-17 16:30:00'), 40)
+                ]
+            },
+            {
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name,
+                              FITBIT_TABLES[4]]),  # SLEEP_DAILY_SUMMARY
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[4],
+                'fields': ['person_id', 'sleep_date', 'minute_in_bed'],
+                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [3456],
+                'cleaned_values': [
+                    (234, datetime.fromisoformat('2020-08-17').date(), 502),
+                    (678, datetime.fromisoformat('2020-08-17').date(), 443),
+                    (345, datetime.fromisoformat('2020-08-17').date(), 745),
+                    (789, datetime.fromisoformat('2020-08-17').date(), 605)
+                ]
+            },
+            {
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name,
+                              FITBIT_TABLES[5]]),  # SLEEP_LEVEL
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[5],
+                'fields': ['person_id', 'sleep_date', 'duration_in_min'],
+                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [3456],
+                'cleaned_values': [
+                    (234, datetime.fromisoformat('2020-08-17').date(), 42),
+                    (678, datetime.fromisoformat('2020-08-17').date(), 15),
+                    (345, datetime.fromisoformat('2020-08-17').date(), 22),
+                    (789, datetime.fromisoformat('2020-08-17').date(), 56)
+                ]
+            },
+            {
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name, FITBIT_TABLES[6]]),  #DEVICE
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[6],
+                'fields': ['person_id', 'device_date', 'battery'],
+                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [3456],
+                'cleaned_values': [
+                    (234, datetime.fromisoformat('2020-08-17').date(),
+                     "Medium"),
+                    (678, datetime.fromisoformat('2020-08-17').date(),
+                     "Medium"),
+                    (345, datetime.fromisoformat('2020-08-17').date(),
+                     "Medium"),
+                    (789, datetime.fromisoformat('2020-08-17').date(), "Medium")
+                ]
+            }
+        ]
         # mock the PIPELINE_TABLES variable
         with mock.patch(
                 'cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id.PIPELINE_TABLES',
