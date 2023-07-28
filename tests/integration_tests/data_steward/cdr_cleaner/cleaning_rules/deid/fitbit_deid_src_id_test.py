@@ -10,7 +10,11 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
-        pass
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
+        super().initialize_class_vars()
 
     def setUp(self):
         """
