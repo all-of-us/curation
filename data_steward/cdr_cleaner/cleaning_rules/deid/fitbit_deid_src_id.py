@@ -1,4 +1,8 @@
 """
+Update src_ids in fitbit tables.
+Update src_id values in fitbit tables with src_id values from the site_maskings table.
+
+Original Issue: DC-3337
 """
 
 #Python imports

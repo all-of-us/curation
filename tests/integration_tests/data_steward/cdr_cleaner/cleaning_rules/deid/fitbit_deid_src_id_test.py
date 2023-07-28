@@ -1,4 +1,7 @@
 """
+Integration test for the fitbit_deid_src_id module. 
+Update src_id values in fitbit tables with src_id values from the site_maskings table.
+
 Original Issues: DC-3337
 """
 
