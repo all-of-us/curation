@@ -16,7 +16,7 @@ ISSUE_NUMBERS = ['DC3337']
 # Query template to sandbox records
 SANDBOX_SRC_IDS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE 
-    `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` ft
+    `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`
 AS (
     SELECT
         *
