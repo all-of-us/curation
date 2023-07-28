@@ -7,9 +7,29 @@ import os
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, SLEEP_LEVEL
+from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id import FitbitDeidSrcID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+
+ACTIVITY_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{activity_summary_table}}`
+ """)
+
+HEART_RATE_MINUTE_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{heart_rate_minute_level_table}}`
+""")
+
+HEART_RATE_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{heart_rate_summary_table}}`
+""")
+
+STEPS_INTRADAY_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{steps_intraday_table}}`
+""")
+
+SLEEP_DAILY_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{sleep_daily_summary_table}}`
+""")
 
 SLEEP_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.{{sleep_level_table}}`
@@ -29,6 +49,10 @@ VALUES
 (11, '2013-03-23','true', 'light', '2013-03-23T05:00:00', 4.5),
 (12, '2009-06-15','true', 'Deep', '2009-06-15T05:00:00', 7.5)
  """)
+
+DEVICE_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{device_table}}`
+""")
 
 
 class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
