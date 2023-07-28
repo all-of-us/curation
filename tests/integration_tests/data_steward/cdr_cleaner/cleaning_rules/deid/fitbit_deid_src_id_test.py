@@ -102,7 +102,7 @@ VALUES
 
 SITE_MASKINGS_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
-    `{{project_id}}.{{dataset_id}}.{{temp_site_masking}}`
+    `{{project_id}}.{{dataset_id}}.{{temp_site_maskings}}`
 (hpo_id, src_id, state, value_source_concept_id)
 VALUES
     ('tp', 'Portal 1', 'state1', 1),
@@ -168,7 +168,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         site_maskings_query = SITE_MASKINGS_TEMPLATE.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
-            temp_site_masking=SITE_MASKING_TABLE_ID)
+            temp_site_maskings=SITE_MASKING_TABLE_ID)
 
         # Insert test records into fitbit tables
         fitbit_test_queries = []
@@ -323,7 +323,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             },
             {
                 'fq_table_name':
-                    self.fq_table_names[6],  #DEVICE
+                    self.fq_table_names[6],  # DEVICE
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[6],
                 'fields': ['person_id', 'device_date', 'battery', 'src_id'],
@@ -343,6 +343,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 ]
             }
         ]
+
         # mock the PIPELINE_TABLES variable
         with mock.patch(
                 'cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id.PIPELINE_TABLES',
