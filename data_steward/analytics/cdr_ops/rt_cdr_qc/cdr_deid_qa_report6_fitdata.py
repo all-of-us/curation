@@ -15,7 +15,7 @@
 # # QA queries on new CDR_deid fitdata
 #
 
-import urllib
+
 import pandas as pd
 from common import JINJA_ENV, FITBIT_TABLES
 from utils import auth
@@ -49,6 +49,7 @@ secondary_date_column = {
     'sleep_level': 'start_datetime',
 }
 
+
 # +
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
@@ -57,7 +58,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # -
 
 # df will have a summary in the end
-df = pd.DataFrame(columns = ['query', 'result'])
+summary = pd.DataFrame(columns = ['query', 'result'])
 
 # This notebook was updated per [DC-1786].
 #
@@ -70,8 +71,9 @@ df = pd.DataFrame(columns = ['query', 'result'])
 # by adding m.shift back to deid_table and see if any date is newer than cutoff date.
 
 # +
-query = JINJA_ENV.from_string('''SELECT
-  \'{{table}}\' as table,
+query = JINJA_ENV.from_string("""
+SELECT
+  '{{table}}' as table,
   COUNT(1) bad_rows
 FROM
   `{{project_id}}.{{dataset_id}}.{{table}}` a
@@ -81,7 +83,7 @@ WHERE DATE_ADD(date({{column_date}}), INTERVAL m.shift DAY) > '{{truncation_date
   {% if secondary_date_column -%}
   OR DATE_ADD(date({{secondary_date_column}}), INTERVAL m.shift DAY) > '{{truncation_date}}'
   {% endif %}
-''')
+""")
 
 queries_list = []
 for table in FITBIT_TABLES:
@@ -94,23 +96,23 @@ for table in FITBIT_TABLES:
                                       pipeline=pipeline))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
-df2 = execute(client, union_all_query)
+result = execute(client, union_all_query)
 
-if sum(df2['bad_rows']) == 0:
-    df = df.append(
+if sum(result['bad_rows']) == 0:
+    summary = summary.append(
         {
             'query': 'Data Truncation Query',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
-    df = df.append(
+    summary = summary.append(
         {
             'query': 'Data Truncation Query',
             'result': 'Failure'
         },
         ignore_index=True)
-df2
+result
 # -
 
 # # Verify if that the fitdata data is removed FROM the fitbit tables for participants exceeding allowable age (maximum_age, i.e.,89). ((row counts = 0))
@@ -146,24 +148,23 @@ for table in FITBIT_TABLES:
                                       pipeline=pipeline))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
-df2 = execute(client, union_all_query)
+result = execute(client, union_all_query)
 
-if sum(df2['bad_rows']) == 0:
-    df = df.append(
+if sum(result['bad_rows']) == 0:
+    summary = summary.append(
         {
             'query': 'Date Shift Query',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
-    df = df.append(
+    summary = summary.append(
         {
             'query': 'Date Shift Query',
             'result': 'Failure'
         },
         ignore_index=True)
-df2
-
+result
 # -
 
 
@@ -181,8 +182,7 @@ df2
 
 # +
 query = JINJA_ENV.from_string("""
-
-SELECT 
+SELECT
   \'{{table}}\' as table,
   COUNT(1) bad_rows
 FROM (SELECT d.person_id,
@@ -190,7 +190,7 @@ FROM (SELECT d.person_id,
       FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
       JOIN `{{project_id}}.{{deid_cdr_fitbit}}.{{table}}` d
       ON m.research_id = d.person_id)
-WHERE d_newc NOT IN (SELECT 
+WHERE d_newc NOT IN (SELECT
       CONCAT(m.research_id, '_', i.{{date_type}}) as i_newc
       FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
       JOIN `{{project_id}}.{{non_deid_fitbit}}.{{table}}` i
@@ -209,24 +209,23 @@ for table in FITBIT_TABLES:
                       deid_cdr_fitbit=deid_cdr_fitbit))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
-df2 = execute(client, union_all_query)
+result = execute(client, union_all_query)
 
-if sum(df2['bad_rows']) == 0:
-    df = df.append(
+if sum(result['bad_rows']) == 0:
+    summary = summary.append(
         {
             'query': 'Date Shift Query',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
-    df = df.append(
+    summary = summary.append(
         {
             'query': 'Date Shift Query',
             'result': 'Failure'
         },
         ignore_index=True)
-df2
-
+result
 # -
 
 # # Verify that the participants are correctly mapped to their Research ID
@@ -235,8 +234,7 @@ df2
 
 # +
 query = JINJA_ENV.from_string("""
-
-SELECT   
+SELECT
   \'{{table}}\' as table,
   COUNT(1) bad_rows
 FROM (SELECT DISTINCT i.person_id  AS non_deid_pid, m.research_id
@@ -261,23 +259,23 @@ for table in FITBIT_TABLES:
                       deid_cdr_fitbit=deid_cdr_fitbit))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
-df2 = execute(client, union_all_query)
+result = execute(client, union_all_query)
 
-if sum(df2['bad_rows']) == 0:
-    df = df.append(
+if sum(result['bad_rows']) == 0:
+    summary = summary.append(
         {
             'query': 'Pid Rid Query',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
-    df = df.append(
+    summary = summary.append(
         {
             'query': 'Pid Rid Query',
             'result': 'Failure'
         },
         ignore_index=True)
-df2
+result
 # -
 
 # # Verify all person_ids in fitbit datasets exsit in deid_cdr person table
@@ -288,13 +286,11 @@ df2
 
 # +
 query = JINJA_ENV.from_string("""
-
 SELECT
   \'{{table}}\' as table,
   COUNT(1) bad_rows
 FROM `{{project_id}}.{{deid_cdr_fitbit}}.{{table}}`
 WHERE person_id NOT IN (SELECT person_id FROM `{{project_id}}.{{deid_cdr}}.person`)
-
 """)
 queries_list = []
 for table in FITBIT_TABLES:
@@ -305,23 +301,23 @@ for table in FITBIT_TABLES:
                       deid_cdr_fitbit=deid_cdr_fitbit))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
-df2 = execute(client, union_all_query)
+result = execute(client, union_all_query)
 
-if sum(df2['bad_rows']) == 0:
-    df = df.append(
+if sum(result['bad_rows']) == 0:
+    summary = summary.append(
         {
             'query': 'Valid person_ids Query',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
-    df = df.append(
+    summary = summary.append(
         {
             'query': 'Valid person_ids Query',
             'result': 'Failure'
         },
         ignore_index=True)
-df2
+result
 
 
 # -
@@ -333,6 +329,6 @@ def highlight_cells(val):
     color = 'red' if 'Failure' in val else 'white'
     return f'background-color: {color}'
 
-df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
+summary.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
 # -
 
