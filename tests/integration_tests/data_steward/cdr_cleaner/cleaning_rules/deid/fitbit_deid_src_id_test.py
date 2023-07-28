@@ -31,7 +31,7 @@ VALUES
 HEART_RATE_MINUTE_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-(person_id,heart_rate_value,datetime)
+(person_id,heart_rate_value,datetime, src_id)
 VALUES
     (1234, 60, (DATETIME '2020-08-17 15:00:00')),
     (5678, 50, (DATETIME '2020-08-17 15:30:00')),
@@ -43,7 +43,7 @@ VALUES
 HEART_RATE_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-(person_id,date,calorie_count)
+(person_id, date, calorie_count, src_id)
 VALUES
     (1234, date('2020-08-17'), 100),
     (5678, date('2020-08-17'), 200),
@@ -55,7 +55,7 @@ VALUES
 STEPS_INTRADAY_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-(person_id,steps,datetime)
+(person_id, steps, datetime, src_id)
 VALUES
     (1234, 60, (DATETIME '2020-08-17 15:00:00')),
     (5678, 50, (DATETIME '2020-08-17 15:30:00')),
@@ -67,7 +67,7 @@ VALUES
 SLEEP_DAILY_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-(person_id,sleep_date,minute_in_bed)
+(person_id, sleep_date, minute_in_bed, src_id)
 VALUES
     (1234, date('2020-08-17'), 502),
     (5678, date('2020-08-17'), 443),
@@ -79,7 +79,7 @@ VALUES
 SLEEP_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-(person_id, sleep_date, is_main_sleep, level, start_datetime, duration_in_min)
+(person_id, sleep_date, is_main_sleep, level, start_datetime, duration_in_min, src_id)
 VALUES
     (1234, '2008-11-18','false', 'wake', '2008-11-18T00:00:00', 4.5),
     (5678, '2010-01-01','true', 'light', '2010-01-01T00:00:00', 3.5),
@@ -91,7 +91,7 @@ VALUES
 DEVICE_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-(person_id, device_date, battery)
+(person_id, device_date, battery, src_id)
 VALUES
     (1234, date('2020-08-17'), "Medium"),
     (5678, date('2020-08-17'), "Medium"),
