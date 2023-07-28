@@ -157,7 +157,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
 
     def setUp(self):
         """
-        Create empty tables for the rule to run on
+        Create tables and test data
         """
         super().setUp()
 
