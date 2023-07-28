@@ -24,7 +24,7 @@ from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
-project_id = "" # aou project id
+project_id = "aou-res-curation-prod" # aou project id
 pipeline="" # pipeline tables dataset
 non_deid_fitbit="" # fitbt dataset prior to deidentification
 deid_cdr_fitbit="" # fitbit dataset post deidentification(either tier)
@@ -126,7 +126,7 @@ result
 query = JINJA_ENV.from_string(
 """
 SELECT
-  \'{{table}}\' as table,
+  '{{table}}' as table,
   COUNT(1) bad_rows
 FROM
     `{{project_id}}.{{dataset_id}}.{{table}}` a
@@ -183,7 +183,7 @@ result
 # +
 query = JINJA_ENV.from_string("""
 SELECT
-  \'{{table}}\' as table,
+  '{{table}}' as table,
   COUNT(1) bad_rows
 FROM (SELECT d.person_id,
       CONCAT(d.person_id, '_', DATE_ADD(d.{{date_type}}, INTERVAL m.shift DAY)) AS d_newc
@@ -235,7 +235,7 @@ result
 # +
 query = JINJA_ENV.from_string("""
 SELECT
-  \'{{table}}\' as table,
+  '{{table}}' as table,
   COUNT(1) bad_rows
 FROM (SELECT DISTINCT i.person_id  AS non_deid_pid, m.research_id
       FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
@@ -287,7 +287,7 @@ result
 # +
 query = JINJA_ENV.from_string("""
 SELECT
-  \'{{table}}\' as table,
+  '{{table}}' as table,
   COUNT(1) bad_rows
 FROM `{{project_id}}.{{deid_cdr_fitbit}}.{{table}}`
 WHERE person_id NOT IN (SELECT person_id FROM `{{project_id}}.{{deid_cdr}}.person`)
