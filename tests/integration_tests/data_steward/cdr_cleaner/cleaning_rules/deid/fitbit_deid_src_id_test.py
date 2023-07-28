@@ -4,10 +4,14 @@ Original Issues: DC-3337
 
 # Python Imports
 import os
+from unittest import mock
+
+# Third party imports
+from google.cloud.bigquery import Table
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, FITBIT_TABLES
+from common import JINJA_ENV, FITBIT_TABLES, SITE_MASKING_TABLE_ID
 from cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id import FitbitDeidSrcID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
