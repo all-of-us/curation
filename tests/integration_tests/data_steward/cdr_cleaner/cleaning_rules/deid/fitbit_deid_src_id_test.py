@@ -141,7 +141,20 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         """
         Create empty tables for the rule to run on
         """
-        pass
+        super().setUp()
+
+        fitbit_test_queries = []
+        TEMPLATES = [
+            ACTIVITY_SUMMARY_TEMPLATE, HEART_RATE_MINUTE_LEVEL_TEMPLATE,
+            HEART_RATE_SUMMARY_TEMPLATE, STEPS_INTRADAY_TEMPLATE,
+            SLEEP_DAILY_SUMMARY_TEMPLATE, SLEEP_LEVEL_TEMPLATE, DEVICE_TEMPLATE
+        ]
+        # Insert test records into fitbit tables
+        for table, template in zip(FITBIT_TABLES, TEMPLATES):
+            test_data_query = template.render(project_id=self.project_id,
+                                              dataset_id=self.dataset_id,
+                                              fitbit_table=table)
+            fitbit_test_queries.append(test_data_query)
 
     def test_field_cleaning(self):
         pass
