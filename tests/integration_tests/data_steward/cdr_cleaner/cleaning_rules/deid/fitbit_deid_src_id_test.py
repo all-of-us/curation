@@ -352,5 +352,5 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         # mock the PIPELINE_TABLES variable
         with mock.patch(
                 'cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id.PIPELINE_TABLES',
-                self.sandbox_id):
+                self.dataset_id):
             self.default_test(tables_and_counts)
