@@ -21,7 +21,7 @@ from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS= ['DC1644', 'DC3355']
+JIRA_ISSUE_NUMBERS = ['DC1644', 'DC3355']
 
 EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE = '_ehr_unconsented_pids'
 
