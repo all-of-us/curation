@@ -93,13 +93,25 @@ class FitbitDeidSrcID(BaseCleaningRule):
         return update_queries + sandbox_queries
 
     def get_sandbox_tablenames(self):
+        """
+        generates sandbox table names
+        """
         return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def setup_rule(self, client):
+        """
+        Function to run any data upload options before executing a query.
+        """
         pass
 
     def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+        """
         pass
 
     def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+        """
         pass
