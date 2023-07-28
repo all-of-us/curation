@@ -12,6 +12,7 @@ from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.dedup_measurement_value_as_concept_id import (
     DedupMeasurementValueAsConceptId)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+from common import MEASUREMENT, IDENTICAL_LABS_LOOKUP_TABLE
 
 
 class DedupMeasurementValueAsConceptIdTest(BaseTest.CleaningRulesTestBase):
@@ -44,7 +45,10 @@ class DedupMeasurementValueAsConceptIdTest(BaseTest.CleaningRulesTestBase):
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
 
-        cls.fq_table_names = [f"{project_id}.{dataset_id}.measurement"]
+        affected_tables = [MEASUREMENT, IDENTICAL_LABS_LOOKUP_TABLE]
+        for table_name in affected_tables:
+            cls.fq_table_names.append(f'{project_id}.{dataset_id}.{table_name}')
+
         cls.dataset_id = dataset_id
         # call super to set up the client, create datasets, and create
         # empty test tables
