@@ -44,11 +44,6 @@ old_map_csv=pd.read_csv(old_map_short_codes_path)
 LONG_CODES = old_map_csv.iloc[:, 1].str.lower().tolist()
 # -
 
-impersonation_creds = auth.get_impersonation_credentials(
-    run_as, target_scopes=IMPERSONATION_SCOPES)
-
-client = BigQueryClient(project_id, credentials=impersonation_creds)
-
 # wear_consent and wear_consent_ptsc concepts that are not associated with an OMOP concept_id.
 WEAR_SURVEY_CODES = ['havesmartphone',
                       'wearwatch',
