@@ -7,13 +7,13 @@ import os
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV
+from common import JINJA_ENV, FITBIT_TABLES
 from cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id import FitbitDeidSrcID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 ACTIVITY_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
-    `{{project_id}}.{{dataset_id}}.{{activity_summary_table}}`
+    `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id,activity_calories,date)
 VALUES
     (1234, 100, date('2020-08-17')),
@@ -26,7 +26,7 @@ VALUES
 
 HEART_RATE_MINUTE_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
-    `{{project_id}}.{{dataset_id}}.{{heart_rate_minute_level_table}}`
+    `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id,heart_rate_value,datetime)
 VALUES
     (1234, 60, (DATETIME '2020-08-17 15:00:00')),
@@ -39,7 +39,7 @@ VALUES
 
 HEART_RATE_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
-    `{{project_id}}.{{dataset_id}}.{{heart_rate_summary_table}}`
+    `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id,date,calorie_count)
 VALUES
     (1234, date('2020-08-17'), 100),
@@ -51,7 +51,7 @@ VALUES
 
 STEPS_INTRADAY_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
-    `{{project_id}}.{{dataset_id}}.{{steps_intraday_table}}`
+    `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id,steps,datetime)
 VALUES
     (1234, 60, (DATETIME '2020-08-17 15:00:00')),
@@ -63,7 +63,7 @@ VALUES
 
 SLEEP_DAILY_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
-    `{{project_id}}.{{dataset_id}}.{{sleep_daily_summary_table}}`
+    `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id,sleep_date,minute_in_bed)
 VALUES
     (1234, date('2020-08-17'), 502),
@@ -75,7 +75,7 @@ VALUES
 
 SLEEP_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
-    `{{project_id}}.{{dataset_id}}.{{sleep_level_table}}`
+    `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, sleep_date, is_main_sleep, level, start_datetime, duration_in_min)
 VALUES
     (1234, '2008-11-18','false', 'wake', '2008-11-18T00:00:00', 4.5),
@@ -87,7 +87,7 @@ VALUES
 
 DEVICE_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
-    `{{project_id}}.{{dataset_id}}.{{device_table}}`
+    `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, device_date, battery)
 VALUES
     (1234, date('2020-08-17'), "Medium"),
