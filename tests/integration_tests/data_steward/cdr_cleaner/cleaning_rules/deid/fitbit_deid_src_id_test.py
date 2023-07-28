@@ -106,7 +106,10 @@ INSERT INTO
 (hpo_id, src_id, state, value_source_concept_id)
 VALUES
     ('tp', 'Portal 1', 'state1', 1),
-    ('pt', 'Portal 2', 'state2', 2)
+    ('pt', 'Portal 2', 'state2', 2),
+    ('rm', 'PPI/PM', 'state3', 3),
+    ('aa', 'Site 1', 'state4', 4),
+    ('bb', 'Site 2', 'state5', 5)
 """)
 
 
