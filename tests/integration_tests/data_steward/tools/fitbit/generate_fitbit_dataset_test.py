@@ -18,7 +18,7 @@ SELECT 2 as person_id, NULL as datetime, 20 as steps, 'vibrent' as src_id
 UNION ALL
 SELECT 3 as person_id, DATETIME('2021-01-01') as datetime, 30 as steps, 'ce' as src_id
 UNION ALL
-SELECT 4 as person_id, NULL as datetime, 40 as steps, 'ptsc' as src_id
+SELECT 4 as person_id, NULL as datetime, 40 as steps, 'vibrent' as src_id
 """)
 
 view_query = JINJA_ENV.from_string("""
