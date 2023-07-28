@@ -156,18 +156,38 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
+        # Create temp site_masking table
+        maskings_table = f'{self.project_id}.{self.sandbox_id}.{SITE_MASKING_TABLE_ID}'
+        schema = self.client.get_table_schema(SITE_MASKING_TABLE_ID)
+        self.client.create_table(Table(maskings_table, schema), exists_ok=True)
+        self.fq_sandbox_table_names.append(maskings_table)
+
+        # Insert temp masking records
+        site_maskings_query = SITE_MASKINGS_TEMPLATE.render(
+            project_id=self.project_id,
+            sandbox_dataset=self.sandbox_id,
+            temp_site_masking=SITE_MASKING_TABLE_ID)
+
+        # Insert test records into fitbit tables
         fitbit_test_queries = []
         TEMPLATES = [
             ACTIVITY_SUMMARY_TEMPLATE, HEART_RATE_MINUTE_LEVEL_TEMPLATE,
             HEART_RATE_SUMMARY_TEMPLATE, STEPS_INTRADAY_TEMPLATE,
             SLEEP_DAILY_SUMMARY_TEMPLATE, SLEEP_LEVEL_TEMPLATE, DEVICE_TEMPLATE
         ]
-        # Insert test records into fitbit tables
         for table, template in zip(FITBIT_TABLES, TEMPLATES):
             test_data_query = template.render(project_id=self.project_id,
                                               dataset_id=self.dataset_id,
                                               fitbit_table=table)
             fitbit_test_queries.append(test_data_query)
 
+        # Load test data
+        self.load_test_data([site_maskings_query] + fitbit_test_queries)
+
     def test_field_cleaning(self):
-        pass
+        tables_and_counts = []
+        # mock the PIPELINE_TABLES variable
+        with mock.patch(
+                'cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id.PIPELINE_TABLES',
+                self.sandbox_id):
+            self.default_test(tables_and_counts)
