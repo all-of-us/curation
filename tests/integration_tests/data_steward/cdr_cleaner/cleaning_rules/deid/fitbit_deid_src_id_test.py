@@ -7,8 +7,28 @@ import os
 
 # Project Imports
 from app_identity import PROJECT_ID
+from common import JINJA_ENV, SLEEP_LEVEL
 from cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id import FitbitDeidSrcID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+
+SLEEP_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{sleep_level_table}}`
+(person_id, sleep_date, is_main_sleep, level, start_datetime, duration_in_min)
+VALUES
+(1, '2008-11-18','false', 'wake', '2008-11-18T00:00:00', 4.5),
+(2, '2010-01-01','true', 'light', '2010-01-01T00:00:00', 3.5),
+(3, '2012-01-01','true', 'invalid', '2010-01-01T00:00:00', 2.5),
+(4, '2010-11-18','false', 'rem', '2008-11-18T05:00:00', 7.5),
+(5, '2014-01-01','false', 'deep', '2014-01-01T05:00:00', 8.5),
+(6, '2013-03-14','true', 'awake', '2013-03-14T05:00:00', 6.6),
+(7, '2009-06-23','false', NULL, '2009-06-23T05:00:00', 3.8),
+(8, '2011-09-12','true', 'restless', '2011-09-12T05:00:00', 5.3),
+(9, '2015-01-21','true', 'unknown', '2015-01-21T05:00:00', 7.3),
+(10, '2017-02-05','false', 'asleep', '2017-02-05T05:00:00', 3.8),
+(11, '2010-07-18','false', 'invalid', '2010-07-18T05:00:00', 7.5),
+(11, '2013-03-23','true', 'light', '2013-03-23T05:00:00', 4.5),
+(12, '2009-06-15','true', 'Deep', '2009-06-15T05:00:00', 7.5)
+ """)
 
 
 class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
