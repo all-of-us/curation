@@ -192,7 +192,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                               FITBIT_TABLES[0]]),  # ACTIVITY_SUMMARY
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[0],
-                'fields': ['person_id', 'activity_calories', 'date'],
+                'fields': ['person_id', 'activity_calories', 'date', 'src_id'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
@@ -214,7 +214,9 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                               FITBIT_TABLES[1]]),  # HEART_RATE_MINUTE_LEVEL
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[1],
-                'fields': ['person_id', 'heart_rate_value', 'datetime'],
+                'fields': [
+                    'person_id', 'heart_rate_value', 'datetime', 'src_id'
+                ],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
@@ -231,7 +233,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                               FITBIT_TABLES[2]]),  # HEART_RATE_SUMMARY
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[2],
-                'fields': ['person_id', 'date', 'calorie_count'],
+                'fields': ['person_id', 'date', 'calorie_count', 'src_id'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
@@ -265,7 +267,9 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                               FITBIT_TABLES[4]]),  # SLEEP_DAILY_SUMMARY
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[4],
-                'fields': ['person_id', 'sleep_date', 'minute_in_bed'],
+                'fields': [
+                    'person_id', 'sleep_date', 'minute_in_bed', 'src_id'
+                ],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
@@ -282,7 +286,9 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                               FITBIT_TABLES[5]]),  # SLEEP_LEVEL
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[5],
-                'fields': ['person_id', 'sleep_date', 'duration_in_min'],
+                'fields': [
+                    'person_id', 'sleep_date', 'duration_in_min', 'src_id'
+                ],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
@@ -298,7 +304,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                     '.'.join([self.fq_dataset_name, FITBIT_TABLES[6]]),  #DEVICE
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[6],
-                'fields': ['person_id', 'device_date', 'battery'],
+                'fields': ['person_id', 'device_date', 'battery', 'src_id'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
