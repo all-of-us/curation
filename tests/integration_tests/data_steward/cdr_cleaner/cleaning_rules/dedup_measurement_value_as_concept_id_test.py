@@ -12,7 +12,7 @@ from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.dedup_measurement_value_as_concept_id import (
     DedupMeasurementValueAsConceptId)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import MEASUREMENT, IDENTICAL_LABS_LOOKUP_TABLE
+from common import IDENTICAL_LABS_LOOKUP_TABLE
 
 
 class DedupMeasurementValueAsConceptIdTest(BaseTest.CleaningRulesTestBase):
@@ -45,9 +45,9 @@ class DedupMeasurementValueAsConceptIdTest(BaseTest.CleaningRulesTestBase):
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
 
-        affected_tables = [MEASUREMENT, IDENTICAL_LABS_LOOKUP_TABLE]
-        for table_name in affected_tables:
-            cls.fq_table_names.append(f'{project_id}.{dataset_id}.{table_name}')
+        cls.fq_table_names = [f"{project_id}.{dataset_id}.measurement"]
+        cls.fq_table_names.append(
+            f'{cls.project_id}.pipeline_tables.{IDENTICAL_LABS_LOOKUP_TABLE}')
 
         cls.dataset_id = dataset_id
         # call super to set up the client, create datasets, and create
@@ -81,7 +81,25 @@ class DedupMeasurementValueAsConceptIdTest(BaseTest.CleaningRulesTestBase):
           (805, 5, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 35919331, 0, 0, 0, 0, 0, 0, "", 0, "", "")
         """).render(project=self.project_id, dataset=self.dataset_id)
 
-        self.load_test_data([insert_fake_measurements])
+        insert_fake_lookup = self.jinja_env.from_string("""
+        INSERT INTO `{{project_id}}.pipeline_tables.{{lookup_table}}`
+        (value_as_concept_id,vac_name,vac_vocab,aou_standard_vac,
+               date_added)
+        VALUES
+        --  id= 801  --
+            (45880618, '0', 'LOINC', 45880618, '2000-01-01'),
+        --  id= 802  --
+            (4121196, '0', 'SNOMED', 45880618, '2000-01-01'),
+        --  id= 803  --
+            (45878745, 'Abnormal', 'LOINC', 45878745, '2000-01-01'),
+        --  id= 804  --
+            (4135493, 'Abnormal', 'SNOMED', 45878745, '2000-01-01'),
+        --  id= 805  --
+            (35919331, '0', 'NAACCR', 35919331, '2000-01-01')
+        """).render(project_id=self.project_id,
+                    lookup_table=IDENTICAL_LABS_LOOKUP_TABLE)
+
+        self.load_test_data([insert_fake_measurements, insert_fake_lookup])
 
         tables_and_counts = [{
             'name':
