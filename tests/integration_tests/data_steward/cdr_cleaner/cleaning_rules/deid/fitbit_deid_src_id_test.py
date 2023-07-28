@@ -191,8 +191,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [
             {
                 'fq_table_name':
-                    '.'.join([self.fq_dataset_name,
-                              FITBIT_TABLES[0]]),  # ACTIVITY_SUMMARY
+                    self.fq_table_names[0],  # ACTIVITY_SUMMARY
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[0],
                 'fields': ['person_id', 'activity_calories', 'date', 'src_id'],
@@ -213,8 +212,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             },
             {
                 'fq_table_name':
-                    '.'.join([self.fq_dataset_name,
-                              FITBIT_TABLES[1]]),  # HEART_RATE_MINUTE_LEVEL
+                    self.fq_table_names[1],  # HEART_RATE_MINUTE_LEVEL
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[1],
                 'fields': [
@@ -237,8 +235,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             },
             {
                 'fq_table_name':
-                    '.'.join([self.fq_dataset_name,
-                              FITBIT_TABLES[2]]),  # HEART_RATE_SUMMARY
+                    self.fq_table_names[2],  # HEART_RATE_SUMMARY
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[2],
                 'fields': ['person_id', 'date', 'calorie_count', 'src_id'],
@@ -259,8 +256,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             },
             {
                 'fq_table_name':
-                    '.'.join([self.fq_dataset_name,
-                              FITBIT_TABLES[3]]),  # STEPS_INTRADAY
+                    self.fq_table_names[3],  # STEPS_INTRADAY
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[3],
                 'fields': ['person_id', 'steps', 'datetime', 'src_id'],
@@ -281,8 +277,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             },
             {
                 'fq_table_name':
-                    '.'.join([self.fq_dataset_name,
-                              FITBIT_TABLES[4]]),  # SLEEP_DAILY_SUMMARY
+                    self.fq_table_names[4],  # SLEEP_DAILY_SUMMARY
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[4],
                 'fields': [
@@ -305,8 +300,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             },
             {
                 'fq_table_name':
-                    '.'.join([self.fq_dataset_name,
-                              FITBIT_TABLES[5]]),  # SLEEP_LEVEL
+                    self.fq_table_names[5],  # SLEEP_LEVEL
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[5],
                 'fields': [
@@ -329,7 +323,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             },
             {
                 'fq_table_name':
-                    '.'.join([self.fq_dataset_name, FITBIT_TABLES[6]]),  #DEVICE
+                    self.fq_table_names[6],  #DEVICE
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[6],
                 'fields': ['person_id', 'device_date', 'battery', 'src_id'],
