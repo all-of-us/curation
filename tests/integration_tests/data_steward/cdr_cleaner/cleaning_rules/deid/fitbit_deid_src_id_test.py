@@ -108,8 +108,8 @@ INSERT INTO
     `{{project_id}}.{{dataset_id}}.{{temp_site_maskings}}`
 (hpo_id, src_id, state, value_source_concept_id)
 VALUES
-    ('tp', 'Portal 1', 'state1', 1),
-    ('pt', 'Portal 2', 'state2', 2),
+    ('tp', 'Participant Portal 1', 'state1', 1),
+    ('pt', 'Participant Portal 2', 'state2', 2),
     ('rm', 'PPI/PM', 'state3', 3),
     ('aa', 'Site 1', 'state4', 4),
     ('bb', 'Site 2', 'state5', 5)
@@ -206,15 +206,15 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (1234, 100, datetime.fromisoformat('2020-08-17').date(),
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (5678, 200, datetime.fromisoformat('2020-08-17').date(),
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (2345, 500, datetime.fromisoformat('2020-08-17').date(),
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (6789, 800, datetime.fromisoformat('2020-08-17').date(),
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (3456, 1000, datetime.fromisoformat('2020-08-17').date(),
-                     'Portal 2')
+                     'Participant Portal 2')
                 ]
             },
             {
@@ -229,15 +229,15 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (1234, 60, datetime.fromisoformat('2020-08-17 15:00:00'),
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (5678, 50, datetime.fromisoformat('2020-08-17 15:30:00'),
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (2345, 55, datetime.fromisoformat('2020-08-17 16:00:00'),
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (6789, 40, datetime.fromisoformat('2020-08-17 16:30:00'),
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (3456, 65, datetime.fromisoformat('2020-08-17 17:00:00'),
-                     'Portal 2')
+                     'Participant Portal 2')
                 ]
             },
             {
@@ -250,15 +250,15 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (1234, datetime.fromisoformat('2020-08-17').date(), 100,
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (5678, datetime.fromisoformat('2020-08-17').date(), 200,
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (2345, datetime.fromisoformat('2020-08-17').date(), 500,
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (6789, datetime.fromisoformat('2020-08-17').date(), 800,
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (3456, datetime.fromisoformat('2020-08-17').date(), 1000,
-                     'Portal 2')
+                     'Participant Portal 2')
                 ]
             },
             {
@@ -271,15 +271,15 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (1234, 60, datetime.fromisoformat('2020-08-17 15:00:00'),
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (5678, 50, datetime.fromisoformat('2020-08-17 15:30:00'),
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (2345, 55, datetime.fromisoformat('2020-08-17 16:00:00'),
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (6789, 40, datetime.fromisoformat('2020-08-17 16:30:00'),
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (3456, 65, datetime.fromisoformat('2020-08-17 17:00:00'),
-                     'Portal 2')
+                     'Participant Portal 2')
                 ]
             },
             {
@@ -294,15 +294,15 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (1234, datetime.fromisoformat('2020-08-17').date(), 502,
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (5678, datetime.fromisoformat('2020-08-17').date(), 443,
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (2345, datetime.fromisoformat('2020-08-17').date(), 745,
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (6789, datetime.fromisoformat('2020-08-17').date(), 605,
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (3456, datetime.fromisoformat('2020-08-17').date(), 578,
-                     'Portal 2')
+                     'Participant Portal 2')
                 ]
             },
             {
@@ -317,15 +317,15 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (1234, datetime.fromisoformat('2020-08-17').date(), 42,
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (5678, datetime.fromisoformat('2020-08-17').date(), 15,
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (2345, datetime.fromisoformat('2020-08-17').date(), 22,
-                     'Portal 2'),
+                     'Participant Portal 2'),
                     (6789, datetime.fromisoformat('2020-08-17').date(), 56,
-                     'Portal 1'),
+                     'Participant Portal 1'),
                     (3456, datetime.fromisoformat('2020-08-17').date(), 12,
-                     'Portal 2')
+                     'Participant Portal 2')
                 ]
             },
             {
@@ -338,15 +338,15 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'cleaned_values': [
                     (1234, datetime.fromisoformat('2020-08-17').date(),
-                     "Medium", 'Portal 2'),
+                     "Medium", 'Participant Portal 2'),
                     (5678, datetime.fromisoformat('2020-08-17').date(),
-                     "Medium", 'Portal 1'),
+                     "Medium", 'Participant Portal 1'),
                     (2345, datetime.fromisoformat('2020-08-17').date(),
-                     "Medium", 'Portal 2'),
+                     "Medium", 'Participant Portal 2'),
                     (6789, datetime.fromisoformat('2020-08-17').date(),
-                     "Medium", 'Portal 1'),
+                     "Medium", 'Participant Portal 1'),
                     (3456, datetime.fromisoformat('2020-08-17').date(),
-                     "Medium", 'Portal 2')
+                     "Medium", 'Participant Portal 2')
                 ]
             }
         ]
