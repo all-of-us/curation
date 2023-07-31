@@ -161,7 +161,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
-        # Create temp site_masking table
+        # Create temp site_maskings table
         maskings_table = f'{self.project_id}.{self.dataset_id}.{SITE_MASKING_TABLE_ID}'
         schema = self.client.get_table_schema(SITE_MASKING_TABLE_ID)
         self.client.create_table(Table(maskings_table, schema), exists_ok=True)
