@@ -1297,4 +1297,56 @@ AND (observation_source_concept_id != 2100000010 OR
             new_rdr=new_rdr)
 execute(client, query)
 
+# # Check consent_validation for expected number of consent status
+#
+# The 'consent_validation' table is renamed from 'consent' in the rdr import script. This table is used to suppress data in `remove_ehr_data_without_consent.py`.
+#
+# Each participant should have only one consent status. If this check fails, verify the
+# results and the impact of multiple status records then communicate this finding to the rdr team. Priority is dependant upon the data.<br>
+#
+# The existance of multiple status that are **duplicates** would most likely not affect participant data. <br>
+# The existance of multiple status that are **not duplicates** might affect participant data. See `remove_ehr_data_without_consent.py`
+
+# +
+# Count of participants with multiple validation status' for their ehr consent records.
+query = JINJA_ENV.from_string("""
+
+WITH cte AS (
+SELECT 
+"Have multiple status. These are not duplicates" as issue,
+COUNT(*) AS n
+FROM (SELECT DISTINCT * FROM `{{project_id}}.{{new_rdr}}.consent` )
+GROUP BY person_id
+HAVING COUNT(*)>1
+
+UNION ALL 
+
+SELECT 
+"Have multiple status. These are duplicates" as issue,
+COUNT(*) AS n
+FROM `{{project_id}}.{{new_rdr}}.consent`
+GROUP BY person_id
+HAVING COUNT(*)>1
+)
+SELECT distinct issue,
+COUNT(*) as n_person_ids
+FROM cte
+GROUP BY issue
+
+""").render(project_id=project_id,
+            new_rdr=new_rdr)
+df = execute(client, query)
+
+
+
+success_msg = 'consent_validation table contains only one row per participant.'
+failure_msg = '''
+    <b> Multiple records exist per participant in the consent_validation table. See description.
+'''
+
+render_message(df,
+               success_msg,
+               failure_msg)
+# -
+
 
