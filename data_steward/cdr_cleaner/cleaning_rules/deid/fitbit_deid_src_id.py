@@ -20,12 +20,20 @@ ISSUE_NUMBERS = ['DC3337']
 # Query template to sandbox records
 SANDBOX_SRC_IDS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE 
-    `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`
-AS (
+    `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS 
+(
     SELECT
         *
     FROM
         `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
+    WHERE src_id in (
+        SELECT 
+            hpo_id
+        FROM
+            `{{project_id}}.{{pipeline_tables}}.{{site_maskings}}`
+        WHERE 
+            REGEXP_CONTAINS(src_id, r'(?i)Participant Portal')
+    )
 )
 """)
 
@@ -85,7 +93,9 @@ class FitbitDeidSrcID(BaseCleaningRule):
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         sandbox_table=self.sandbox_table_for(table),
                         dataset_id=self.dataset_id,
-                        fitbit_table=table)
+                        fitbit_table=table,
+                        pipeline_tables=PIPELINE_TABLES,
+                        site_maskings=SITE_MASKING_TABLE_ID)
             }
             update_query = {
                 cdr_consts.QUERY:
