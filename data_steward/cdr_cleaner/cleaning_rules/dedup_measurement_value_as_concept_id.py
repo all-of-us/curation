@@ -63,16 +63,15 @@ class DedupMeasurementValueAsConceptId(BaseCleaningRule):
         """
         desc = ('Corrects VALUE AS CONCEPT ID to be the ANSWER concept ID')
 
-        super().__init__(
-            issue_numbers=JIRA_ISSUE_NUMBERS,
-            description=desc,
-            depends_on=[StoreNewDuplicateMeasurementConceptIds],
-            affected_datasets=[cdr_consts.COMBINED],
-            affected_tables=[MEASUREMENT, IDENTICAL_LABS_LOOKUP_TABLE],
-            project_id=project_id,
-            dataset_id=dataset_id,
-            sandbox_dataset_id=sandbox_dataset_id,
-            table_namer=table_namer)
+        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
+                         description=desc,
+                         depends_on=[StoreNewDuplicateMeasurementConceptIds],
+                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_tables=[MEASUREMENT],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self):
         """

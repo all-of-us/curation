@@ -116,4 +116,9 @@ class DedupMeasurementValueAsConceptIdTest(BaseTest.CleaningRulesTestBase):
                                (805, 35919331)]
         }]
 
+        # Ensures the lookup table copy, created by the CR is also deleted.
+        self.fq_sandbox_table_names.append(
+            f'{self.project_id}.{self.sandbox_id}.{IDENTICAL_LABS_LOOKUP_TABLE}'
+        )
+
         self.default_test(tables_and_counts)
