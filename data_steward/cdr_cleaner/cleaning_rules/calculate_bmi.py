@@ -12,7 +12,7 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
+from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 from common import JINJA_ENV, MEASUREMENT
 from constants.cdr_cleaner.clean_cdr import (CONTROLLED_TIER_DEID_CLEAN, QUERY,
                                              REGISTERED_TIER_DEID_CLEAN)
@@ -141,7 +141,7 @@ class CalculateBmi(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[MEASUREMENT],
-                         depends_on=[CleanHeightAndWeight],
+                         depends_on=[GenerateExtTables],
                          table_namer=table_namer)
 
     def get_query_specs(self):

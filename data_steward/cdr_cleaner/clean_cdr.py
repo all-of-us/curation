@@ -241,6 +241,7 @@ COMBINED_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (GenerateExtTables,),
+    (CalculateBmi,),  # dependent on GenerateExtTables
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (PopulateSurveyConductExt,),
@@ -309,7 +310,6 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
         MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
-    (CalculateBmi,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
     (CalculatePrimaryDeathRecord,),
@@ -368,7 +368,6 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
-    (CalculateBmi,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
     (CalculatePrimaryDeathRecord,),
