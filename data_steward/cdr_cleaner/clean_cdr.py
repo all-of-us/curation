@@ -48,7 +48,7 @@ from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import RemoveEhr
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
 from cdr_cleaner.cleaning_rules.truncate_era_tables import TruncateEraTables
-#rom cdr_cleaner.cleaning_rules.clean_digital_health_data import CleanDigitalHealthStatus
+# from cdr_cleaner.cleaning_rules.clean_digital_health_data import CleanDigitalHealthStatus
 from cdr_cleaner.cleaning_rules.remove_non_existing_pids import RemoveNonExistingPids
 from cdr_cleaner.cleaning_rules.drop_invalid_sleep_level_records import DropInvalidSleepLevelRecords
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
@@ -248,7 +248,8 @@ FITBIT_CLEANING_CLASSES = [
     (TruncateFitbitData,),
     (RemoveParticipantDataPastDeactivationDate,),
     # (CleanDigitalHealthStatus,),
-    (DropInvalidSleepLevelRecords,),
+    (
+        DropInvalidSleepLevelRecords,),
     (RemoveNonExistingPids,),  # assumes combined dataset is ready for reference
     (GenerateResearchDeviceIds,),
 ]
