@@ -6,9 +6,6 @@ Integration test for store_new_duplicate_measurement_concept_ids.py
 import os
 from datetime import datetime, timezone
 
-# Third party imports
-import mock
-
 # Project imports
 from common import JINJA_ENV, IDENTICAL_LABS_LOOKUP_TABLE, MEASUREMENT, CONCEPT
 from app_identity import PROJECT_ID
