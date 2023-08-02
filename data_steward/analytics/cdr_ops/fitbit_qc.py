@@ -215,7 +215,7 @@ SELECT
   COUNT(1) bad_rows
 FROM
   `{{project}}.{{dataset}}.{{table_name}}` t
-WHERE t.src_id not in (
+WHERE t.src_id NOT IN (
     SELECT 
         hpo_id
     FROM
@@ -223,7 +223,7 @@ WHERE t.src_id not in (
     WHERE 
         REGEXP_CONTAINS(src_id, r'(?i)Participant Portal')                            
 )
-OR t.src_id is NULL
+OR t.src_id IS NULL
 """)
 
 queries_list = []
