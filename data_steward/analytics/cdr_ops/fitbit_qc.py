@@ -215,9 +215,15 @@ SELECT
   COUNT(1) bad_rows
 FROM
   `{{project}}.{{dataset}}.{{table_name}}` t
-WHERE
-  t.src_id IS NULL
-OR t.src_id NOT IN ('vibrent','ce')
+WHERE t.src_id not in (
+    SELECT 
+        hpo_id
+    FROM
+        `{{project_id}}.{{pipeline_tables}}.{{site_maskings}}`
+    WHERE 
+        REGEXP_CONTAINS(src_id, r'(?i)Participant Portal')                            
+)
+OR t.src_id is NULL
 """)
 
 queries_list = []
@@ -225,7 +231,9 @@ for table in FITBIT_TABLES:
     queries_list.append(
         src_check.render(project=project_id,
                          dataset=fitbit_dataset,
-                         table_name=table))
+                         table_name=table,
+                         pipeline_tables=PIPELINE_TABLES,
+                         site_maskings=SITE_MASKING_TABLE_ID))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 execute(client, union_all_query)
