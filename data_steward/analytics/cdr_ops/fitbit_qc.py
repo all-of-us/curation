@@ -21,7 +21,7 @@ cutoff_date: str = ""  # CDR cutoff date in YYYY--MM-DD format
 run_as: str = ""  # service account email to impersonate
 # -
 
-from common import JINJA_ENV, FITBIT_TABLES
+from common import JINJA_ENV, FITBIT_TABLES, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
