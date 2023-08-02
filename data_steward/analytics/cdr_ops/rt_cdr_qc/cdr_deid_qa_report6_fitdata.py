@@ -15,7 +15,6 @@
 # # QA queries on new CDR_deid fitdata
 #
 
-
 import pandas as pd
 from common import JINJA_ENV, FITBIT_TABLES
 from utils import auth
@@ -24,15 +23,15 @@ from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
-project_id = "aou-res-curation-prod" # aou project id
-pipeline="" # pipeline tables dataset
-non_deid_fitbit="" # fitbt dataset prior to deidentification
-deid_cdr_fitbit="" # fitbit dataset post deidentification(either tier)
-deid_cdr="" # deidentified dataset within the current cdr.
-combined_cdr=""  # fully identified dataset within the current cdr
-truncation_date="" # Current cdr cutoff date
-maximum_age=89 # Maximum age
-run_as="" # # using impersonation, run all these queries as this service account"
+project_id = ""  # aou project id
+pipeline = ""  # pipeline tables dataset
+non_deid_fitbit = ""  # fitbt dataset prior to deidentification
+deid_cdr_fitbit = ""  # fitbit dataset post deidentification(either tier)
+deid_cdr = ""  # deidentified dataset within the current cdr.
+combined_cdr = ""  # fully identified dataset within the current cdr
+truncation_date = ""  # Current cdr cutoff date
+maximum_age = 89  # Maximum age
+run_as = ""  # # using impersonation, run all these queries as this service account"
 # -
 
 date_columns = {
@@ -49,7 +48,6 @@ secondary_date_column = {
     'sleep_level': 'start_datetime',
 }
 
-
 # +
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
@@ -58,7 +56,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # -
 
 # df will have a summary in the end
-summary = pd.DataFrame(columns = ['query', 'result'])
+summary = pd.DataFrame(columns=['query', 'result'])
 
 # This notebook was updated per [DC-1786].
 #
@@ -87,13 +85,14 @@ WHERE DATE_ADD(date({{column_date}}), INTERVAL m.shift DAY) > '{{truncation_date
 
 queries_list = []
 for table in FITBIT_TABLES:
-    queries_list.append(query.render(project_id=project_id,
-                                      dataset_id=non_deid_fitbit,
-                                      table=table,
-                                      column_date=date_columns[table],
-                                      secondary_date_column=secondary_date_column.get(table),
-                                      truncation_date=truncation_date,
-                                      pipeline=pipeline))
+    queries_list.append(
+        query.render(project_id=project_id,
+                     dataset_id=non_deid_fitbit,
+                     table=table,
+                     column_date=date_columns[table],
+                     secondary_date_column=secondary_date_column.get(table),
+                     truncation_date=truncation_date,
+                     pipeline=pipeline))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 result = execute(client, union_all_query)
@@ -103,8 +102,7 @@ if sum(result['bad_rows']) == 0:
         {
             'query': 'Data Truncation Query',
             'result': 'PASS'
-        },
-        ignore_index=True)
+        }, ignore_index=True)
 else:
     summary = summary.append(
         {
@@ -123,8 +121,7 @@ result
 # DC-1001
 
 # +
-query = JINJA_ENV.from_string(
-"""
+query = JINJA_ENV.from_string("""
 SELECT
   '{{table}}' as table,
   COUNT(1) bad_rows
@@ -135,38 +132,35 @@ ON m.research_id = a.person_id
 JOIN `{{project_id}}.{{combined_cdr}}.person` i
 ON m.person_id = i.person_id
 WHERE FLOOR(DATE_DIFF(CURRENT_DATE(), DATE(i.birth_datetime), YEAR)) > {{maximum_age}}
-"""
-)
+""")
 
 queries_list = []
 for table in FITBIT_TABLES:
-    queries_list.append(query.render(project_id=project_id,
-                                      dataset_id=non_deid_fitbit,
-                                      table=table,
-                                      combined_cdr=combined_cdr,
-                                      maximum_age=maximum_age,
-                                      pipeline=pipeline))
+    queries_list.append(
+        query.render(project_id=project_id,
+                     dataset_id=non_deid_fitbit,
+                     table=table,
+                     combined_cdr=combined_cdr,
+                     maximum_age=maximum_age,
+                     pipeline=pipeline))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 result = execute(client, union_all_query)
 
 if sum(result['bad_rows']) == 0:
-    summary = summary.append(
-        {
-            'query': 'Date Shift Query',
-            'result': 'PASS'
-        },
-        ignore_index=True)
+    summary = summary.append({
+        'query': 'Date Shift Query',
+        'result': 'PASS'
+    },
+                             ignore_index=True)
 else:
-    summary = summary.append(
-        {
-            'query': 'Date Shift Query',
-            'result': 'Failure'
-        },
-        ignore_index=True)
+    summary = summary.append({
+        'query': 'Date Shift Query',
+        'result': 'Failure'
+    },
+                             ignore_index=True)
 result
 # -
-
 
 # # Verify that correct date shift is applied to the fitbit data
 #
@@ -201,30 +195,28 @@ queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
         query.render(project_id=project_id,
-                      table=table,
-                      pipeline=pipeline,
-                      date_type=date_columns[table],
-                      deid_cdr=deid_cdr,
-                      non_deid_fitbit=non_deid_fitbit,
-                      deid_cdr_fitbit=deid_cdr_fitbit))
+                     table=table,
+                     pipeline=pipeline,
+                     date_type=date_columns[table],
+                     deid_cdr=deid_cdr,
+                     non_deid_fitbit=non_deid_fitbit,
+                     deid_cdr_fitbit=deid_cdr_fitbit))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 result = execute(client, union_all_query)
 
 if sum(result['bad_rows']) == 0:
-    summary = summary.append(
-        {
-            'query': 'Date Shift Query',
-            'result': 'PASS'
-        },
-        ignore_index=True)
+    summary = summary.append({
+        'query': 'Date Shift Query',
+        'result': 'PASS'
+    },
+                             ignore_index=True)
 else:
-    summary = summary.append(
-        {
-            'query': 'Date Shift Query',
-            'result': 'Failure'
-        },
-        ignore_index=True)
+    summary = summary.append({
+        'query': 'Date Shift Query',
+        'result': 'Failure'
+    },
+                             ignore_index=True)
 result
 # -
 
@@ -253,28 +245,26 @@ queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
         query.render(project_id=project_id,
-                      table=table,
-                      pipeline=pipeline,
-                      non_deid_fitbit=non_deid_fitbit,
-                      deid_cdr_fitbit=deid_cdr_fitbit))
+                     table=table,
+                     pipeline=pipeline,
+                     non_deid_fitbit=non_deid_fitbit,
+                     deid_cdr_fitbit=deid_cdr_fitbit))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 result = execute(client, union_all_query)
 
 if sum(result['bad_rows']) == 0:
-    summary = summary.append(
-        {
-            'query': 'Pid Rid Query',
-            'result': 'PASS'
-        },
-        ignore_index=True)
+    summary = summary.append({
+        'query': 'Pid Rid Query',
+        'result': 'PASS'
+    },
+                             ignore_index=True)
 else:
-    summary = summary.append(
-        {
-            'query': 'Pid Rid Query',
-            'result': 'Failure'
-        },
-        ignore_index=True)
+    summary = summary.append({
+        'query': 'Pid Rid Query',
+        'result': 'Failure'
+    },
+                             ignore_index=True)
 result
 # -
 
@@ -296,9 +286,9 @@ queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
         query.render(project_id=project_id,
-                      table=table,
-                      deid_cdr=deid_cdr,
-                      deid_cdr_fitbit=deid_cdr_fitbit))
+                     table=table,
+                     deid_cdr=deid_cdr,
+                     deid_cdr_fitbit=deid_cdr_fitbit))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 result = execute(client, union_all_query)
@@ -319,16 +309,16 @@ else:
         ignore_index=True)
 result
 
-
 # -
 
 # # Summary_fitdata
+
 
 # +
 def highlight_cells(val):
     color = 'red' if 'Failure' in val else 'white'
     return f'background-color: {color}'
 
+
 summary.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
 # -
-
