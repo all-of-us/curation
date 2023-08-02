@@ -6,7 +6,6 @@
 
 # Python imports
 from argparse import ArgumentParser
-from datetime import datetime
 import logging
 
 # Third party imports
@@ -16,7 +15,7 @@ from google.api_core.exceptions import NotFound
 # Project imports
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
-from common import CDR_SCOPES
+from common import CDR_SCOPES, JINJA_ENV
 from resources import replace_special_characters_for_labels, validate_date_string, rdr_src_id_schemas, cdm_schemas
 from tools.snapshot_by_query import BIGQUERY_DATA_TYPES
 from tools.import_rdr_omop import copy_vocab_tables
@@ -131,6 +130,18 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
 
             # copy contents from source dataset to destination dataset
             sql = (f'SELECT {fields_name_str} ' f'FROM `{source_table_id}`')
+            print(sql)
+
+            tpl = JINJA_ENV.from_string("""
+            {% for item in schema_list %}
+                CAST({{ item.name }} AS {{ BIGQUERY_DATA_TYPES[item.field_type.lower()]}}) AS {{ item.name }}
+            {% if not loop.last %}
+            ,
+            {% else %}
+            {% endif %}
+            {% endfor %}""").render(schema_list=schema_list)
+            print(tpl)
+            return
 
             job_config = bigquery.job.QueryJobConfig(
                 write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
@@ -191,9 +202,9 @@ def main(raw_args=None):
     bq_client = BigQueryClient(args.curation_project_id,
                                credentials=impersonation_creds)
 
-    dataset_object = bq_client.define_dataset(new_dataset_name, description,
-                                              {'export_date': args.export_date})
-    bq_client.create_dataset(dataset_object)
+    #dataset_object = bq_client.define_dataset(new_dataset_name, description,
+    #                                          {'export_date': args.export_date})
+    #bq_client.create_dataset(dataset_object)
 
     create_rdr_tables(bq_client, new_dataset_name, args.rdr_project_id,
                       args.rdr_dataset)
