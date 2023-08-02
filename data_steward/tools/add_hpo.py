@@ -543,15 +543,19 @@ if __name__ == '__main__':
                         '--bucket_name',
                         required=True,
                         help='Name of the GCS bucket')
-    parser.add_argument('-s',
-                        '--us_state',
-                        required=True,
-                        type=check_state_code_format,
-                        help="Site's State as PIIState_XY.")
-    parser.add_argument('-v',
-                        '--value_source_concept_id',
-                        required=True,
-                        help="Value Source Concept ID of the site's state.")
+    parser.add_argument(
+        '-s',
+        '--us_state',
+        required=False,
+        type=check_state_code_format,
+        help=("Site's State as PIIState_XY. "
+              "Do not specify if the HPO does not belong to a specific state."))
+    parser.add_argument(
+        '-v',
+        '--value_source_concept_id',
+        required=False,
+        help=("Value Source Concept ID of the site's state."
+              "Do not specify if the HPO does not belong to a specific state."))
     parser.add_argument(
         '-t',
         '--addition_type',
