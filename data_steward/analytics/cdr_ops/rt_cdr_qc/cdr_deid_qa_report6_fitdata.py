@@ -536,6 +536,70 @@ df2
 
 # -
 
+# # Verify proper deidentification of device_id
+#
+# DC-3280
+# If the query fails use these hints to help investigate.
+# * not_research_ids - These 'deidentified' device_ids are not in the masking table. Did the CR run that updates the masking table with new research_device_ids?
+# * check_uuid_format - These deidentified device_ids should have the uuid format and not NULL.
+# * check_uuid_unique - All deidentified device_ids for a device_id/person_id should be unique. If not, replace the non-unique research_device_ids in the masking table with new UUIDs. 
+#
+# Device_id is being deidentified by a combination of the following cleaning rules.
+# 1. generate_research_device_ids - Keeps the masking table(wearables_device_id_masking) updated.
+# 2. deid_fitbit_device_id - Replaces the device_id with the deidentified device_id(research_device_id).
+#
+
+# +
+query = JINJA_ENV.from_string("""
+WITH not_research_ids AS (
+SELECT DISTINCT device_id
+FROM `{{project_id}}.{{deid_cdr_fitbit}}.device`
+WHERE device_id NOT IN (SELECT research_device_id FROM `{{project_id}}.{{pipeline}}.wearables_device_id_masking`)
+),
+check_uuid_format AS (
+SELECT DISTINCT device_id
+FROM `{{project_id}}.{{deid_cdr_fitbit}}.device`
+WHERE NOT REGEXP_CONTAINS(device_id, r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+OR device_id IS NULL
+),
+check_uuid_unique AS (
+SELECT DISTINCT device_id
+FROM `{{project_id}}.{{deid_cdr_fitbit}}.device`
+GROUP BY person_id, device_id
+HAVING COUNT(device_id) > 1
+)
+SELECT 'not_research_ids' as issue, COUNT(*) as bad_rows
+FROM not_research_ids
+UNION ALL
+SELECT 'uuid_incorrect_format' as issue, COUNT(*) as bad_rows
+FROM check_uuid_format
+UNION ALL
+SELECT 'uuid_not_unique' as issue, COUNT(*) as bad_rows
+FROM check_uuid_unique
+  
+""").render(project_id=project_id,
+            pipeline=pipeline,
+            deid_cdr_fitbit=deid_cdr_fitbit)
+
+result = execute(client, query)
+
+if sum(result['bad_rows']) == 0:    
+    summary = summary.append(        {
+            'query': 'Query7 device_id was deidentified properly for all records.',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    summary = summary.append(
+        {
+            'query': 'Query7 device_id was not deidentified properly. See query description for hints.',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+result
+
+# -
+
 # # Summary_fitdata
 
 # +
