@@ -34,6 +34,7 @@ FROM (
         aou_death_id, 
         CASE WHEN aou_death_id IN (
             SELECT aou_death_id FROM `{{project}}.{{dataset}}.{{table}}`
+            WHERE death_date IS NOT NULL -- NULL death_date records must not become primary --
             QUALIFY RANK() OVER (
                 PARTITION BY person_id 
                 ORDER BY
@@ -41,7 +42,7 @@ FROM (
                     death_date ASC, -- Earliest death_date records are chosen over later ones --
                     death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
                     src_id ASC -- EHR site that alphabetically comes first is chosen --
-            ) = 1   
+            ) = 1
         ) THEN TRUE ELSE FALSE END AS primary_death_record
     FROM `{{project}}.{{dataset}}.{{table}}`    
 ) new_primary
