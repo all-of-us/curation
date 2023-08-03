@@ -7,7 +7,7 @@ orbs:
 
 job_defaults: &job_defaults
   machine:
-    image: ubuntu-2204:202107-02
+    image: 3.10-bullseye
     docker_layer_caching: true
   parallelism: 1
   # CircleCI 2.0 does not support environment variables that refer to each other the same way as 1.0 did.
@@ -18,6 +18,10 @@ job_defaults: &job_defaults
     - GSDK_CHECKSUM: 6192cb2791f592da6d372888dbd7ee81d3d91f255d844ab5fc518fc97e453648
     - CIRCLECI_CLI_VERSION: "0.1.22924"
     - CIRCLECI_CLI_CHECKSUM: "4187a5245f06dd8e1d51d5a99ad40ed9e8963397cecf006fd2d6a04ac374bef6"
+  # executor:
+  #   name: python
+  #   # use Python 3.9
+  #   tag: '3.10'
 
 commands:
   # Define reusable sets of steps to be run within the testing jobs.
