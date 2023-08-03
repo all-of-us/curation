@@ -54,8 +54,8 @@ insert into `{{project_id}}.{{dataset_id}}._mapping_visit_occurrence`
        (4, 'unioned_ehr'),
        (5, 'unioned_ehr'),
        (6, 'rdr2021'),
-       (7, 'rdr2021'),
-       (8, 'rdr2021')
+       (7, 'unioned_ehr'),
+       (8, 'unioned_ehr')
 """)
 
 OBSERVATION_DATA_TEMPLATE = JINJA_ENV.from_string("""
@@ -87,8 +87,8 @@ VALUES (1, 'rdr2021'),
        (4, 'unioned_ehr'),
        (5, 'unioned_ehr'),
        (6, 'rdr2021'),
-       (7, 'rdr2021'),
-       (8, 'rdr2021')
+       (7, 'unioned_ehr'),
+       (8, 'unioned_ehr')
 """)
 
 CONSENT_VALIDATION_TEMPLATE = JINJA_ENV.from_string("""
@@ -103,7 +103,7 @@ VALUES
        (3, 0, 'Submitted_No', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
        (3, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
      -- null status. invalid consent, cleaned --
-       (3, 0, NULL, (DATETIME '2018-11-26 00:00:00'), 'rdr')
+       (4, 0, NULL, (DATETIME '2018-11-26 00:00:00'), 'rdr')
 """)
 
 
