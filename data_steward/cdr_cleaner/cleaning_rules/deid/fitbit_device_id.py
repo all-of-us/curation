@@ -52,9 +52,7 @@ class DeidFitbitDeviceId(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
 
-        desc = (
-            """Every person_id/device_id pair should be given a unique id """
-            """that will be stable across CDR versions""")
+        desc = """Updates reasearch_device_id with the device_id in the device table."""
 
         super().__init__(description=desc,
                          issue_numbers=ISSUE_NUMBERS,
