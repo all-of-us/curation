@@ -97,12 +97,12 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         INSERT INTO `{{project}}.{{dataset}}.observation_ext`
         (observation_id, src_id, survey_version_concept_id)
         VALUES
-          (801, 'PPI/PM', null),
-          (802, 'PPI/PM', null),
+          (801, 'Portal 1', null),
+          (802, 'Portal 2', null),
           (803, 'EHR site 222', null),
-          (804, 'PPI/PM', null),
-          (805, 'PPI/PM', null),
-          (806, 'PPI/PM', null)
+          (804, 'Portal 4', null),
+          (805, 'Portal 5', null),
+          (806, 'Portal 6', null)
         """),
             self.jinja_env.from_string("""
         -- set up questionnaire response mapping table, a post-deid table --
@@ -155,11 +155,12 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
                 self.fq_table_names[1],
             'fields': ['observation_id', 'src_id', 'survey_version_concept_id'],
             'loaded_ids': [801, 802, 803, 804, 805, 806],
-            'cleaned_values': [(801, 'PPI/PM', 2100000002),
-                               (802, 'PPI/PM', None),
+            'cleaned_values': [(801, 'Portal 1', 2100000002),
+                               (802, 'Portal 2', None),
                                (803, 'EHR site 222', None),
-                               (804, 'PPI/PM', 2100000005),
-                               (805, 'PPI/PM', 905047), (806, 'PPI/PM', 765936)]
+                               (804, 'Portal 4', 2100000005),
+                               (805, 'Portal 5', 905047),
+                               (806, 'Portal 6', 765936)]
         }]
 
         self.default_test(tables_and_counts)

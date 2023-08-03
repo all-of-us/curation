@@ -732,9 +732,9 @@ class EhrUnionAllDeathTest(BaseTest.BigQueryTestBase):
             `CalculatePrimaryDeathRecord` updates the table at the end of the
             Unioned EHR data tier creation.
         """
-        ehr_union.create_load_aou_death(self.client, self.project_id,
-                                        self.dataset_id, self.dataset_id,
-                                        self.hpo_ids)
+        ehr_union.create_load_aou_death(
+            self.client, self.project_id, self.dataset_id, self.dataset_id,
+            self.hpo_ids + ['hpo_site_without_submission'])
 
         self.assertTableValuesMatch(
             f'{self.project_id}.{self.dataset_id}.{UNIONED_EHR}_{AOU_DEATH}',

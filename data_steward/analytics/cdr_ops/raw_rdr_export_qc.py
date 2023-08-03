@@ -24,19 +24,47 @@ rdr_cutoff_date = ""
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
+import pandas as pd
 from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID, SRC_ID_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
-
-# # Table comparison
-# The export should generally contain the same tables from month to month.
-# Tables found only in the old or the new export are listed below.
+from resources import old_map_short_codes_path
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 
 client = BigQueryClient(project_id, credentials=impersonation_creds)
+
+# +
+# Get the current old_map_short_codes
+old_map_csv=pd.read_csv(old_map_short_codes_path)
+
+# These are the long codes expected in the rdr export.
+LONG_CODES = old_map_csv.iloc[:, 1].str.lower().tolist()
+# -
+
+# wear_consent and wear_consent_ptsc concepts that are not associated with an OMOP concept_id.
+WEAR_SURVEY_CODES = ['havesmartphone',
+                      'wearwatch',
+                      'usetracker',
+                      'wear12months',
+                      'receivesms',
+                      'frequency',
+                      'agreetoshare',
+                      'onlyparticipantinhousehold',
+                      'haveaddress',
+                      'resultsconsent_wear',
+                      'email_help_consent',
+                      'timeofday',
+                      'wearconsent_signature',
+                      'wearconsent_todaysdate',
+                      'wear_consent',
+                      'wear_consent_ptsc']
+
+# # Table comparison
+# The export should generally contain the same tables from month to month.
+# Tables found only in the old or the new export are listed below.
 
 tpl = JINJA_ENV.from_string('''
 SELECT
@@ -147,9 +175,13 @@ execute(client, query)
 # The table below lists codes having rows where either field is null or zero and the number of rows where this occurs.
 # This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 #
-# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export.
+# Snap codes are not modeled in the vocabulary but may be used in the RDR export.
 # They are excluded here by filtering out snap codes in the Public PPI Codebook
 # which were loaded into `curation_sandbox.snap_codes`.
+#
+# Long codes are not OMOP concepts and are not expected to have concept_ids. This issue is accounted for in the RDR cleaning class `SetConceptIdsForSurveyQuestionsAnswers`.
+#
+# Wear codes. Most concept codes in the wear survey modules do not have an OMOP concept_id. This is expected as these records will not be included in the CDR.
 
 tpl = JINJA_ENV.from_string("""
 SELECT
@@ -162,11 +194,13 @@ FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_source_value IS NOT NULL
 AND observation_source_value != ''
 AND observation_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
+AND LOWER(observation_source_value) NOT IN UNNEST ({{wear_codes}})
+AND LOWER(observation_source_value) NOT IN UNNEST ({{long_codes}})
 GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id,long_codes=LONG_CODES, wear_codes=WEAR_SURVEY_CODES)
 execute(client, query)
 
 # # Answer codes should have mapped `concept_id`s
@@ -845,23 +879,19 @@ failure_msg = '''
 '''
 render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 
-if len(df_if_empty) == 0:
-    render_message(df_if_duplicate,
-                   success_msg_if_duplicate,
-                   failure_msg_if_duplicate,
-                   failure_msg_args={'code_count': len(df_if_duplicate)})
+render_message(df_if_duplicate,
+                success_msg_if_duplicate,
+                failure_msg_if_duplicate,
+                failure_msg_args={'code_count': len(df_if_duplicate)})
 
-if len(df_if_empty) == 0 and len(df_if_duplicate) == 0:
-    render_message(df,
-                   success_msg,
-                   failure_msg,
-                   failure_msg_args={'code_count': len(df)})
+render_message(df,
+                success_msg,
+                failure_msg,
+                failure_msg_args={'code_count': len(df)})
 # -
-
 # # Check src_ids
 # Check that every record contains a valid src_id. The check passes if no records are returned.
 
-# +
 queries = []
 ids_template = JINJA_ENV.from_string("""
 with ids as (
@@ -895,4 +925,35 @@ for table in SRC_ID_TABLES:
     queries.append(query)
 all_queries = '\nUNION ALL\n'.join(queries)
 execute(client, f'{src_ids_table}\n{all_queries}')
-# -
+
+
+# # Check Wear Consent Counts
+#
+# `Wear_consent` and `wear_consent_ptsc` records should be seen in the export.
+#
+# Results expectations: The result should be roughly 16 rows. Differences here most likely aren't an issue.
+#
+# **Visual check:** <br>
+# * **PASS**   The result **includes** observation_source_value: `resultsconsent_wear` <br>
+# * **FAIL**   The result **does not include** observation_source_value: `resultsconsent_wear`.  If this row does not exist, confirm the finding, and report to RDR. These records are required for proper suppression of wear fitbit records.
+
+# Get counts of wear_consent records
+query = JINJA_ENV.from_string("""
+SELECT
+  observation_source_value,
+  COUNT(*) AS n
+FROM
+  `{{project_id}}.{{new_rdr}}.observation` o
+  LEFT JOIN   `{{project_id}}.{{new_rdr}}.survey_conduct` sc
+  ON sc.survey_conduct_id = o.questionnaire_response_id
+WHERE sc.survey_concept_id IN (2100000011,2100000012) -- captures questions asked in multiple surveys --
+OR LOWER(observation_source_value) IN UNNEST ({{wear_codes}}) -- captures those that might be missing from survey_conduct --
+GROUP BY 1
+
+""").render(project_id=project_id,
+            new_rdr=new_rdr,
+            wear_codes=WEAR_SURVEY_CODES)
+execute(client, query)
+
+
+

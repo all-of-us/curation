@@ -1,0 +1,28 @@
+[
+  {
+    "type": "integer",
+    "name": "value_as_concept_id",
+    "mode": "nullable",
+    "description": "The key for this row."
+  },  {
+    "type": "string",
+    "name": "vac_name",
+    "mode": "nullable",
+    "description": "The name for this concept_id."
+  },  {
+    "type": "string",
+    "name": "vac_vocab",
+    "mode": "nullable",
+    "description": "The vocabulary_id for this concept_id"
+  },  {
+    "type": "integer",
+    "name": "aou_standard_vac",
+    "mode": "nullable",
+    "description": "The proposed 'All of Us Standard Value Concept ID' for the given concept_id. Blank by default."
+  }, {
+    "type": "date",
+    "name": "date_added",
+    "mode": "nullable",
+    "description": "The Date when the Duplicates check was ran and new concepts_ids were added to the table."
+  }
+]

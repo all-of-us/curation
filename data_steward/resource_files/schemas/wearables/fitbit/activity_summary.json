@@ -3,78 +3,78 @@
     "type": "date",
     "name": "date",
     "mode": "nullable",
-    "description": ""
+    "description": "The date of the persons activity summary."
   },
   {
     "type": "float",
     "name": "activity_calories",
     "mode": "nullable",
-    "description": ""
+    "description": "The number of calories burned for the day during periods the user was active above sedentary level. This includes both activity burned calories and BMR."
   },
   {
     "type": "float",
     "name": "calories_bmr",
     "mode": "nullable",
-    "description": ""
+    "description": "Total BMR calories burned for the day."
   },
   {
     "type": "float",
     "name": "calories_out",
     "mode": "nullable",
-    "description": ""
+    "description": "Total calories burned for the day."
   },
   {
     "type": "float",
     "name": "elevation",
     "mode": "nullable",
-    "description": ""
+    "description": "The elevation traveled for the day displayed in the units defined by the data source. When src_id is 'vibrent', the unit is feet. When src_id is 'ce', the unit is meters."
   },
   {
     "type": "float",
     "name": "fairly_active_minutes",
     "mode": "nullable",
-    "description": ""
+    "description": "Total minutes the user was fairly/moderately active."
   },
   {
     "type": "integer",
     "name": "floors",
     "mode": "nullable",
-    "description": ""
+    "description": "The floors provides ONLY the count of how many floors the Fitbit device counted as the user ascended in elevation. The researcher can determine how many feet or meters the user climbed as the device determines a floor every time the user ascends 10 feet (3 meters). Essentially 1 Floor = 10 Feet (3 Meters).  "
   },
   {
     "type": "float",
     "name": "lightly_active_minutes",
     "mode": "nullable",
-    "description": ""
+    "description": "Total minutes the user was lightly active."
   },
   {
     "type": "float",
     "name": "marginal_calories",
     "mode": "nullable",
-    "description": ""
+    "description": "Total marginal estimated calories burned for the day."
   },
   {
     "type": "float",
     "name": "sedentary_minutes",
     "mode": "nullable",
-    "description": ""
+    "description": "Total minutes the user was sedentary."
   },
   {
     "type": "integer",
     "name": "steps",
     "mode": "nullable",
-    "description": ""
+    "description": "Total steps taken for the day."
   },
   {
     "type": "float",
     "name": "very_active_minutes",
     "mode": "nullable",
-    "description": ""
+    "description": "Total minutes the user was very active."
   },
   {
     "type": "integer",
     "name": "person_id",
     "mode": "nullable",
-    "description": ""
+    "description": "A foreign key identifier to the person for whom the data was recorded."
   }
 ]

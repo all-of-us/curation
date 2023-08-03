@@ -201,13 +201,13 @@ query = JINJA_ENV.from_string("""
 WITH df1 AS (
 SELECT 
 DATE_DIFF(DATE(i.death_date), DATE(d.death_date),day)-m.shift as diff
-FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
+FROM `{{project_id}}.{{pipeline}}.primary_pid_rid_mapping` m
 JOIN `{{project_id}}.{{com_cdr}}.aou_death` i
 ON m.person_id = i.person_id
 JOIN `{{project_id}}.{{deid_cdr}}.aou_death` d
-ON m.research_id = d.person_id 
-AND i.death_type_concept_id = d.death_type_concept_id
- )
+ON d.aou_death_id = i.aou_death_id 
+WHERE i.death_date IS NOT NULL
+)
 SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   

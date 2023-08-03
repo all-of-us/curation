@@ -1,0 +1,32 @@
+[
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "The participant's identifier."
+  },
+  {
+    "type": "integer",
+    "name": "research_id",
+    "mode": "required",
+    "description": "The participant's research_id."
+  },
+  {
+    "type": "string",
+    "name": "consent_for_electronic_health_records",
+    "mode": "nullable",
+    "description": "The EHR consent status. Expected values: Submitted_Not_Validated, Submitted_Invalid, Submitted_No, Submitted, Unset "
+  },
+  {
+    "type": "datetime",
+    "name": "consent_for_electronic_health_records_authored",
+    "mode": "nullable",
+    "description": "The date and time of the EHR consent status."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The source of the record."
+  }
+]

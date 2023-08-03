@@ -8,7 +8,9 @@ import logging
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import JINJA_ENV, MEASUREMENT
+from common import JINJA_ENV, MEASUREMENT, IDENTICAL_LABS_LOOKUP_TABLE
+from cdr_cleaner.cleaning_rules.store_new_duplicate_measurement_concept_ids import \
+    StoreNewDuplicateMeasurementConceptIds
 
 # Third party imports
 from google.cloud import bigquery
@@ -17,7 +19,6 @@ LOGGER = logging.getLogger(__name__)
 
 JIRA_ISSUE_NUMBERS = ['DC2651', 'DC2650', 'DC2358']
 PIPELINE_TABLES = 'pipeline_tables'
-IDENTICAL_LABS_LOOKUP_TABLE = 'identical_labs_modification'
 
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
@@ -64,6 +65,7 @@ class DedupMeasurementValueAsConceptId(BaseCleaningRule):
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
+                         depends_on=[StoreNewDuplicateMeasurementConceptIds],
                          affected_datasets=[cdr_consts.COMBINED],
                          affected_tables=[MEASUREMENT],
                          project_id=project_id,

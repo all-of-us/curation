@@ -160,7 +160,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
         device_query = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
-        (person_id, date, battery)
+        (person_id, device_date, battery)
         VALUES
             (1234, date('2020-08-17'), "Medium"),
             (5678, date('2020-08-17'), "Medium"),
@@ -284,7 +284,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, DEVICE]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[6],
-            'fields': ['person_id', 'date', 'battery'],
+            'fields': ['person_id', 'device_date', 'battery'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
             'cleaned_values': [

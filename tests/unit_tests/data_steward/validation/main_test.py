@@ -6,6 +6,9 @@ import datetime
 import re
 from unittest import TestCase, mock
 
+# Third party imports
+from google.api_core.exceptions import ServiceUnavailable
+
 # Project imports
 import common
 import resources
@@ -13,7 +16,7 @@ from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
 from validation import main
-from tests.test_util import mock_google_http_error, mock_google_cloud_error
+from tests.test_util import mock_google_http_error, mock_google_cloud_error, mock_google_service_unavailable_error
 
 
 class ValidationMainTest(TestCase):
@@ -548,6 +551,19 @@ class ValidationMainTest(TestCase):
         self.assertEqual(mock_hpo_bucket.get_blob.call_count, 2)
         self.assertEqual(mock_hpo_bucket.copy_blob.call_count, 2)
         mock_hpo_bucket.copy_blob.assert_has_calls(expected, any_order=True)
+
+    @mock.patch('validation.main.process_hpo_copy')
+    @mock.patch('api_util.check_cron')
+    def test_copy_files_retry(self, mock_check_cron, mock_process_hpo_copy):
+        mock_process_hpo_copy.side_effect = mock_google_service_unavailable_error(
+        )
+
+        # Checks that 503 error has been raised.
+        with self.assertRaises(ServiceUnavailable):
+            main.copy_files('fake_hpo_id')
+
+        #Checks that job has been retried once
+        self.assertEqual(mock_process_hpo_copy.call_count, 2)
 
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())

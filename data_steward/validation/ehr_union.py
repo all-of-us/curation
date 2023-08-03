@@ -94,7 +94,6 @@ import app_identity
 import bq_utils
 import cdm
 import cdr_cleaner.clean_cdr_engine as clean_engine
-from cdr_cleaner.cleaning_rules.calculate_primary_death_record import CalculatePrimaryDeathRecord
 from cdr_cleaner.cleaning_rules.drop_race_ethnicity_gender_observation import DropRaceEthnicityGenderObservation
 from common import (AOU_DEATH, CARE_SITE, DEATH, FACT_RELATIONSHIP,
                     ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION, MAPPING_PREFIX,
@@ -114,7 +113,7 @@ UNION_ALL = '''
 '''
 
 LOAD_AOU_DEATH = JINJA_ENV.from_string("""
-CREATE TABLE `{{project}}.{{output_dataset}}.{{aou_death}}`
+CREATE OR REPLACE TABLE `{{project}}.{{output_dataset}}.{{aou_death}}`
 AS
 WITH union_aou_death AS (
     {% for hpo_id in hpo_ids %}
@@ -873,17 +872,23 @@ def create_load_aou_death(bq_client, project_id, input_dataset_id,
     :param project_id: project containing the datasets
     :param input_dataset_id identifies a dataset containing multiple CDMs, one for each HPO submission
     :param output_dataset_id identifies the dataset to store the new CDM in
-    :param hpo_ids: identifies which HPOs to include in AOU_DEATH creation
+    :param hpo_ids: HPO site IDs. Note some sites may not have a DEATH table if they have not submitted anything yet.
     NOTE: `primary_death_record` is all `False` at this point. The CR
         `CalculatePrimaryDeathRecord` updates the table at the end of the
         Unioned EHR data tier creation.
     """
+    # Filter out HPO sites without death data submission.
+    hpo_ids_with_death = [
+        hpo_id for hpo_id in hpo_ids
+        if bq_client.table_exists(f'{hpo_id}_{DEATH}', input_dataset_id)
+    ]
+
     query = LOAD_AOU_DEATH.render(project=project_id,
                                   input_dataset=input_dataset_id,
                                   output_dataset=output_dataset_id,
                                   aou_death=f'{UNIONED_EHR}_{AOU_DEATH}',
                                   death=DEATH,
-                                  hpo_ids=hpo_ids)
+                                  hpo_ids=hpo_ids_with_death)
     job = bq_client.query(query)
     _ = job.result()
 
@@ -906,7 +911,8 @@ def main(input_dataset_id,
     bq_client = BigQueryClient(project_id)
 
     logging.info('EHR union started')
-    # Get all hpo_ids.
+    # NOTE hpo_ids here includes HPO sites without any submissions. Those may not
+    # have OMOP tables (hpo_dummy_observation, etc) in the EHR dataset.
     hpo_ids = [item['hpo_id'] for item in bq_utils.get_hpo_info()]
     if hpo_ids_ex:
         hpo_ids = [hpo_id for hpo_id in hpo_ids if hpo_id not in hpo_ids_ex]
