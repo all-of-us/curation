@@ -121,7 +121,6 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
 
         try:
             LOGGER.info(f'Get table `{source_table_id}` in RDR')
-            source_table_id = "aou-res-curation-test.2019q4r1_combined.observation_period"
             client.get_table(source_table_id)
 
             LOGGER.info(f'Creating empty CDM table, `{table}`')
@@ -196,9 +195,9 @@ def main(raw_args=None):
     bq_client = BigQueryClient(args.curation_project_id,
                                credentials=impersonation_creds)
 
-    # dataset_object = bq_client.define_dataset(new_dataset_name, description,
-    #                                          {'export_date': args.export_date})
-    # bq_client.create_dataset(dataset_object)
+    dataset_object = bq_client.define_dataset(new_dataset_name, description,
+                                              {'export_date': args.export_date})
+    bq_client.create_dataset(dataset_object)
 
     create_rdr_tables(bq_client, new_dataset_name, args.rdr_project_id,
                       args.rdr_dataset)
