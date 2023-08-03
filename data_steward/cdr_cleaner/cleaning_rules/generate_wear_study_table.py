@@ -15,16 +15,48 @@ from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
-LOOKUP_TABLE_CREATION_QUERY = JINJA_ENV.from_string("""
+JIRA_ISSUES = ['DC2364']
+
+CREATION_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.wear_study` AS
 
-
+WITH ranked_data AS (
+  SELECT
+    person_id,
+    observation_source_concept_id,
+    value_source_concept_id,
+    observation_date,
+    ROW_NUMBER() OVER (PARTITION BY person_id, observation_source_concept_id ORDER BY observation_date) AS row_num_asc,
+    ROW_NUMBER() OVER (PARTITION BY person_id, observation_source_concept_id ORDER BY observation_date DESC) AS row_num_desc
+  FROM
+    `{{project_id}}.{{dataset_id}}.observation`
+    WHERE observation_source_concept_id = 2100000010
+)
+SELECT
+  person_id,
+  'Yes' AS resultsconsent_wear,
+  MAX(CASE WHEN value_source_concept_id = 2100000009 AND prev_value_source_concept_id = 2100000008 THEN observation_date END) AS first_yes_after_last_no,
+  MAX(CASE WHEN value_source_concept_id = 2100000008 AND prev_value_source_concept_id = 2100000009 THEN observation_date END) AS last_no
+FROM (
+  SELECT
+    person_id,
+    observation_source_concept_id,
+    value_source_concept_id,
+    observation_date,
+    LAG(value_source_concept_id) OVER (PARTITION BY person_id, observation_source_concept_id ORDER BY observation_date) AS prev_value_source_concept_id,
+    row_num_asc,
+    row_num_desc
+  FROM ranked_data
+)
+WHERE
+  (value_source_concept_id = 2100000009 AND (prev_value_source_concept_id = 2100000008 OR row_num_desc = 1))
+  OR (value_source_concept_id = 2100000008 AND prev_value_source_concept_id = 2100000009)
 )
 
 """)
 
 
-class CreateDeidQuestionnaireResponseMap(BaseCleaningRule):
+class GenerateWearStudyTable(BaseCleaningRule):
 
     def __init__(self,
                  project_id,
@@ -40,9 +72,12 @@ class CreateDeidQuestionnaireResponseMap(BaseCleaningRule):
         """
         desc = "The purpose of this cleaning rule is to create (if it does not already exist) the questionnaire " \
                 "mapping lookup table."
-        super().__init__(issue_numbers=['DC1347', 'DC518', 'DC2065'],
+        super().__init__(issue_numbers=JIRA_ISSUES,
                          description=desc,
-                         affected_datasets=[cdr_consts.RDR],
+                         affected_datasets=[
+                             cdr_consts.CONTROLLED_TIER_DEID,
+                             cdr_consts.REGISTERED_TIER_DEID
+                         ],
                          affected_tables=[],
                          project_id=project_id,
                          dataset_id=dataset_id,
@@ -59,15 +94,14 @@ class CreateDeidQuestionnaireResponseMap(BaseCleaningRule):
             an ordering.
         """
 
-        lookup_table_creation = {
+        table_creation = {
             cdr_consts.QUERY:
-                LOOKUP_TABLE_CREATION_QUERY.render(
+                CREATION_QUERY.render(
                     project_id=self.project_id,
-                    dataset_id=self.dataset_id,
-                    sandbox_dataset_id=self.sandbox_dataset_id)
+                    dataset_id=self.dataset_id)
         }
 
-        return [lookup_table_creation]
+        return [table_creation]
 
     def validate_rule(self, client, *args, **keyword_args):
         """
@@ -115,8 +149,7 @@ class CreateDeidQuestionnaireResponseMap(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        return []
-
+        pass
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
@@ -129,7 +162,7 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(CreateDeidQuestionnaireResponseMap,)])
+            [(GenerateWearStudyTable,)])
 
         for query in query_list:
             LOGGER.info(query)
@@ -137,4 +170,4 @@ if __name__ == '__main__':
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(CreateDeidQuestionnaireResponseMap,)])
+                                   [(GenerateWearStudyTable,)])
