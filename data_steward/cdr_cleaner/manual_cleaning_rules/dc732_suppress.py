@@ -240,7 +240,11 @@ def ppi_pm(g):
 
     :param g: DataFrameGroupBy instance with a 'source' column
     """
-    return g['source'].isin(['PPI/PM']).any()
+    # return g['source'].isin(['PPI/PM']).any()
+    for _, column in g:
+        if 'Portal' in column['source']:
+            return True
+    return False
 
 
 def get_suppress_summary_df(rows_to_suppress_df):
