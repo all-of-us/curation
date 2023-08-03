@@ -22,6 +22,16 @@ from tools.import_rdr_omop import copy_vocab_tables
 
 LOGGER = logging.getLogger(__name__)
 
+tpl = JINJA_ENV.from_string("""
+SELECT
+{% for item in schema_list %}
+CAST({{ item.name }} AS {{ BIGQUERY_DATA_TYPES[item.field_type.lower()]}}) AS {{ item.name }}{% if not loop.last %},
+{% else %}
+
+{% endif %}
+{% endfor %}
+FROM `{{source_table_id}}`""")
+
 
 def parse_rdr_args(raw_args=None):
     parser = ArgumentParser(
@@ -111,6 +121,7 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
 
         try:
             LOGGER.info(f'Get table `{source_table_id}` in RDR')
+            source_table_id = "aou-res-curation-test.2019q4r1_combined.observation_period"
             client.get_table(source_table_id)
 
             LOGGER.info(f'Creating empty CDM table, `{table}`')
@@ -121,27 +132,10 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
                 f'Copying source table `{source_table_id}` to destination table `{destination_table_id}`'
             )
 
-            sc_list = []
-            for item in schema_list:
-                field_cast = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
-                sc_list.append(field_cast)
-
-            fields_name_str = ',\n'.join(sc_list)
-
             # copy contents from source dataset to destination dataset
-            sql = (f'SELECT {fields_name_str} ' f'FROM `{source_table_id}`')
-            print(sql)
-
-            tpl = JINJA_ENV.from_string("""
-            {% for item in schema_list %}
-                CAST({{ item.name }} AS {{ BIGQUERY_DATA_TYPES[item.field_type.lower()]}}) AS {{ item.name }}
-            {% if not loop.last %}
-            ,
-            {% else %}
-            {% endif %}
-            {% endfor %}""").render(schema_list=schema_list)
-            print(tpl)
-            return
+            sql = tpl.render(schema_list=schema_list,
+                             BIGQUERY_DATA_TYPES=BIGQUERY_DATA_TYPES,
+                             source_table_id=source_table_id)
 
             job_config = bigquery.job.QueryJobConfig(
                 write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
@@ -202,9 +196,9 @@ def main(raw_args=None):
     bq_client = BigQueryClient(args.curation_project_id,
                                credentials=impersonation_creds)
 
-    #dataset_object = bq_client.define_dataset(new_dataset_name, description,
+    # dataset_object = bq_client.define_dataset(new_dataset_name, description,
     #                                          {'export_date': args.export_date})
-    #bq_client.create_dataset(dataset_object)
+    # bq_client.create_dataset(dataset_object)
 
     create_rdr_tables(bq_client, new_dataset_name, args.rdr_project_id,
                       args.rdr_dataset)
