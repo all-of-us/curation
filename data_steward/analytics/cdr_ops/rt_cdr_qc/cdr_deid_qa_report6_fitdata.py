@@ -402,7 +402,7 @@ queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
         src_check.render(project=project_id,
-                         dataset=,
+                         dataset=deid_cdr_fitbit,
                          table_name=table))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
