@@ -317,7 +317,7 @@ result
 # If the query fails use these hints to help investigate.
 # * not_research_device_ids  - These 'deidentified' device_ids are not in the masking table. Did the CR run that updates the masking table with new research_device_ids?
 # * check_uuid_format - These deidentified device_ids should have the uuid format and not NULL.
-# * check_uuid_unique - All deidentified device_ids for a device_id/person_id should be unique. If not, replace the non-unique research_device_ids in the masking table with new UUIDs. 
+# * check_uuid_unique - All deidentified device_ids for a device_id/person_id should be unique. If not, replace the non-unique research_device_ids in the masking table with new UUIDs.
 #
 # Device_id is being deidentified by a combination of the following cleaning rules.
 # 1. generate_research_device_ids - Keeps the masking table(wearables_device_id_masking) updated.
@@ -358,17 +358,22 @@ FROM check_uuid_unique
 
 result = execute(client, query)
 
-if sum(result['bad_rows']) == 0:    
-    summary = summary.append(        {
-            'query': 'Query7 device_id was deidentified properly for all records.',
-            'result': 'PASS'
+if sum(result['bad_rows']) == 0:
+    summary = summary.append(
+        {
+            'query':
+                'Query7 device_id was deidentified properly for all records.',
+            'result':
+                'PASS'
         },
         ignore_index=True)
 else:
     summary = summary.append(
         {
-            'query': 'Query7 device_id was not deidentified properly. See query description for hints.',
-            'result': 'Failure'
+            'query':
+                'Query7 device_id was not deidentified properly. See query description for hints.',
+            'result':
+                'Failure'
         },
         ignore_index=True)
 result
