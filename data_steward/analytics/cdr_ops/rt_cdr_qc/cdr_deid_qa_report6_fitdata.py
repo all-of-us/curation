@@ -540,7 +540,7 @@ df2
 #
 # DC-3280
 # If the query fails use these hints to help investigate.
-# * not_research_ids - These 'deidentified' device_ids are not in the masking table. Did the CR run that updates the masking table with new research_device_ids?
+# * not_research_device_ids  - These 'deidentified' device_ids are not in the masking table. Did the CR run that updates the masking table with new research_device_ids?
 # * check_uuid_format - These deidentified device_ids should have the uuid format and not NULL.
 # * check_uuid_unique - All deidentified device_ids for a device_id/person_id should be unique. If not, replace the non-unique research_device_ids in the masking table with new UUIDs. 
 #
@@ -551,7 +551,7 @@ df2
 
 # +
 query = JINJA_ENV.from_string("""
-WITH not_research_ids AS (
+WITH not_research_device_ids AS (
 SELECT DISTINCT device_id
 FROM `{{project_id}}.{{deid_cdr_fitbit}}.device`
 WHERE device_id NOT IN (SELECT research_device_id FROM `{{project_id}}.{{pipeline}}.wearables_device_id_masking`)
@@ -568,8 +568,8 @@ FROM `{{project_id}}.{{deid_cdr_fitbit}}.device`
 GROUP BY person_id, device_id
 HAVING COUNT(device_id) > 1
 )
-SELECT 'not_research_ids' as issue, COUNT(*) as bad_rows
-FROM not_research_ids
+SELECT 'not_research_device_ids' as issue, COUNT(*) as bad_rows
+FROM not_research_device_ids
 UNION ALL
 SELECT 'uuid_incorrect_format' as issue, COUNT(*) as bad_rows
 FROM check_uuid_format
