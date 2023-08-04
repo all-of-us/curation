@@ -79,14 +79,12 @@ class GenerateWearStudyTable(BaseCleaningRule):
 
         table_creation = {
             cdr_consts.QUERY:
-                CREATION_QUERY.render(
-                    project_id=self.project_id,
-                    dataset_id=self.dataset_id)
+                CREATION_QUERY.render(project_id=self.project_id,
+                                      dataset_id=self.dataset_id)
         }
         query_list.append(table_creation)
 
         return query_list
-
 
     def validate_rule(self, client):
         """
@@ -136,6 +134,7 @@ class GenerateWearStudyTable(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         pass
 
+
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
@@ -145,9 +144,10 @@ if __name__ == '__main__':
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(GenerateWearStudyTable,)])
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(GenerateWearStudyTable,)])
 
         for query in query_list:
             LOGGER.info(query)

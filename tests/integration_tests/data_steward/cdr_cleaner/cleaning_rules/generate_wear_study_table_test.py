@@ -60,7 +60,6 @@ class GenerateWearStudyTableTest(BaseTest.CleaningRulesTestBase):
         self.date_two = parser.parse('2022-01-01').date()
         self.date_three = parser.parse('2023-01-01').date()
 
-
         observation_query = self.jinja_env.from_string("""
               INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (
                   observation_id,
@@ -108,10 +107,8 @@ class GenerateWearStudyTableTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 self.fq_table_names[1],
             'fields': [
-                  'person_id',
-                  'resultsconsent_wear',
-                  'wear_consent_start_date',
-                  'wear_consent_end_date'
+                'person_id', 'resultsconsent_wear', 'wear_consent_start_date',
+                'wear_consent_end_date'
             ],
             'loaded_ids': [],
             'sandboxed_ids': [],
