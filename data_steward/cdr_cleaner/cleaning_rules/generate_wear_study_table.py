@@ -1,5 +1,5 @@
 """
-The purpose of this cleaning rule is to generate the wear_study table.
+Generate the wear_study table from records in observation.
 
 Original Issues: DC-2364
 """
@@ -10,7 +10,7 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, WEAR_STUDY
+from common import JINJA_ENV
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -19,38 +19,22 @@ JIRA_ISSUES = ['DC2364']
 
 CREATION_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.wear_study` AS
-
-WITH ranked_data AS (
-  SELECT
-    person_id,
-    observation_source_concept_id,
-    value_source_concept_id,
-    observation_date,
-    ROW_NUMBER() OVER (PARTITION BY person_id, observation_source_concept_id ORDER BY observation_date) AS row_num_asc,
-    ROW_NUMBER() OVER (PARTITION BY person_id, observation_source_concept_id ORDER BY observation_date DESC) AS row_num_desc
-  FROM
-    `{{project_id}}.{{dataset_id}}.observation`
-    WHERE observation_source_concept_id = 2100000010
-)
 SELECT
-  person_id,
+  DISTINCT person_id,
   'Yes' AS resultsconsent_wear,
-  MAX(CASE WHEN value_source_concept_id = 2100000009 AND prev_value_source_concept_id = 2100000008 THEN observation_date END) AS first_yes_after_last_no,
-  MAX(CASE WHEN value_source_concept_id = 2100000008 AND prev_value_source_concept_id = 2100000009 THEN observation_date END) AS last_no
-FROM (
-  SELECT
-    person_id,
-    observation_source_concept_id,
-    value_source_concept_id,
-    observation_date,
-    LAG(value_source_concept_id) OVER (PARTITION BY person_id, observation_source_concept_id ORDER BY observation_date) AS prev_value_source_concept_id,
-    row_num_asc,
-    row_num_desc
-  FROM ranked_data
-)
-WHERE
-  (value_source_concept_id = 2100000009 AND (prev_value_source_concept_id = 2100000008 OR row_num_desc = 1))
-  OR (value_source_concept_id = 2100000008 AND prev_value_source_concept_id = 2100000009)
+  MIN(CASE WHEN value_source_concept_id = 2100000009 THEN observation_date END) AS wear_consent_start_date,
+  MIN(CASE WHEN value_source_concept_id = 2100000008 THEN observation_date END) AS wear_consent_end_date
+FROM (  
+  SELECT *
+  FROM `{{project_id}}.{{dataset_id}}.observation`
+  WHERE person_id IN ( -- the first recorded consent was positive --
+    SELECT DISTINCT person_id,
+    FROM `{{project_id}}.{{dataset_id}}.observation`
+    WHERE observation_source_concept_id = 2100000010
+    GROUP BY person_id
+    HAVING MIN(CASE WHEN value_source_concept_id = 2100000009 THEN observation_date END) = MIN(observation_date)
+    ))
+GROUP BY person_id
 """)
 
 
@@ -82,7 +66,7 @@ class GenerateWearStudyTable(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
 
-    def get_query_specs(self, *args, **keyword_args):
+    def get_query_specs(self):
         """
         Interface to return a list of query dictionaries.
 
@@ -91,6 +75,7 @@ class GenerateWearStudyTable(BaseCleaningRule):
             stored in list order and returned in list order to maintain
             an ordering.
         """
+        query_list = []
 
         table_creation = {
             cdr_consts.QUERY:
@@ -98,10 +83,12 @@ class GenerateWearStudyTable(BaseCleaningRule):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id)
         }
+        query_list.append(table_creation)
 
-        return [table_creation]
+        return query_list
 
-    def validate_rule(self, client, *args, **keyword_args):
+
+    def validate_rule(self, client):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
 
@@ -120,7 +107,7 @@ class GenerateWearStudyTable(BaseCleaningRule):
 
         raise NotImplementedError("Please fix me.")
 
-    def setup_rule(self, client, *args, **keyword_args):
+    def setup_rule(self, client):
         """
         Load required resources prior to executing cleaning rule queries.
 
@@ -131,7 +118,7 @@ class GenerateWearStudyTable(BaseCleaningRule):
         """
         pass
 
-    def setup_validation(self, client, *args, **keyword_args):
+    def setup_validation(self, client):
         """
         Run required steps for validation setup
 

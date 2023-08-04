@@ -1,6 +1,12 @@
+"""
+integration test for generate_wear_study_table
+"""
+
 # Python imports
 import os
-from datetime import datetime, timezone
+
+# Third party imports
+from dateutil import parser
 
 # Project imports
 from common import WEAR_STUDY, OBSERVATION
@@ -24,7 +30,6 @@ class GenerateWearStudyTableTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = project_id
 
         # set the expected test datasets
-        # intended to be run on the rdr dataset
         dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
@@ -51,6 +56,10 @@ class GenerateWearStudyTableTest(BaseTest.CleaningRulesTestBase):
         # create tables
         super().setUp()
 
+        self.date_one = parser.parse('2021-01-01').date()
+        self.date_two = parser.parse('2022-01-01').date()
+        self.date_three = parser.parse('2023-01-01').date()
+
 
         observation_query = self.jinja_env.from_string("""
               INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (
@@ -64,29 +73,25 @@ class GenerateWearStudyTableTest(BaseTest.CleaningRulesTestBase):
                   )
                 VALUES
                   -- one yes record --
-                  (1,1,1,2100000010,2100000009,'2020-01-01',1),
+                  (1,1,1,2100000010,2100000009,date('2021-01-01'),1),
                   -- two yes records --
-                  (2,1,1,2100000010,2100000009,'2020-01-01',1),
-                  (3,1,1,2100000010,2100000009,'2020-01-01',1),
+                  (1,2,1,2100000010,2100000009,date('2021-01-01'),1),
+                  (1,2,1,2100000010,2100000009,date('2022-01-01'),1),
                   -- one no record --
-                  (4,1,1,2100000010,2100000009,'2020-01-01',1),
-                  -- two no records --
-                  (5,1,1,2100000010,2100000009,'2020-01-01',1),
-                  (6,1,1,2100000010,2100000009,'2020-01-01',1),
-                  -- no then yes --
-                  (7,1,1,2100000010,2100000009,'2020-01-01',1),
-                  (8,1,1,2100000010,2100000009,'2020-01-01',1),
-                  -- yes then no --
-                  (9,1,1,2100000010,2100000009,'2020-01-01',1),
-                  (10,1,1,2100000010,2100000009,'2020-01-01',1),
+                  (1,3,1,2100000010,2100000008,date('2021-01-01'),1),
+                  -- two no records then a yes --
+                  (1,4,1,2100000010,2100000008,date('2021-01-01'),1),
+                  (1,4,1,2100000010,2100000008,date('2022-01-01'),1),
+                  (1,4,1,2100000010,2100000009,date('2023-01-01'),1),
+                  -- two yes records then a no --
+                  (1,5,1,2100000010,2100000009,date('2021-01-01'),1),
+                  (1,5,1,2100000010,2100000009,date('2022-01-01'),1),
+                  (1,5,1,2100000010,2100000008,date('2023-01-01'),1),
                   -- yes then no then yes --
-                  (11,1,1,2100000010,2100000009,'2020-01-01',1),
-                  (12,1,1,2100000010,2100000009,'2020-01-01',1),
-                  (13,1,1,2100000010,2100000009,'2020-01-01',1),
-                  -- no then yes then no --
-                  (14,1,1,2100000010,2100000009,'2020-01-01',1),
-                  (15,1,1,2100000010,2100000009,'2020-01-01',1),
-                  (16,1,1,2100000010,2100000009,'2020-01-01',1)
+                  (1,6,1,2100000010,2100000009,date('2021-01-01'),1),
+                  (1,6,1,2100000010,2100000008,date('2022-01-01'),1),
+                  (1,6,1,2100000010,2100000009,date('2023-01-01'),1)
+
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # load the test data
@@ -96,28 +101,29 @@ class GenerateWearStudyTableTest(BaseTest.CleaningRulesTestBase):
         """
         Validates pre-conditions, test execution and post conditions based on the tables_and_counts variable.
 
-        Tests that new research_device_ids were created for only new person_id/device_id pairs.
         """
         tables_and_counts = [{
             'name':
                 WEAR_STUDY,
             'fq_table_name':
-                self.fq_table_names[0],
+                self.fq_table_names[1],
             'fields': [
-                 'observation_id',
                   'person_id',
-                  'observation_source_concept_id',
-                  'value_source_concept_id',
-                  'observation_date'
+                  'resultsconsent_wear',
+                  'wear_consent_start_date',
+                  'wear_consent_end_date'
             ],
-            'loaded_ids': list(range(1,17)),
+            'loaded_ids': [],
             'sandboxed_ids': [],
             'cleaned_values': [
-                (1,1,2100000010,2100000009, datetime.now(timezone.utc).date()),
-                (2,1,2100000010,2100000009, datetime.now(timezone.utc).date()),
-                (3,1,2100000010,2100000009, datetime.strptime('2022-01-01',
-                                                       '%Y-%m-%d').date()),
-                (4,1,2100000010,2100000009, datetime.now(timezone.utc).date())
+                # one yes record.
+                (1, 'Yes', self.date_one, None),
+                # two yes records. earliest recorded
+                (2, 'Yes', self.date_one, None),
+                # two yes records and one no. earliest dates recorded
+                (5, 'Yes', self.date_one, self.date_three),
+                # yes, then no, then yes. earliest dates recorded
+                (6, 'Yes', self.date_one, self.date_two)
             ]
         }]
 
