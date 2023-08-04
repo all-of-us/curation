@@ -21,7 +21,7 @@ cutoff_date: str = ""  # CDR cutoff date in YYYY--MM-DD format
 run_as: str = ""  # service account email to impersonate
 # -
 
-from common import JINJA_ENV, FITBIT_TABLES
+from common import JINJA_ENV, FITBIT_TABLES, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
@@ -55,17 +55,20 @@ secondary_date_column = {
 table_fields_values = {
     'device': {
         'battery': ['high', 'medium', 'low']
-               },
+    },
     'sleep_level': {
-        'level': ['awake','light','asleep','deep','restless','wake','rem','unknown']
-               },
+        'level': [
+            'awake', 'light', 'asleep', 'deep', 'restless', 'wake', 'rem',
+            'unknown'
+        ]
+    },
     'sleep_daily_summary': {
-        'is_main_sleep': ['Peak','Cardio','Fat Burn','Out of Range']
-               },
+        'is_main_sleep': ['Peak', 'Cardio', 'Fat Burn', 'Out of Range']
+    },
     'heart_rate_summary': {
-        'zone_name': ['true','false']
-               }
+        'zone_name': ['true', 'false']
     }
+}
 
 # ## Verify all participants have digital health sharing consent
 
@@ -90,10 +93,10 @@ WHERE
 queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
-    health_sharing_consent_check.render(project=project_id,
-                                        dataset=fitbit_dataset,
-                                        table_name=table,
-                                        sandbox_dataset=sandbox_dataset))
+        health_sharing_consent_check.render(project=project_id,
+                                            dataset=fitbit_dataset,
+                                            table_name=table,
+                                            sandbox_dataset=sandbox_dataset))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
@@ -126,10 +129,10 @@ WHERE
 queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
-    non_existent_pids_check.render(project=project_id,
-                                   dataset=fitbit_dataset,
-                                   table_name=table,
-                                   source_dataset=source_dataset))
+        non_existent_pids_check.render(project=project_id,
+                                       dataset=fitbit_dataset,
+                                       table_name=table,
+                                       source_dataset=source_dataset))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
@@ -155,12 +158,13 @@ WHERE
 queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
-    data_past_cutoff_check.render(project=project_id,
-                                  dataset=fitbit_dataset,
-                                  table_name=table,
-                                  cutoff_date=cutoff_date,
-                                  date_column=date_columns[table],
-                                  secondary_date_column=secondary_date_column.get(table)))
+        data_past_cutoff_check.render(
+            project=project_id,
+            dataset=fitbit_dataset,
+            table_name=table,
+            cutoff_date=cutoff_date,
+            date_column=date_columns[table],
+            secondary_date_column=secondary_date_column.get(table)))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 execute(client, union_all_query)
@@ -189,13 +193,13 @@ WHERE
 queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
-    past_deactivation_check.render(project=project_id,
-                                   dataset=fitbit_dataset,
-                                   table_name=table,
-                                   sandbox_dataset=sandbox_dataset,
-                                   date_column=date_columns[table],
-                                   secondary_date_column=secondary_date_column.get(table)
-                                  ))
+        past_deactivation_check.render(
+            project=project_id,
+            dataset=fitbit_dataset,
+            table_name=table,
+            sandbox_dataset=sandbox_dataset,
+            date_column=date_columns[table],
+            secondary_date_column=secondary_date_column.get(table)))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 execute(client, union_all_query)
@@ -211,26 +215,32 @@ SELECT
   COUNT(1) bad_rows
 FROM
   `{{project}}.{{dataset}}.{{table_name}}` t
-WHERE
-  t.src_id IS NULL
-OR t.src_id NOT IN ('vibrent','ce')
+WHERE t.src_id NOT IN (
+    SELECT 
+        hpo_id
+    FROM
+        `{{project_id}}.{{pipeline_tables}}.{{site_maskings}}`
+    WHERE 
+        REGEXP_CONTAINS(src_id, r'(?i)Participant Portal')                            
+)
+OR t.src_id IS NULL
 """)
 
 queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
-    src_check.render(project=project_id,
-                     dataset=fitbit_dataset,
-                     table_name=table
-                    )
-    )
+        src_check.render(project=project_id,
+                         dataset=fitbit_dataset,
+                         table_name=table,
+                         pipeline_tables=PIPELINE_TABLES,
+                         site_maskings=SITE_MASKING_TABLE_ID))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 execute(client, union_all_query)
 # -
 
 # ## Check for rows without a valid date field
-# Fitbit table records must have at least one valid date in order to be deemed valid. 
+# Fitbit table records must have at least one valid date in order to be deemed valid.
 # This is a preleminary check as this circumstance(lacking a date) should not be possible. No CR currently exists to remove data of this type.
 #
 # If bad rows are found a new CR may be required. Notify and recieve guidance from the DST.
@@ -252,14 +262,13 @@ WHERE
 queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
-    date_check.render(project=project_id,
-                      dataset=fitbit_dataset,
-                      table_name=table,
-                      sandbox_dataset=sandbox_dataset,
-                      date_column=date_columns[table],
-                      secondary_date_column=secondary_date_column.get(table)
-                     )
-    )
+        date_check.render(
+            project=project_id,
+            dataset=fitbit_dataset,
+            table_name=table,
+            sandbox_dataset=sandbox_dataset,
+            date_column=date_columns[table],
+            secondary_date_column=secondary_date_column.get(table)))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 execute(client, union_all_query)
@@ -284,13 +293,12 @@ queries_list = []
 for table_name, field_info in table_fields_values.items():
     field_name, field_values = list(field_info.items())[0]
     queries_list.append(
-    field_value_validation.render(project=project_id,
-                                  dataset=fitbit_dataset,
-                                  table_name=table_name,
-                                  field_name=field_name,
-                                  field_values=field_values
-                                 ))
-    
+        field_value_validation.render(project=project_id,
+                                      dataset=fitbit_dataset,
+                                      table_name=table_name,
+                                      field_name=field_name,
+                                      field_values=field_values))
+
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 execute(client, union_all_query)
