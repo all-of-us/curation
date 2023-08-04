@@ -51,8 +51,6 @@ FROM (
 WHERE
   (value_source_concept_id = 2100000009 AND (prev_value_source_concept_id = 2100000008 OR row_num_desc = 1))
   OR (value_source_concept_id = 2100000008 AND prev_value_source_concept_id = 2100000009)
-)
-
 """)
 
 
@@ -70,7 +68,7 @@ class GenerateWearStudyTable(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = "The purpose of this cleaning rule is to create (if it does not already exist) the questionnaire " \
+        desc = "The purpose of this cleaning rule is to create the wear_study table from observation records. " \
                 "mapping lookup table."
         super().__init__(issue_numbers=JIRA_ISSUES,
                          description=desc,
