@@ -380,6 +380,36 @@ result
 
 # -
 
+# # Check deidentification of src_ids
+#
+# DC-3376
+#
+
+# +
+src_check = JINJA_ENV.from_string("""
+SELECT
+  '{{table_name}}' as table,
+  COUNT(1) bad_rows
+FROM
+  `{{project}}.{{dataset}}.{{table_name}}`
+WHERE
+    NOT REGEXP_CONTAINS(src_id, r'(?i)Participant Portal')                            
+OR 
+    src_id IS NULL
+""")
+
+queries_list = []
+for table in FITBIT_TABLES:
+    queries_list.append(
+        src_check.render(project=project_id,
+                         dataset=,
+                         table_name=table))
+union_all_query = '\nUNION ALL\n'.join(queries_list)
+
+execute(client, union_all_query)
+
+# -
+
 # # Summary_fitdata
 
 
