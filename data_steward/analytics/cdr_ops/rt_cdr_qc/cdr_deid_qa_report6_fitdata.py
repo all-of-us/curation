@@ -400,7 +400,7 @@ ON
 JOIN
     `{{project}}.{{pipeline_tables}}.{{site_maskings}}` sm
 ON
-    ft.sm.hpo_id = st.src_id
+    sm.hpo_id = st.src_id
 WHERE
   ft.src_id != sm.src_id
 OR
