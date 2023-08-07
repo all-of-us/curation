@@ -600,6 +600,61 @@ df1[df1["Failure"] == 1]
 
 # -
 
+# # Query8: Verify the wear_study dateshift
+#
+# RT dates should have been shifted back by the number of days designated to each 
+# participant via the primary_pid_rid_mapping table.
+#
+# The following query will find any rows in the wear_study tables where the RT date plus the date shift is not equal to the 
+# CT date. If there are resulting rows, make sure the pipeline dateshift ran properly.
+
+# +
+query = JINJA_ENV.from_string("""
+
+SELECT
+ 'date shift is off' as issue,
+ COUNT(*) as bad_rows
+FROM
+  `{{project_id}}.{{rt_dataset}}.wear_study` rtws
+JOIN
+  `{{project_id}}.{{ct_dataset}}.wear_study` ctws
+USING(person_id)
+JOIN
+  `{{project_id}}.{{pipeline_tables}}.primary_pid_rid_mapping` pprm
+ON rtws.person_id = pprm.research_id
+WHERE DATE_ADD(rtws.wear_consent_start_date, INTERVAL shift DAY) <> ctws.wear_consent_start_date
+OR DATE_ADD(rtws.wear_consent_end_date, INTERVAL shift DAY) <> ctws.wear_consent_end_date
+""")
+
+q = query.render(project_id=project_id,
+                 rt_dataset=rt_dataset,
+                 ct_dataset=ct_dataset,
+                 pipeline_tables=PIPELINE_TABLES)
+
+df1 = execute(client, q)
+
+if df1['bad_rows'].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query8 Wear_study dates are as expected.',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                'Query8 Wear_study dates are not aligned properly. See description.',
+            'result':
+                'FAIL'
+        },
+        ignore_index=True
+                  )
+    display(df1)
+# -
+
 # # Summary_CDR_QC_RT_vs_CT_comparison
 
 # if not pass, will be highlighted in red
