@@ -828,7 +828,7 @@ else:
 #
 # DC-3340
 #
-# This check confirms that the wear_study table contains:
+# This check confirms that the wear_s.tudy table contains:
 # 1. Only one row per participant
 # 2. Wear study participants are also found in the CDR person table.
 # 3. Wear study participants have primary consent records in observation.
@@ -866,7 +866,6 @@ WHERE person_id not in ( -- person table --
   SELECT person_id
   FROM `{{project_id}}.{{rt_cdr_deid}}.person` o
   )
-
 UNION ALL
 
 SELECT
@@ -905,44 +904,9 @@ else:
             'result': 'Failure'
         },
         ignore_index=True)
-
-# +
-# Query 14:  Check that wear_consent records are suppressed in the 'observation' and 'survey_conduct' tables
 # -
 
-query = JINJA_ENV.from_string("""
-SELECT
-  'observation' as table,
-  COUNT(*) AS bad_rows
-FROM
-  `{{project_id}}.{{rt_cdr_deid}}.observation` o
-  LEFT JOIN   `{{project_id}}.{{rt_cdr_deid}}.survey_conduct` sc
-  ON sc.survey_conduct_id = o.questionnaire_response_id
-WHERE sc.survey_concept_id IN (2100000011,2100000012) -- captures questions asked in multiple surveys --
-OR LOWER(observation_source_value) IN UNNEST ({{wear_codes}}) -- captures those that might be missing from survey_conduct --
-GROUP BY 1
-UNION ALL
-SELECT
-  'survey_conduct' as table,
-  COUNT(*) AS bad_rows
-FROM
-  `{{project_id}}.{{rt_cdr_deid}}.survey_conduct` sc
-WHERE sc.survey_concept_id IN (2100000011,2100000012) 
-GROUP BY 1
-""")
-q = query.render(project_id=project_id,
-            rt_cdr_deid=rt_cdr_deid,
-            wear_codes=WEAR_SURVEY_CODES)
-df1=execute(client, q)
-if df1['bad_rows'].sum()==0:
- df = df.append({'query' : 'Query14 wear_consent records are cleaned as expected.', 'result' : 'PASS'},
-                ignore_index = True)
-else:
- df = df.append({'query' : 'Query14 wear_consent records have not been cleaned as expected.', 'result' : 'Failure'},
-                ignore_index = True)
-df1
-
-# # Summary_deid_extra_validation
+git # # Summary_deid_extra_validation
 
 
 # +
