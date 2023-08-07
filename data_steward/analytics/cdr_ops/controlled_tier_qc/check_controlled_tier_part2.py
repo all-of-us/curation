@@ -76,7 +76,7 @@ pd.options.display.max_rows = 120
 df = pd.DataFrame(columns=['query', 'result'])
 
 # wear_consent and wear_consent_ptsc question and module concepts where not in multiple surveys.
-# The concepts found in multiple surveys are: 'resultsconsent_helpmewithconsent' and 'helpmewithconsent_name' 
+# The concepts found in multiple surveys are: 'resultsconsent_helpmewithconsent' and 'helpmewithconsent_name'
 WEAR_SURVEY_CODES = ['havesmartphone',
                       'wearwatch',
                       'usetracker',
@@ -101,7 +101,7 @@ WEAR_SURVEY_CODES = ['havesmartphone',
 # step1 , to get the tables AND columns that have person_id, size >1 AND DATE columns AND save to a data frame
 query = JINJA_ENV.from_string("""
 
-SELECT  
+SELECT
 'person' as table_name,
 'birth_datetime' as column_name,
 count (*) as row_counts_failures
@@ -150,7 +150,7 @@ WITH
       column_name
     FROM
       `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
-    WHERE 
+    WHERE
       column_name='person_id' ),
     table2 AS (
     SELECT
@@ -158,28 +158,28 @@ WITH
       row_count
     FROM
       `{{project_id}}.{{ct_dataset}}.__TABLES__`
-    WHERE 
+    WHERE
       row_count>1)
-      
+
   SELECT
     table_name,
     column_name
   FROM
     `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS` c
-  WHERE 
+  WHERE
     table_name IN (
     SELECT
       DISTINCT table_name
     FROM
       table2
-    WHERE 
+    WHERE
       table_name IN (
       SELECT
         DISTINCT table_name
       FROM
         table1))
-    AND c.data_type IN ('DATE','TIMESTAMP') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)') 
+    AND c.data_type IN ('DATE','TIMESTAMP')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(birth)')
 """)
 
@@ -204,18 +204,18 @@ JOIN
   {{project_id}}.{{rt_dataset}}._deid_map
 USING
   (person_id)
-  ) 
-    
-SELECT 
+  )
+
+SELECT
 '{{table_name}}' AS table_name,
 '{{column_name}}' AS column_name,
 COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
  AS Failure_birth_date
- 
+
 FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
 JOIN rt_map r USING (person_id)
 WHERE  DATE(c.{{column_name}})< r.birth_date
@@ -276,14 +276,14 @@ target_tables2
 def my_sql(table_name, column_name):
 
     query = JINJA_ENV.from_string("""
-    
+
     WITH df1 as (
-SELECT 
+SELECT
 person_id,c.{{column_name}},
 DATE_ADD(d.death_date, INTERVAL 30 DAY) AS after_death_30_days
- 
+
 FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
-FULL JOIN `{{project_id}}.{{ct_dataset}}.aou_death` d USING (person_id) 
+FULL JOIN `{{project_id}}.{{ct_dataset}}.aou_death` d USING (person_id)
 WHERE  DATE(c.{{column_name}}) > d.death_date
 AND d.primary_death_record = TRUE
 AND c.{{table_name}}_concept_id NOT IN (4013886, 4135376, 4271761)
@@ -293,7 +293,7 @@ SELECT
 '{{table_name}}' AS table_name,
 '{{column_name}}' AS column_name,
 COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
@@ -339,13 +339,13 @@ target_tables2
 def my_sql(table_name, column_name):
 
     query = JINJA_ENV.from_string("""
-    
+
     WITH death_30_days as (
-SELECT 
+SELECT
 c.{{column_name}},
 DATE_ADD(d.death_date, INTERVAL 30 DAY) AS after_death_30_days
  FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
- JOIN `{{project_id}}.{{ct_dataset}}.aou_death` d USING (person_id) 
+ JOIN `{{project_id}}.{{ct_dataset}}.aou_death` d USING (person_id)
 WHERE  DATE(c.{{column_name}}) > d.death_date
 AND d.primary_death_record = TRUE
 )
@@ -354,7 +354,7 @@ SELECT
 '{{table_name}}' AS table_name,
 '{{column_name}}' AS column_name,
 COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
@@ -418,12 +418,12 @@ target_tables2
 def my_sql(table_name, column_name):
 
     query = JINJA_ENV.from_string("""
-    
-SELECT 
+
+SELECT
 '{{table_name}}' AS table_name,
 '{{column_name}}' AS column_name,
 COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
@@ -484,28 +484,28 @@ SELECT person_id FROM `{{project_id}}.{{ct_dataset}}.person`),
 
 person_basics as (
 SELECT distinct person_id
-FROM 
-`{{project_id}}.{{ct_dataset}}.concept` 
+FROM
+`{{project_id}}.{{ct_dataset}}.concept`
 JOIN `{{project_id}}.{{ct_dataset}}.concept_ancestor` on (concept_id=ancestor_concept_id)
 JOIN `{{project_id}}.{{ct_dataset}}.observation` on (descendant_concept_id=observation_concept_id)
 JOIN `{{project_id}}.{{ct_dataset}}.observation_ext` USING(observation_id)
-WHERE observation_concept_id NOT IN (40766240,43528428,1585389) 
+WHERE observation_concept_id NOT IN (40766240,43528428,1585389)
 AND concept_class_id='Module'
-AND concept_name IN ('The Basics') 
+AND concept_name IN ('The Basics')
 AND NOT REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
 AND questionnaire_response_id is not null)
 
-SELECT 
+SELECT
 'observation' AS table_name,
 'person_id' AS column_name,
 COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
  AS Failure_bascis
 
-FROM person_all 
+FROM person_all
 WHERE person_id NOT IN (SELECT person_id FROM person_basics)
 """)
 
@@ -574,21 +574,21 @@ WITH person_ehr as (
 ),
 
 person_yes as (
-  SELECT 
-    distinct person_id 
-  FROM 
+  SELECT
+    distinct person_id
+  FROM
     `{{project_id}}.{{ct_dataset}}.observation`
-  WHERE  
+  WHERE
     observation_concept_id = 1586099
-  AND 
+  AND
     value_source_concept_id = 1586100
 )
 
-SELECT 
+SELECT
 'person_ehr' AS table_name,
 'person_id' AS column_name,
 COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
@@ -634,7 +634,7 @@ WITH
       column_name
     FROM
       `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
-    WHERE 
+    WHERE
       column_name='person_id' ),
     table2 AS (
     SELECT
@@ -642,40 +642,40 @@ WITH
       row_count
     FROM
       `{{project_id}}.{{ct_dataset}}.__TABLES__`
-    WHERE 
+    WHERE
       row_count>1)
-      
+
   SELECT
     table_name,
     column_name
   FROM
     `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS` c
-  WHERE 
+  WHERE
     table_name IN (
     SELECT
       DISTINCT table_name
     FROM
       table2
-    WHERE 
+    WHERE
      (table_name IN (
       SELECT
         DISTINCT table_name
       FROM
         table1))
-    AND REGEXP_CONTAINS(column_name, r'(?i)(_id)') 
-    AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(person_)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_concept)') 
+    AND REGEXP_CONTAINS(column_name, r'(?i)(_id)')
+    AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(person_)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_concept)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_site)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(provider)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(response)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(location)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(source)') 
-      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)') 
-      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(unique)') 
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(provider)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(response)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(location)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(source)')
+      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
+      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(unique)')
       )
-      
+
       OR (
     (table_name IN (
       SELECT
@@ -683,9 +683,9 @@ WITH
       FROM
         table1))
         AND REGEXP_CONTAINS(table_name, r'(?i)(visit)')
-        AND REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)') 
+        AND REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
-    
+
     OR (
     (table_name IN (
       SELECT
@@ -694,7 +694,7 @@ WITH
         table1))
         AND REGEXP_CONTAINS(table_name, r'(?i)(person)')
          AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person_ext)')
-        AND REGEXP_CONTAINS(column_name, r'(?i)(person_id)') 
+        AND REGEXP_CONTAINS(column_name, r'(?i)(person_id)')
      )
    """)
 
@@ -709,17 +709,17 @@ target_tables
 def my_sql(table_name, column_name):
 
     query = JINJA_ENV.from_string("""
-    SELECT 
+    SELECT
 '{{table_name}}' AS table_name,
 '{{column_name}}' AS column_name,
 
 COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
  AS Failure_primary_key_match
- 
+
 FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
 JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}_ext` ext USING ({{column_name}})
 WHERE  c.{{column_name}} !=ext.{{column_name}}
@@ -776,7 +776,7 @@ WITH
       column_name
     FROM
       `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
-    WHERE 
+    WHERE
       column_name='person_id' ),
     table2 AS (
     SELECT
@@ -784,38 +784,38 @@ WITH
       row_count
     FROM    `{{project_id}}.{{ct_dataset}}.__TABLES__`
     WHERE     row_count>1)
-      
+
   SELECT
     table_name,
     column_name
   FROM
     `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS` c
-  WHERE 
+  WHERE
     table_name IN (
     SELECT
       DISTINCT table_name
     FROM
       table2
-    WHERE 
+    WHERE
      (table_name IN (
       SELECT
         DISTINCT table_name
       FROM
         table1))
-    AND REGEXP_CONTAINS(column_name, r'(?i)(_id)') 
-    AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(person_)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_concept)') 
+    AND REGEXP_CONTAINS(column_name, r'(?i)(_id)')
+    AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(person_)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_concept)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_site)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(provider)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(response)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(location)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(source)') 
-      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)') 
-      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(unique)') 
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(provider)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(response)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(location)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(source)')
+      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
+      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(unique)')
       )
-      
+
       OR (
           (table_name IN (
       SELECT
@@ -823,9 +823,9 @@ WITH
       FROM
         table1))
         AND REGEXP_CONTAINS(table_name, r'(?i)(visit)')
-        AND REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)') 
+        AND REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
-    
+
     OR (
            (table_name IN (
       SELECT
@@ -834,7 +834,7 @@ WITH
         table1))
         AND REGEXP_CONTAINS(table_name, r'(?i)(person)')
          AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person_ext)')
-        AND REGEXP_CONTAINS(column_name, r'(?i)(person_id)') 
+        AND REGEXP_CONTAINS(column_name, r'(?i)(person_id)')
      )
  """)
 
@@ -849,14 +849,14 @@ target_tables
 def my_sql(table_name, column_name):
 
     query = JINJA_ENV.from_string("""
-    
-SELECT 
+
+SELECT
 '{{table_name}}' AS table_name,
 '{{column_name}}' AS column_name,
 {{column_name}},
 
 COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
@@ -917,7 +917,7 @@ WITH
       column_name
     FROM
       `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
-    WHERE 
+    WHERE
       column_name='person_id' ),
     table2 AS (
     SELECT
@@ -925,29 +925,29 @@ WITH
       row_count
     FROM
       `{{project_id}}.{{ct_dataset}}.__TABLES__`
-    WHERE 
+    WHERE
       row_count>1)
-      
+
   SELECT
     table_name,
     column_name
   FROM
     `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS` c
-  WHERE 
+  WHERE
     table_name IN (
     SELECT
       DISTINCT table_name
     FROM
       table2
-    WHERE 
+    WHERE
      table_name IN (
       SELECT
         DISTINCT table_name
       FROM
         table1))
-    AND REGEXP_CONTAINS(column_name, r'(?i)(_concept_id)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)') 
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_source)') 
+    AND REGEXP_CONTAINS(column_name, r'(?i)(_concept_id)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_source)')
 """)
 
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
@@ -961,18 +961,18 @@ target_tables
 def my_sql(table_name, column_name):
 
     query = JINJA_ENV.from_string("""
-    
-SELECT 
+
+SELECT
 '{{table_name}}' AS table_name,
 '{{column_name}}' AS column_name,
 
 COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
  AS Failure_primary_key_match
- 
+
 FROM `{{project_id}}.{{ct_dataset}}.concept` c
 JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}`  ON (concept_id={{column_name}})
 WHERE  standard_concept !='S'
@@ -1025,25 +1025,25 @@ else:
 query = JINJA_ENV.from_string("""
 
  WITH rows_having_brith_date as (
- 
+
  SELECT distinct observation_id
- FROM 
+ FROM
 `{{project_id}}.{{rt_dataset}}.observation` ob
 JOIN {{project_id}}.{{rt_dataset}}.person p USING (person_id)
 WHERE  observation_concept_id in (4013886, 4135376, 4271761)
 AND observation_date=DATE(p.birth_datetime)
- ) 
+ )
 
  SELECT
 'observation' AS table_name,
 'observation_date' AS column_name,
 COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
  AS Failure_birth_date_cut_Off
-FROM `{{project_id}}.{{ct_dataset}}.observation` 
+FROM `{{project_id}}.{{ct_dataset}}.observation`
 WHERE observation_id IN (SELECT observation_id FROM rows_having_brith_date)
 AND observation_date != '{{cut_off_date}}'
  """)
@@ -1084,19 +1084,19 @@ else:
 query = JINJA_ENV.from_string("""
 
  WITH rows_having_brith_date as (
-   
+
 SELECT observation_id
   FROM {{project_id}}.{{rt_dataset}}.observation ob
 JOIN  {{project_id}}.{{rt_dataset}}.person p USING (person_id)
  WHERE observation_concept_id NOT IN (4013886, 4135376, 4271761)
   AND observation_date=DATE(p.birth_datetime)
-  ) 
+  )
 
-SELECT 
+SELECT
 'observation' AS table_name,
  'observation_date' AS column_name,
  COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
@@ -1142,12 +1142,12 @@ SELECT
 'condition_occurrence' AS table_name,
  'concept_id' AS column_name,
  COUNT(*) AS row_counts_failure,
-CASE WHEN 
+CASE WHEN
   COUNT(*) > 0
   THEN 1 ELSE 0
 END
  AS Failure_no_two_concept_ids
-FROM `{{project_id}}.{{ct_dataset}}.condition_occurrence` 
+FROM `{{project_id}}.{{ct_dataset}}.condition_occurrence`
 JOIN `{{project_id}}.{{ct_dataset}}.concept` c ON (condition_concept_id=c.concept_id)
 JOIN `{{project_id}}.{{ct_dataset}}.concept_ancestor` ON (c.concept_id=descendant_concept_id)
 WHERE ancestor_concept_id IN (4054924, 141771)
@@ -1192,7 +1192,7 @@ def query_template(table_era):
 
     query = JINJA_ENV.from_string("""
       WITH df1 AS (
-        SELECT 
+        SELECT
           `{{table_era}}_id`
         FROM
           `{{project_id}}.{{ct_dataset}}.{{table_era}}`
@@ -1256,7 +1256,7 @@ res2
 # 2. Wear study participants are also found in the CDR person table.
 # 3. Wear study participants have primary consent records in observation.
 #
-# **If check fails:**<br> 
+# **If check fails:**<br>
 # * The issue `participant with multiple records` means that those participants have multiple rows in the wear_study table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table. <br>
 # * The issue `not in person table` means that participants exist in the wear_study table that aren't in the person table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table.<br>
 # * The issue `no primary consent` means that participants exist in the wear_study table that do not have proper primary consent. Investigate the issue. It is possible that there is another way to determine primary consent. <br>
@@ -1288,7 +1288,7 @@ WHERE person_id not in ( -- person table --
   SELECT person_id
   FROM `{{project_id}}.{{ct_dataset}}.person` o
   )
-  
+
 UNION ALL
 
 SELECT
@@ -1327,43 +1327,6 @@ else:
             'result': 'Failure'
         },
         ignore_index=True)
-
-
-# +
-# Query 18:  Check that wear_consent records are suppressed in the 'observation' and 'survey_conduct' tables
-# -
-
-query = JINJA_ENV.from_string("""
-SELECT
-  'observation' as table,
-  COUNT(*) AS bad_rows
-FROM
-  `{{project_id}}.{{ct_dataset}}.observation` o
-  LEFT JOIN   `{{project_id}}.{{ct_dataset}}.survey_conduct` sc
-  ON sc.survey_conduct_id = o.questionnaire_response_id
-WHERE sc.survey_concept_id IN (2100000011,2100000012) -- captures questions asked in multiple surveys --
-OR LOWER(observation_source_value) IN UNNEST ({{wear_codes}}) -- captures those that might be missing from survey_conduct --
-GROUP BY 1
-UNION ALL
-SELECT
-  'survey_conduct' as table,
-  COUNT(*) AS bad_rows
-FROM
-  `{{project_id}}.{{ct_dataset}}.survey_conduct` sc
-WHERE sc.survey_concept_id IN (2100000011,2100000012) 
-GROUP BY 1
-""")
-q = query.render(project_id=project_id,
-            ct_dataset=ct_dataset,
-            wear_codes=WEAR_SURVEY_CODES)
-df1=execute(client, q) 
-if df1['bad_rows'].sum()==0:
- df = df.append({'query' : 'Query18 wear_consent records are cleaned as expected.', 'result' : 'PASS'},  
-                ignore_index = True) 
-else:
- df = df.append({'query' : 'Query18 wear_consent records have not been cleaned as expected.', 'result' : 'Failure'},
-                ignore_index = True) 
-df1
 
 
 # +
