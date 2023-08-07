@@ -388,7 +388,7 @@ result
 # +
 src_id_check = JINJA_ENV.from_string("""
 SELECT
-    '{{table_name}}' as table,
+    '{{table}}' as table,
     ft.person_id,
     COUNT(1) bad_rows
 FROM
