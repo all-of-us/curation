@@ -394,7 +394,7 @@ SELECT
 FROM
     `{{project}}.{{deid_cdr_fitbit}}.{{table}}` ft
 JOIN
-    `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` st
+    `{{project}}.{{non_deid_fitbit}}.{{table}}` st
 ON
     ft.person_id = st.person_id
 JOIN
@@ -414,9 +414,8 @@ for table in FITBIT_TABLES:
     queries_list.append(
         src_id_check.render(project=project_id,
                             deid_cdr_fitbit=deid_cdr_fitbit,
+                            non_deid_fitbit=non_deid_fitbit,
                             table=table,
-                            sandbox_dataset='',
-                            sandbox_table='',
                             pipeline_tables=PIPELINE_TABLES,
                             site_maskings=SITE_MASKING_TABLE_ID))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
