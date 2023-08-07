@@ -828,7 +828,7 @@ else:
 #
 # DC-3340
 #
-# This check confirms that the wear_s.tudy table contains:
+# This check confirms that the wear_study table contains:
 # 1. Only one row per participant
 # 2. Wear study participants are also found in the CDR person table.
 # 3. Wear study participants have primary consent records in observation.
