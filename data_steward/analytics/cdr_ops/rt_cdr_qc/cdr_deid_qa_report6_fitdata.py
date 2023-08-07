@@ -16,7 +16,7 @@
 #
 
 import pandas as pd
-from common import JINJA_ENV, FITBIT_TABLES
+from common import JINJA_ENV, FITBIT_TABLES, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
@@ -386,24 +386,39 @@ result
 #
 
 # +
-src_check = JINJA_ENV.from_string("""
+src_id_check = JINJA_ENV.from_string("""
 SELECT
-  '{{table_name}}' as table,
-  COUNT(1) bad_rows
+    '{{table_name}}' as table,
+    ft.person_id,
+    COUNT(1) bad_rows
 FROM
-  `{{project}}.{{dataset}}.{{table_name}}`
+    `{{project}}.{{deid_cdr_fitbit}}.{{table}}` ft
+JOIN
+    `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` st
+ON
+    ft.person_id = st.person_id
+JOIN
+    `{{project}}.{{pipeline_tables}}.{{site_maskings}}` sm
+ON
+    ft.sm.hpo_id = st.src_id
 WHERE
-    NOT REGEXP_CONTAINS(src_id, r'(?i)Participant Portal')                            
-OR 
-    src_id IS NULL
+  ft.src_id != sm.src_id
+OR
+  ft.src_id is NULL
+GROUP BY 
+    person_id
 """)
 
 queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
-        src_check.render(project=project_id,
-                         dataset=deid_cdr_fitbit,
-                         table_name=table))
+        src_id_check.render(project=project_id,
+                            deid_cdr_fitbit=deid_cdr_fitbit,
+                            table=table,
+                            sandbox_dataset='',
+                            sandbox_table='',
+                            pipeline_tables=PIPELINE_TABLES,
+                            site_maskings=SITE_MASKING_TABLE_ID))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 execute(client, union_all_query)
