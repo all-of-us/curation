@@ -196,5 +196,22 @@ class SQLWrangleTest(unittest.TestCase):
                                        hpo_id='pitt_temple')
         self.assertEqual(r, 'pitt_temple_achilles_results')
 
+        # For HPO sites in EHR dataset, death table exists.
+        r = sql_wrangle.qualify_tables(
+            'SELECT * FROM synpuf_100.death WHERE 1=1', hpo_id='fake')
+        self.assertEqual(r, 'SELECT * FROM fake_death WHERE 1=1')
+
+        # For unioned_ehr in EHR dataset, death table does not exist.
+        # Use aou_death instead.
+        r = sql_wrangle.qualify_tables(
+            'SELECT * FROM synpuf_100.death WHERE 1=1', hpo_id='unioned_ehr')
+        self.assertEqual(r, 'SELECT * FROM unioned_ehr_aou_death WHERE 1=1')
+
+        # For non-EHR, death table exists but is empty.
+        # Use aou_death instead.
+        r = sql_wrangle.qualify_tables(
+            'SELECT * FROM synpuf_100.death WHERE 1=1')
+        self.assertEqual(r, 'SELECT * FROM aou_death WHERE 1=1')
+
     def tearDown(self):
         pass
