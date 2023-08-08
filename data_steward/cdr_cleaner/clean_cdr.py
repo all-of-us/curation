@@ -13,6 +13,7 @@ import cdr_cleaner.clean_cdr_engine as clean_engine
 from cdr_cleaner.cleaning_rules.backfill_lifestyle import BackfillLifestyle
 from cdr_cleaner.cleaning_rules.backfill_overall_health import BackfillOverallHealth
 from cdr_cleaner.cleaning_rules.backfill_the_basics import BackfillTheBasics
+from cdr_cleaner.cleaning_rules.calculate_bmi import CalculateBmi
 from cdr_cleaner.cleaning_rules.calculate_primary_death_record import CalculatePrimaryDeathRecord
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
@@ -114,6 +115,8 @@ from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSupp
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
 from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMappings
+from cdr_cleaner.cleaning_rules.store_new_duplicate_measurement_concept_ids import \
+    StoreNewDuplicateMeasurementConceptIds
 from cdr_cleaner.cleaning_rules.update_invalid_zip_codes import UpdateInvalidZipCodes
 from cdr_cleaner.cleaning_rules.deid.survey_version_info import COPESurveyVersionTask
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
@@ -137,6 +140,8 @@ import constants.global_variables
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY, CRON_RETRACTION
 from cdr_cleaner.cleaning_rules.generate_research_device_ids import GenerateResearchDeviceIds
+from cdr_cleaner.cleaning_rules.deid.fitbit_device_id import DeidFitbitDeviceId
+from cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct import DropViaSurveyConduct
 
 # Third party imports
 
@@ -223,6 +228,7 @@ COMBINED_CLEANING_CLASSES = [
     (
         ValidDeathDates,),
     (RemoveEhrDataWithoutConsent,),
+    (StoreNewDuplicateMeasurementConceptIds,),
     (DedupMeasurementValueAsConceptId,),
     (DrugRefillsDaysSupply,),
     (PopulateRouteIds,),
@@ -236,6 +242,7 @@ COMBINED_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (GenerateExtTables,),
+    (CalculateBmi,),  # dependent on GenerateExtTables
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (PopulateSurveyConductExt,),
@@ -285,6 +292,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (CalculatePrimaryDeathRecord,),
+    (DropViaSurveyConduct,),  # should run after wear study table creation
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -313,6 +321,8 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
 
 REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
     (RemoveFitbitDataIfMaxAgeExceeded,),
+    (DeidFitbitDeviceId,
+    ),  # This rule must occur so that PID can map to device_id
     (FitbitPIDtoRID,),
     (RemoveNonExistingPids,),  # assumes RT dataset is ready for reference
     (FitbitDateShiftRule,),
@@ -344,6 +354,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (FreeTextSurveyResponseSuppression,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
+    (DropViaSurveyConduct,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -369,8 +380,11 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
 ]
 
 CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
+    (DeidFitbitDeviceId,
+    ),  # This rule must occur so that PID can map to device_id
     (FitbitPIDtoRID,),
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
+    (DropViaSurveyConduct,),
 ]
 
 DATA_CONSISTENCY_CLEANING_CLASSES = [

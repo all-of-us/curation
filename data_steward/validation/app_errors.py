@@ -8,10 +8,12 @@ returning generic error data to views to ensure program integrity.
 # Python imports
 import logging
 import traceback
+from time import sleep
 
 # Third party imports
 import flask
 from googleapiclient.errors import HttpError
+from google.api_core.exceptions import ServiceUnavailable
 
 # Project imports
 
@@ -35,14 +37,28 @@ def log_traceback(func):
     all errors encountered by the app within this module/errors_blueprint
     """
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, retries=0, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception as e:
             alert_message = format_alert_message(e.__class__.__name__, str(e))
             logging.exception(alert_message, exc_info=True, stack_info=True)
             logging.info(f'{traceback.print_exc()}')
-            raise e
+
+            if isinstance(e, ServiceUnavailable):
+                if retries == 0:
+                    logging.error(
+                        'The above exception is due to a 503 error. Job will be retried in 3 minutes.'
+                    )
+                    sleep(60 * 3)
+                    logging.info('Retrying job.')
+                    wrapper(func(*args, **kwargs), retries=retries + 1)
+                else:
+                    logging.error(
+                        'The above exception is due to a 503. Retries exceeded. Check the logs to troubleshoot.'
+                    )
+            else:
+                raise e
 
     return wrapper
 

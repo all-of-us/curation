@@ -101,7 +101,8 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
           ('aaa', 1, date('2016-05-01'), null, 0, 'foo', True),
           ('bbb', 2, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 'foo', True),
           ('ccc', 3, date('2016-05-01'), timestamp('2016-05-08 11:00:00'), 0, 'foo', True),
-          ('ddd', 4, date('2016-05-01'), timestamp('2016-04-07 11:00:00'), 0, 'foo', True)
+          ('ddd', 4, date('2016-05-01'), timestamp('2016-04-07 11:00:00'), 0, 'foo', True),
+          ('eee', 4, null, null, 0, 'foo', False)
         """).render(fq_dataset_name=self.fq_dataset_name, aou_death=AOU_DEATH)
 
         self.load_test_data([obs_query, aou_death_query])
@@ -126,14 +127,15 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, AOU_DEATH]),
             'fq_sandbox_table_name':
                 '',
-            'loaded_ids': [1, 2, 3, 4],
+            'loaded_ids': ['aaa', 'bbb', 'ccc', 'ddd', 'eee'],
             'sandboxed_ids': [],
-            'fields': ['person_id', 'death_date', 'death_datetime'],
-            'cleaned_values': [(1, self.start_date,
+            'fields': ['aou_death_id', 'death_date', 'death_datetime'],
+            'cleaned_values': [('aaa', self.start_date,
                                 self.start_default_datetime),
-                               (2, self.start_date, self.start_datetime),
-                               (3, self.start_date, self.start_datetime),
-                               (4, self.start_date, self.start_datetime)]
+                               ('bbb', self.start_date, self.start_datetime),
+                               ('ccc', self.start_date, self.start_datetime),
+                               ('ddd', self.start_date, self.start_datetime),
+                               ('eee', None, None)]
         }]
 
         self.default_test(tables_and_counts)

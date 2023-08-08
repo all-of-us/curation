@@ -124,11 +124,17 @@ class RemoveParticipantDataPastDeactivationDateTest(
         INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
         (aou_death_id, person_id, death_date, death_datetime, death_type_concept_id, src_id, primary_death_record)
         VALUES
+        -- Not dropped. The date is before the deactivation. -- 
         ('a2', 2, '2008-03-12', '2008-03-12 05:00:00 UTC', 8, 'hpo_a', True),
+        -- Dropped. The date is after the deactivation. -- 
         ('b2', 2, '2018-03-12', '2018-03-12 05:00:00 UTC', 8, 'hpo_b', False),
         ('a3', 3, '2011-01-18', '2011-01-18 05:00:00 UTC', 6, 'rdr', True),
+        -- Not dropped. The datetime is before the deactivation. -- 
         ('a4', 4, '2009-11-25', '2009-11-25 00:30:00 UTC', 6, 'hpo_c', True),
-        ('a5', 5, '2009-09-20', NULL, 6, 'hpo_a', True)
+        -- Dropped. The date is the same day as the deactivation. -- 
+        ('a5', 5, '2009-09-20', NULL, 6, 'hpo_a', True),
+        -- Not dropped. The date & datetime columns are NULL. -- 
+        ('b5', 5, NULL, NULL, 6, 'healthpro', True)
         """),
             DRUG_EXPOSURE:
                 JINJA_ENV.from_string("""
@@ -339,9 +345,9 @@ class RemoveParticipantDataPastDeactivationDateTest(
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(AOU_DEATH)}',
             'fields': ['aou_death_id'],
-            'loaded_ids': ['a2', 'b2', 'a3', 'a4', 'a5'],
+            'loaded_ids': ['a2', 'b2', 'a3', 'a4', 'a5', 'b5'],
             'sandboxed_ids': ['b2', 'a3', 'a5'],
-            'cleaned_values': [('a2',), ('a4',)]
+            'cleaned_values': [('a2',), ('a4',), ('b5',)]
         }, {
             'name':
                 HEART_RATE_MINUTE_LEVEL,

@@ -15,17 +15,19 @@
 #
 # # Purpose:
 # This notebook is used to validate new uploads of the OMOP vocabularys prior to implementing in production.<br>
-#
-#
-#  **Link to get the latest custom concepts [HERE](https://github.com/all-of-us/curation/blame/develop/data_steward/resource_files/aou_vocab/CONCEPT.csv).**
-#
 
+# +
 # # + Import packages
 from common import JINJA_ENV
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+from resources import AOU_VOCAB_CONCEPT_CSV_PATH
+
 import pandas as pd
+
+# get current custom concepts
+custom_concepts=pd.read_csv(AOU_VOCAB_CONCEPT_CSV_PATH, delimiter='\t')
 
 # + tags=["parameters"]
 project_id = ''
@@ -34,8 +36,8 @@ new_vocabulary = ''
 run_as = ''
 # -
 
-# These are the AoU_Custom and AoU_General concepts. Look for added concepts in the aou_vocab/CONCEPT.csv. Link Above.
-custom_concepts = list(range(2000000000,2000000013+1)) + list(range(2100000000,2100000007+1))
+# These are the AoU_Custom and AoU_General concepts.
+custom_concept_ids = custom_concepts.iloc[:, 0].tolist()
 
 vocabulary_dataset_old = f'{project_id}.{old_vocabulary}'
 vocabulary_dataset_new = f'{project_id}.{new_vocabulary}'
@@ -122,16 +124,23 @@ OR concept_code IN ('AOU generated')
 ORDER BY concept_id
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
-                   vocabulary_dataset_new=vocabulary_dataset_new,
-                  custom_concepts=custom_concepts)
+                   vocabulary_dataset_new=vocabulary_dataset_new)
 df = execute(client, query, max_rows=True)
 
+missing_items = [item for item in custom_concept_ids if item not in df['concept_id'].values]
 
-if len(df) != len(custom_concepts):
+if missing_items:
     print(' \n FAILING! Look in the check description for more.')
-    display(df)
+    display(missing_items)
 else:
-    print(' \n This check passes!')
+    print(' \n PASS, All custom concepts accounted for.')
+    display(missing_items)
+
+# +
+
+missing_items = [item for item in custom_concept_ids if item not in df['concept_id'].values]
+
+missing_items
 # -
 
 # # Vocabulary Summary Queries
