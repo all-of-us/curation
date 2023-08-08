@@ -380,7 +380,7 @@ result
 
 # -
 
-# # Check deidentification of src_ids
+# # Check de-identification of src_ids
 #
 # DC-3376
 #
@@ -420,7 +420,23 @@ for table in FITBIT_TABLES:
                             site_maskings=SITE_MASKING_TABLE_ID))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
-execute(client, union_all_query)
+result = execute(client, union_all_query)
+
+if sum(result['bad_rows']) == 0:
+    summary = summary.append(
+        {
+            'query': 'Query8 Check de-identification of src_ids.',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    summary = summary.append(
+        {
+            'query': 'Query8 Check de-identification of src_ids.',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+result
 
 # -
 
