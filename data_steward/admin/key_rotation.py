@@ -8,7 +8,7 @@ import os
 
 LOGGER = logging.getLogger(__name__)
 
-KEY_EXPIRE_DAYS = 180
+KEY_EXPIRE_DAYS = 150
 KEY_EXPIRE_ALERT_DAYS = 7
 GCP_DTM_FMT = '%Y-%m-%dT%H:%M:%SZ'
 
