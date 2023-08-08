@@ -17,19 +17,19 @@ LABEL org.opencontainers.image.description="Base development container image use
 # run the base container init first, as it is highly unlikely to change.
 # this allows us to modify subsequent steps without initating a full image rebuild
 
-# install deps and link "python" and "python3" execs to 3.7
+# install deps and link "python" and "python3" execs to 3.10
 RUN apt update \
   && apt upgrade -y \
   && apt install -y \
   curl \
   git \
-  python3.7-dev \
-  python3.7-venv \
+  python3.10-dev \
+  python3.10-venv \
   python3-pip \
   python3-wheel \
   wget \
-  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 1 \
-  && update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
+  && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 
 ## BUILD ARGS
 
