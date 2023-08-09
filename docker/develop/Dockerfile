@@ -25,11 +25,11 @@ RUN apt update \
   git \
   wget \
   && apt install -y \
-  python3.10-dev \
-  python3.10-venv \
+  python3-dev \
+  python3-venv \
   gcc \
-  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
-  && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
+  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3 1 \
+  && update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
 
 ## BUILD ARGS
