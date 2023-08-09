@@ -18,13 +18,13 @@ LABEL org.opencontainers.image.description="Base development container image use
 # this allows us to modify subsequent steps without initating a full image rebuild
 
 # install deps and link "python" and "python3" execs to 3.11
-RUN apt update \
+RUN apt update --allow-releaseinfo-change \
   && apt upgrade -y \
   && apt install -y \
   curl \
   git \
   wget \
-  && apt install --allow-releaseinfo-change -y \
+  && apt install -y \
   python3.10-dev \
   python3.10-venv \
   gcc \
