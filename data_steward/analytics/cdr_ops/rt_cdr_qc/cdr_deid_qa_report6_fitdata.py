@@ -380,10 +380,11 @@ result
 
 # -
 
-# # Check de-identification of src_ids
+# # Check de-identification of src_ids.
 #
 # DC-3376
 #
+# This check verifies that src_ids in fitbit tables were updated successfully. The check passes if no records are returned.
 
 # +
 src_id_check = JINJA_ENV.from_string("""
