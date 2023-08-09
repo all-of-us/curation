@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 LABEL org.opencontainers.image.authors="daniel.p.carbone@vumc.org"
 LABEL org.opencontainers.image.url="https://github.com/all-of-us/curation"
 LABEL org.opencontainers.image.documentation="https://github.com/all-of-us/curation"
@@ -19,17 +19,17 @@ LABEL org.opencontainers.image.description="Base development container image use
 
 # install deps and link "python" and "python3" execs to 3.7
 RUN apt update \
-    && apt upgrade -y \
-    && apt install -y \
-      curl \
-      git \
-      python3.7-dev \
-      python3.7-venv \
-      python3-pip \
-      python3-wheel \
-      wget \
-    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 1 \
-    && update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+  && apt upgrade -y \
+  && apt install -y \
+  curl \
+  git \
+  python3.10-dev \
+  python3.10-venv \
+  python3-pip \
+  python3-wheel \
+  wget \
+  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
+  && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 
 ## BUILD ARGS
 
@@ -77,38 +77,38 @@ ENV GOOGLE_APPLICATION_CREDENTIALS "${CIRCLE_WORKING_DIRECTORY}/aou-res-curation
 
 # download circleci cli
 RUN wget --quiet "${CIRCLECI_CLI_DOWNLOAD}" \
-    && if ! $(echo "${CIRCLECI_CLI_CHECKSUM}" "${CIRCLECI_CLI_TAR_FILE}" | sha256sum --check --status); \
-        then echo "CircleCI cli tar integrity check failure, please update build arg with correct checksum and/or version";\
-        exit 1;\
-    fi;
+  && if ! $(echo "${CIRCLECI_CLI_CHECKSUM}" "${CIRCLECI_CLI_TAR_FILE}" | sha256sum --check --status); \
+  then echo "CircleCI cli tar integrity check failure, please update build arg with correct checksum and/or version";\
+  exit 1;\
+  fi;
 
 RUN tar -xvf "${CIRCLECI_CLI_TAR_FILE}" -C "/tmp" \
-    && mv "${CIRCLECI_CLI_TMP_PATH}/circleci" "/usr/bin/circleci" \
-    && rm -rf "${CIRCLECI_CLI_TMP_PATH}" \
-    && /usr/bin/circleci update
+  && mv "${CIRCLECI_CLI_TMP_PATH}/circleci" "/usr/bin/circleci" \
+  && rm -rf "${CIRCLECI_CLI_TMP_PATH}" \
+  && /usr/bin/circleci update
 
 # CONTAINER USER SETUP
 
 # create runtime user group
 RUN if ! find . | grep -q ":${GID}:" /etc/group; then \
-    addgroup --gid "${GID}" "${CURATION_USER}"; \
-    fi;
+  addgroup --gid "${GID}" "${CURATION_USER}"; \
+  fi;
 
 # create runtime user
 RUN adduser \
-    --shell /usr/bin/bash \
-    --uid "${UID}" \
-    --gid "${GID}" \
-    --gecos "" \
-    --disabled-login \
-    "${CURATION_USER}"
+  --shell /usr/bin/bash \
+  --uid "${UID}" \
+  --gid "${GID}" \
+  --gecos "" \
+  --disabled-login \
+  "${CURATION_USER}"
 
 # WORKING DIRECTORY SETUP
 
 # create our penultimate working directory
 RUN mkdir -p "${CIRCLE_WORKING_DIRECTORY}" \
-    && chown -R "${CURATION_USER}" "${CIRCLE_WORKING_DIRECTORY}" \
-    && chmod -R 775 "${CIRCLE_WORKING_DIRECTORY}"
+  && chown -R "${CURATION_USER}" "${CIRCLE_WORKING_DIRECTORY}" \
+  && chmod -R 775 "${CIRCLE_WORKING_DIRECTORY}"
 
 # EVERYTHING ELSE
 
@@ -126,33 +126,33 @@ RUN echo source /ci.env | tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.
 
 # add a few envvars to runtime user's bashrc and profile files
 RUN echo export CIRCLE_WORKING_DIRECTORY="${CIRCLE_WORKING_DIRECTORY}" | \
-      tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile \
-    && echo export CIRCLE_ARTIFACTS="${CIRCLE_ARTIFACTS}" | \
-      tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile \
-    && echo export GOOGLE_APPLICATION_CREDENTIALS="${GOOGLE_APPLICATION_CREDENTIALS}" | \
-      tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile \
-    && echo export CURATION_SCRIPTS_DIR="${CURATION_SCRIPTS_DIR}" | \
-      tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile \
-    && echo export CURATION_COMMANDS_DIR="${CURATION_COMMANDS_DIR}" | \
-      tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile
+  tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile \
+  && echo export CIRCLE_ARTIFACTS="${CIRCLE_ARTIFACTS}" | \
+  tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile \
+  && echo export GOOGLE_APPLICATION_CREDENTIALS="${GOOGLE_APPLICATION_CREDENTIALS}" | \
+  tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile \
+  && echo export CURATION_SCRIPTS_DIR="${CURATION_SCRIPTS_DIR}" | \
+  tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile \
+  && echo export CURATION_COMMANDS_DIR="${CURATION_COMMANDS_DIR}" | \
+  tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile
 
 # download gsdk and verify checksum
 RUN wget --quiet "${GSDK_DOWNLOAD}" \
-    && if ! $(echo "${GSDK_CHECKSUM}" "${GSDK_TAR_FILE}" | sha256sum --check --status); \
-        then echo "GSDK tar integrity check failure, please update build arg with correct checksum and/or version.";\
-        exit 1; \
-    fi;
+  && if ! $(echo "${GSDK_CHECKSUM}" "${GSDK_TAR_FILE}" | sha256sum --check --status); \
+  then echo "GSDK tar integrity check failure, please update build arg with correct checksum and/or version.";\
+  exit 1; \
+  fi;
 
 # install gsdk,
 RUN mkdir -p "${GSDK_INSTALL_PATH}" \
-    && tar -xzf "${GSDK_TAR_FILE}" -C "${CURATION_HOME}" \
-    && rm "${GSDK_TAR_FILE}" \
-    && cd "${GSDK_INSTALL_PATH}" \
-    && ./install.sh --quiet \
-    && echo "source ${GSDK_INSTALL_PATH}/path.bash.inc" | tee --append "${CURATION_HOME}/.bashrc" "${CURATION_HOME}/.profile" \
-    && echo "source ${GSDK_INSTALL_PATH}/completion.bash.inc" | tee --append "${CURATION_HOME}/.bashrc" "${CURATION_HOME}/.profile" \
-    && cd .. \
-    && ./google-cloud-sdk/bin/gcloud components update --quiet
+  && tar -xzf "${GSDK_TAR_FILE}" -C "${CURATION_HOME}" \
+  && rm "${GSDK_TAR_FILE}" \
+  && cd "${GSDK_INSTALL_PATH}" \
+  && ./install.sh --quiet \
+  && echo "source ${GSDK_INSTALL_PATH}/path.bash.inc" | tee --append "${CURATION_HOME}/.bashrc" "${CURATION_HOME}/.profile" \
+  && echo "source ${GSDK_INSTALL_PATH}/completion.bash.inc" | tee --append "${CURATION_HOME}/.bashrc" "${CURATION_HOME}/.profile" \
+  && cd .. \
+  && ./google-cloud-sdk/bin/gcloud components update --quiet
 
 # set container working directory to one created above
 WORKDIR "${CIRCLE_WORKING_DIRECTORY}"
@@ -163,12 +163,12 @@ COPY --chown=${CURATION_USER} --chmod=755 data_steward/requirements.txt "${CIRCL
 
 # initialize venv and install python deps
 RUN python -m venv "${VENV_PATH}" \
-    && echo "source ${VENV_ACTIVATE}" | tee -a "${CURATION_HOME}/.bashrc" "${CURATION_HOME}/.profile" \
-    && echo "export PYTHONPATH=:${CIRCLE_WORKING_DIRECTORY}:${CIRCLE_WORKING_DIRECTORY}/data_steward:${CIRCLE_WORKING_DIRECTORY}/tests:\"\${PYTHONPATH}\"" \
-      | tee -a "${CURATION_HOME}/.bashrc" "${CURATION_HOME}/.profile" \
-    && . "${VENV_ACTIVATE}" \
-    && python -m pip install --upgrade pip setuptools wheel \
-    && python -m pip install -r data_steward/requirements.txt
+  && echo "source ${VENV_ACTIVATE}" | tee -a "${CURATION_HOME}/.bashrc" "${CURATION_HOME}/.profile" \
+  && echo "export PYTHONPATH=:${CIRCLE_WORKING_DIRECTORY}:${CIRCLE_WORKING_DIRECTORY}/data_steward:${CIRCLE_WORKING_DIRECTORY}/tests:\"\${PYTHONPATH}\"" \
+  | tee -a "${CURATION_HOME}/.bashrc" "${CURATION_HOME}/.profile" \
+  && . "${VENV_ACTIVATE}" \
+  && python -m pip install --upgrade pip setuptools wheel \
+  && python -m pip install -r data_steward/requirements.txt
 
 # remove data_steward dir as it will be mounted inside the container as a volume later.
 RUN rm -rf "${CIRCLE_WORKING_DIRECTORY}/data_steward"
