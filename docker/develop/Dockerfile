@@ -1,4 +1,4 @@
-FROM debian:bullseye-backports
+FROM debian:bookworm-backports
 LABEL org.opencontainers.image.authors="daniel.p.carbone@vumc.org"
 LABEL org.opencontainers.image.url="https://github.com/all-of-us/curation"
 LABEL org.opencontainers.image.documentation="https://github.com/all-of-us/curation"
