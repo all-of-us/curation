@@ -1,4 +1,4 @@
-FROM debian:bookworm-backports
+FROM ubuntu:18.04
 LABEL org.opencontainers.image.authors="daniel.p.carbone@vumc.org"
 LABEL org.opencontainers.image.url="https://github.com/all-of-us/curation"
 LABEL org.opencontainers.image.documentation="https://github.com/all-of-us/curation"
@@ -17,17 +17,17 @@ LABEL org.opencontainers.image.description="Base development container image use
 # run the base container init first, as it is highly unlikely to change.
 # this allows us to modify subsequent steps without initating a full image rebuild
 
-# install deps and link "python" and "python3" execs to 3.11
-RUN apt update --allow-releaseinfo-change \
+# install deps and link "python" and "python3" execs to 3.7
+RUN apt update \
   && apt upgrade -y \
   && apt install -y \
   curl \
   git \
-  wget \
-  && apt install -y \
   python3.10-dev \
   python3.10-venv \
-  gcc \
+  python3-pip \
+  python3-wheel \
+  wget \
   && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
   && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 
