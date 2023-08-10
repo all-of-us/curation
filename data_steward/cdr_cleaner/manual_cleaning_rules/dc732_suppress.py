@@ -240,10 +240,10 @@ def ppi_pm(g):
 
     :param g: DataFrameGroupBy instance with a 'source' column
     """
-    for _, column in g:
-        if 'Portal' in column['source']:
-            return True
-    return False
+    return g['source'].isin([
+        'Participant Portal: PTSC', 'Participant Portal: TPC',
+        'Staff Portal: HealthPro'
+    ]).any()
 
 
 def get_suppress_summary_df(rows_to_suppress_df):
