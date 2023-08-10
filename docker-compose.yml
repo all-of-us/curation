@@ -3,7 +3,7 @@ version: "3"
 services:
   # base image upon which all other containers are derived
   develop:
-    image: "curation:develop-22.04"
+    image: "curation:develop-18.04"
     build:
       context: .
       dockerfile: docker/develop/Dockerfile
@@ -11,10 +11,10 @@ services:
       # they were envvars.  it may be necessary to replicate some of these in the
       # runtime "environments" config key
       args:
-          GSDK_VERSION: "441.0.0"
-          GSDK_CHECKSUM: "b67b0383d71a036846f4cade5467186aacdd3def8f246d03036be6d9419c3b29"
-          CIRCLECI_CLI_VERSION: "0.1.28434"
-          CIRCLECI_CLI_CHECKSUM: "508675cc7e1be883134a0243e0665b8e40894974ecdf9e3a551d929e516b2e68"
+          GSDK_VERSION: "359.0.0"
+          GSDK_CHECKSUM: "b84828fbd7c2c842edf3df4d514f01f7b6a9e587fa5b563b0f1dde4587574b1b"
+          CIRCLECI_CLI_VERSION: "0.1.15973"
+          CIRCLECI_CLI_CHECKSUM: "4187a5245f06dd8e1d51d5a99ad40ed9e8963397cecf006fd2d6a04ac374bef6"
     # run-time environment variable values.
     # may containe duplicates from "build.args" map
     environment:
