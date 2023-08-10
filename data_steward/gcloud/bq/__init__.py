@@ -225,7 +225,7 @@ class BigQueryClient(Client):
         dataset = bigquery.Dataset(dataset_id)
         dataset.description = description
         dataset.labels = label_or_tag
-        dataset.location = "US"
+        dataset.location = "us-central1"
 
         return dataset
 
@@ -594,7 +594,7 @@ class BigQueryClient(Client):
         :param job_config: An optional config
         :return: the time of creation
         """
-        #* Create, evaluate, and template time information
+        # * Create, evaluate, and template time information
         if days_ago > 6:
             raise ValueError(
                 f'`days_ago` is too far in the past: {days_ago} > 6')
@@ -606,7 +606,7 @@ class BigQueryClient(Client):
                 TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{days_ago}} DAYS)
         """)
 
-        #* Labels and Job information
+        # * Labels and Job information
         job_config = job_config if job_config else QueryJobConfig()
         job_config.labels.update({'temp': ''})
 

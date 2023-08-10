@@ -112,7 +112,7 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
 
         try:
             LOGGER.info(f'Get table `{source_table_id}` in RDR')
-            client.get_table(source_table_id)
+            table_ref = client.get_table(source_table_id)
 
             LOGGER.info(f'Creating empty CDM table, `{table}`')
             destination_table = client.create_table(
@@ -122,17 +122,28 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
                 f'Copying source table `{source_table_id}` to destination table `{destination_table_id}`'
             )
 
+            if table_ref.num_rows == 0:
+                raise NotFound(f'`{source_table_id}` has No data To copy from')
+
             sc_list = []
             for item in schema_list:
-                field_cast = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
+                if item.field_type.lower(
+                ) == 'string' and item.name != 'place_of_service_source_value':
+                    field_cast = f'CAST(COLLATE({item.name}, "") AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS \
+                 {item.name}'
+
+                else:
+                    field_cast = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
                 sc_list.append(field_cast)
 
             fields_name_str = ',\n'.join(sc_list)
 
             # copy contents from source dataset to destination dataset
             sql = (f'SELECT {fields_name_str} ' f'FROM `{source_table_id}`')
+            LOGGER.info(f'Running query: {sql}')
 
             job_config = bigquery.job.QueryJobConfig(
+                default_dataset=f'{client.project}.{destination_dataset}',
                 write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
                 priority=bigquery.job.QueryPriority.BATCH,
                 destination=destination_table,
@@ -151,12 +162,7 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
             job.result()  # Wait for the job to complete.
         except NotFound:
             LOGGER.info(
-                f'{table} not provided by RDR team.  Creating empty table '
-                f'in dataset: `{destination_dataset}`')
-
-            LOGGER.info(f'Creating empty CDM table, `{table}`')
-            destination_table = client.create_table(destination_table)
-            LOGGER.info(f'Created empty table `{destination_table.table_id}`')
+                f'Created empty table in dataset: `{destination_dataset}`')
         else:
             destination_table = client.get_table(
                 destination_table_id)  # Make an API request.
