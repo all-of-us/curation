@@ -11,10 +11,10 @@ services:
       # they were envvars.  it may be necessary to replicate some of these in the
       # runtime "environments" config key
       args:
-          GSDK_VERSION: "359.0.0"
-          GSDK_CHECKSUM: "b84828fbd7c2c842edf3df4d514f01f7b6a9e587fa5b563b0f1dde4587574b1b"
-          CIRCLECI_CLI_VERSION: "0.1.15973"
-          CIRCLECI_CLI_CHECKSUM: "4187a5245f06dd8e1d51d5a99ad40ed9e8963397cecf006fd2d6a04ac374bef6"
+          GSDK_VERSION: "442.0.0"
+          GSDK_CHECKSUM: "50a0fdffa532be93eb7f0b618a0586c6e5560fd4d57bc2e290b9f549a2b9f0dc"
+          CIRCLECI_CLI_VERSION: "0.1.28528"
+          CIRCLECI_CLI_CHECKSUM: "c89c39a3b09396ef6b06d652445b539503c673771745371554cd81bb2095dde5"
     # run-time environment variable values.
     # may containe duplicates from "build.args" map
     environment:
