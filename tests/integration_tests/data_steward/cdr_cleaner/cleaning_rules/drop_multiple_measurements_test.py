@@ -83,13 +83,14 @@ class DropMultipleMeasurementsTest(BaseTest.CleaningRulesTestBase):
             (31, 3, 3036277, DATE('2015-08-15'), TIMESTAMP('2015-08-15 15:30:00 UTC'), 44818701, 903133, 'height', '154 cm'),
             (32, 3, 3036277, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 44818701, 903133, 'height', '155 cm'),
             (33, 3, 3036277, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 44818701, 903133, 'height', '156 cm'),
+            (34, 9, 3036277, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 44818701, 903133, 'height', '156 cm'),
             -- Test case for in-person PM / self-report PM --
             (41, 4, 3038553, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 44818701, 903124, 'bmi', '20 kg/m2'),
             (42, 4, 3038553, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 44818701, 903124, 'bmi', '21 kg/m2'),
             (43, 4, 3038553, DATE('2015-07-16'), TIMESTAMP('2015-07-16'), 32865, 903124, 'bmi', '22 kg/m2'),
             (44, 4, 3038553, DATE('2015-08-16'), TIMESTAMP('2015-08-16'), 32865, 903124, 'bmi', '23 kg/m2'),
             (45, 4, 3025315, DATE('2015-07-17'), TIMESTAMP('2015-07-16'), 32865, 903121, 'weight', '60 kg'),
-            (46, 4, 3025315, DATE('2015-08-17'), TIMESTAMP('2015-08-16'), 32865, 903121, 'weight', '61 kg')            
+            (46, 4, 3025315, DATE('2015-08-17'), TIMESTAMP('2015-08-16'), 32865, 903121, 'weight', '61 kg')
         """)
 
         query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
@@ -101,11 +102,13 @@ class DropMultipleMeasurementsTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, 'measurement']),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [11, 12, 21, 22, 31, 32, 33, 41, 42, 43, 44, 45, 46],
+            'loaded_ids': [
+                11, 12, 21, 22, 31, 32, 33, 34, 41, 42, 43, 44, 45, 46
+            ],
             'sandboxed_ids': [12, 21, 32, 33, 41, 43, 45],
             'fields': ['measurement_id', 'value_source_value'],
             'cleaned_values': [(11, '83.5 kg'), (22, 'wheelchair-user'),
-                               (31, '154 cm'), (42, '21 kg/m2'),
+                               (31, '154 cm'), (34, '156 cm'), (42, '21 kg/m2'),
                                (44, '23 kg/m2'), (46, '61 kg')]
         }]
 
