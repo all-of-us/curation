@@ -13,8 +13,7 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import JINJA_ENV, MEASUREMENT
-from constants.cdr_cleaner.clean_cdr import (CONTROLLED_TIER_DEID_CLEAN, QUERY,
-                                             REGISTERED_TIER_DEID_CLEAN)
+from constants.cdr_cleaner.clean_cdr import (QUERY, RDR)
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -37,6 +36,7 @@ WITH self_reported_height AS (
     WHERE e.src_id IN ('ce', 'vibrent')
     AND m.measurement_type_concept_id = 32865
     AND m.measurement_concept_id = 3036277
+    AND m.value_as_number IS NOT NULL
 ), self_reported_weight AS (
     SELECT
         m.measurement_id, 
@@ -51,6 +51,7 @@ WITH self_reported_height AS (
     WHERE e.src_id IN ('ce', 'vibrent')
     AND m.measurement_type_concept_id = 32865
     AND m.measurement_concept_id = 3025315
+    AND m.value_as_number IS NOT NULL
 )
 SELECT
     ROW_NUMBER() OVER(
@@ -137,12 +138,9 @@ class CalculateBmi(BaseCleaningRule):
                  table_namer=None):
         desc = ("Calculate BMI for self-reported height and weight.")
 
-        super().__init__(issue_numbers=['dc3223'],
+        super().__init__(issue_numbers=['dc3239', 'dc3385'],
                          description=desc,
-                         affected_datasets=[
-                             REGISTERED_TIER_DEID_CLEAN,
-                             CONTROLLED_TIER_DEID_CLEAN
-                         ],
+                         affected_datasets=[RDR],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
