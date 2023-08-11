@@ -417,7 +417,7 @@ for table in FITBIT_TABLES:
                             deid_cdr_fitbit=deid_cdr_fitbit,
                             non_deid_fitbit=non_deid_fitbit,
                             table=table,
-                            pipeline_tables=PIPELINE_TABLES,
+                            pipeline_tables=pipeline,
                             site_maskings=SITE_MASKING_TABLE_ID))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
