@@ -16,7 +16,7 @@
 #
 
 import pandas as pd
-from common import JINJA_ENV, FITBIT_TABLES, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
+from common import JINJA_ENV, FITBIT_TABLES, SITE_MASKING_TABLE_ID
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
