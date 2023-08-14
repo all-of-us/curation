@@ -1,5 +1,5 @@
 """
-Integration test for drop_extreme_measurements mmodule
+Integration test for drop_extreme_measurements module
 
 DC-1211
 """
@@ -18,76 +18,25 @@ from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeas
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 EXTREME_MEASUREMENTS_TEMPLATE = JINJA_ENV.from_string("""
-INSERT INTO 
-    `{{project_id}}.{{dataset_id}}.measurement`
-    
+INSERT INTO `{{project_id}}.{{dataset_id}}.measurement`
 (measurement_id, person_id, measurement_concept_id, measurement_date, measurement_datetime,
-measurement_time, measurement_type_concept_id, operator_concept_id, value_as_number, value_as_concept_id,
-unit_concept_id, range_low, range_high, provider_id, visit_occurrence_id,
-visit_detail_id, measurement_source_value, measurement_source_concept_id, unit_source_value, value_source_value)
-
+measurement_type_concept_id, value_as_number, measurement_source_concept_id)
 VALUES
-
-    (100, 1, 903133, '2009-04-29', TIMESTAMP('2009-04-29'), 
-    NULL, 1000, NULL, 19, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903133, NULL, NULL),
-
-    (200, 2, 903133, '2009-04-29', TIMESTAMP('2009-04-29'), 
-    NULL, 1000, NULL, 230, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903133, NULL, NULL),
-
-    (400, 4, 903124, '2009-04-29', TIMESTAMP('2009-04-29'), 
-    NULL, 1000, NULL, 100, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL),
-
-    (500, 5, 903124, '2010-07-13', TIMESTAMP('2010-07-13'), 
-    NULL, 1000, NULL, 100, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL),
- 
-    (600, 6, 903133, '2011-08-21', TIMESTAMP('2011-08-21'), 
-    NULL, 1000, NULL, 88, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903133, NULL, NULL),
-
-    (300, 3, 903135, '2015-05-14', NULL, 
-    NULL, 1000, NULL, 250, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903135, NULL, NULL),
-
-    (700, 7, 903121, '2009-04-29', TIMESTAMP('2009-04-29'), 
-    NULL, 1000, NULL, 10, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903121, NULL, NULL),
-
-    (800, 8, 903124, '2009-04-29', TIMESTAMP('2009-04-29'), 
-    NULL, 1000, NULL, 10, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL),
-
-    (900, 9, 903121, '2010-04-10', TIMESTAMP('2010-04-10'), 
-    NULL, 1000, NULL, 50, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903121, NULL, NULL),
-
-    (1000, 10, 903121, '2015-02-11', TIMESTAMP('2015-02-11'), 
-    NULL, 1000, NULL, 160, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903121, NULL, NULL),
-
-    (1100, 11, 903124, '2014-02-11', TIMESTAMP('2014-02-11'), 
-    NULL, 1000, NULL, 100, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL),
-
-    (1200, 12, 903124, '2014-02-11', TIMESTAMP('2014-02-11'), 
-    NULL, 1000, NULL, 130, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL)
-    
+    (100, 1, 903133, '2009-04-29', TIMESTAMP('2009-04-29'), 1000, 19, 903133),
+    (200, 2, 903133, '2009-04-29', TIMESTAMP('2009-04-29'), 1000, 230, 903133),
+    (400, 4, 903124, '2009-04-29', TIMESTAMP('2009-04-29'), 1000, 100, 903124),
+    (500, 5, 903124, '2010-07-13', TIMESTAMP('2010-07-13'), 1000, 100, 903124),
+    (600, 6, 903133, '2011-08-21', TIMESTAMP('2011-08-21'), 1000, 88, 903133),
+    (300, 3, 903135, '2015-05-14', NULL, 1000, 250, 903135),
+    (700, 7, 903121, '2009-04-29', TIMESTAMP('2009-04-29'), 1000, 10, 903121),
+    (800, 8, 903124, '2009-04-29', TIMESTAMP('2009-04-29'), 1000, 10, 903124),
+    (900, 9, 903121, '2010-04-10', TIMESTAMP('2010-04-10'), 1000, 50, 903121),
+    (1000, 10, 903121, '2015-02-11', TIMESTAMP('2015-02-11'), 1000, 160, 903121),
+    (1100, 11, 903124, '2014-02-11', TIMESTAMP('2014-02-11'), 1000, 100, 903124),
+    (1200, 12, 903124, '2014-02-11', TIMESTAMP('2014-02-11'), 1000, 130, 903124),
+    (1201, 12, 903124, '2014-02-12', TIMESTAMP('2014-02-12'), 1000, 20, 903124),
+    (1202, 12, 903133, '2014-02-11', TIMESTAMP('2014-02-11'), 1000, 100, 903133),
+    (1203, 12, 903133, '2014-02-12', TIMESTAMP('2014-02-12'), 1000, 100, 903133)
 """)
 
 
@@ -155,39 +104,31 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [
-                100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200
+                100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
+                1201, 1202, 1203
             ],
-            'sandboxed_ids': [100, 200, 400, 600, 700, 800, 1200],
+            'sandboxed_ids': [100, 200, 400, 600, 700, 800, 1200, 1202],
             'fields': [
                 'measurement_id', 'person_id', 'measurement_concept_id',
-                'measurement_date', 'measurement_datetime', 'measurement_time',
-                'measurement_type_concept_id', 'operator_concept_id',
-                'value_as_number', 'value_as_concept_id', 'unit_concept_id',
-                'range_low', 'range_high', 'provider_id', 'visit_occurrence_id',
-                'visit_detail_id', 'measurement_source_value',
-                'measurement_source_concept_id', 'unit_source_value',
-                'value_source_value'
+                'measurement_date', 'measurement_datetime',
+                'measurement_type_concept_id', 'value_as_number',
+                'measurement_source_concept_id'
             ],
             'cleaned_values': [
-                (300, 3, 903135, date.fromisoformat('2015-05-14'), None, None,
-                 1000, None, 250, None, None, None, None, None, None, None,
-                 None, 903135, None, None),
+                (300, 3, 903135, date.fromisoformat('2015-05-14'), None, 1000,
+                 250, 903135),
                 (500, 5, 903124, date.fromisoformat('2010-07-13'),
-                 parser.parse('2010-07-13 00:00:00 UTC'), None, 1000, None, 100,
-                 None, None, None, None, None, None, None, None, 903124, None,
-                 None),
+                 parser.parse('2010-07-13 00:00:00 UTC'), 1000, 100, 903124),
                 (900, 9, 903121, date.fromisoformat('2010-04-10'),
-                 parser.parse('2010-04-10 00:00:00 UTC'), None, 1000, None, 50,
-                 None, None, None, None, None, None, None, None, 903121, None,
-                 None),
+                 parser.parse('2010-04-10 00:00:00 UTC'), 1000, 50, 903121),
                 (1000, 10, 903121, date.fromisoformat('2015-02-11'),
-                 parser.parse('2015-02-11 00:00:00 UTC'), None, 1000, None, 160,
-                 None, None, None, None, None, None, None, None, 903121, None,
-                 None),
+                 parser.parse('2015-02-11 00:00:00 UTC'), 1000, 160, 903121),
                 (1100, 11, 903124, date.fromisoformat('2014-02-11'),
-                 parser.parse('2014-02-11 00:00:00 UTC'), None, 1000, None, 100,
-                 None, None, None, None, None, None, None, None, 903124, None,
-                 None)
+                 parser.parse('2014-02-11 00:00:00 UTC'), 1000, 100, 903124),
+                (1201, 12, 903124, date.fromisoformat('2014-02-12'),
+                 parser.parse('2014-02-12 00:00:00 UTC'), 1000, 20, 903124),
+                (1203, 12, 903133, date.fromisoformat('2014-02-12'),
+                 parser.parse('2014-02-12 00:00:00 UTC'), 1000, 100, 903133)
             ]
         }]
 
