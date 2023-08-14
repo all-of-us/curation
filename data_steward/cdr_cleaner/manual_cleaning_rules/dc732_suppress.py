@@ -236,7 +236,7 @@ def get_rows_to_suppress_df(tables_to_suppress_df, concept_lookup_table):
 
 def ppi_pm(g):
     """
-    True if any rows in the group have Portal in source
+    True if any rows in the group have source Participant Portal: PTSC, Participant Portal: TPC, or Staff Portal: HealthPro
 
     :param g: DataFrameGroupBy instance with a 'source' column
     """
