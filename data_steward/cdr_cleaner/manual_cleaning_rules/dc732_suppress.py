@@ -45,28 +45,28 @@ JINJA_ENV = jinja2.Environment(
 # one concept_id field contains one of the concept_ids to suppress. Log these results to a csv file
 # and to a sandbox table with the below schema:
 #
-# | Field name            | Type    | Description                                      |
-# |-----------------------|---------|--------------------------------------------------|
-# | dataset_id            | STRING  | Identifies the dataset                           |
-# | table                 | STRING  | Identifies the table                             |
-# | row_id                | INTEGER | Value of the key column                          |
-# | person_id             | INTEGER | person_id in the record                          |
-# | disallowed_concept_id | INTEGER | Identifies the first found concept that should be suppressed |
-# | source                | STRING  | The source of the record (EHR site or PPI/PM)    |
+# | Field name            | Type    | Description                                                                                                           |
+# |-----------------------|---------|-----------------------------------------------------------------------------------------------------------------------|
+# | dataset_id            | STRING  | Identifies the dataset                                                                                                |
+# | table                 | STRING  | Identifies the table                                                                                                  |
+# | row_id                | INTEGER | Value of the key column                                                                                               |
+# | person_id             | INTEGER | person_id in the record                                                                                               |
+# | disallowed_concept_id | INTEGER | Identifies the first found concept that should be suppressed                                                          |
+# | source                | STRING  | The source of the record (EHR site, Participant Portal: PTSC, Participant Portal: TPC, or Staff Portal: HealthPro)    |
 #
 # ## Summary
 # In memory, compute the total number of rows, number of participants, number of sources (i.e. EHR
-# sites, PPI/PM). Log these results to a csv file and to a sandbox table with the below schema.
+# sites, Participant Portal: PTSC, Participant Portal: TPC, Staff Portal: HealthPro). Log these results to a csv file and to a sandbox table with the below schema.
 #
-# | Field name            | Type    | Description                                      |
-# |-----------------------|---------|--------------------------------------------------|
-# | dataset_id            | STRING  | Identifies the dataset                           |
-# | table                 | STRING  | Identifies the table                             |
-# | disallowed_concept_id | INTEGER | Identifies the concept that should be suppressed |
-# | n_person_id           | INTEGER | Number of unique person_ids                      |
-# | n_row_id              | STRING  | Number of rows                                   |
-# | n_source              | INTEGER | Number of unique sources                         |
-# | ppi_pm                | INTEGER | 1 if found in PPI/PM records, 0 otherwise        |
+# | Field name            | Type    | Description                                                                                                               |
+# |-----------------------|---------|---------------------------------------------------------------------------------------------------------------------------|
+# | dataset_id            | STRING  | Identifies the dataset                                                                                                    |
+# | table                 | STRING  | Identifies the table                                                                                                      |
+# | disallowed_concept_id | INTEGER | Identifies the concept that should be suppressed                                                                          |
+# | n_person_id           | INTEGER | Number of unique person_ids                                                                                               |
+# | n_row_id              | STRING  | Number of rows                                                                                                            |
+# | n_source              | INTEGER | Number of unique sources                                                                                                  |
+# | ppi_pm                | INTEGER | 1 if found in (Participant Portal: PTSC, Participant Portal: TPC, or Staff Portal: HealthPro) records, 0 otherwise        |
 
 TABLES_TO_SUPPRESS_QUERY = JINJA_ENV.from_string("""
     -- Columns for all tables in all datasets --
