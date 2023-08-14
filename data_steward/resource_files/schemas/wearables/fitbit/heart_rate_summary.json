@@ -40,5 +40,11 @@
     "name": "calorie_count",
     "mode": "nullable",
     "description": "Number calories burned within the custom heart rate zone."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "Flag indicating the participant portal that this record originated from."
   }
 ]
