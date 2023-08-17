@@ -26,6 +26,7 @@ rdr_cutoff_date = ""
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
+from IPython.display import display, HTML
 from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
@@ -37,221 +38,210 @@ impersonation_creds = auth.get_impersonation_credentials(
 client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 # This list is created by querying the redcap surveys. In case of needed update, query provided in the comments of DC3407
-expected_strings = ['cidi5_20', 'cidi5_24', 'cidi5_28', 'cidi5_31', 'mhqukb_48_age',
- 'mhqukb_50_number', 'mhqukb_51_number', 'mhqukb_52_number',
- 'mhqukb_53_number', 'record_id', 'helpmewithconsent_name',
- 'other_concerns', 'other_reasons', 'resultsconsent_emailmecopy',
- 'resultsconsent_signaturedate', 'consentpii_helpwithconsentsignature',
- 'extraconsent_signature_type', 'extraconsent_todaysdate',
- 'piiaddress_streetaddress', 'piiaddress_streetaddress2',
- 'piibirthinformation_birthdate', 'piicontactinformation_phone',
- 'piiname_first', 'piiname_last', 'piiname_middle',
- 'streetaddress_piicity', 'streetaddress_piizip', 'basics_11a_cope_a_33',
- 'basics_xx', 'basics_xx20', 'cdc_covid_19_7_xx22_date', 'cope_a_126',
- 'cope_a_160', 'cope_a_85', 'copect_50_xx19_cope_a_152',
- 'copect_50_xx19_cope_a_198', 'copect_50_xx19_cope_a_57',
- 'cu_covid_cope_a_204', 'eds_follow_up_1_xx', 'ipaq_1_cope_a_24',
- 'ipaq_2_cope_a_160', 'ipaq_2_cope_a_85', 'ipaq_3_cope_a_24',
- 'ipaq_4_cope_a_160', 'ipaq_4_cope_a_85', 'ipaq_5_cope_a_24',
- 'ipaq_6_cope_a_160', 'ipaq_6_cope_a_85', 'lifestyle_2_xx12_cope_a_152',
- 'lifestyle_2_xx12_cope_a_198', 'lifestyle_2_xx12_cope_a_57',
- 'tsu_ds5_13_xx42_cope_a_226', 'cdc_covid_19_7_xx23_other_cope_a_204',
- 'cdc_covid_19_n_a2', 'cdc_covid_19_n_a4', 'cdc_covid_19_n_a8',
- 'cope_aou_xx_2_a', 'dmfs_29a', 'msds_17_c',
- 'nhs_covid_fhc17b_cope_a_226', 'ehrconsentpii_helpwithconsentsignature',
- 'ehrconsentpii_todaysdate', 'ehrconsentpii_todaysdateilhippawitness',
- 'sensitivetype2_domesticviolence', 'sensitivetype2_genetictesting',
- 'sensitivetype2_hivaids', 'sensitivetype2_mentalhealth',
- 'sensitivetype2_substanceuse', 'signature_type', 'cidi5_15',
- 'mhqukb_25_number', 'mhqukb_26_age', 'mhqukb_28_age', 'ss_2_age',
- 'ss_3_age_1', 'ss_3_age_2', 'ss_3_number',
- 'english_exploring_the_mind_consent_form', 'etm_help_name',
- 'cdc_covid_xx_a_date1', 'cdc_covid_xx_a_date2',
- 'cdc_covid_xx_b_firstdose_other', 'cdc_covid_xx_b_seconddose_other',
- 'cdc_covid_xx_symptom_cope_350',
- 'cdc_covid_xx_symptom_seconddose_cope_350', 'dmfs_29_seconddose_other',
- 'othercancer_daughterfreetextbox', 'othercancer_fatherfreetextbox',
- 'othercancer_grandparentfreetextbox', 'othercancer_motherfreetextbox',
- 'othercancer_siblingfreetextbox', 'othercancer_sonfreetextbox',
- 'othercondition_daughterfreetextbox', 'othercondition_fatherfreetextbox',
- 'othercondition_grandparentfreetextbox',
- 'othercondition_motherfreetextbox', 'othercondition_siblingfreetextbox',
- 'othercondition_sonfreetextbox', 'cdc_covid_xx_b_other',
- 'otherdelayedmedicalcare_freetext',
- 'attemptquitsmoking_completelyquitage', 'otherspecify_otherdrugstextbox',
- 'smoking_averagedailycigarettenumber',
- 'smoking_currentdailycigarettenumber',
- 'smoking_dailysmokestartingagenumber', 'smoking_numberofyearsnumber',
- 'cdc_covid_xx_a_date10', 'cdc_covid_xx_a_date11',
- 'cdc_covid_xx_a_date12', 'cdc_covid_xx_a_date13',
- 'cdc_covid_xx_a_date14', 'cdc_covid_xx_a_date15',
- 'cdc_covid_xx_a_date16', 'cdc_covid_xx_a_date17', 'cdc_covid_xx_a_date3',
- 'cdc_covid_xx_a_date4', 'cdc_covid_xx_a_date5', 'cdc_covid_xx_a_date6',
- 'cdc_covid_xx_a_date7', 'cdc_covid_xx_a_date8', 'cdc_covid_xx_a_date9',
- 'cdc_covid_xx_b_dose10_other', 'cdc_covid_xx_b_dose11_other',
- 'cdc_covid_xx_b_dose12_other', 'cdc_covid_xx_b_dose13_other',
- 'cdc_covid_xx_b_dose14_other', 'cdc_covid_xx_b_dose15_other',
- 'cdc_covid_xx_b_dose16_other', 'cdc_covid_xx_b_dose17_other',
- 'cdc_covid_xx_b_dose3_other', 'cdc_covid_xx_b_dose4_other',
- 'cdc_covid_xx_b_dose5_other', 'cdc_covid_xx_b_dose6_other',
- 'cdc_covid_xx_b_dose7_other', 'cdc_covid_xx_b_dose8_other',
- 'cdc_covid_xx_b_dose9_other', 'cdc_covid_xx_symptom_cope_350_dose10',
- 'cdc_covid_xx_symptom_cope_350_dose11',
- 'cdc_covid_xx_symptom_cope_350_dose12',
- 'cdc_covid_xx_symptom_cope_350_dose13',
- 'cdc_covid_xx_symptom_cope_350_dose14',
- 'cdc_covid_xx_symptom_cope_350_dose15',
- 'cdc_covid_xx_symptom_cope_350_dose16',
- 'cdc_covid_xx_symptom_cope_350_dose17',
- 'cdc_covid_xx_symptom_cope_350_dose3',
- 'cdc_covid_xx_symptom_cope_350_dose4',
- 'cdc_covid_xx_symptom_cope_350_dose5',
- 'cdc_covid_xx_symptom_cope_350_dose6',
- 'cdc_covid_xx_symptom_cope_350_dose7',
- 'cdc_covid_xx_symptom_cope_350_dose8',
- 'cdc_covid_xx_symptom_cope_350_dose9', 'cdc_covid_xx_type_dose10_other',
- 'cdc_covid_xx_type_dose11_other', 'cdc_covid_xx_type_dose12_other',
- 'cdc_covid_xx_type_dose13_other', 'cdc_covid_xx_type_dose14_other',
- 'cdc_covid_xx_type_dose15_other', 'cdc_covid_xx_type_dose16_other',
- 'cdc_covid_xx_type_dose17_other', 'cdc_covid_xx_type_dose3_other',
- 'cdc_covid_xx_type_dose4_other', 'cdc_covid_xx_type_dose5_other',
- 'cdc_covid_xx_type_dose6_other', 'cdc_covid_xx_type_dose7_other',
- 'cdc_covid_xx_type_dose8_other', 'cdc_covid_xx_type_dose9_other',
- 'dmfs_29_additionaldose_other',
- 'organtransplant_bloodvesseltransplantdate',
- 'organtransplant_bonetransplantdate',
- 'organtransplant_corneatransplantdate',
- 'organtransplant_hearttransplantdate',
- 'organtransplant_intestinetransplantdate',
- 'organtransplant_kidneytransplantdate',
- 'organtransplant_livertransplantdate',
- 'organtransplant_lungtransplantdate',
- 'organtransplant_otherorgantransplantdate',
- 'organtransplant_othertissuetransplantdate',
- 'organtransplant_pancreastransplantdate',
- 'organtransplant_skintransplantdate',
- 'organtransplant_valvetransplantdate', 'otherorgan_freetextbox',
- 'othertissue_freetextbox',
- 'outsidetravel6month_outsidetravel6monthhowlong',
- 'outsidetravel6month_outsidetravel6monthwheretraveled',
- 'overallhealth_hysterectomyhistoryage',
- 'overallhealthovaryremovalhistoryage',
- 'otherarthritis_daughterfreetextbox', 'otherarthritis_fatherfreetextbox',
- 'otherarthritis_freetextbox', 'otherarthritis_grandparentfreetextbox',
- 'otherarthritis_motherfreetextbox', 'otherarthritis_siblingfreetextbox',
- 'otherarthritis_sonfreetextbox',
- 'otherbonejointmuscle_daughterfreetextbox',
- 'otherbonejointmuscle_fatherfreetextbox',
- 'otherbonejointmuscle_freetextbox',
- 'otherbonejointmuscle_grandparentfreetextbox',
- 'otherbonejointmuscle_motherfreetextbox',
- 'otherbonejointmuscle_siblingfreetextbox',
- 'otherbonejointmuscle_sonfreetextbox',
- 'otherbrainnervoussystem_daughterfreetextbox',
- 'otherbrainnervoussystem_fatherfreetextbox',
- 'otherbrainnervoussystem_freetextbox',
- 'otherbrainnervoussystem_grandparentfreetextbox',
- 'otherbrainnervoussystem_motherfreetextbox',
- 'otherbrainnervoussystem_siblingfreetextbox',
- 'otherbrainnervoussystem_sonfreetextbox', 'othercancer_freetextbox',
- 'otherdiabetes_daughterfreetextbox', 'otherdiabetes_fatherfreetextbox',
- 'otherdiabetes_freetextbox', 'otherdiabetes_grandparentfreetextbox',
- 'otherdiabetes_motherfreetextbox', 'otherdiabetes_siblingfreetextbox',
- 'otherdiabetes_sonfreetextbox', 'otherdiagnosis_daughterfreetextbox',
- 'otherdiagnosis_fatherfreetextbox', 'otherdiagnosis_freetextbox',
- 'otherdiagnosis_grandparentfreetextbox',
- 'otherdiagnosis_motherfreetextbox', 'otherdiagnosis_siblingfreetextbox',
- 'otherdiagnosis_sonfreetextbox',
- 'otherdigestivecondition_daughterfreetextbox',
- 'otherdigestivecondition_fatherfreetextbox',
- 'otherdigestivecondition_freetextbox',
- 'otherdigestivecondition_grandparentfreetextbox',
- 'otherdigestivecondition_motherfreetextbox',
- 'otherdigestivecondition_siblingfreetextbox',
- 'otherdigestivecondition_sonfreetextbox',
- 'otherhearingeye_daughterfreetextbox',
- 'otherhearingeye_fatherfreetextbox', 'otherhearingeye_freetextbox',
- 'otherhearingeye_grandparentfreetextbox',
- 'otherhearingeye_motherfreetextbox',
- 'otherhearingeye_siblingfreetextbox', 'otherhearingeye_sonfreetextbox',
- 'otherheartorbloodcondition_daughterfreetextbox',
- 'otherheartorbloodcondition_fatherfreetextbox',
- 'otherheartorbloodcondition_freetextbox',
- 'otherheartorbloodcondition_grandparentfreetextbox',
- 'otherheartorbloodcondition_motherfreetextbox',
- 'otherheartorbloodcondition_siblingfreetextbox',
- 'otherheartorbloodcondition_sonfreetextbox',
- 'otherhormoneendocrine_daughterfreetextbox',
- 'otherhormoneendocrine_fatherfreetextbox',
- 'otherhormoneendocrine_freetextbox',
- 'otherhormoneendocrine_grandparentfreetextbox',
- 'otherhormoneendocrine_motherfreetextbox',
- 'otherhormoneendocrine_siblingfreetextbox',
- 'otherhormoneendocrine_sonfreetextbox',
- 'otherinfectiousdisease_freetextbox',
- 'otherkidneycondition_daughterfreetextbox',
- 'otherkidneycondition_fatherfreetextbox',
- 'otherkidneycondition_freetextbox',
- 'otherkidneycondition_grandparentfreetextbox',
- 'otherkidneycondition_motherfreetextbox',
- 'otherkidneycondition_siblingfreetextbox',
- 'otherkidneycondition_sonfreetextbox',
- 'othermentalhealthsubstanceuse_daughterfreetextbox',
- 'othermentalhealthsubstanceuse_fatherfreetextbox',
- 'othermentalhealthsubstanceuse_freetextbox',
- 'othermentalhealthsubstanceuse_grandparentfreetextb',
- 'othermentalhealthsubstanceuse_motherfreetextbox',
- 'othermentalhealthsubstanceuse_siblingfreetextbox',
- 'othermentalhealthsubstanceuse_sonfreetextbox',
- 'otherrespiratory_daughterfreetextbox',
- 'otherrespiratory_fatherfreetextbox', 'otherrespiratory_freetextbox',
- 'otherrespiratory_grandparentfreetextbox',
- 'otherrespiratory_motherfreetextbox',
- 'otherrespiratory_siblingfreetextbox', 'otherrespiratory_sonfreetextbox',
- 'otherthyroid_daughterfreetextbox', 'otherthyroid_fatherfreetextbox',
- 'otherthyroid_freetextbox', 'otherthyroid_grandparentfreetextbox',
- 'otherthyroid_motherfreetextbox', 'otherthyroid_siblingfreetextbox',
- 'otherthyroid_sonfreetextbox', 'self_reported_height_cm',
- 'self_reported_height_ft', 'self_reported_height_in',
- 'self_reported_weight_kg', 'self_reported_weight_pounds',
- 'sdoh_eds_follow_up_1_xx', 'urs_8c', 'aian_tribe',
- 'aiannoneofthesedescribeme_aianfreetext',
- 'blacknoneofthesedescribeme_blackfreetext',
- 'employmentworkaddress_addresslineone',
- 'employmentworkaddress_addresslinetwo', 'employmentworkaddress_city',
- 'employmentworkaddress_country', 'employmentworkaddress_zipcode',
- 'hispanicnoneofthesedescribeme_hispanicfreetext',
- 'livingsituation_howmanypeople',
- 'livingsituation_livingsituationfreetext',
- 'livingsituation_peopleunder18',
- 'menanoneofthesedescribeme_menafreetext',
- 'nhpinoneofthesedescribeme_nhpifreetext',
- 'noneofthesedescribeme_asianfreetext', 'otherhealthplan_freetext',
- 'persononeaddress_persononeaddresscity',
- 'persononeaddress_persononeaddresszipcode',
- 'secondarycontactinfo_persononeaddressone',
- 'secondarycontactinfo_persononeaddresstwo',
- 'secondarycontactinfo_persononeemail',
- 'secondarycontactinfo_persononefirstname',
- 'secondarycontactinfo_persononelastname',
- 'secondarycontactinfo_persononemiddleinitial',
- 'secondarycontactinfo_persononetelephone',
- 'secondarycontactinfo_secondcontactsaddressone',
- 'secondarycontactinfo_secondcontactsaddresstwo',
- 'secondarycontactinfo_secondcontactsemail',
- 'secondarycontactinfo_secondcontactsfirstname',
- 'secondarycontactinfo_secondcontactslastname',
- 'secondarycontactinfo_secondcontactsmiddleinitial',
- 'secondarycontactinfo_secondcontactsnumber',
- 'secondcontactsaddress_secondcontactcity',
- 'secondcontactsaddress_secondcontactzipcode',
- 'sexatbirthnoneofthese_sexatbirthtextbox',
- 'socialsecurity_socialsecuritynumber',
- 'somethingelse_sexualitysomethingelsetextbox',
- 'specifiedgender_specifiedgendertextbox', 'thebasics_countryborntextbox',
- 'whatraceethnicity_raceethnicitynoneofthese',
- 'whitenoneofthesedescribeme_whitefreetext', 'timeofday',
- 'wearconsent_todaysdate']
+expected_strings = [
+    'cidi5_20', 'cidi5_24', 'cidi5_28', 'cidi5_31', 'mhqukb_48_age',
+    'mhqukb_50_number', 'mhqukb_51_number', 'mhqukb_52_number',
+    'mhqukb_53_number', 'record_id', 'helpmewithconsent_name', 'other_concerns',
+    'other_reasons', 'resultsconsent_emailmecopy',
+    'resultsconsent_signaturedate', 'consentpii_helpwithconsentsignature',
+    'extraconsent_signature_type', 'extraconsent_todaysdate',
+    'piiaddress_streetaddress', 'piiaddress_streetaddress2',
+    'piibirthinformation_birthdate', 'piicontactinformation_phone',
+    'piiname_first', 'piiname_last', 'piiname_middle', 'streetaddress_piicity',
+    'streetaddress_piizip', 'basics_11a_cope_a_33', 'basics_xx', 'basics_xx20',
+    'cdc_covid_19_7_xx22_date', 'cope_a_126', 'cope_a_160', 'cope_a_85',
+    'copect_50_xx19_cope_a_152', 'copect_50_xx19_cope_a_198',
+    'copect_50_xx19_cope_a_57', 'cu_covid_cope_a_204', 'eds_follow_up_1_xx',
+    'ipaq_1_cope_a_24', 'ipaq_2_cope_a_160', 'ipaq_2_cope_a_85',
+    'ipaq_3_cope_a_24', 'ipaq_4_cope_a_160', 'ipaq_4_cope_a_85',
+    'ipaq_5_cope_a_24', 'ipaq_6_cope_a_160', 'ipaq_6_cope_a_85',
+    'lifestyle_2_xx12_cope_a_152', 'lifestyle_2_xx12_cope_a_198',
+    'lifestyle_2_xx12_cope_a_57', 'tsu_ds5_13_xx42_cope_a_226',
+    'cdc_covid_19_7_xx23_other_cope_a_204', 'cdc_covid_19_n_a2',
+    'cdc_covid_19_n_a4', 'cdc_covid_19_n_a8', 'cope_aou_xx_2_a', 'dmfs_29a',
+    'msds_17_c', 'nhs_covid_fhc17b_cope_a_226',
+    'ehrconsentpii_helpwithconsentsignature', 'ehrconsentpii_todaysdate',
+    'ehrconsentpii_todaysdateilhippawitness', 'sensitivetype2_domesticviolence',
+    'sensitivetype2_genetictesting', 'sensitivetype2_hivaids',
+    'sensitivetype2_mentalhealth', 'sensitivetype2_substanceuse',
+    'signature_type', 'cidi5_15', 'mhqukb_25_number', 'mhqukb_26_age',
+    'mhqukb_28_age', 'ss_2_age', 'ss_3_age_1', 'ss_3_age_2', 'ss_3_number',
+    'english_exploring_the_mind_consent_form', 'etm_help_name',
+    'cdc_covid_xx_a_date1', 'cdc_covid_xx_a_date2',
+    'cdc_covid_xx_b_firstdose_other', 'cdc_covid_xx_b_seconddose_other',
+    'cdc_covid_xx_symptom_cope_350', 'cdc_covid_xx_symptom_seconddose_cope_350',
+    'dmfs_29_seconddose_other', 'othercancer_daughterfreetextbox',
+    'othercancer_fatherfreetextbox', 'othercancer_grandparentfreetextbox',
+    'othercancer_motherfreetextbox', 'othercancer_siblingfreetextbox',
+    'othercancer_sonfreetextbox', 'othercondition_daughterfreetextbox',
+    'othercondition_fatherfreetextbox', 'othercondition_grandparentfreetextbox',
+    'othercondition_motherfreetextbox', 'othercondition_siblingfreetextbox',
+    'othercondition_sonfreetextbox', 'cdc_covid_xx_b_other',
+    'otherdelayedmedicalcare_freetext', 'attemptquitsmoking_completelyquitage',
+    'otherspecify_otherdrugstextbox', 'smoking_averagedailycigarettenumber',
+    'smoking_currentdailycigarettenumber',
+    'smoking_dailysmokestartingagenumber', 'smoking_numberofyearsnumber',
+    'cdc_covid_xx_a_date10', 'cdc_covid_xx_a_date11', 'cdc_covid_xx_a_date12',
+    'cdc_covid_xx_a_date13', 'cdc_covid_xx_a_date14', 'cdc_covid_xx_a_date15',
+    'cdc_covid_xx_a_date16', 'cdc_covid_xx_a_date17', 'cdc_covid_xx_a_date3',
+    'cdc_covid_xx_a_date4', 'cdc_covid_xx_a_date5', 'cdc_covid_xx_a_date6',
+    'cdc_covid_xx_a_date7', 'cdc_covid_xx_a_date8', 'cdc_covid_xx_a_date9',
+    'cdc_covid_xx_b_dose10_other', 'cdc_covid_xx_b_dose11_other',
+    'cdc_covid_xx_b_dose12_other', 'cdc_covid_xx_b_dose13_other',
+    'cdc_covid_xx_b_dose14_other', 'cdc_covid_xx_b_dose15_other',
+    'cdc_covid_xx_b_dose16_other', 'cdc_covid_xx_b_dose17_other',
+    'cdc_covid_xx_b_dose3_other', 'cdc_covid_xx_b_dose4_other',
+    'cdc_covid_xx_b_dose5_other', 'cdc_covid_xx_b_dose6_other',
+    'cdc_covid_xx_b_dose7_other', 'cdc_covid_xx_b_dose8_other',
+    'cdc_covid_xx_b_dose9_other', 'cdc_covid_xx_symptom_cope_350_dose10',
+    'cdc_covid_xx_symptom_cope_350_dose11',
+    'cdc_covid_xx_symptom_cope_350_dose12',
+    'cdc_covid_xx_symptom_cope_350_dose13',
+    'cdc_covid_xx_symptom_cope_350_dose14',
+    'cdc_covid_xx_symptom_cope_350_dose15',
+    'cdc_covid_xx_symptom_cope_350_dose16',
+    'cdc_covid_xx_symptom_cope_350_dose17',
+    'cdc_covid_xx_symptom_cope_350_dose3',
+    'cdc_covid_xx_symptom_cope_350_dose4',
+    'cdc_covid_xx_symptom_cope_350_dose5',
+    'cdc_covid_xx_symptom_cope_350_dose6',
+    'cdc_covid_xx_symptom_cope_350_dose7',
+    'cdc_covid_xx_symptom_cope_350_dose8',
+    'cdc_covid_xx_symptom_cope_350_dose9', 'cdc_covid_xx_type_dose10_other',
+    'cdc_covid_xx_type_dose11_other', 'cdc_covid_xx_type_dose12_other',
+    'cdc_covid_xx_type_dose13_other', 'cdc_covid_xx_type_dose14_other',
+    'cdc_covid_xx_type_dose15_other', 'cdc_covid_xx_type_dose16_other',
+    'cdc_covid_xx_type_dose17_other', 'cdc_covid_xx_type_dose3_other',
+    'cdc_covid_xx_type_dose4_other', 'cdc_covid_xx_type_dose5_other',
+    'cdc_covid_xx_type_dose6_other', 'cdc_covid_xx_type_dose7_other',
+    'cdc_covid_xx_type_dose8_other', 'cdc_covid_xx_type_dose9_other',
+    'dmfs_29_additionaldose_other', 'organtransplant_bloodvesseltransplantdate',
+    'organtransplant_bonetransplantdate',
+    'organtransplant_corneatransplantdate',
+    'organtransplant_hearttransplantdate',
+    'organtransplant_intestinetransplantdate',
+    'organtransplant_kidneytransplantdate',
+    'organtransplant_livertransplantdate', 'organtransplant_lungtransplantdate',
+    'organtransplant_otherorgantransplantdate',
+    'organtransplant_othertissuetransplantdate',
+    'organtransplant_pancreastransplantdate',
+    'organtransplant_skintransplantdate', 'organtransplant_valvetransplantdate',
+    'otherorgan_freetextbox', 'othertissue_freetextbox',
+    'outsidetravel6month_outsidetravel6monthhowlong',
+    'outsidetravel6month_outsidetravel6monthwheretraveled',
+    'overallhealth_hysterectomyhistoryage',
+    'overallhealthovaryremovalhistoryage', 'otherarthritis_daughterfreetextbox',
+    'otherarthritis_fatherfreetextbox', 'otherarthritis_freetextbox',
+    'otherarthritis_grandparentfreetextbox', 'otherarthritis_motherfreetextbox',
+    'otherarthritis_siblingfreetextbox', 'otherarthritis_sonfreetextbox',
+    'otherbonejointmuscle_daughterfreetextbox',
+    'otherbonejointmuscle_fatherfreetextbox',
+    'otherbonejointmuscle_freetextbox',
+    'otherbonejointmuscle_grandparentfreetextbox',
+    'otherbonejointmuscle_motherfreetextbox',
+    'otherbonejointmuscle_siblingfreetextbox',
+    'otherbonejointmuscle_sonfreetextbox',
+    'otherbrainnervoussystem_daughterfreetextbox',
+    'otherbrainnervoussystem_fatherfreetextbox',
+    'otherbrainnervoussystem_freetextbox',
+    'otherbrainnervoussystem_grandparentfreetextbox',
+    'otherbrainnervoussystem_motherfreetextbox',
+    'otherbrainnervoussystem_siblingfreetextbox',
+    'otherbrainnervoussystem_sonfreetextbox', 'othercancer_freetextbox',
+    'otherdiabetes_daughterfreetextbox', 'otherdiabetes_fatherfreetextbox',
+    'otherdiabetes_freetextbox', 'otherdiabetes_grandparentfreetextbox',
+    'otherdiabetes_motherfreetextbox', 'otherdiabetes_siblingfreetextbox',
+    'otherdiabetes_sonfreetextbox', 'otherdiagnosis_daughterfreetextbox',
+    'otherdiagnosis_fatherfreetextbox', 'otherdiagnosis_freetextbox',
+    'otherdiagnosis_grandparentfreetextbox', 'otherdiagnosis_motherfreetextbox',
+    'otherdiagnosis_siblingfreetextbox', 'otherdiagnosis_sonfreetextbox',
+    'otherdigestivecondition_daughterfreetextbox',
+    'otherdigestivecondition_fatherfreetextbox',
+    'otherdigestivecondition_freetextbox',
+    'otherdigestivecondition_grandparentfreetextbox',
+    'otherdigestivecondition_motherfreetextbox',
+    'otherdigestivecondition_siblingfreetextbox',
+    'otherdigestivecondition_sonfreetextbox',
+    'otherhearingeye_daughterfreetextbox', 'otherhearingeye_fatherfreetextbox',
+    'otherhearingeye_freetextbox', 'otherhearingeye_grandparentfreetextbox',
+    'otherhearingeye_motherfreetextbox', 'otherhearingeye_siblingfreetextbox',
+    'otherhearingeye_sonfreetextbox',
+    'otherheartorbloodcondition_daughterfreetextbox',
+    'otherheartorbloodcondition_fatherfreetextbox',
+    'otherheartorbloodcondition_freetextbox',
+    'otherheartorbloodcondition_grandparentfreetextbox',
+    'otherheartorbloodcondition_motherfreetextbox',
+    'otherheartorbloodcondition_siblingfreetextbox',
+    'otherheartorbloodcondition_sonfreetextbox',
+    'otherhormoneendocrine_daughterfreetextbox',
+    'otherhormoneendocrine_fatherfreetextbox',
+    'otherhormoneendocrine_freetextbox',
+    'otherhormoneendocrine_grandparentfreetextbox',
+    'otherhormoneendocrine_motherfreetextbox',
+    'otherhormoneendocrine_siblingfreetextbox',
+    'otherhormoneendocrine_sonfreetextbox',
+    'otherinfectiousdisease_freetextbox',
+    'otherkidneycondition_daughterfreetextbox',
+    'otherkidneycondition_fatherfreetextbox',
+    'otherkidneycondition_freetextbox',
+    'otherkidneycondition_grandparentfreetextbox',
+    'otherkidneycondition_motherfreetextbox',
+    'otherkidneycondition_siblingfreetextbox',
+    'otherkidneycondition_sonfreetextbox',
+    'othermentalhealthsubstanceuse_daughterfreetextbox',
+    'othermentalhealthsubstanceuse_fatherfreetextbox',
+    'othermentalhealthsubstanceuse_freetextbox',
+    'othermentalhealthsubstanceuse_grandparentfreetextb',
+    'othermentalhealthsubstanceuse_motherfreetextbox',
+    'othermentalhealthsubstanceuse_siblingfreetextbox',
+    'othermentalhealthsubstanceuse_sonfreetextbox',
+    'otherrespiratory_daughterfreetextbox',
+    'otherrespiratory_fatherfreetextbox', 'otherrespiratory_freetextbox',
+    'otherrespiratory_grandparentfreetextbox',
+    'otherrespiratory_motherfreetextbox', 'otherrespiratory_siblingfreetextbox',
+    'otherrespiratory_sonfreetextbox', 'otherthyroid_daughterfreetextbox',
+    'otherthyroid_fatherfreetextbox', 'otherthyroid_freetextbox',
+    'otherthyroid_grandparentfreetextbox', 'otherthyroid_motherfreetextbox',
+    'otherthyroid_siblingfreetextbox', 'otherthyroid_sonfreetextbox',
+    'self_reported_height_cm', 'self_reported_height_ft',
+    'self_reported_height_in', 'self_reported_weight_kg',
+    'self_reported_weight_pounds', 'sdoh_eds_follow_up_1_xx', 'urs_8c',
+    'aian_tribe', 'aiannoneofthesedescribeme_aianfreetext',
+    'blacknoneofthesedescribeme_blackfreetext',
+    'employmentworkaddress_addresslineone',
+    'employmentworkaddress_addresslinetwo', 'employmentworkaddress_city',
+    'employmentworkaddress_country', 'employmentworkaddress_zipcode',
+    'hispanicnoneofthesedescribeme_hispanicfreetext',
+    'livingsituation_howmanypeople', 'livingsituation_livingsituationfreetext',
+    'livingsituation_peopleunder18', 'menanoneofthesedescribeme_menafreetext',
+    'nhpinoneofthesedescribeme_nhpifreetext',
+    'noneofthesedescribeme_asianfreetext', 'otherhealthplan_freetext',
+    'persononeaddress_persononeaddresscity',
+    'persononeaddress_persononeaddresszipcode',
+    'secondarycontactinfo_persononeaddressone',
+    'secondarycontactinfo_persononeaddresstwo',
+    'secondarycontactinfo_persononeemail',
+    'secondarycontactinfo_persononefirstname',
+    'secondarycontactinfo_persononelastname',
+    'secondarycontactinfo_persononemiddleinitial',
+    'secondarycontactinfo_persononetelephone',
+    'secondarycontactinfo_secondcontactsaddressone',
+    'secondarycontactinfo_secondcontactsaddresstwo',
+    'secondarycontactinfo_secondcontactsemail',
+    'secondarycontactinfo_secondcontactsfirstname',
+    'secondarycontactinfo_secondcontactslastname',
+    'secondarycontactinfo_secondcontactsmiddleinitial',
+    'secondarycontactinfo_secondcontactsnumber',
+    'secondcontactsaddress_secondcontactcity',
+    'secondcontactsaddress_secondcontactzipcode',
+    'sexatbirthnoneofthese_sexatbirthtextbox',
+    'socialsecurity_socialsecuritynumber',
+    'somethingelse_sexualitysomethingelsetextbox',
+    'specifiedgender_specifiedgendertextbox', 'thebasics_countryborntextbox',
+    'whatraceethnicity_raceethnicitynoneofthese',
+    'whitenoneofthesedescribeme_whitefreetext', 'timeofday',
+    'wearconsent_todaysdate'
+]
 
 # # Table comparison
 # The export should generally contain the same tables from month to month.
@@ -422,15 +412,15 @@ AND NOT REGEXP_CONTAINS(LOWER(observation_source_value), '(?i)snap|signature|add
 GROUP BY 1
 ORDER BY 2 DESC
 """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id,expected_strings=expected_strings)
+query = tpl.render(new_rdr=new_rdr,
+                   project_id=project_id,
+                   expected_strings=expected_strings)
 df = execute(client, query)
 
 success_msg = 'All records with a number in value_as_string are expected to be text.'
 failure_msg = 'Some records that have a number value_as_string might not be expected. See description.'
 
-render_message(df,
-                success_msg,
-                failure_msg)
+render_message(df, success_msg, failure_msg)
 # -
 
 # # All COPE `questionnaire_response_id`s are in COPE version map
@@ -1224,7 +1214,7 @@ failure_msg_if_duplicate = '''
 '''
 success_msg = 'All death records follow the technical requirement for the CDR V8 release.'
 failure_msg = '''
-    <b>{code_count}</b> records do not follow the technical requirement for the CDR V8 release. 
+    <b>{code_count}</b> records do not follow the technical requirement for the CDR V8 release.
     Investigate and confirm if (a) bad data is coming from RDR, (b) the requirement has changed, or (c) something else.
 '''
 render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
@@ -1238,3 +1228,107 @@ render_message(df,
                success_msg,
                failure_msg,
                failure_msg_args={'code_count': len(df)})
+# -
+
+# # Remote self-reported physical measurement (PM)
+
+# From CDR V8, Curation receives self-reported height and weight records from RDR.
+# We calculate BMI using those records at RDR data stage.
+# We must ensure (1) the BMI is calculated correctly, and (2) self-reported
+# height/weight/BMI records are cleaned in the same way as in-person PM.
+
+# +
+query_extreme_check = JINJA_ENV.from_string("""
+SELECT * FROM `{{project_id}}.{{dataset}}.measurement` m
+WHERE (m.measurement_source_concept_id = 903133 AND m.value_as_number NOT BETWEEN 90 AND 228)
+OR (m.measurement_source_concept_id = 903121 AND m.value_as_number NOT BETWEEN 30 AND 250)
+OR (m.measurement_source_concept_id = 903124 AND m.value_as_number NOT BETWEEN 10 AND 125)
+""").render(project_id=project_id, dataset=new_rdr)
+df_extreme_check = execute(client, query_extreme_check)
+
+query_duplicate_check = JINJA_ENV.from_string("""
+SELECT person_id, measurement_source_concept_id, measurement_type_concept_id, COUNT(*)
+FROM `{{project_id}}.{{dataset}}.measurement` m
+WHERE measurement_source_concept_id IN (903133, 903121, 903124)
+GROUP BY person_id, measurement_source_concept_id, measurement_type_concept_id
+HAVING COUNT(*) > 1
+""").render(project_id=project_id, dataset=new_rdr)
+df_duplicate_check = execute(client, query_duplicate_check)
+
+query = JINJA_ENV.from_string("""
+WITH clean_rdr_height AS (
+    SELECT COUNT(*) AS row_count FROM `{{project_id}}.{{dataset}}.measurement`
+    WHERE measurement_type_concept_id = 32865 AND measurement_concept_id = 3036277
+), clean_rdr_weight AS (
+    SELECT COUNT(*) AS row_count FROM `{{project_id}}.{{dataset}}.measurement`
+    WHERE measurement_type_concept_id = 32865 AND measurement_concept_id = 3025315
+), clean_rdr_bmi AS (
+    SELECT COUNT(*) AS row_count FROM `{{project_id}}.{{dataset}}.measurement`
+    WHERE measurement_type_concept_id = 32865 AND measurement_concept_id = 3038553
+), raw_rdr_height AS (
+    SELECT COUNT(*) AS row_count FROM `{{project_id}}.{{raw_dataset}}.measurement`
+    WHERE measurement_type_concept_id = 32865 AND measurement_concept_id = 3036277
+), raw_rdr_weight AS (
+    SELECT COUNT(*) AS row_count FROM `{{project_id}}.{{raw_dataset}}.measurement`
+    WHERE measurement_type_concept_id = 32865 AND measurement_concept_id = 3025315
+), raw_rdr_bmi AS (
+    SELECT COUNT(*) AS row_count FROM `{{project_id}}.{{raw_dataset}}.measurement`
+    WHERE measurement_type_concept_id = 32865 AND measurement_concept_id = 3038553
+) 
+SELECT
+    clean_rdr_height.row_count AS clean_height_rows,
+    clean_rdr_weight.row_count AS clean_weight_rows,
+    clean_rdr_bmi.row_count AS clean_bmi_rows,
+    raw_rdr_height.row_count AS raw_height_rows,
+    raw_rdr_weight.row_count AS raw_weight_rows,
+    raw_rdr_bmi.row_count AS raw_bmi_rows
+FROM clean_rdr_height
+CROSS JOIN clean_rdr_weight
+CROSS JOIN clean_rdr_bmi
+CROSS JOIN raw_rdr_height
+CROSS JOIN raw_rdr_weight
+CROSS JOIN raw_rdr_bmi
+""").render(project_id=project_id, dataset=new_rdr, raw_dataset=raw_rdr)
+df = execute(client, query)
+(clean_height_rows, clean_weight_rows, clean_bmi_rows, raw_height_rows,
+ raw_weight_rows,
+ raw_bmi_rows) = (df.clean_height_rows[0], df.clean_weight_rows[0],
+                  df.clean_bmi_rows[0], df.raw_height_rows[0],
+                  df.raw_weight_rows[0], df.raw_bmi_rows[0])
+
+success_msg_extreme_check = 'No extreme height/weight/BMI record is found in measurement.'
+failure_msg_extreme_check = '''
+    Extreme height/weight/BMI records are found in measurement. Ensure DropExtremeMeasurements ran as expected.
+    Investigate why the extreme records are not dropped as designed.
+'''
+success_msg_duplicate_check = 'Height/weight/BMI is correctly up to 1 record per person per in-person/self-report.'
+failure_msg_duplicate_check = '''
+    Some participants still have multiple height/weight/BMI records for in-person or self-report.
+    DropMultipleMeasurements is supposed to clean such records. Ensure the CR ran as expected and investigate why there are still duplicates.
+'''
+
+render_message(df_extreme_check, success_msg_extreme_check,
+               failure_msg_extreme_check)
+
+render_message(df_duplicate_check, success_msg_duplicate_check,
+               failure_msg_duplicate_check)
+
+check_status = "Cannot tell success or failure. Read the message below."
+msg = (
+    f"In {raw_rdr} (Raw RDR), the numbers of self-reported PM records are following:<br>"
+    f"height - <b>{raw_height_rows}</b>, weight - <b>{raw_weight_rows}</b>, BMI - <b>{raw_bmi_rows}</b><br>"
+    f"In {new_rdr} (Clean RDR), the numbers of self-reported PM records are following:<br>"
+    f"height - <b>{clean_height_rows}</b>, weight - <b>{clean_weight_rows}</b>, BMI - <b>{clean_bmi_rows}</b><br><br>"
+    "Check the following:<br>"
+    "(1) Raw RDR must have 0 BMI records,<br>"
+    "(2) Clean RDR must have fewer height/weight records than Raw RDR, because we ran DropExtremeMeasurements and DropMultipleMeasurements,<br>"
+    "(3) Clean RDR must have BMI records about as many as its height/weight records. The numbers do not have to exactly match because of the "
+    "CRs mentioned in (2) or some participants missing height/weight. They have to be close enough. <br>"
+    "If any of (1) - (3) does not look good, investigate and discuss within Curation and find out next steps."
+)
+
+display(
+    HTML(
+        f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
+    ))
+# -
