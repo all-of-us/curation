@@ -10,7 +10,6 @@ person_ext table.
 Cleaning rule script to run AFTER deid.
 This cleaning rule will populate the person_ext table
 The following fields will need to be copied from the observation table:
-src_id (from observation_ext, should all be “PPI/PM”)
 state_of_residence_concept_id: the value_source_concept_id field in the OBSERVATION table row where
 observation_source_concept_id  = 1585249 (StreetAddress_PIIState)
 state_of_residence_source_value: the concept_name from the concept table for the state_of_residence_concept_id
@@ -21,10 +20,8 @@ person_id (as research_id) can be pulled from the person table
 import unittest
 
 # Project imports
-from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable, PERSON_EXT_TABLE_QUERY, tables
-from constants.bq_utils import WRITE_TRUNCATE
+from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable, PERSON_EXT_TABLE_QUERY
 from constants.cdr_cleaner import clean_cdr as clean_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 
 class CreatePersonExtTableTest(unittest.TestCase):

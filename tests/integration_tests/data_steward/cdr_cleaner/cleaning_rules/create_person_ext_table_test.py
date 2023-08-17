@@ -9,11 +9,9 @@ Cleaning rule script to run AFTER deid. This needs to happen in deid_base. It de
 deid to be correctly de-identified.
 This cleaning rule will populate the person_ext table
 The following fields will need to be copied from the observation table:
-src_id (from observation_ext, should all be “PPI/PM”)
 state_of_residence_concept_id: the value_source_concept_id field in the OBSERVATION table row where
 observation_source_concept_id  = 1585249 (StreetAddress_PIIState)
 state_of_residence_source_value: the concept_name from the concept table for the state_of_residence_concept_id
-person_id (as research_id) can be pulled from the person table
 sex_at_birth_concept_id: value_as_concept_id in observation where observation_source_concept_id = 1585845
 sex_at_birth_source_concept_id: value_source_concept_id in observation where observation_source_concept_id = 1585845
 sex_at_birth_source_value: concept_code in the concept table where joining from observation where 
@@ -61,7 +59,8 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
         for table_name in [
-                'observation', 'observation_ext', 'concept', 'person'
+                'observation', 'observation_ext', 'concept', 'person',
+                'person_ext'
         ]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
@@ -97,6 +96,19 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
               (910, 0, 1983, 0, 0),
               (1112, 0, 1984, 0, 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
+
+        person_ext_data_query = self.jinja_env.from_string("""
+                    INSERT INTO
+                      `{{project_id}}.{{dataset_id}}.person_ext` 
+                    (person_id, src_id, state_of_residence_concept_id, state_of_residence_source_value, sex_at_birth_concept_id, sex_at_birth_source_concept_id, sex_at_birth_source_value)
+                    VALUES
+                      (123, 'PTSC', 0, '', 0, 0, ''),
+                      (345, 'PTSC', 0, '', 0, 0, ''),
+                      (678, 'TPC', 0, '', 0, 0, ''),
+                      (910, 'TPC', 0, '', 0, 0, ''),
+                      (1112, 'PTSC', 0, '', 0, 0, '')
+                    """).render(project_id=self.project_id,
+                                dataset_id=self.dataset_id)
 
         # test data for observation table
         observation_data_query = self.jinja_env.from_string("""
@@ -147,17 +159,17 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                 src_id
               )
             VALUES
-              (111, 'PPI/PM'),
-              (222, 'PPI/PM'),
-              (333, 'PPI/PM'),
-              (444, 'PPI/PM'),
-              (9910, 'PPI/PM')
+              (111, 'PTSC'),
+              (222, 'PTSC'),
+              (333, 'TPC'),
+              (444, 'TPC'),
+              (9910, 'PTSC')
                     """).render(project_id=self.project_id,
                                 dataset_id=self.dataset_id)
 
         self.load_test_data([
-            person_data_query, observation_data_query, concept_data_query,
-            observation_ext_data_query
+            person_data_query, person_ext_data_query, observation_data_query,
+            concept_data_query, observation_ext_data_query
         ])
 
     def test_person_ext_creation(self):
@@ -176,16 +188,16 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                 'state_of_residence_source_value', 'sex_at_birth_concept_id',
                 'sex_at_birth_source_concept_id', 'sex_at_birth_source_value'
             ],
-            'loaded_ids': [],
-            'cleaned_values': [(123, 'PPI/PM', 1585266, 'PII State: CA',
-                                45878463, 1585847, 'SexAtBirth_Female'),
-                               (345, 'PPI/PM', 1585266, 'PII State: CA',
-                                45878463, 1585847, 'SexAtBirth_Female'),
-                               (678, 'PPI/PM', 1585266, 'PII State: CA',
-                                45878463, 1585847, 'SexAtBirth_Female'),
-                               (910, 'PPI/PM', 1585266, 'PII State: CA',
-                                45878463, 1585847, 'SexAtBirth_Female'),
-                               (1112, 'PPI/PM', 1585266, 'PII State: CA',
+            'loaded_ids': [123, 345, 678, 910, 1112],
+            'cleaned_values': [(123, 'PTSC', 1585266, 'PII State: CA', 45878463,
+                                1585847, 'SexAtBirth_Female'),
+                               (345, 'PTSC', 1585266, 'PII State: CA', 45878463,
+                                1585847, 'SexAtBirth_Female'),
+                               (678, 'TPC', 1585266, 'PII State: CA', 45878463,
+                                1585847, 'SexAtBirth_Female'),
+                               (910, 'TPC', 1585266, 'PII State: CA', 45878463,
+                                1585847, 'SexAtBirth_Female'),
+                               (1112, 'PTSC', 1585266, 'PII State: CA',
                                 45878463, 1585848, 'No matching concept')]
         }]
 
