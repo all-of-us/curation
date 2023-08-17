@@ -61,7 +61,7 @@ ENV CURATION_SCRIPTS_DIR "${CURATION_HOME}"/container-scripts
 # this is the default location into which all per-purpose container commands should be placed
 ENV CURATION_COMMANDS_DIR "${CURATION_HOME}"/container-commands
 
-# we're using the CIRCLE_ envvars to retain backwards compatbility
+# we're using the CIRCLE_ envvars to retain backwards compatbility~
 ENV CIRCLE_PROJECT_NAME "all-of-us"
 ENV CIRCLE_WORKING_DIRECTORY "${CURATION_HOME}/project/curation"
 ENV CIRCLE_ARTIFACTS "/tmp/circleci-artifacts"
