@@ -72,7 +72,7 @@ ENV VENV_ACTIVATE "${VENV_PATH}/bin/activate"
 
 # google envvars
 ENV GOOGLE_APPLICATION_CREDENTIALS "${CIRCLE_WORKING_DIRECTORY}/aou-res-curation-test.json"
-ENV CLOUDSDK_PYTHON "/usr/bin/python3.10"
+ENV CLOUDSDK_PYTHON "/usr/local/bin/python3"
 
 # GLOBAL BINARIES SETUP
 
