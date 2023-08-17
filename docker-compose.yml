@@ -3,7 +3,7 @@ version: "3"
 services:
   # base image upon which all other containers are derived
   develop:
-    image: "curation:develop-18.04"
+    image: "curation:develop-22.04"
     build:
       context: .
       dockerfile: docker/develop/Dockerfile
