@@ -32,11 +32,7 @@ WHERE
 
 class FitbitDeidSrcID(BaseCleaningRule):
 
-    def __init__(self,
-                 project_id,
-                 dataset_id,
-                 sandbox_dataset_id,
-                 table_namer=None):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper information.
 
@@ -52,8 +48,7 @@ class FitbitDeidSrcID(BaseCleaningRule):
                          affected_tables=FITBIT_TABLES,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         sandbox_dataset_id=sandbox_dataset_id)
 
     def get_query_specs(self):
         """
