@@ -170,7 +170,8 @@ RUN python -m venv "${VENV_PATH}" \
   && . "${VENV_ACTIVATE}" \
   && python -m pip install --upgrade pip setuptools wheel \
   && python -m pip install -r data_steward/requirements.txt \
-  && python -m pip install -r data_steward/dev_requirements.txt
+  && python -m pip install -r data_steward/dev_requirements.txt \
+  && python -m pip install -r dev_requirements.txt
 
 # remove data_steward dir as it will be mounted inside the container as a volume later.
 RUN rm -rf "${CIRCLE_WORKING_DIRECTORY}/data_steward"
