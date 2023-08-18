@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 LABEL org.opencontainers.image.authors="daniel.p.carbone@vumc.org"
 LABEL org.opencontainers.image.url="https://github.com/all-of-us/curation"
 LABEL org.opencontainers.image.documentation="https://github.com/all-of-us/curation"
@@ -17,7 +17,7 @@ LABEL org.opencontainers.image.description="Base development container image use
 # run the base container init first, as it is highly unlikely to change.
 # this allows us to modify subsequent steps without initating a full image rebuild
 
-# install deps and link "python" and "python3" execs to 3.7
+# install deps and link "python" and "python3" execs to 3.10
 RUN apt update \
   && apt upgrade -y \
   && apt install -y \
@@ -30,7 +30,6 @@ RUN apt update \
   wget \
   && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
   && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
-
 
 ## BUILD ARGS
 
@@ -46,7 +45,7 @@ ARG CURATION_HOME="/home/${CURATION_USER}"
 ARG GSDK_VERSION
 ARG GSDK_CHECKSUM
 ARG GSDK_INSTALL_PATH="${CURATION_HOME}/google-cloud-sdk"
-ARG GSDK_TAR_FILE="google-cloud-cli-${GSDK_VERSION}-linux-x86_64.tar.gz"
+ARG GSDK_TAR_FILE="google-cloud-sdk-${GSDK_VERSION}-linux-x86_64.tar.gz"
 ARG GSDK_DOWNLOAD="https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GSDK_TAR_FILE}"
 
 # circleci cli args
@@ -62,7 +61,7 @@ ENV CURATION_SCRIPTS_DIR "${CURATION_HOME}"/container-scripts
 # this is the default location into which all per-purpose container commands should be placed
 ENV CURATION_COMMANDS_DIR "${CURATION_HOME}"/container-commands
 
-# we're using the CIRCLE_ envvars to retain backwards compatbility
+# we're using the CIRCLE_ envvars to retain backwards compatbility~
 ENV CIRCLE_PROJECT_NAME "all-of-us"
 ENV CIRCLE_WORKING_DIRECTORY "${CURATION_HOME}/project/curation"
 ENV CIRCLE_ARTIFACTS "/tmp/circleci-artifacts"
@@ -73,6 +72,7 @@ ENV VENV_ACTIVATE "${VENV_PATH}/bin/activate"
 
 # google envvars
 ENV GOOGLE_APPLICATION_CREDENTIALS "${CIRCLE_WORKING_DIRECTORY}/aou-res-curation-test.json"
+ENV CLOUDSDK_PYTHON "/usr/bin/python"
 
 # GLOBAL BINARIES SETUP
 
