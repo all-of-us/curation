@@ -144,7 +144,7 @@ RUN wget --quiet "${GSDK_DOWNLOAD}" \
   fi;
 
 # install gsdk,
-RUN export CLOUDSDK_PYTHON=/usr/bin/python \
+RUN export CLOUDSDK_PYTHON=/usr/bin/python3 \
   && mkdir -p "${GSDK_INSTALL_PATH}" \
   && tar -xzf "${GSDK_TAR_FILE}" -C "${CURATION_HOME}" \
   && rm "${GSDK_TAR_FILE}" \
