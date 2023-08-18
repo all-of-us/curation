@@ -253,7 +253,7 @@ def mapping_query(table_name, dataset_id=None, project_id=None):
     :return: the query
     """
     if dataset_id is None:
-        dataset_id = bq_utils.get_dataset_id()
+        dataset_id = BIGQUERY_DATASET_ID
     if project_id is None:
         project_id = app_identity.get_application_id()
 
