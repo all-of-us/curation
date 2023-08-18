@@ -27,12 +27,10 @@ RUN apt update \
   python3.10-venv \
   python3-pip \
   python3-wheel \
+  python3-lxml \
   wget \
-  gcc-11 \
-  g++-11 \
   && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
-  && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 \
-  && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 60 --slave /usr/bin/g++ g++ /usr/bin/g++-11
+  && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
 
 ## BUILD ARGS
 
