@@ -12,7 +12,7 @@ Note: Any missing CDM tables will be created and will remain empty
 import argparse
 
 from common import BIGQUERY_DATASET_ID
-from bq_utils import get_dataset_id, app_identity
+from bq_utils import app_identity
 from gcloud.bq import BigQueryClient
 from validation.main import _upload_achilles_files
 from validation.main import run_achilles as _run_achilles
