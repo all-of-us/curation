@@ -27,7 +27,6 @@ RUN apt update \
   python3.10-venv \
   python3-pip \
   python3-wheel \
-  python3-lxml \
   wget \
   && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
   && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
@@ -173,6 +172,9 @@ RUN python -m venv "${VENV_PATH}" \
   && python -m pip install --upgrade pip setuptools wheel \
   && python -m pip install -r data_steward/requirements.txt \
   && python -m pip install -r data_steward/dev_requirements.txt
+
+RUN echo "here"
+RUN pip install mock
 
 # remove data_steward dir as it will be mounted inside the container as a volume later.
 RUN rm -rf "${CIRCLE_WORKING_DIRECTORY}/data_steward"
