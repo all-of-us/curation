@@ -131,26 +131,15 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
 
         # Set the expected test datasets
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         # Instantiate class
-        cls.rule_instance = FitbitDeidSrcID(
-            cls.project_id,
-            cls.dataset_id,
-            cls.sandbox_id,
-        )
+        cls.rule_instance = FitbitDeidSrcID(cls.project_id, cls.dataset_id,'')
 
         # Generates list of fully qualified table names
         affected_table_names = cls.rule_instance.affected_tables
         for table_name in affected_table_names:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
-
-        # Generate sandbox table names
-        sandbox_table_names = cls.rule_instance.get_sandbox_tablenames()
-        for table_name in sandbox_table_names:
-            cls.fq_sandbox_table_names.append(
-                f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
@@ -200,10 +189,10 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'fq_table_name':
                     self.fq_table_names[0],  # ACTIVITY_SUMMARY
                 'fq_sandbox_table_name':
-                    self.fq_sandbox_table_names[0],
+                    None,
                 'fields': ['person_id', 'activity_calories', 'date', 'src_id'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [],
                 'cleaned_values': [
                     (1234, 100, datetime.fromisoformat('2020-08-17').date(),
                      'Participant Portal 2'),
@@ -221,12 +210,12 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'fq_table_name':
                     self.fq_table_names[1],  # HEART_RATE_MINUTE_LEVEL
                 'fq_sandbox_table_name':
-                    self.fq_sandbox_table_names[1],
+                    None,
                 'fields': [
                     'person_id', 'heart_rate_value', 'datetime', 'src_id'
                 ],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [],
                 'cleaned_values': [
                     (1234, 60, datetime.fromisoformat('2020-08-17 15:00:00'),
                      'Participant Portal 2'),
@@ -244,10 +233,10 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'fq_table_name':
                     self.fq_table_names[2],  # HEART_RATE_SUMMARY
                 'fq_sandbox_table_name':
-                    self.fq_sandbox_table_names[2],
+                    None,
                 'fields': ['person_id', 'date', 'calorie_count', 'src_id'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [],
                 'cleaned_values': [
                     (1234, datetime.fromisoformat('2020-08-17').date(), 100,
                      'Participant Portal 2'),
@@ -265,10 +254,10 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'fq_table_name':
                     self.fq_table_names[3],  # STEPS_INTRADAY
                 'fq_sandbox_table_name':
-                    self.fq_sandbox_table_names[3],
+                    None,
                 'fields': ['person_id', 'steps', 'datetime', 'src_id'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [],
                 'cleaned_values': [
                     (1234, 60, datetime.fromisoformat('2020-08-17 15:00:00'),
                      'Participant Portal 2'),
@@ -286,12 +275,12 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
                 'fq_table_name':
                     self.fq_table_names[4],  # SLEEP_DAILY_SUMMARY
                 'fq_sandbox_table_name':
-                    self.fq_sandbox_table_names[4],
+                    None,
                 'fields': [
                     'person_id', 'sleep_date', 'minute_in_bed', 'src_id'
                 ],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [],
                 'cleaned_values': [
                     (1234, datetime.fromisoformat('2020-08-17').date(), 502,
                      'Participant Portal 2'),
@@ -308,13 +297,14 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             {
                 'fq_table_name':
                     self.fq_table_names[5],  # SLEEP_LEVEL
-                'fq_sandbox_table_name':
-                    self.fq_sandbox_table_names[5],
+                'fq_sandbox_table_name':  # self.fq_sandbox_table_names[5],
+                    None,
                 'fields': [
                     'person_id', 'sleep_date', 'duration_in_min', 'src_id'
                 ],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
+                # 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [],
                 'cleaned_values': [
                     (1234, datetime.fromisoformat('2020-08-17').date(), 42,
                      'Participant Portal 2'),
@@ -331,11 +321,12 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             {
                 'fq_table_name':
                     self.fq_table_names[6],  # DEVICE
-                'fq_sandbox_table_name':
-                    self.fq_sandbox_table_names[6],
+                'fq_sandbox_table_name':  # self.fq_sandbox_table_names[6],
+                    None,
                 'fields': ['person_id', 'device_date', 'battery', 'src_id'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
+                # 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
+                'sandboxed_ids': [],
                 'cleaned_values': [
                     (1234, datetime.fromisoformat('2020-08-17').date(),
                      "Medium", 'Participant Portal 2'),
