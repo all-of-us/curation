@@ -866,6 +866,7 @@ WHERE person_id not in ( -- person table --
   SELECT person_id
   FROM `{{project_id}}.{{rt_cdr_deid}}.person` o
   )
+
 UNION ALL
 
 SELECT
