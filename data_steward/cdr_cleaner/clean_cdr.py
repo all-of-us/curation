@@ -201,6 +201,7 @@ RDR_CLEANING_CLASSES = [
     (CleanSmokingPpi,),
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
+    (CalculateBmi,),
     (DropExtremeMeasurements,),
     (DropMultipleMeasurements,),
     (CleanByBirthYear,),
@@ -242,7 +243,6 @@ COMBINED_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (GenerateExtTables,),
-    (CalculateBmi,),  # dependent on GenerateExtTables
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (PopulateSurveyConductExt,),
