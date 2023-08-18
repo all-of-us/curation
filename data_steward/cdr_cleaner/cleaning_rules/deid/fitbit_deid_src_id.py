@@ -17,26 +17,6 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3337']
 
-# Query template to sandbox records
-SANDBOX_SRC_IDS_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE 
-    `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS 
-(
-    SELECT
-        *
-    FROM
-        `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-    WHERE src_id in (
-        SELECT 
-            hpo_id
-        FROM
-            `{{project_id}}.{{pipeline_tables}}.{{site_maskings}}`
-        WHERE 
-            REGEXP_CONTAINS(src_id, r'(?i)Participant Portal')
-    )
-)
-""")
-
 # Query template to update src_ids in fitbit tables
 UPDATE_SRC_IDS_QUERY = JINJA_ENV.from_string("""
 UPDATE 
@@ -83,20 +63,9 @@ class FitbitDeidSrcID(BaseCleaningRule):
             single query and a specification for how to execute that query.
             The specifications are optional but the query is required.
         """
-        update_queries, sandbox_queries = [], []
+        update_queries = []
 
         for table in self.affected_tables:
-            sandbox_query = {
-                cdr_consts.QUERY:
-                    SANDBOX_SRC_IDS_QUERY.render(
-                        project_id=self.project_id,
-                        sandbox_dataset_id=self.sandbox_dataset_id,
-                        sandbox_table=self.sandbox_table_for(table),
-                        dataset_id=self.dataset_id,
-                        fitbit_table=table,
-                        pipeline_tables=PIPELINE_TABLES,
-                        site_maskings=SITE_MASKING_TABLE_ID)
-            }
             update_query = {
                 cdr_consts.QUERY:
                     UPDATE_SRC_IDS_QUERY.render(
@@ -106,16 +75,15 @@ class FitbitDeidSrcID(BaseCleaningRule):
                         pipeline_tables=PIPELINE_TABLES,
                         site_maskings=SITE_MASKING_TABLE_ID)
             }
-            sandbox_queries.append(sandbox_query)
             update_queries.append(update_query)
 
-        return sandbox_queries + update_queries
+        return update_queries
 
     def get_sandbox_tablenames(self):
         """
         generates sandbox table names
         """
-        return [self.sandbox_table_for(table) for table in self.affected_tables]
+        pass
 
     def setup_rule(self, client):
         """
