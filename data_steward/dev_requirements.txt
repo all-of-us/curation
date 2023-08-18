@@ -3,7 +3,6 @@ pylint==2.4.4
 modernize==0.7
 unittest-xml-reporting>=2.5.2,==2.*
 yapf==0.29.0
-lxml==4.5.0
 beautifulsoup4==4.8.2
 soupsieve==1.9.5
 bs4==0.0.1
