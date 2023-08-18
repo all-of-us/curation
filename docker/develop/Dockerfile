@@ -161,6 +161,7 @@ WORKDIR "${CIRCLE_WORKING_DIRECTORY}"
 # copy in requirements.txt so we can go ahead and bake deps into the image
 # this requires a rebuild, but oh well.
 COPY --chown=${CURATION_USER} --chmod=755 data_steward/requirements.txt "${CIRCLE_WORKING_DIRECTORY}/data_steward/requirements.txt"
+COPY --chown=${CURATION_USER} --chmod=755 data_steward/requirements.txt "${CIRCLE_WORKING_DIRECTORY}/data_steward/dev_requirements.txt"
 
 # initialize venv and install python deps
 RUN python -m venv "${VENV_PATH}" \
@@ -169,9 +170,8 @@ RUN python -m venv "${VENV_PATH}" \
   | tee -a "${CURATION_HOME}/.bashrc" "${CURATION_HOME}/.profile" \
   && . "${VENV_ACTIVATE}" \
   && python -m pip install --upgrade pip setuptools wheel \
+  && python -m pip install -r data_steward/requirements.txt \
   && python -m pip install -r data_steward/dev_requirements.txt
-
-# RUN python -m pip install -r data_steward/dev_requirements.txt
 
 # remove data_steward dir as it will be mounted inside the container as a volume later.
 RUN rm -rf "${CIRCLE_WORKING_DIRECTORY}/data_steward"
