@@ -21,7 +21,7 @@ LABEL org.opencontainers.image.description="Base development container image use
 RUN apt update \
   && apt upgrade -y \
   && apt install -y \
-  build-essentials \
+  build-essential \
   curl \
   git \
   python3.10-dev \
