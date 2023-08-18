@@ -27,8 +27,6 @@ RUN apt update \
   python3.10-venv \
   python3-pip \
   python3-wheel \
-  libxml2-dev \
-  libxslt1-dev \
   python3-lxml \
   wget \
   && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
