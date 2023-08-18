@@ -133,7 +133,7 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
 
         # Instantiate class
-        cls.rule_instance = FitbitDeidSrcID(cls.project_id, cls.dataset_id,'')
+        cls.rule_instance = FitbitDeidSrcID(cls.project_id, cls.dataset_id, '')
 
         # Generates list of fully qualified table names
         affected_table_names = cls.rule_instance.affected_tables
@@ -297,13 +297,12 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             {
                 'fq_table_name':
                     self.fq_table_names[5],  # SLEEP_LEVEL
-                'fq_sandbox_table_name':  # self.fq_sandbox_table_names[5],
+                'fq_sandbox_table_name':
                     None,
                 'fields': [
                     'person_id', 'sleep_date', 'duration_in_min', 'src_id'
                 ],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                # 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'sandboxed_ids': [],
                 'cleaned_values': [
                     (1234, datetime.fromisoformat('2020-08-17').date(), 42,
@@ -321,11 +320,10 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
             {
                 'fq_table_name':
                     self.fq_table_names[6],  # DEVICE
-                'fq_sandbox_table_name':  # self.fq_sandbox_table_names[6],
+                'fq_sandbox_table_name':
                     None,
                 'fields': ['person_id', 'device_date', 'battery', 'src_id'],
                 'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                # 'sandboxed_ids': [1234, 5678, 2345, 6789, 3456],
                 'sandboxed_ids': [],
                 'cleaned_values': [
                     (1234, datetime.fromisoformat('2020-08-17').date(),
