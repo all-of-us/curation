@@ -90,6 +90,7 @@ matplotlib-inline==0.1.6
 mdit-py-plugins==0.4.0
 mdurl==0.1.2
 mistune==3.0.1
+mock==5.1.0
 nbclient==0.8.0
 nbconvert==7.7.3
 nbformat==5.9.2
