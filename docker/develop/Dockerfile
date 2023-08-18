@@ -21,13 +21,14 @@ LABEL org.opencontainers.image.description="Base development container image use
 RUN apt update \
   && apt upgrade -y \
   && apt install -y \
-  build-essential \
   curl \
   git \
   python3.10-dev \
   python3.10-venv \
   python3-pip \
   python3-wheel \
+  libxml2-dev \
+  libxslt1-dev \
   python3-lxml \
   wget \
   && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
