@@ -174,7 +174,7 @@ RUN python -m venv "${VENV_PATH}" \
   && python -m pip install -r data_steward/dev_requirements.txt
 
 RUN echo here
-RUN pip install opentelemetry-sdk
+RUN pip install mandrill oauth2client
 
 # remove data_steward dir as it will be mounted inside the container as a volume later.
 RUN rm -rf "${CIRCLE_WORKING_DIRECTORY}/data_steward"
