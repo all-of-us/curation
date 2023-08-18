@@ -161,7 +161,7 @@ WORKDIR "${CIRCLE_WORKING_DIRECTORY}"
 # copy in requirements.txt so we can go ahead and bake deps into the image
 # this requires a rebuild, but oh well.
 COPY --chown=${CURATION_USER} --chmod=755 data_steward/requirements.txt "${CIRCLE_WORKING_DIRECTORY}/data_steward/requirements.txt"
-COPY --chown=${CURATION_USER} --chmod=755 data_steward/requirements.txt "${CIRCLE_WORKING_DIRECTORY}/data_steward/dev_requirements.txt"
+COPY --chown=${CURATION_USER} --chmod=755 data_steward/dev_requirements.txt "${CIRCLE_WORKING_DIRECTORY}/data_steward/dev_requirements.txt"
 
 # initialize venv and install python deps
 RUN python -m venv "${VENV_PATH}" \
