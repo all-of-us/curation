@@ -11,6 +11,7 @@ Note: Any missing CDM tables will be created and will remain empty
 """
 import argparse
 
+from common import BIGQUERY_DATASET_ID
 from bq_utils import get_dataset_id, app_identity
 from gcloud.bq import BigQueryClient
 from validation.main import _upload_achilles_files
@@ -19,7 +20,7 @@ from validation.main import run_export as _run_export
 
 
 def main(args):
-    dataset_id = get_dataset_id()
+    dataset_id = BIGQUERY_DATASET_ID
     target_bucket = args.bucket
     folder_prefix = args.folder + '/'
     project = app_identity.get_application_id()
