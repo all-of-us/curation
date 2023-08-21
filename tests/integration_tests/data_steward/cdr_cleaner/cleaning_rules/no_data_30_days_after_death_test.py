@@ -7,7 +7,7 @@ import os
 
 # Project Imports
 from common import (AOU_DEATH, PERSON, VISIT_OCCURRENCE, OBSERVATION,
-                    CONDITION_OCCURRENCE, DEVICE_EXPOSURE)
+                    CONDITION_OCCURRENCE, DEVICE_EXPOSURE, SURVEY_CONDUCT)
 from common import JINJA_ENV
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
@@ -92,6 +92,22 @@ VALUES
     (91, 9, 2101931, '2015-07-15', TIMESTAMP('2015-07-15'), null, 99999)
 """)
 
+SURVEY_CONDUCT_DATA_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.survey_conduct`
+(survey_conduct_id, person_id, survey_concept_id, survey_start_date, survey_start_datetime, 
+ survey_end_date, survey_end_datetime, assisted_concept_id, respondent_type_concept_id, timing_concept_id,
+ collection_method_concept_id, survey_source_concept_id, validated_survey_concept_id)
+VALUES
+    -- Start/end dates are before the death date. Not dropped. --
+    (21, 2, 0, '2019-07-15', '2019-07-15 00:00:00 UTC', '2019-07-15', '2019-07-15 00:00:00 UTC', 0, 0, 0, 0, 0, 0),
+    -- NULL start date, end date is before the death date. Not dropped. --
+    (22, 2, 0, NULL, NULL, '2019-07-15', '2019-07-15 00:00:00 UTC', 0, 0, 0, 0, 0, 0),
+    -- Start/end dates are after the death date. Dropped. --
+    (23, 2, 0, '2021-07-15', '2021-07-15 00:00:00 UTC', '2021-07-15', '2021-07-15 00:00:00 UTC', 0, 0, 0, 0, 0, 0),
+    -- NULL start date, end date is after the death date. Dropped. --
+    (24, 2, 0, NULL, NULL, '2021-07-15', '2021-07-15 00:00:00 UTC', 0, 0, 0, 0, 0, 0)
+""")
+
 
 class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
 
@@ -115,7 +131,8 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
         # adding aou_death table name for setup/cleanup operations
-        for table_name in get_affected_tables() + [AOU_DEATH]:
+        for table_name in get_affected_tables() + [AOU_DEATH
+                                                  ] + [SURVEY_CONDUCT]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
@@ -135,7 +152,8 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
         templates = [
             PERSON_DATA_TEMPLATE, AOU_DEATH_DATA_TEMPLATE,
             VISIT_OCCURRENCE_DATA_TEMPLATE, OBSERVATION_DATA_TEMPLATE,
-            CONDITION_OCCURRENCE_DATA_TEMPLATE, DEVICE_EXPOSURE_DATA_TEMPLATE
+            CONDITION_OCCURRENCE_DATA_TEMPLATE, DEVICE_EXPOSURE_DATA_TEMPLATE,
+            SURVEY_CONDUCT_DATA_TEMPLATE
         ]
 
         test_queries = []
@@ -211,6 +229,15 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
             'sandboxed_ids': [11, 21],
             'fields': ['device_exposure_id', 'person_id'],
             'cleaned_values': [(31, 3), (91, 9)]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(SURVEY_CONDUCT)}',
+            'loaded_ids': [21, 22, 23, 24],
+            'sandboxed_ids': [23, 24],
+            'fields': ['survey_conduct_id', 'person_id'],
+            'cleaned_values': [(21, 2), (22, 2)]
         }]
 
         self.default_test(tables_and_counts)
