@@ -1,7 +1,7 @@
 """
  Integration test for generalization of conflicting HPO States.
 
- Original Issue: DC-512
+ Original Issue: DC-512, DC3268
  """
 # Python imports
 import mock
@@ -43,9 +43,9 @@ INSERT_RAW_DATA_EXT = JINJA_ENV.from_string("""
        src_id
    )
    VALUES
-       (1,'PPI/PM'),
+       (1,'Portal 1'),
        (2, 'bar 000'),
-       (3, 'PPI/PM'),
+       (3, 'Portal 2'),
        (4, 'bar 123')
  """)
 

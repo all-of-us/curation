@@ -12,7 +12,7 @@ import resources
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC512', 'DC834']
+JIRA_ISSUE_NUMBERS = ['DC512', 'DC834', 'DC3268']
 JIRA_ISSUE_URL = [
     'https://precisionmedicineinitiative.atlassian.net/browse/DC-512',
     'https://precisionmedicineinitiative.atlassian.net/browse/DC-834'
@@ -31,7 +31,7 @@ HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   USING
     ({{table}}_id)
   WHERE
-    NOT REGEXP_CONTAINS(src_id, r'(?i)(ppi)|(pm)')
+    NOT REGEXP_CONTAINS(src_id, r'(?i)(Portal)')
 """)
 
 LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
