@@ -131,8 +131,7 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
         # adding aou_death table name for setup/cleanup operations
-        for table_name in get_affected_tables() + [AOU_DEATH
-                                                  ] + [SURVEY_CONDUCT]:
+        for table_name in get_affected_tables() + [AOU_DEATH]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
