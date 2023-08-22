@@ -96,6 +96,28 @@ AND h.src_id = w.src_id
 
 INSERT_BMI_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.measurement`
+(
+    measurement_id,
+    person_id,
+    measurement_concept_id,
+    measurement_date,
+    measurement_datetime,
+    measurement_time,
+    measurement_type_concept_id,
+    operator_concept_id,
+    value_as_number,
+    value_as_concept_id,
+    unit_concept_id,
+    range_low,
+    range_high,
+    provider_id,
+    visit_occurrence_id,
+    visit_detail_id,
+    measurement_source_value,
+    measurement_source_concept_id,
+    unit_source_value,
+    value_source_value    
+)
 SELECT
     measurement_id,
     person_id,
@@ -122,6 +144,10 @@ FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 
 INSERT_MAPPING_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}._mapping_measurement`
+(
+    measurement_id,
+    src_id    
+)
 SELECT 
     measurement_id,
     src_id
