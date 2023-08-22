@@ -125,7 +125,7 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
             (procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_datetime, 
             procedure_type_concept_id, provider_id, visit_occurrence_id)
         VALUES
-            -- invalid person_id foreign key. will be sandboxed and nulled --
+            -- invalid person_id foreign key. will be sandboxed and deleted --
             (111, 0, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 1, 2),
             
             -- invalid provider_id foreign key. will be sandboxed and nulled --
@@ -160,7 +160,7 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
             -- Valid person_id. Nothing happens. --
             ('a1', 555, date('2020-05-05'), 0, 0, 0, 'rdr', False),
             ('a2', 555, date('2021-05-05'), 0, 0, 0, 'hpo_b', False),
-            -- Invalid person_id. person_id will be nulled --
+            -- Invalid person_id. person_id will be deleted --
             ('a3', 9999, date('2020-05-05'), 0, 0, 0, 'rdr', False),
             ('a4', 9999, date('2021-05-05'), 0, 0, 0, 'hpo_b', False)
         """).render(fq_dataset_name=self.fq_dataset_name)
@@ -184,7 +184,6 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
                 'sandboxed_ids': [111, 222, 333],
                 'cleaned_values': [
                     # cleaned invalid test values
-                    (111, None, 101, self.date, self.datetime, 101, 1, 2),
                     (222, 555, 101, self.date, self.datetime, 101, None, 2),
                     (333, 666, 101, self.date, self.datetime, 101, 1, None),
                     # valid test values, no changes
@@ -210,13 +209,11 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
                 ]
             },
             {
-                'fq_table_name':
-                    '.'.join([self.fq_dataset_name, AOU_DEATH]),
+                'fq_table_name': '.'.join([self.fq_dataset_name, AOU_DEATH]),
                 'fields': ['aou_death_id', 'person_id'],
                 'loaded_ids': ['a1', 'a2', 'a3', 'a4'],
                 'sandboxed_ids': ['a3', 'a4'],
-                'cleaned_values': [('a1', 555), ('a2', 555), ('a3', None),
-                                   ('a4', None)]
+                'cleaned_values': [('a1', 555), ('a2', 555)]
             }
         ]
 

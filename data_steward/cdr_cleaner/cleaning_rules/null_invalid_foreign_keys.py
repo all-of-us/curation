@@ -18,39 +18,48 @@ import logging
 # Project Imports
 import resources
 from common import AOU_DEATH, JINJA_ENV, MAPPING_PREFIX
-from constants import bq_utils as bq_consts
-from constants.cdr_cleaner import clean_cdr as cdr_consts
+from constants.cdr_cleaner.clean_cdr import COMBINED, QUERY
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC388', 'DC807']
+JIRA_ISSUE_NUMBERS = ['DC388', 'DC807', 'DC3230']
 
 FOREIGN_KEYS_FIELDS = [
     'person_id', 'visit_occurrence_id', 'location_id', 'care_site_id',
     'provider_id'
 ]
 
-INVALID_FOREIGN_KEY_QUERY = JINJA_ENV.from_string("""
-    SELECT {{cols}}
-    FROM `{{project_id}}.{{dataset_id}}.{{table_name}}` t
-    {{join_expr}}""")
-
-LEFT_JOIN = JINJA_ENV.from_string("""
-    LEFT JOIN `{{dataset_id}}.{{table}}` {{prefix}} 
-    ON t.{{field}} = {{prefix}}.{{field}}""")
-
 SANDBOX_QUERY = JINJA_ENV.from_string("""
-    CREATE OR REPLACE TABLE 
-    `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS (
-        SELECT t.* FROM `{{project_id}}.{{dataset_id}}.{{table_name}}` AS t 
-        WHERE {{sandbox_expr}})""")
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
+    SELECT * FROM `{{project_id}}.{{dataset_id}}.{{table_name}}`
+    WHERE {% for key in foreign_keys %}
+        (
+            {{key}} NOT IN (
+                SELECT {{key}} 
+                {% if key == 'person_id' %}
+                FROM `{{dataset_id}}.person`
+                {% else %}
+                FROM `{{dataset_id}}._mapping_{{key[:-3]}}`
+                {% endif %}
+            )
+            AND {{key}} IS NOT NULL
+        ){% if not loop.last -%} OR {% endif %}
+    {% endfor %}
+)""")
 
-SANDBOX_EXPRESSION = JINJA_ENV.from_string("""
-     ({{field}} NOT IN (
-        SELECT {{field}} 
-        FROM `{{dataset_id}}.{{table}}` AS {{prefix}})
-        AND {{field}} IS NOT NULL)
+DELETE_QUERY = JINJA_ENV.from_string("""
+DELETE FROM `{{project_id}}.{{dataset_id}}.{{table_name}}`
+WHERE person_id NOT IN (
+    SELECT person_id FROM `{{project_id}}.{{dataset_id}}.person`
+)""")
+
+UPDATE_QUERY = JINJA_ENV.from_string("""
+UPDATE `{{project_id}}.{{dataset_id}}.{{table_name}}`
+SET {{key}} = NULL
+WHERE {{key}} NOT IN (
+    SELECT {{key}} FROM `{{dataset_id}}._mapping_{{key[:-3]}}`
+) AND {{key}} IS NOT NULL
 """)
 
 
@@ -59,7 +68,11 @@ class NullInvalidForeignKeys(BaseCleaningRule):
     Ensure invalid foreign keys are null while the remainder of the rows persist
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -72,11 +85,12 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         )
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_datasets=[COMBINED],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=self.get_affected_tables())
+                         affected_tables=self.get_affected_tables(),
+                         table_namer=table_namer)
 
     def get_affected_tables(self):
         """
@@ -84,7 +98,10 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         
         :return: list of affected tables
         """
-        return resources.CDM_TABLES + [AOU_DEATH]
+        return [
+            table for table in resources.CDM_TABLES + [AOU_DEATH]
+            if self.has_foreign_key(table)
+        ]
 
     def get_mapping_table(self, domain_table):
         """
@@ -128,118 +145,48 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         """
         return len(self.get_foreign_keys(table)) > 0
 
-    def get_col_expression(self, table):
-        """
-        This method formats the column name depending of if it is a foreign key or not. If the column is a foreign key
-        it will be prefixed with the first part of the table name. If the column is not a foreign key, there will be
-        no changes to the column name.
-
-        :param table: single table in the list of affected tables
-        :return: all the formatted column names for the table
-        """
-        col_exprs = []
-        foreign_keys = self.get_foreign_keys(table)
-        for field in self.get_field_names(table):
-            if field in foreign_keys:
-                col_expr = f'{field[:3]}.{field}'
-            else:
-                col_expr = field
-            col_exprs.append(col_expr)
-        return ', '.join(col_exprs)
-
-    def get_join_expression(self, table):
-        """
-        This method generates the LEFT_JOIN query. Only columns that are foreign keys will be
-        used in the query generation.
-
-        :param table: single table in the list of affected tables
-        :return: LEFT_JOIN query expression
-        """
-        join_expression = []
-        for key in self.get_foreign_keys(table):
-            if key in FOREIGN_KEYS_FIELDS:
-                if key == 'person_id':
-                    table_alias = cdr_consts.PERSON_TABLE_NAME
-                else:
-                    table_alias = self.get_mapping_table(
-                        '{x}'.format(x=key)[:-3])
-                join_expression.append(
-                    LEFT_JOIN.render(dataset_id=self.dataset_id,
-                                     prefix=key[:3],
-                                     field=key,
-                                     table=table_alias))
-        return ' '.join(join_expression)
-
-    def get_sandbox_expression(self, table):
-        """
-        This method generates the SANDBOX_EXPRESSION query. Only columns that are foreign keys will be
-        used in the query generation.
-
-        :param table: single table in the list of affected tables
-        :return: SANDBOX_EXPRESSION query
-        """
-        sandbox_expression = []
-        for key in self.get_foreign_keys(table):
-            if key in FOREIGN_KEYS_FIELDS:
-                if key == 'person_id':
-                    table_alias = cdr_consts.PERSON_TABLE_NAME
-                else:
-                    table_alias = self.get_mapping_table(
-                        '{x}'.format(x=key)[:-3])
-                sandbox_expression.append(
-                    SANDBOX_EXPRESSION.render(field=key,
-                                              dataset_id=self.dataset_id,
-                                              table=table_alias,
-                                              prefix=key[:3]))
-        return ' OR '.join(sandbox_expression)
-
     def get_query_specs(self):
         """
         This method gets the queries required to make invalid foreign keys null
 
         :return: a list of queries
         """
-        queries_list = []
-        sandbox_queries_list = []
+        queries, sandbox_queries = [], []
 
         for table in self.get_affected_tables():
-            if self.has_foreign_key(table):
-                cols = self.get_col_expression(table)
-                join_expression = self.get_join_expression(table)
-                sandbox_expression = self.get_sandbox_expression(table)
 
-                sandbox_query = {
-                    cdr_consts.QUERY:
-                        SANDBOX_QUERY.render(
-                            project_id=self.project_id,
-                            sandbox_dataset_id=self.sandbox_dataset_id,
-                            intermediary_table=self.sandbox_table_for(table),
-                            dataset_id=self.dataset_id,
-                            table_name=table,
-                            sandbox_expr=sandbox_expression),
-                }
+            sandbox_query = {
+                QUERY:
+                    SANDBOX_QUERY.render(
+                        project_id=self.project_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        sandbox_table=self.sandbox_table_for(table),
+                        dataset_id=self.dataset_id,
+                        table_name=table,
+                        foreign_keys=self.get_foreign_keys(table))
+            }
+            sandbox_queries.append(sandbox_query)
 
-                sandbox_queries_list.append(sandbox_query)
+            for key in self.get_foreign_keys(table):
+                if key == 'person_id':
+                    query = {
+                        QUERY:
+                            DELETE_QUERY.render(project_id=self.project_id,
+                                                dataset_id=self.dataset_id,
+                                                table_name=table)
+                    }
 
-                invalid_foreign_key_query = {
-                    cdr_consts.QUERY:
-                        INVALID_FOREIGN_KEY_QUERY.render(
-                            cols=cols,
-                            table_name=table,
-                            dataset_id=self.dataset_id,
-                            project_id=self.project_id,
-                            join_expr=join_expression),
-                    cdr_consts.DESTINATION_TABLE:
-                        table,
-                    cdr_consts.DESTINATION_DATASET:
-                        self.dataset_id,
-                    cdr_consts.DISPOSITION:
-                        bq_consts.WRITE_TRUNCATE
-                }
+                else:
+                    query = {
+                        QUERY:
+                            UPDATE_QUERY.render(project_id=self.project_id,
+                                                dataset_id=self.dataset_id,
+                                                table_name=table,
+                                                key=key)
+                    }
+                queries.append(query)
 
-                queries_list.append(invalid_foreign_key_query)
-
-        return sandbox_queries_list + queries_list
+        return sandbox_queries + queries
 
     def setup_rule(self, client):
         """
