@@ -55,9 +55,9 @@ def _get_create_or_replace_table_ddl(project,
             upper_field_type)
         if not standard_sql_type_code:
             raise ValueError(f'{field_type} is not a valid field type')
-        standard_sql_type = bigquery.StandardSqlDataTypes(
+        standard_sql_type = bigquery.StandardSqlDataType(
             standard_sql_type_code)
-        return standard_sql_type.name
+        return standard_sql_type.type_kind.name
 
     def _to_sql_field(field):
         return bigquery.SchemaField(field.name,
