@@ -16,7 +16,7 @@
 #
 
 import pandas as pd
-from common import JINJA_ENV, FITBIT_TABLES, SITE_MASKING_TABLE_ID
+from common import JINJA_ENV, FITBIT_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
@@ -388,25 +388,56 @@ result
 
 # +
 src_id_check = JINJA_ENV.from_string("""
-SELECT
-    '{{table}}' as table,
-    ft.person_id,
-    COUNT(1) bad_rows
-FROM
-    `{{project}}.{{deid_cdr_fitbit}}.{{table}}` ft
+SELECT  
+distinct person_id,
+SUM(records) as bad_src_id_match,
+'{{table}}' as table,
+FROM (
+    SELECT 
+      distinct person_id,
+      src_id,
+      count(person_id) as records
+    FROM 
+      `{{project}}.{{non_deid_fitbit}}.{{table}}`  
+    group by 1,2
+   
+   union all
+   
+  SELECT 
+    distinct person_id, 
+    src_id 
+    , count(person_id) as records
+  FROM 
+    `{{project}}.{{deid_cdr_fitbit}}.{{table}}` 
+  group by 1,2
+) ft
+
 JOIN
-    `{{project}}.{{non_deid_fitbit}}.{{table}}` st
+
+(
+    SELECT 
+      distinct prm.research_id, 
+      src_id 
+    FROM
+      `{{project}}.{{non_deid_fitbit}}.{{table}}`   hrs
+    left join 
+      `{{project}}.{{pipeline_tables}}.primary_pid_rid_mapping` prm 
+    on 
+      prm.person_id = hrs.person_id 
+) st
 ON
-    ft.person_id = st.person_id
+    ft.person_id = st.research_id
 JOIN
-    `{{project}}.{{pipeline_tables}}.{{site_maskings}}` sm
+    `{{project}}.{{pipeline_tables}}.site_maskings` sm
 ON
     sm.hpo_id = st.src_id
 WHERE
-  ft.src_id != sm.src_id
+    ft.src_id != sm.src_id
 OR
-  ft.src_id is NULL
-GROUP BY 
+    NOT REGEXP_CONTAINS(ft.src_id, r'(?i)Participant Portal')  
+OR
+    ft.src_id is NULL
+group by 
     person_id
 """)
 
@@ -417,13 +448,12 @@ for table in FITBIT_TABLES:
                             deid_cdr_fitbit=deid_cdr_fitbit,
                             non_deid_fitbit=non_deid_fitbit,
                             table=table,
-                            pipeline_tables=pipeline,
-                            site_maskings=SITE_MASKING_TABLE_ID))
+                            pipeline_tables=pipeline))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 result = execute(client, union_all_query)
 
-if sum(result['bad_rows']) == 0:
+if sum(result['bad_src_id_match']) == 0:
     summary = summary.append(
         {
             'query': 'Query8 Check de-identification of src_ids.',
