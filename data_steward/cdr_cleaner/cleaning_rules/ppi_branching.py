@@ -53,13 +53,13 @@ The columns of the lookup table are described below.
  **TODO** Complete the Basics and Overall Health branching logic CSV files
  * Some rules indicate child questions to keep and others indicate child questions to remove
  **TODO** Standardize branching logic CSV files
- 
+
  DC-1055
   * Support cope survey branching logic errors.
   * Account for branching logic issues where child questions exist due to incorrect branching
     logic from one parent q/a and correct branching logic from a different parent q/a.
     In such cases, the child question is considered correct and must not be dropped.
-  * In certain cases, the `value_as_number` needs to be used for the parent answer instead of 
+  * In certain cases, the `value_as_number` needs to be used for the parent answer instead of
     `value_source_value`. Currently only supports `>` and this needs to be specified via the
     `keep_gt` rule type and `parent_value` must be a float.
 """
@@ -69,8 +69,8 @@ from pathlib import Path
 from typing import Union
 
 # Third Party imports
-import pandas
 from google.cloud import bigquery
+import pandas as pd
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -104,7 +104,7 @@ WHERE parent_value IS NOT NULL
 GROUP BY rule_type, child_question, parent_question),
 
 -- generate master list of parent child combinations --
-parent_child_combs AS 
+parent_child_combs AS
 (SELECT
 -- rule cols --
     r.rule_type,
@@ -166,7 +166,7 @@ FROM rule r
 
 -- rows to drop via 'drop' rule_type --
 drop_rule_obs AS
-(SELECT 
+(SELECT
   oc_observation_id
 FROM parent_child_combs
 WHERE
@@ -174,7 +174,7 @@ WHERE
 
 -- rows to keep via 'keep' rule_type --
 keep_rule_obs AS
-(SELECT 
+(SELECT
   oc_observation_id
 FROM parent_child_combs
 WHERE
@@ -182,21 +182,21 @@ WHERE
 
 -- rows to keep via 'keep_gt' rule_type --
 -- ONLY for rules using gte with one value --
-keep_gt_rule_obs AS 
-(SELECT 
+keep_gt_rule_obs AS
+(SELECT
   oc_observation_id
 FROM parent_child_combs
 WHERE
 (rule_type = 'keep_gt'
-    AND SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64) IS NOT NULL 
+    AND SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64) IS NOT NULL
     {{ '/* Every keep_gt rule row should be associated with one parent_value */' }}
     AND op_value_as_number > SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64))),
 
 -- rows to drop with values not in 'keep' rule_type values --
 -- note that this may include child rows which are resulting --
 -- from correct branching logic via a different parent q/a --
-not_keep_rule_obs AS 
-(SELECT 
+not_keep_rule_obs AS
+(SELECT
   oc_observation_id
 FROM parent_child_combs
 WHERE
@@ -206,46 +206,46 @@ WHERE
 -- note that this may include child rows which are resulting --
 -- from correct branching logic via a different parent q/a --
 -- ONLY for rules using gte with one value --
-not_keep_gt_rule_obs AS 
-(SELECT 
+not_keep_gt_rule_obs AS
+(SELECT
   oc_observation_id
 FROM parent_child_combs
 WHERE
-(rule_type = 'keep_gt' 
+(rule_type = 'keep_gt'
     AND SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64) IS NOT NULL
     AND (op_value_as_number <= SAFE_CAST(parent_values[OFFSET(0)] AS FLOAT64)
         OR op_value_as_number IS NULL)))
 
 -- final list of rows to drop --
-SELECT 
+SELECT
   o.*
 FROM
   `{{src_table.project}}.{{src_table.dataset_id}}.{{src_table.table_id}}` o
 WHERE observation_id IN
-(SELECT oc_observation_id 
+(SELECT oc_observation_id
     FROM drop_rule_obs
     UNION ALL
 SELECT oc_observation_id
     FROM not_keep_rule_obs
     UNION ALL
-SELECT oc_observation_id 
+SELECT oc_observation_id
     FROM not_keep_gt_rule_obs)
 AND observation_id NOT IN
 -- exclude 'keep' rows so that child rows resulting from correct --
 -- branching logic via a different parent q/a are not dropped, --
 -- even if they are marked for deletion via some parent q/a --
-(SELECT oc_observation_id 
+(SELECT oc_observation_id
     FROM keep_rule_obs
     UNION ALL
-SELECT oc_observation_id 
+SELECT oc_observation_id
     FROM keep_gt_rule_obs)
 """)
 
 CLEANED_ROWS_QUERY = JINJA_ENV.from_string("""
-SELECT {{ scope or 'src.*' }} 
+SELECT {{ scope or 'src.*' }}
 FROM `{{src.project}}.{{src.dataset_id}}.{{src.table_id}}` src
 WHERE NOT EXISTS
- (SELECT 1 
+ (SELECT 1
   FROM `{{backup.project}}.{{backup.dataset_id}}.{{backup.table_id}}` bak
   WHERE bak.observation_id = src.observation_id)
 """)
@@ -283,17 +283,23 @@ class PpiBranching(BaseCleaningRule):
                                                    OBSERVATION_STAGE_TABLE_ID)
         self.bq_client = BigQueryClient(project_id)
 
-    def create_rules_dataframe(self) -> pandas.DataFrame:
+    def create_rules_dataframe(self) -> pd.DataFrame:
         """
         Create dataframe which contains all the rules in the provided file paths
 
         :return: dataframe with all the rules
         """
-        all_rules_df = pandas.DataFrame()
+        all_rules_df = pd.DataFrame(columns=[
+            'rule_type', 'child_question', 'parent_question', 'parent_value',
+            'notes', 'rule_source'
+        ],
+                                    dtype='object')
         for rule_path in self.rule_paths:
-            rules_df = pandas.read_csv(rule_path, header=0)
+            rules_df = pd.read_csv(rule_path, header=0)
             rules_df['rule_source'] = Path(rule_path).name
-            all_rules_df = all_rules_df.append(rules_df)
+            all_rules_df = pd.concat([all_rules_df, rules_df],
+                                     ignore_index=True)
+
         return all_rules_df
 
     def load_rules_lookup(self,
