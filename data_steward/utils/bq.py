@@ -180,12 +180,8 @@ def _to_standard_sql_type(field_type: str) -> str:
     if not standard_sql_type_code:
         raise ValueError(f'{field_type} is not a valid field type')
 
-    #! locate !
     standard_sql_type = bigquery.StandardSqlDataType(standard_sql_type_code)
     return standard_sql_type.type_kind.name
-
-    # standard_sql_type = bigquery.StandardSqlDataTypes(standard_sql_type_code)
-    # return standard_sql_type.name
 
 
 @deprecated(
