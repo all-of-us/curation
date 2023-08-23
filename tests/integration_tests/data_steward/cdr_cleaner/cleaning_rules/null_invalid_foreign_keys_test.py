@@ -174,6 +174,8 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
             {
                 'fq_table_name':
                     '.'.join([self.fq_dataset_name, PROCEDURE_OCCURRENCE]),
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[1],
                 'fields': [
                     'procedure_occurrence_id', 'person_id',
                     'procedure_concept_id', 'procedure_date',
@@ -194,6 +196,8 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
             {
                 'fq_table_name':
                     '.'.join([self.fq_dataset_name, PERSON]),
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[2],
                 'fields': [
                     'person_id', 'gender_concept_id', 'year_of_birth',
                     'race_concept_id', 'ethnicity_concept_id', 'location_id',
@@ -212,6 +216,7 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
             },
             {
                 'fq_table_name': '.'.join([self.fq_dataset_name, AOU_DEATH]),
+                'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
                 'fields': ['aou_death_id', 'person_id'],
                 'loaded_ids': ['a1', 'a2', 'a3', 'a4'],
                 'sandboxed_ids': ['a3', 'a4'],
