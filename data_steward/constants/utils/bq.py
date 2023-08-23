@@ -40,7 +40,7 @@ CREATE_OR_REPLACE_TABLE_QUERY = """
 CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}` (
 {% for field in schema -%}
   {{ field.name }} {{ field.field_type }} {% if field.mode.lower() == 'required' -%} NOT NULL {%- endif %}
-  {% if field.description %} OPTIONS (description="{{ field.description }}") {%- endif %}
+  {% if field.default_value_expression %} OPTIONS (description="{{ field.default_value_expression }}") {%- endif %}
   {% if loop.nextitem %},{% endif -%}
 {%- endfor %} )
 {% if opts -%}
