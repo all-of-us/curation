@@ -17,7 +17,7 @@ import logging
 
 # Project Imports
 import resources
-from common import AOU_DEATH, JINJA_ENV, MAPPING_PREFIX
+from common import AOU_DEATH, JINJA_ENV
 from constants.cdr_cleaner.clean_cdr import COMBINED, QUERY
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
@@ -36,12 +36,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}
     WHERE {% for key in foreign_keys %}
         (
             {{key}} NOT IN (
-                SELECT {{key}} 
-                {% if key == 'person_id' %}
-                FROM `{{dataset_id}}.person`
-                {% else %}
-                FROM `{{dataset_id}}._mapping_{{key[:-3]}}`
-                {% endif %}
+                SELECT {{key}} FROM `{{dataset_id}}.{{key[:-3]}}`
             )
             AND {{key}} IS NOT NULL
         ){% if not loop.last -%} OR {% endif %}
@@ -58,7 +53,7 @@ UPDATE_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.{{table_name}}`
 SET {{key}} = NULL
 WHERE {{key}} NOT IN (
-    SELECT {{key}} FROM `{{dataset_id}}._mapping_{{key[:-3]}}`
+    SELECT {{key}} FROM `{{dataset_id}}.{{key[:-3]}}`
 ) AND {{key}} IS NOT NULL
 """)
 
@@ -102,16 +97,6 @@ class NullInvalidForeignKeys(BaseCleaningRule):
             table for table in resources.CDM_TABLES + [AOU_DEATH]
             if self.has_foreign_key(table)
         ]
-
-    def get_mapping_table(self, domain_table):
-        """
-        Get name of mapping table generated for a domain table
-
-        :param domain_table: one of the domain tables (e.g. 'visit_occurrence',
-            'condition_occurrence')
-        :return: mapping table name
-        """
-        return f'{MAPPING_PREFIX}{domain_table}'
 
     def get_field_names(self, table):
         """
