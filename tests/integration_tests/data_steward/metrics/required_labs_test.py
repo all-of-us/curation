@@ -172,9 +172,9 @@ class RequiredLabsTest(unittest.TestCase):
             .format(project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     table_id=MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE))
-        unique_ancestor_cocnept_response = bq_utils.query(
+        unique_ancestor_concept_response = bq_utils.query(
             unique_ancestor_concept_query)
-        expected_total_labs = unique_ancestor_cocnept_response['totalRows']
+        expected_total_labs = unique_ancestor_concept_response['totalRows']
 
         # Count the number of labs in the measurement table, this number should be equal to the number of labs
         # submitted by the fake site
