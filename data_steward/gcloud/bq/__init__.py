@@ -118,9 +118,14 @@ class BigQueryClient(Client):
             upper_field_type)
         if not standard_sql_type_code:
             raise ValueError(f'{field_type} is not a valid field type')
-        standard_sql_type = bigquery.StandardSqlDataTypes(
-            standard_sql_type_code)
-        return standard_sql_type.name
+
+        #! locate !
+        standard_sql_type = bigquery.StandardSqlDataType(standard_sql_type_code)
+        return standard_sql_type.type_kind.name
+
+        # standard_sql_type = bigquery.StandardSqlDataTypes(
+        #     standard_sql_type_code)
+        # return standard_sql_type.name
 
     def _to_sql_field(self,
                       field: bigquery.SchemaField) -> bigquery.SchemaField:
