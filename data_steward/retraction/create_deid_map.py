@@ -29,7 +29,7 @@ from constants.retraction import create_deid_map as consts
 
 def get_combined_datasets_for_deid_map(client):
     """
-    List all datasets in given BigQueryClient which contains the project id, filter out datasets that contain a deid dataset and collect 
+    List all datasets in given BigQueryClient which contains the project id, filter out datasets that contain a deid dataset and collect
     the corresponding combined dataset
     :param client: a BigQueryClient
     :return: list of combined_datasets that should contain a _deid_map table
@@ -76,8 +76,12 @@ def get_corresponding_combined_dataset(all_datasets, deid_datasets):
                 'deid_dataset': d,
                 'combined_dataset': combined
             })
-            deid_and_combined_datasets_df = deid_and_combined_datasets_df.append(
-                new_row, ignore_index=True)
+
+            deid_and_combined_datasets_df = pd.concat(
+                [deid_and_combined_datasets_df,
+                 pd.DataFrame([new_row])],
+                ignore_index=True)
+
         else:
             logging.info(f'combined dataset not found for {d}')
 
