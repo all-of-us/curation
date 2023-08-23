@@ -88,17 +88,17 @@ MAPPING_QUERY = JINJA_ENV.from_string("""
 SELECT DISTINCT
     '{{rdr_dataset_id}}' AS src_dataset_id,
     {{domain_table}}_id AS src_{{domain_table}}_id,
-    'rdr' as src_hpo_id,
-    {% if domain_table == 'survey_conduct' %}
+    v.src_id as src_hpo_id,
+    {% if domain_table in ['survey_conduct', 'person'] %}
     {{domain_table}}_id AS {{domain_table}}_id,
     {% else %}
     {{domain_table}}_id + {{mapping_constant}} AS {{domain_table}}_id,
     {% endif %}
     '{{domain_table}}' as src_table_id
-{% if domain_table == 'survey_conduct' %}
 FROM `{{rdr_dataset_id}}.{{domain_table}}` AS t
-{% else %}
-FROM `{{rdr_dataset_id}}.{{domain_table}}`
+JOIN `{{rdr_dataset_id}}._mapping_{{domain_table}}` AS v
+ON t.{{domain_table}}_id = v.{{domain_table}}_id
+{% if domain_table not in ['survey_conduct', 'person'] %}
 UNION ALL
 SELECT DISTINCT
     '{{ehr_dataset_id}}' AS src_dataset_id,
