@@ -22,7 +22,7 @@ from validation.main import run_export as _run_export
 def main(args):
     dataset_id = BIGQUERY_DATASET_ID
     target_bucket = args.bucket
-    folder_prefix = args.folder + '/'
+    folder_prefix = f'{args.folder}/'
     project = app_identity.get_application_id()
     bq_client = BigQueryClient(project)
     _run_achilles(client=bq_client)
