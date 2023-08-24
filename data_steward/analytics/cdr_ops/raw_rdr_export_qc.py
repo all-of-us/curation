@@ -160,20 +160,24 @@ WHERE prev_code.value IS NULL OR curr_code.value IS NULL
 query = tpl.render(new_rdr=new_rdr, old_rdr=old_rdr, project_id=project_id)
 execute(client, query)
 
-# # Question codes should have mapped `concept_id`s
+# # Questions lacking concept_ids to be dropped
 # Question codes in `observation_source_value` should be associated with the concept identified by
 # `observation_source_concept_id` and mapped to a standard concept identified by `observation_concept_id`.
-# The table below lists codes having rows where either field is null or zero and the number of rows where this occurs.
+# The table below lists codes having rows where both fields are null or zero and the number of rows where this occurs.
 # This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 #
-# Snap codes are not modeled in the vocabulary but may be used in the RDR export.
+# **If the check is failing.** The concepts in the results dataframe will need to be reviewed manually. These concepts will have thier rows deleted in the rdr cleaning stage. Confirm the expectation for these concepts. The results of this check should not be refered to the rdr team.
+#
+# More information on the codes that are expected not to map:
+# * Snap codes are not modeled in the vocabulary but may be used in the RDR export.
 # They are excluded here by filtering out snap codes in the Public PPI Codebook
 # which were loaded into `curation_sandbox.snap_codes`.
 #
-# Long codes are not OMOP concepts and are not expected to have concept_ids. This issue is accounted for in the RDR cleaning class `SetConceptIdsForSurveyQuestionsAnswers`.
+# * Long codes are not OMOP concepts and are not expected to have concept_ids. This issue is accounted for in the RDR cleaning class `SetConceptIdsForSurveyQuestionsAnswers`.
 #
-# Wear codes. Most concept codes in the wear survey modules do not have an OMOP concept_id. This is expected as these records will not be included in the CDR.
+# * Wear codes. Most concept codes in the wear survey modules do not have an OMOP concept_id. This is expected as these records will not be included in the CDR.
 
+# +
 tpl = JINJA_ENV.from_string("""
 SELECT
   observation_source_value
@@ -183,48 +187,141 @@ SELECT
  ,COUNTIF(observation_concept_id=0)              AS concept_id_zero
 FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_source_value IS NOT NULL
-AND observation_source_value != ''
-AND observation_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
-AND LOWER(observation_source_value) NOT IN UNNEST ({{wear_codes}})
-AND LOWER(observation_source_value) NOT IN UNNEST ({{long_codes}})
+  AND observation_source_value != ''
+  AND observation_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
+  AND LOWER(observation_source_value) NOT IN UNNEST ({{wear_codes}})
+  AND LOWER(observation_source_value) NOT IN UNNEST ({{long_codes}})
+  AND NOT REGEXP_CONTAINS(observation_source_value,'(?i)consent|sitepairing|pii|michigan|feedback|nonotsure|schedul|address|screen2|get_help|stopoptions|sensitivetype2|withdrawal|etm|other_|stateofcare|organization|reviewagain|results_decision|saliva_whole_blood_transfusion')
 GROUP BY 1
-HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
+HAVING source_concept_id_null + source_concept_id_zero  > 0
+  AND  concept_id_null + concept_id_zero > 0
+  AND MAX(observation_date) > '2019-01-01'
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """)
-query = tpl.render(new_rdr=new_rdr,
-                   project_id=project_id,
-                   long_codes=LONG_CODES,
-                   wear_codes=WEAR_SURVEY_CODES)
-execute(client, query)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id,long_codes=LONG_CODES, wear_codes=WEAR_SURVEY_CODES)
+df = execute(client, query)
 
-# # Answer codes should have mapped `concept_id`s
-# Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id
-# and mapped to a standard concept identified by value_as_concept_id. The table below lists codes having rows
-# where either field is null or zero and the number of rows where this occurs.
-# This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
+success_msg = 'Questions expected to have concept_ids have concept_ids'
+failure_msg = 'These question codes did not map to concept_ids. See description.'
+
+render_message(df,
+               success_msg,
+               failure_msg)
+# -
+
+# # Check the ETL mapped `concept_id`s to question codes
+# If most concepts are mapped, this check passes. If only some concepts are not mapping properly these are most likely known vocabulary issues.
 #
-# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export.
-# They are excluded here by filtering out snap codes in the Public PPI Codebook
-# which were loaded into `curation_sandbox.snap_codes`.
+# **If the check fails.** Investigate. If none, or only a few, of the codes are being mapped notify rdr.
 #
 
+# +
 tpl = JINJA_ENV.from_string("""
+WITH cte AS (
 SELECT
-  value_source_value
- ,COUNTIF(value_source_concept_id IS NULL) AS source_concept_id_null
- ,COUNTIF(value_source_concept_id=0)       AS source_concept_id_zero
- ,COUNTIF(value_as_concept_id IS NULL)     AS concept_id_null
- ,COUNTIF(value_as_concept_id=0)           AS concept_id_zero
-FROM `{{project_id}}.{{new_rdr}}.observation`
-WHERE value_source_value IS NOT NULL
-AND value_source_value != ''
-AND value_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
+  'questions' as field
+  ,observation_source_value as code
+  ,COUNTIF(observation_source_concept_id IS NULL OR observation_source_concept_id=0 OR observation_concept_id IS NULL OR observation_concept_id=0) AS n_not_mapped_by_etl 
+  ,COUNTIF(observation_source_concept_id IS NOT NULL AND observation_source_concept_id != 0 AND observation_concept_id IS NOT NULL AND observation_concept_id != 0) AS n_mapped_by_etl 
+  FROM `{{project_id}}.{{new_rdr}}.observation`
+LEFT JOIN (SELECT concept_id_1 FROM `{{project_id}}.{{new_rdr}}.concept_relationship` WHERE relationship_id = 'Maps to') cr1
+ON observation_source_concept_id = cr1.concept_id_1
+WHERE cr1.concept_id_1 IS NOT NULL 
+GROUP BY 2
+
+)
+SELECT 
+  field,
+  COUNTIF(n_not_mapped_by_etl != 0) AS count_not_mapped,
+  COUNTIF(n_mapped_by_etl != 0) AS count_mapped
+FROM cte
 GROUP BY 1
-HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
-ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
+
+
 """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id, long_codes=LONG_CODES)
+df = execute(client, query)
+
+if sum(df['count_not_mapped']) > .33 * sum(df['count_mapped']):
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:red">FAILURE</span>
+                </h3>
+                <p>
+                    Concept_ids are not being mapped. See description.
+                </p>
+            '''))
+else:
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:green">PASS</span>
+                </h3>
+                <p>
+                    Concept_ids have been mapped.
+                </p>
+                
+            '''))
+# -
+
+# # Check the ETL mapped `concept_id`s to answer codes
+# If most concepts are mapped, this check passes. If only some concepts are not mapping properly these are most likely known vocabulary issues.
+#
+# **If the check fails.** Investigate. If none, or only a few, of the codes are being mapped notify rdr.
+
+# +
+tpl = JINJA_ENV.from_string("""
+WITH cte AS (
+SELECT
+  'answers' as field
+  ,value_source_value as code
+  ,COUNTIF(value_source_value IS NOT NULL AND value_source_value != '' AND value_source_concept_id IS NULL OR value_source_concept_id=0 OR value_as_concept_id IS NULL OR value_as_concept_id=0) AS n_not_mapped_by_etl 
+  ,COUNTIF(value_source_value IS NOT NULL AND value_source_value != '' AND value_source_concept_id IS NOT NULL AND value_source_concept_id != 0 AND value_as_concept_id IS NOT NULL AND value_as_concept_id != 0) AS n_mapped_by_etl 
+FROM `{{project_id}}.{{new_rdr}}.observation`
+LEFT JOIN (SELECT distinct concept_id_1 FROM `{{project_id}}.{{new_rdr}}.concept_relationship` WHERE relationship_id IN ('Maps to','Mapped from','Maps to value')) cr2
+ON value_source_concept_id = cr2.concept_id_1
+WHERE cr2.concept_id_1 IS NOT NULL 
+GROUP BY 2
+)
+SELECT distinct field,
+countif(n_not_mapped_by_etl != 0) as count_not_mapped,
+countif(n_mapped_by_etl != 0) as count_mapped
+FROM cte
+GROUP BY 1
+
+
+""")
+query = tpl.render(new_rdr=new_rdr, project_id=project_id, long_codes=LONG_CODES)
+df = execute(client, query)
+
+if sum(df['count_not_mapped']) > .33 * sum(df['count_mapped']):
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:red">FAILURE</span>
+                </h3>
+                <p>
+                    Concept_ids are not being mapped. See description.
+                </p>
+            '''))
+else:
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:green">PASS</span>
+                </h3>
+                <p>
+                    Concept_ids have been mapped.
+                </p>
+                
+            '''))
+
+
+# -
+
+h = (.1 * sum(df['count_mapped']))
+h
 
 # # Dates are equal in observation_date and observation_datetime
 # Any mismatches are listed below.
@@ -824,8 +921,7 @@ execute(client, query)
 
 # From CDR V8, Curation receives HealthPro deceased records from RDR. We must ensure the incoming records follow the requirement.
 # Here is the highlight of the technical requirement of the incoming `death` records from RDR.
-# - Person_id and death_type_concept_id are populated
-# - Death_date and death_datetime are populated but can be NULL
+# - Person_id, death_date, death_datetime, death_type_concept_id populated
 # - Map all deceased records from HealthPro as “Case Report Form” (concept ID: 32809)
 # - Cause_concept_id, cause_source_value, and cause_source_concept_id columns, set value to NULL
 # - Src_id filled in with “healthpro”
@@ -833,14 +929,14 @@ execute(client, query)
 # +
 query_if_empty = JINJA_ENV.from_string("""
 SELECT COUNT(*)
-FROM `{{project_id}}.{{dataset}}.aou_death`
+FROM `{{project_id}}.{{dataset}}.death`
 HAVING COUNT(*) = 0
 """).render(project_id=project_id, dataset=new_rdr)
 df_if_empty = execute(client, query_if_empty)
 
 query_if_duplicate = JINJA_ENV.from_string("""
 SELECT person_id, COUNT(*) 
-FROM `{{project_id}}.{{dataset}}.aou_death`
+FROM `{{project_id}}.{{dataset}}.death`
 GROUP BY person_id
 HAVING COUNT(*) > 1
 """).render(project_id=project_id, dataset=new_rdr)
@@ -849,7 +945,7 @@ df_if_duplicate = execute(client, query_if_duplicate)
 query = JINJA_ENV.from_string("""
 SELECT
     person_id
-FROM `{{project_id}}.{{dataset}}.aou_death`
+FROM `{{project_id}}.{{dataset}}.death`
 WHERE death_type_concept_id != 32809
 OR cause_concept_id IS NOT NULL
 OR cause_source_value IS NOT NULL
@@ -858,10 +954,9 @@ OR src_id != 'healthpro'
 """).render(project_id=project_id, dataset=new_rdr)
 df = execute(client, query)
 
-success_msg_if_empty = 'AOU_DEATH table has some records.'
-failure_msg_if_empty = '''AOU_DEATH table is empty. Investigate if the data is empty from the beginning or our import is not working.
-If it's empty from the beginning, contact RDR and have them send HealthPro deceased records. 
-If it's import issue, investigate what's causing the issue and solve the issue ASAP.
+success_msg_if_empty = 'Death table has some records.'
+failure_msg_if_empty = '''
+    Death table is empty. We expect HealthPro deceased records. Contact RDR and have them send HealthPro deceased records.
 '''
 success_msg_if_duplicate = 'Death records are up to one record per person_id.'
 failure_msg_if_duplicate = '''
@@ -876,14 +971,14 @@ failure_msg = '''
 render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 
 render_message(df_if_duplicate,
-               success_msg_if_duplicate,
-               failure_msg_if_duplicate,
-               failure_msg_args={'code_count': len(df_if_duplicate)})
+                success_msg_if_duplicate,
+                failure_msg_if_duplicate,
+                failure_msg_args={'code_count': len(df_if_duplicate)})
 
 render_message(df,
-               success_msg,
-               failure_msg,
-               failure_msg_args={'code_count': len(df)})
+                success_msg,
+                failure_msg,
+                failure_msg_args={'code_count': len(df)})
 # -
 # # Check src_ids
 # Check that every record contains a valid src_id. The check passes if no records are returned.
@@ -922,6 +1017,7 @@ for table in SRC_ID_TABLES:
 all_queries = '\nUNION ALL\n'.join(queries)
 execute(client, f'{src_ids_table}\n{all_queries}')
 
+
 # # Check Wear Consent Counts
 #
 # `Wear_consent` and `wear_consent_ptsc` records should be seen in the export.
@@ -949,3 +1045,6 @@ GROUP BY 1
             new_rdr=new_rdr,
             wear_codes=WEAR_SURVEY_CODES)
 execute(client, query)
+
+
+
