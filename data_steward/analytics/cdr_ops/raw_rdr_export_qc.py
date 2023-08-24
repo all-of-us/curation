@@ -1313,23 +1313,24 @@ query = JINJA_ENV.from_string("""
 
 WITH cte AS (
 SELECT 
-"Have multiple status. These are not duplicates" as issue,
+"Have multiple status. These are not duplicates" AS issue,
 COUNT(*) AS n
-FROM (SELECT DISTINCT * FROM `{{project_id}}.{{new_rdr}}.consent` )
+FROM (SELECT DISTINCT * EXCEPT (consent_for_electronic_health_records_authored) FROM `{{project_id}}.{{new_rdr}}.consent_validation` )
 GROUP BY person_id
-HAVING COUNT(*)>1
+HAVING n>1
 
 UNION ALL 
 
 SELECT 
-"Have multiple status. These are duplicates" as issue,
+"Have multiple status. These are duplicates" AS issue,
 COUNT(*) AS n
-FROM `{{project_id}}.{{new_rdr}}.consent`
+FROM `{{project_id}}.{{new_rdr}}.consent_validation`
 GROUP BY person_id
-HAVING COUNT(*)>1
+HAVING n>1
+
 )
-SELECT distinct issue,
-COUNT(*) as n_person_ids
+SELECT DISTINCT issue,
+COUNT(*) AS n_person_ids
 FROM cte
 GROUP BY issue
 
