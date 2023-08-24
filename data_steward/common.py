@@ -310,4 +310,5 @@ CDR_SCOPES = [
 # Default Concept valid_start_date
 DEFAULT_CONCEPT_VALID_START_DATE = '1970-01-01'
 
+# OS imports
 BIGQUERY_DATASET_ID = os.environ.get('BIGQUERY_DATASET_ID')
