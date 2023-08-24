@@ -97,7 +97,7 @@ insert into `{{project_id}}.{{dataset_id}}.consent_validation`
 VALUES 
      -- validated consent with varying casing, not cleaned --
        (1, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
-     -- validated consent for person_id=2 tests --
+     -- validated consent but no consent record in observation, cleaned --
        (2, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
      -- multiple validation records with one valid('submitted'). invalid consent, cleaned --
        (3, 0, 'Submitted_No', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
