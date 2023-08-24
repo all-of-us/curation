@@ -419,11 +419,11 @@ JOIN
       distinct prm.research_id, 
       src_id 
     FROM
-      `{{project}}.{{non_deid_fitbit}}.{{table}}`   hrs
+      `{{project}}.{{non_deid_fitbit}}.{{table}}` ft
     left join 
       `{{project}}.{{pipeline_tables}}.primary_pid_rid_mapping` prm 
     on 
-      prm.person_id = hrs.person_id 
+      prm.person_id = ft.person_id 
 ) st
 ON
     ft.person_id = st.research_id
