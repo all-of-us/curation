@@ -18,7 +18,7 @@ from validation import export, main
 
 class ExportTest(unittest.TestCase):
 
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = common.BIGQUERY_DATASET_ID
     project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
 
