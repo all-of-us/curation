@@ -166,7 +166,7 @@ execute(client, query)
 # The table below lists codes having rows where both fields are null or zero and the number of rows where this occurs.
 # This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 #
-# **If the check is failing.** The concepts in the results dataframe will need to be reviewed manually. These concepts will have thier rows deleted in the rdr cleaning stage. Confirm the expectation for these concepts. The results of this check should not be refered to the rdr team.
+# **If the check is failing.** The concepts in the results dataframe will need to be reviewed manually. These concepts will have thier rows deleted in later pipeline stages. Confirm the expectation for these concepts. The results of this check should not be refered to the rdr team.
 #
 # More information on the codes that are expected not to map:
 # * Snap codes are not modeled in the vocabulary but may be used in the RDR export.
