@@ -6,6 +6,7 @@ from io import open
 # Project imports
 import bq_utils
 import resources
+from common import BIGQUERY_DATASET_ID
 from constants.validation.metrics import completeness as consts
 
 
@@ -128,7 +129,7 @@ def get_hpo_completeness_query(hpo_id, dataset_id=None):
     :return:
     """
     if dataset_id is None:
-        dataset_id = bq_utils.get_dataset_id()
+        dataset_id = BIGQUERY_DATASET_ID
     cols = get_cols(dataset_id)
     hpo_cols = [col for col in cols if is_hpo_col(hpo_id, col)]
     query = create_completeness_query(dataset_id, hpo_cols)
