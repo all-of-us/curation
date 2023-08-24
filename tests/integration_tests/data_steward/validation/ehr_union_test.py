@@ -13,7 +13,8 @@ import bq_utils
 import cdm
 from app_identity import get_application_id, PROJECT_ID
 from common import (AOU_DEATH, CARE_SITE, DEATH, LOCATION, OBSERVATION, PERSON,
-                    SURVEY_CONDUCT, UNIONED_EHR, VISIT_DETAIL, VISIT_OCCURRENCE)
+                    SURVEY_CONDUCT, UNIONED_EHR, VISIT_DETAIL, VISIT_OCCURRENCE,
+                    BIGQUERY_DATASET_ID)
 from constants.validation import ehr_union as eu_constants
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
@@ -40,7 +41,7 @@ def first_or_none(l):
 
 
 class EhrUnionTest(unittest.TestCase):
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = BIGQUERY_DATASET_ID
     project_id = get_application_id()
     bq_client = BigQueryClient(project_id)
 
@@ -53,7 +54,6 @@ class EhrUnionTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
-        self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         self.storage_client = StorageClient(self.project_id)
         self.tearDown()
@@ -221,7 +221,7 @@ class EhrUnionTest(unittest.TestCase):
     @mock.patch('bq_utils.get_hpo_info')
     def test_union_ehr(self, mock_hpo_info, mock_aou_death):
         self._load_datasets()
-        input_tables_before = set(self._dataset_tables(self.input_dataset_id))
+        input_tables_before = set(self._dataset_tables(self.dataset_id))
 
         # output should be mapping tables and cdm tables
         output_tables_before = self._dataset_tables(self.output_dataset_id)
@@ -246,11 +246,11 @@ class EhrUnionTest(unittest.TestCase):
         } for hpo_id in self.hpo_ids]
 
         # perform ehr union
-        ehr_union.main(self.input_dataset_id, self.output_dataset_id,
-                       self.project_id, [EXCLUDED_HPO_ID])
+        ehr_union.main(self.dataset_id, self.output_dataset_id, self.project_id,
+                       [EXCLUDED_HPO_ID])
 
         # input dataset should be unchanged
-        input_tables_after = set(self._dataset_tables(self.input_dataset_id))
+        input_tables_after = set(self._dataset_tables(self.dataset_id))
         self.assertSetEqual(input_tables_before, input_tables_after)
 
         # fact_relationship from pitt
@@ -259,7 +259,7 @@ class EhrUnionTest(unittest.TestCase):
         q = '''SELECT fact_id_1, fact_id_2
                FROM `{input_dataset}.{hpo_id}_fact_relationship`
                where domain_concept_id_1 = 21 and domain_concept_id_2 = 21'''.format(
-            input_dataset=self.input_dataset_id, hpo_id=PITT_HPO_ID)
+            input_dataset=self.dataset_id, hpo_id=PITT_HPO_ID)
         response = bq_utils.query(q)
         result = bq_utils.response2rows(response)
 
@@ -343,7 +343,7 @@ class EhrUnionTest(unittest.TestCase):
            UNION ALL
            SELECT person_id FROM {dataset_id}.{pitt_person_table_id}
         ) ORDER BY person_id ASC'''.format(
-            dataset_id=self.input_dataset_id,
+            dataset_id=self.dataset_id,
             nyc_person_table_id=nyc_person_table_id,
             pitt_person_table_id=pitt_person_table_id)
         response = bq_utils.query(q)
@@ -418,7 +418,7 @@ class EhrUnionTest(unittest.TestCase):
         } for hpo_id in self.hpo_ids]
 
         # perform ehr union
-        ehr_union.main(self.input_dataset_id,
+        ehr_union.main(self.dataset_id,
                        self.output_dataset_id,
                        self.project_id,
                        ehr_cutoff_date=self.ehr_cutoff_date)
@@ -489,8 +489,7 @@ class EhrUnionTest(unittest.TestCase):
         } for hpo_id in self.hpo_ids]
 
         # perform ehr union
-        ehr_union.main(self.input_dataset_id, self.output_dataset_id,
-                       self.project_id)
+        ehr_union.main(self.dataset_id, self.output_dataset_id, self.project_id)
 
         q_person = '''
                     SELECT p.*
@@ -642,7 +641,7 @@ class EhrUnionTest(unittest.TestCase):
 
     def tearDown(self):
         self._empty_hpo_buckets()
-        delete_all_tables(self.bq_client, self.input_dataset_id)
+        delete_all_tables(self.bq_client, self.dataset_id)
         delete_all_tables(self.bq_client, self.output_dataset_id)
 
     @classmethod
