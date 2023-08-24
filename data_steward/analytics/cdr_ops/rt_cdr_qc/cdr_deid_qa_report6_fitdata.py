@@ -390,19 +390,9 @@ result
 src_id_check = JINJA_ENV.from_string("""
 SELECT  
 distinct person_id,
-SUM(records) as bad_src_id_match,
+records as bad_src_id_match,
 '{{table}}' as table,
 FROM (
-    SELECT 
-      distinct person_id,
-      src_id,
-      count(person_id) as records
-    FROM 
-      `{{project}}.{{non_deid_fitbit}}.{{table}}`  
-    group by 1,2
-   
-   union all
-   
   SELECT 
     distinct person_id, 
     src_id 
