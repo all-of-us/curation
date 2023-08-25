@@ -38,29 +38,20 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 # +
 # Get the current old_map_short_codes
-old_map_csv=pd.read_csv(old_map_short_codes_path)
+old_map_csv = pd.read_csv(old_map_short_codes_path)
 
 # These are the long codes expected in the rdr export.
 LONG_CODES = old_map_csv.iloc[:, 1].str.lower().tolist()
 # -
 
 # wear_consent and wear_consent_ptsc concepts that are not associated with an OMOP concept_id.
-WEAR_SURVEY_CODES = ['havesmartphone',
-                      'wearwatch',
-                      'usetracker',
-                      'wear12months',
-                      'receivesms',
-                      'frequency',
-                      'agreetoshare',
-                      'onlyparticipantinhousehold',
-                      'haveaddress',
-                      'resultsconsent_wear',
-                      'email_help_consent',
-                      'timeofday',
-                      'wearconsent_signature',
-                      'wearconsent_todaysdate',
-                      'wear_consent',
-                      'wear_consent_ptsc']
+WEAR_SURVEY_CODES = [
+    'havesmartphone', 'wearwatch', 'usetracker', 'wear12months', 'receivesms',
+    'frequency', 'agreetoshare', 'onlyparticipantinhousehold', 'haveaddress',
+    'resultsconsent_wear', 'email_help_consent', 'timeofday',
+    'wearconsent_signature', 'wearconsent_todaysdate', 'wear_consent',
+    'wear_consent_ptsc'
+]
 
 # # Table comparison
 # The export should generally contain the same tables from month to month.
@@ -200,7 +191,10 @@ GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id,long_codes=LONG_CODES, wear_codes=WEAR_SURVEY_CODES)
+query = tpl.render(new_rdr=new_rdr,
+                   project_id=project_id,
+                   long_codes=LONG_CODES,
+                   wear_codes=WEAR_SURVEY_CODES)
 execute(client, query)
 
 # # Answer codes should have mapped `concept_id`s
@@ -830,7 +824,8 @@ execute(client, query)
 
 # From CDR V8, Curation receives HealthPro deceased records from RDR. We must ensure the incoming records follow the requirement.
 # Here is the highlight of the technical requirement of the incoming `death` records from RDR.
-# - Person_id, death_date, death_datetime, death_type_concept_id populated
+# - Person_id and death_type_concept_id are populated
+# - Death_date and death_datetime are populated but can be NULL
 # - Map all deceased records from HealthPro as “Case Report Form” (concept ID: 32809)
 # - Cause_concept_id, cause_source_value, and cause_source_concept_id columns, set value to NULL
 # - Src_id filled in with “healthpro”
@@ -838,14 +833,14 @@ execute(client, query)
 # +
 query_if_empty = JINJA_ENV.from_string("""
 SELECT COUNT(*)
-FROM `{{project_id}}.{{dataset}}.death`
+FROM `{{project_id}}.{{dataset}}.aou_death`
 HAVING COUNT(*) = 0
 """).render(project_id=project_id, dataset=new_rdr)
 df_if_empty = execute(client, query_if_empty)
 
 query_if_duplicate = JINJA_ENV.from_string("""
 SELECT person_id, COUNT(*) 
-FROM `{{project_id}}.{{dataset}}.death`
+FROM `{{project_id}}.{{dataset}}.aou_death`
 GROUP BY person_id
 HAVING COUNT(*) > 1
 """).render(project_id=project_id, dataset=new_rdr)
@@ -854,7 +849,7 @@ df_if_duplicate = execute(client, query_if_duplicate)
 query = JINJA_ENV.from_string("""
 SELECT
     person_id
-FROM `{{project_id}}.{{dataset}}.death`
+FROM `{{project_id}}.{{dataset}}.aou_death`
 WHERE death_type_concept_id != 32809
 OR cause_concept_id IS NOT NULL
 OR cause_source_value IS NOT NULL
@@ -863,9 +858,10 @@ OR src_id != 'healthpro'
 """).render(project_id=project_id, dataset=new_rdr)
 df = execute(client, query)
 
-success_msg_if_empty = 'Death table has some records.'
-failure_msg_if_empty = '''
-    Death table is empty. We expect HealthPro deceased records. Contact RDR and have them send HealthPro deceased records.
+success_msg_if_empty = 'AOU_DEATH table has some records.'
+failure_msg_if_empty = '''AOU_DEATH table is empty. Investigate if the data is empty from the beginning or our import is not working.
+If it's empty from the beginning, contact RDR and have them send HealthPro deceased records. 
+If it's import issue, investigate what's causing the issue and solve the issue ASAP.
 '''
 success_msg_if_duplicate = 'Death records are up to one record per person_id.'
 failure_msg_if_duplicate = '''
@@ -880,14 +876,14 @@ failure_msg = '''
 render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 
 render_message(df_if_duplicate,
-                success_msg_if_duplicate,
-                failure_msg_if_duplicate,
-                failure_msg_args={'code_count': len(df_if_duplicate)})
+               success_msg_if_duplicate,
+               failure_msg_if_duplicate,
+               failure_msg_args={'code_count': len(df_if_duplicate)})
 
 render_message(df,
-                success_msg,
-                failure_msg,
-                failure_msg_args={'code_count': len(df)})
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
 # -
 # # Check src_ids
 # Check that every record contains a valid src_id. The check passes if no records are returned.
@@ -926,7 +922,6 @@ for table in SRC_ID_TABLES:
 all_queries = '\nUNION ALL\n'.join(queries)
 execute(client, f'{src_ids_table}\n{all_queries}')
 
-
 # # Check Wear Consent Counts
 #
 # `Wear_consent` and `wear_consent_ptsc` records should be seen in the export.
@@ -954,6 +949,3 @@ GROUP BY 1
             new_rdr=new_rdr,
             wear_codes=WEAR_SURVEY_CODES)
 execute(client, query)
-
-
-

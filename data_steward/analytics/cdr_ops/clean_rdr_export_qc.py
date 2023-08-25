@@ -1006,21 +1006,22 @@ execute(client, query)
 
 # From CDR V8, Curation receives HealthPro deceased records from RDR. We must ensure the records still follow the requirement after the clean RDR process.
 # Here is the highlight of the technical requirement of the `death` records in RDR data stage.
-# - Person_id, death_date, death_datetime, death_type_concept_id populated
+# - Person_id and death_type_concept_id are populated
+# - Death_date and death_datetime are populated but can be NULL
 # - Map all deceased records from HealthPro as “Case Report Form” (concept ID: 32809)
 # - Cause_concept_id, cause_source_value, and cause_source_concept_id columns, set value to NULL
 
 # +
 query_if_empty = JINJA_ENV.from_string("""
 SELECT COUNT(*)
-FROM `{{project_id}}.{{dataset}}.death`
+FROM `{{project_id}}.{{dataset}}.aou_death`
 HAVING COUNT(*) = 0
 """).render(project_id=project_id, dataset=new_rdr)
 df_if_empty = execute(client, query_if_empty)
 
 query_if_duplicate = JINJA_ENV.from_string("""
 SELECT person_id, COUNT(*) 
-FROM `{{project_id}}.{{dataset}}.death`
+FROM `{{project_id}}.{{dataset}}.aou_death`
 GROUP BY person_id
 HAVING COUNT(*) > 1
 """).render(project_id=project_id, dataset=new_rdr)
@@ -1029,7 +1030,7 @@ df_if_duplicate = execute(client, query_if_duplicate)
 query = JINJA_ENV.from_string("""
 SELECT
     person_id
-FROM `{{project_id}}.{{dataset}}.death`
+FROM `{{project_id}}.{{dataset}}.aou_death`
 WHERE death_type_concept_id != 32809
 OR cause_concept_id IS NOT NULL
 OR cause_source_value IS NOT NULL
@@ -1037,10 +1038,10 @@ OR cause_source_concept_id IS NOT NULL
 """).render(project_id=project_id, dataset=new_rdr)
 df = execute(client, query)
 
-success_msg_if_empty = 'Death table has some records.'
-failure_msg_if_empty = '''
-    Death table is empty. We expect HealthPro deceased records. Investigate if it is our cleaning process issue or if the source data is empty. 
-    If it is our cleaning rule process issue, fix it. If the source data is empty, contact RDR and have them send HealthPro deceased records.
+success_msg_if_empty = 'AOU_DEATH table has some records.'
+failure_msg_if_empty = '''AOU_DEATH table is empty. Investigate if the data is empty from the beginning or our import is not working.
+If it's empty from the beginning, contact RDR and have them send HealthPro deceased records. 
+If it's import issue, investigate what's causing the issue and solve the issue ASAP.
 '''
 success_msg_if_duplicate = 'Death records are up to one record per person_id.'
 failure_msg_if_duplicate = '''
