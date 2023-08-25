@@ -341,6 +341,7 @@ def is_id_match(table_id):
 def cdm_schemas(include_achilles=False, include_vocabulary=False):
     """
     Get a dictionary mapping table_name -> schema
+    NOTE: It does not include AOU_DEATH since it is not a CDM schema.
 
     :param include_achilles:
     :param include_vocabulary:
@@ -800,10 +801,12 @@ def get_bq_fields_sql(fields):
 
 def replace_special_characters_for_labels(label_name: str):
     """
-    Replace all .'s ,'s and spaces with _ in a string
+    Replace all .'s ,'s and spaces with _ in a string and
+    cut it to 63 characters (63 = BigQuery labels max length).
 
     :param label_name: string to be replaced
     :return: string with replaced characters
     """
     return label_name.lower().replace('.', '_').replace(',',
-                                                        '_').replace(' ', '_')
+                                                        '_').replace(' ',
+                                                                     '_')[:63]
