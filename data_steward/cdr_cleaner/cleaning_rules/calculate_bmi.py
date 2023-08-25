@@ -164,7 +164,7 @@ class CalculateBmi(BaseCleaningRule):
                  table_namer=None):
         desc = ("Calculate BMI for self-reported height and weight.")
 
-        super().__init__(issue_numbers=['dc3239', 'dc3385'],
+        super().__init__(issue_numbers=['dc3239', 'dc3385', 'dc3408'],
                          description=desc,
                          affected_datasets=[RDR],
                          project_id=project_id,
