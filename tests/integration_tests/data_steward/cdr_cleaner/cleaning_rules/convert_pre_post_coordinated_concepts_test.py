@@ -28,7 +28,8 @@ LOAD_QUERY = JINJA_ENV.from_string("""
         (3, 11, 43530574, 43528514, 4180793, date('2000-01-01'), 0, 'SonCancerCondition_PancreaticCancer'),
         (4, 14, 43529989, 43530381, 141095, date('2000-01-01'), 0, 'AcneCurrently_Yes'),
         (5, 14, 43529625, 43528515, 443392, date('2000-01-01'), 0, 'CancerCondition_OtherCancer'),
-        (6, 16, 43528574, 43528630, 45883358, date('2000-01-01'), 0, 'GrandparentDigestiveCondition_ColonPolyps')
+        (6, 16, 43528574, 43528630, 45883358, date('2000-01-01'), 0, 'GrandparentDigestiveCondition_ColonPolyps'),
+        (7, 17, 43528355, 1740608, 141095, date('2000-01-01'), 0, 'OtherConditions_Acne')
 """)
 
 
@@ -85,6 +86,7 @@ class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
                        This CR removes the record and create 2 new records with new observation_ids.
         6: 43528574... Non-standard concept, and it has 2 "Maps to" and 2 "Maps to value" relationships.
                        This CR removes the record and create 4 new records with new observation_ids.
+        7:  43528355... Non-standard concept, Only "Maps to value" relationship. This CR does not affect it.
         """
 
         tables_and_counts = [{
@@ -92,7 +94,7 @@ class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.dataset_id}.observation',
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [1, 2, 3, 4, 5, 6],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7],
             'sandboxed_ids': [3, 4, 5, 6],
             'fields': [
                 'observation_id', 'value_source_concept_id',
@@ -110,6 +112,7 @@ class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
                 (200000000006, 43528574, 713134, 45883358),
                 (300000000006, 43528574, 43528630, 4285898),
                 (400000000006, 43528574, 43528630, 45883358),
+                (7, 43528355, 1740608, 141095),
             ]
         }]
 
