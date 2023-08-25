@@ -428,8 +428,6 @@ OR
     NOT REGEXP_CONTAINS(ft.src_id, r'(?i)Participant Portal')  
 OR
     ft.src_id is NULL
-ORDER BY
-    bad_src_id_match_rows DESC
 """)
 
 queries_list = []
