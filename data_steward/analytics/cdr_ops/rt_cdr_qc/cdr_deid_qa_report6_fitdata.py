@@ -389,30 +389,31 @@ result
 # +
 src_id_check = JINJA_ENV.from_string("""
 SELECT  
-distinct person_id,
-records as bad_src_id_match,
-'{{table}}' as table,
+    count(records) as bad_src_id_match_rows,
+    '{{table}}' as table,
 FROM (
-  SELECT 
-    distinct person_id, 
-    src_id 
-    , count(person_id) as records
-  FROM 
-    `{{project}}.{{deid_cdr_fitbit}}.{{table}}` 
-  group by 1,2
+    SELECT 
+        distinct person_id,
+        src_id, 
+        count(person_id) as records
+    FROM 
+        `{{project}}.{{deid_cdr_fitbit}}.{{table}}`
+    GROUP BY 
+        1,2
 ) ft
 
-JOIN
+LEFT JOIN
 
 (
     SELECT 
-      distinct prm.research_id, 
-      src_id 
+        distinct prm.research_id, 
+        ft.person_id, 
+        src_id 
     FROM
-      `{{project}}.{{non_deid_fitbit}}.{{table}}` ft
-    left join 
-      `{{project}}.{{pipeline_tables}}.primary_pid_rid_mapping` prm 
-    on 
+        `{{project}}.{{non_deid_fitbit}}.{{table}}` ft
+    LEFT JOIN 
+        `{{project}}.{{pipeline_tables}}.primary_pid_rid_mapping` prm 
+    ON
       prm.person_id = ft.person_id 
 ) st
 ON
@@ -427,8 +428,8 @@ OR
     NOT REGEXP_CONTAINS(ft.src_id, r'(?i)Participant Portal')  
 OR
     ft.src_id is NULL
-group by 
-    person_id
+ORDER BY
+    bad_src_id_match_rows DESC
 """)
 
 queries_list = []
@@ -443,7 +444,7 @@ union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 result = execute(client, union_all_query)
 
-if sum(result['bad_src_id_match']) == 0:
+if sum(result['bad_src_id_match_rows']) == 0:
     summary = summary.append(
         {
             'query': 'Query8 Check de-identification of src_ids.',
