@@ -11,7 +11,7 @@ The intent is to remove all ehr data for unconsented participants for EHR.
 import os
 
 # Project Imports
-from common import PERSON, VISIT_OCCURRENCE, OBSERVATION
+from common import PERSON, VISIT_OCCURRENCE, OBSERVATION, EHR_CONSENT_VALIDATION
 from common import JINJA_ENV
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import (
@@ -22,7 +22,9 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 PERSON_DATA_TEMPLATE = JINJA_ENV.from_string("""
 insert into `{{project_id}}.{{dataset_id}}.person` (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
       VALUES (1, 0, 0, 0, 0),
-      (2, 0, 0, 0, 0)
+      (2, 0, 0, 0, 0),
+      (3, 0, 0, 0, 0),
+      (4, 0, 0, 0, 0)
 """)
 
 VISIT_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
@@ -38,7 +40,9 @@ insert into `{{project_id}}.{{dataset_id}}.visit_occurrence`
        (3, 1, 0, '2020-01-01', '2020-01-01', 0),
        (4, 2, 0, '2020-01-01', '2020-01-01', 0),
        (5, 2, 0, '2020-01-01', '2020-01-01', 0),
-       (6, 2, 0, '2020-01-01', '2020-01-01', 0)
+       (6, 2, 0, '2020-01-01', '2020-01-01', 0),
+       (7, 3, 0, '2020-01-01', '2020-01-01', 0),
+       (8, 4, 0, '2020-01-01', '2020-01-01', 0)
 """)
 
 MAPPING_VISIT_OCCURRENCE_TEMPLATE = JINJA_ENV.from_string("""
@@ -49,7 +53,9 @@ insert into `{{project_id}}.{{dataset_id}}._mapping_visit_occurrence`
        (3, 'unioned_ehr'),
        (4, 'unioned_ehr'),
        (5, 'unioned_ehr'),
-       (6, 'rdr2021')
+       (6, 'rdr2021'),
+       (7, 'unioned_ehr'),
+       (8, 'unioned_ehr')
 """)
 
 OBSERVATION_DATA_TEMPLATE = JINJA_ENV.from_string("""
@@ -62,27 +68,46 @@ insert into `{{project_id}}.{{dataset_id}}.observation`
  observation_type_concept_id,
  value_source_concept_id,
  observation_source_value )
-VALUES(1, 1, 0, '2020-01-01', '2020-01-01 00:00:00 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission'),
-       (2, 1, 0, '2021-01-02', '2021-01-02 00:00:00 UTC', 0,  1586100, 'EHRConsentPII_ConsentPermission'),
+VALUES (1, 1, 0, '2020-01-01', '2020-01-01 00:00:00 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission'),
+       (2, 1, 0, '2021-01-02', '2021-01-02 00:00:00 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission'),
        (3, 1, 0, '2020-05-01', '2020-05-01 00:00:00 UTC', 0, 123, 'test_value_0'),
        (4, 2, 0, '2020-03-01', '2020-03-01 00:00:00 UTC', 0, 234, 'test_value_1'),
-       (5, 2, 0, '2020-01-05', '2020-01-05 00:00:00 UTC', 0,  345, 'test_value_2'),
-       (6, 2, 0, '2020-05-05', '2020-05-05 00:00:00 UTC', 0, 456, 'test_value_3')
+       (5, 2, 0, '2020-01-05', '2020-01-05 00:00:00 UTC', 0, 345, 'test_value_2'),
+       (6, 2, 0, '2020-05-05', '2020-05-05 00:00:00 UTC', 0, 456, 'test_value_3'),
+       (7, 3, 0, '2020-01-01', '2020-01-01 00:00:00 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission'),
+       (8, 4, 0, '2021-01-02', '2021-01-02 00:00:00 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission')
 """)
 
 MAPPING_OBSERVATION_TEMPLATE = JINJA_ENV.from_string("""
 insert into `{{project_id}}.{{dataset_id}}._mapping_observation`
 (observation_id, src_dataset_id)
-VALUES(1, 'rdr2021'),
+VALUES (1, 'rdr2021'),
        (2, 'rdr2021'),
        (3, 'unioned_ehr'),
        (4, 'unioned_ehr'),
        (5, 'unioned_ehr'),
-       (6, 'rdr2021')
+       (6, 'rdr2021'),
+       (7, 'unioned_ehr'),
+       (8, 'unioned_ehr')
+""")
+
+CONSENT_VALIDATION_TEMPLATE = JINJA_ENV.from_string("""
+insert into `{{project_id}}.{{dataset_id}}.consent_validation`
+(person_id, research_id, consent_for_electronic_health_records, consent_for_electronic_health_records_authored, src_id)
+VALUES 
+     -- validated consent with varying casing, not cleaned --
+       (1, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
+     -- validated consent but no consent record in observation, cleaned --
+       (2, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
+     -- multiple validation records with one valid('submitted'). invalid consent, cleaned --
+       (3, 0, 'Submitted_No', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
+       (3, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
+     -- null status. invalid consent, cleaned --
+       (4, 0, NULL, (DATETIME '2018-11-26 00:00:00'), 'rdr')
 """)
 
 
-class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
+class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -110,6 +135,7 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
             f'{cls.project_id}.{cls.dataset_id}.{VISIT_OCCURRENCE}',
             f'{cls.project_id}.{cls.dataset_id}._mapping_{OBSERVATION}',
             f'{cls.project_id}.{cls.dataset_id}._mapping_{VISIT_OCCURRENCE}',
+            f'{cls.project_id}.{cls.dataset_id}.{EHR_CONSENT_VALIDATION}',
         ])
         cls.fq_sandbox_table_names.extend([
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.issue_numbers[0].lower()}_{OBSERVATION}',
@@ -138,19 +164,25 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
             project_id=self.project_id, dataset_id=self.dataset_id)
         mapping_visit_query = MAPPING_VISIT_OCCURRENCE_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
+        consent_validation_query = CONSENT_VALIDATION_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Load test data
         self.load_test_data([
             person_data_query, visit_occurrence_data_query,
             observation_data_query, mapping_observation_query,
-            mapping_visit_query
+            mapping_visit_query, consent_validation_query
         ])
 
     def test_remove_ehr_data_without_consent(self):
         """
-        1. person_id=1, has valid consent status
+        1. person_id=1, has a validated, affirmative consent record.
 
-        2. person_id=2, does not have valid consent record
+        2. person_id=2, does not have an affirmative consent record.
+
+        3. person_id=3. has a invalid, affirmative consent record.
+
+        4. person_id=4. has a invalid(null status), affirmative consent record.
         """
 
         # Expected results list
@@ -159,8 +191,8 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.dataset_id}.{VISIT_OCCURRENCE}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(VISIT_OCCURRENCE)}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6],
-            'sandboxed_ids': [4, 5],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
+            'sandboxed_ids': [4, 5, 7, 8],
             'fields': ['visit_occurrence_id', 'person_id'],
             'cleaned_values': [(1, 1), (2, 1), (3, 1), (6, 2)]
         }, {
@@ -168,8 +200,8 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(OBSERVATION)}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6],
-            'sandboxed_ids': [4, 5],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
+            'sandboxed_ids': [4, 5, 7, 8],
             'fields': [
                 'observation_id', 'person_id', 'value_source_concept_id',
                 'observation_source_value'
