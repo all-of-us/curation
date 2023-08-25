@@ -24,7 +24,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 # Project imports
 from utils import auth
-from resources import fields_for, get_and_validate_schema_fields, replace_special_characters_for_labels
+from resources import fields_for, get_and_validate_schema_fields, replace_special_characters_for_labels, \
+    is_rdr_dataset, is_mapping_table
 from constants.utils import bq as consts
 from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH
 
@@ -481,6 +482,8 @@ class BigQueryClient(Client):
         for table_item in table_list:
             # create empty schemaed table with client object
             try:
+                if is_rdr_dataset(src_dataset) and is_mapping_table(table_item.table_id):
+                    raise RuntimeError
                 schema_list = self.get_table_schema(table_item.table_id)
             except RuntimeError as re:
                 schema_list = None

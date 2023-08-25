@@ -8,6 +8,7 @@ from argparse import ArgumentParser
 # Third-party imports
 from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
 
+import common
 # Project level imports
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
@@ -125,8 +126,9 @@ def main(raw_args=None):
     ]
     skip_tables = [
         DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING,
-        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO
-    ]
+        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
+        'consent_validation', 'wear_consent'
+    ] + common.VOCABULARY_TABLES
     for domain_table in domain_tables:
         if domain_table in skip_tables:
             continue
