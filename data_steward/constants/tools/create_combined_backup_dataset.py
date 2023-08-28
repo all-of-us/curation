@@ -228,7 +228,7 @@ WHERE EXISTS
     WHERE ad.person_id = ec.person_id)
 UNION ALL
 SELECT
-    GENERATE_UUID() AS aou_death_id, -- NOTE this is STR, not INT --
+    aou_death_id,
     person_id,
     death_date,
     death_datetime,
@@ -236,7 +236,9 @@ SELECT
     cause_concept_id,
     cause_source_value,
     cause_source_concept_id,
-    'Staff Portal: HealthPro' AS src_id,
+    s.src_id,
     FALSE AS primary_death_record -- this value is re-calculated at CalculatePrimaryDeathRecord --
-FROM `{{project}}.{{rdr_dataset}}.{{death}}`
+FROM `{{project}}.{{rdr_dataset}}.{{aou_death}}` ad
+JOIN `{{project}}.{{combined_sandbox}}.{{site_masking}}` s
+ON ad.src_id = s.hpo_id
 """)

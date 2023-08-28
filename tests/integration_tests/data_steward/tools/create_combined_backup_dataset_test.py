@@ -9,7 +9,7 @@ import mock
 import bq_utils
 import resources
 from app_identity import get_application_id, PROJECT_ID
-from common import AOU_DEATH, DEATH, SITE_MASKING_TABLE_ID
+from common import AOU_DEATH, SITE_MASKING_TABLE_ID
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
@@ -325,7 +325,7 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
         cls.unioned_id = os.environ.get('UNIONED_DATASET_ID')
 
         cls.fq_table_names = [
-            f'{cls.project_id}.{cls.rdr_id}.{DEATH}',
+            f'{cls.project_id}.{cls.rdr_id}.{AOU_DEATH}',
             f'{cls.project_id}.{cls.unioned_id}.{AOU_DEATH}',
             f'{cls.project_id}.{cls.dataset_id}.{SITE_MASKING_TABLE_ID}'
         ]
@@ -341,32 +341,34 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
         super().setUp()
 
         insert_rdr = self.jinja_env.from_string("""
-            INSERT INTO `{{project_id}}.{{rdr_id}}.{{death}}`
+            INSERT INTO `{{project_id}}.{{rdr_id}}.{{aou_death}}`
             VALUES
-            (1, '2020-01-01', NULL, 0, NULL, NULL, NULL),
-            (2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL),
-            (3, '2020-01-01', NULL, 0, NULL, NULL, NULL),
-            (4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL),
-            (5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL),
-            (6, '2020-01-01', NULL, 0, NULL, NULL, NULL)
-        """).render(project_id=self.project_id, rdr_id=self.rdr_id, death=DEATH)
+            ('31499c51', 1, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'healthpro', True),
+            ('9c51-c8b', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'healthpro', True),
+            ('1-c8be-4', 3, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'healthpro', True),
+            ('c8be-4d6', 4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'healthpro', True),
+            ('be-4d628', 5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL, 'healthpro', True),
+            ('4d62-863', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'healthpro', True)
+        """).render(project_id=self.project_id,
+                    rdr_id=self.rdr_id,
+                    aou_death=AOU_DEATH)
 
         insert_ehr = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{unioned_id}}.{{aou_death}}`
             VALUES
-            ('5597-4a2', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
+            ('5597-4a2', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo a', True),
             ('b2e8594f', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
             ('af7bc10c', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', False),
             ('0-ac18-4', 3, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo a', False),
-            ('a35510e4', 3, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
+            ('a35510e4', 3, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo b', True),
             ('7b9bf804', 3, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo c', False),
             ('4c2e69fa', 4, '2020-01-02', '2020-01-02 00:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
             ('28c-c4bc', 4, '2020-01-03', '2020-01-03 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
-            ('49fe-984', 4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', False),
+            ('49fe-984', 4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', True),
             ('eb9fe66b', 5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
             ('rg4375-8', 5, '2020-01-01', '2020-01-01 06:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
-            ('3e8a-4-7', 5, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', False),
-            ('a309f2fb', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo a', False),
+            ('3e8a-4-7', 5, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', True),
+            ('a309f2fb', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo a', True),
             ('3fd2e818', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo b', False),
             ('75db-410', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo c', False)
         """).render(project_id=self.project_id,
