@@ -6,6 +6,7 @@ UNIONED = 'unioned'
 RDR = 'rdr'
 COMBINED = 'combined'
 FITBIT = 'fitbit'
+SYNTHETIC = 'synthetic'
 
 # post deid Registered tier datasets
 REGISTERED_TIER_DEID = 'registered_tier_deid'
@@ -70,6 +71,7 @@ class DataStage(Enum):
     CONTROLLED_TIER_FITBIT = CONTROLLED_TIER_FITBIT
     DATA_CONSISTENCY = DATA_CONSISTENCY
     CRON_RETRACTION = CRON_RETRACTION
+    SYNTHETIC = SYNTHETIC
 
     def __str__(self):
         return self.value

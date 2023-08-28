@@ -430,7 +430,12 @@ DATA_STAGE_RULES_MAPPING = {
     DataStage.DATA_CONSISTENCY.value:
         DATA_CONSISTENCY_CLEANING_CLASSES,
     DataStage.CRON_RETRACTION.value:
-        CRON_RETRACTION_CLEANING_CLASSES
+        CRON_RETRACTION_CLEANING_CLASSES,
+    DataStage.SYNTHETIC.value:
+        RDR_CLEANING_CLASSES + COMBINED_CLEANING_CLASSES +
+        REGISTERED_TIER_DEID_CLEANING_CLASSES +
+        REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES +
+        REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES,
 }
 
 
@@ -589,6 +594,7 @@ def main(args=None):
             sandbox_dataset_id=args.sandbox_dataset_id,
             rules=rules,
             table_namer=table_namer,
+            run_synthetic=args.data_stage.value == DataStage.SYNTHETIC.value,
             **kwargs)
         for query in query_list:
             LOGGER.info(query)
@@ -596,13 +602,15 @@ def main(args=None):
         # Disable logging if running retraction cron
         if not constants.global_variables.DISABLE_SANDBOX:
             clean_engine.add_console_logging(args.console_log)
-        clean_engine.clean_dataset(project_id=args.project_id,
-                                   dataset_id=args.dataset_id,
-                                   sandbox_dataset_id=args.sandbox_dataset_id,
-                                   rules=rules,
-                                   table_namer=table_namer,
-                                   run_as=args.run_as,
-                                   **kwargs)
+        clean_engine.clean_dataset(
+            project_id=args.project_id,
+            dataset_id=args.dataset_id,
+            sandbox_dataset_id=args.sandbox_dataset_id,
+            rules=rules,
+            table_namer=table_namer,
+            run_as=args.run_as,
+            run_synthetic=args.data_stage.value == DataStage.SYNTHETIC.value,
+            **kwargs)
 
 
 if __name__ == '__main__':

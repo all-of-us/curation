@@ -48,7 +48,7 @@ LEFT JOIN (SELECT DISTINCT person_id FROM `{{project}}.{{dataset}}.visit_occurre
 USING (person_id)
 LEFT JOIN (SELECT DISTINCT person_id FROM `{{project}}.{{dataset}}.visit_detail`) vd
 USING (person_id)
-where co.person_id is NULL AND d.person_id is NULL AND dee.person_id is NULL AND dre.person_id is NULL 
+where co.person_id is NULL AND d.person_id is NULL AND dee.person_id is NULL AND dre.person_id is NULL
 AND m.person_id is NULL AND n.person_id is NULL AND o.person_id is NULL AND po.person_id is NULL
 AND s.person_id is NULL AND vo.person_id is NULL AND vd.person_id is NULL
 """)
@@ -96,7 +96,8 @@ class DropOrphanedPIDS(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=False)
 
     def get_query_specs(self):
         """

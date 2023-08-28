@@ -107,7 +107,8 @@ class StoreExpectedCTList(BaseCleaningRule):
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
             depends_on=[CleanMappingExtTables],
-            table_namer=table_namer)
+            table_namer=table_namer,
+            run_for_synthetic=False)
 
     def get_query_specs(self):
         """

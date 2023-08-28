@@ -178,7 +178,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                  depends_on: cleaning_class_list = None,
                  affected_tables: List = None,
                  table_namer: str = None,
-                 table_tag: str = None):
+                 table_tag: str = None,
+                 run_for_synthetic: bool = False):
         """
         Instantiate a cleaning rule with basic attributes.
 
@@ -227,6 +228,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._affected_tables = affected_tables
         self._table_namer = self.table_namer = table_namer
         self._table_tag = table_tag
+        self._run_for_synthetic = run_for_synthetic
 
         # fields jinja template
         self.fields_templ = JINJA_ENV.from_string("""
@@ -236,6 +238,29 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         super().__init__()
 
         self.__validate_arguments()
+
+    def __validate_argument(self, arg, arg_name, arg_type):
+        """
+        Validate the given argument has a value of the type specified.
+
+        Prevents a lot of repetitive code.
+
+        :param arg:  the argument object to validate as the type provided in arg_type
+        :param arg_name:  the argument name that was passed for validation.  useful for error messages
+        :param arg_type:  the expected type of the argument
+
+        :raises NotImplementedError if arguments are not set.
+        :raises TypeError if arguments are not set to expected types
+        """
+        if arg is None:
+            raise NotImplementedError(
+                f'{self.__class__.__name__} cleaning rule must set {arg_name} variable'
+            )
+
+        if not isinstance(arg, arg_type):
+            raise TypeError(
+                f'{arg_name} is expected to be a {str(arg_type)}.  offending {arg_name}: <{arg}> is of type:  {type(arg)}'
+            )
 
     def __validate_list_of_strings(self, arg, arg_name):
         """
@@ -247,22 +272,16 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         :raises NotImplementedError if arguments are not set.
         :raises TypeError if arguments are not set to expected types
         """
-        if arg is None:
-            raise NotImplementedError(
-                '{} cleaning rule must set {} variable'.format(
-                    self.__class__.__name__, arg_name))
+        self.__validate_argument(arg, arg_name, list)
 
-        if not isinstance(arg, list):
-            raise TypeError(
-                '{} is expected to be a list of strings.  offending type is:  {}'
-                .format(arg_name, type(arg)))
-        else:
-            for list_item in arg:
-                if not isinstance(list_item, str):
-                    raise TypeError(
-                        ('{} is expected to be a list of strings.  '
-                         'offending list item {} is of type:  {}').format(
-                             arg_name, list_item, type(list_item)))
+        # if no errors are raised in validating the argurment is a list, then validate each
+        # list item is a string
+        for list_item in arg:
+            if not isinstance(list_item, str):
+                raise TypeError((
+                    f'{arg_name} is expected to be a list of strings.  '
+                    f'offending list item {list_item} is of type:  {type(list_item)}'
+                ))
 
     def __validate_string(self, arg, arg_name):
         """
@@ -275,15 +294,20 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         :raises NotImplementedError if arguments are not set.
         :raises TypeError if arguments are not set to expected types
         """
-        if arg is None:
-            raise NotImplementedError(
-                '{} cleaning rule must set {} variable'.format(
-                    self.__class__.__name__, arg_name))
+        self.__validate_argument(arg, arg_name, str)
 
-        if not isinstance(arg, str):
-            raise TypeError(
-                '{0} is expected to be a string.  offending {0}: <{1}> is of type:  {2}'
-                .format(arg_name, arg, type(arg)))
+    def __validate_bool(self, arg, arg_name):
+        """
+        Validate boolean parameters are boolean.
+
+        :param arg:  The actual argument value to validate is a string.
+        :param arg_name:  The name of the variable being validated.  Used
+            in error messages, if needed.
+
+        :raises NotImplementedError if arguments are not set.
+        :raises TypeError if arguments are not set to expected types
+        """
+        self.__validate_argument(arg, arg_name, bool)
 
     def __validate_arguments(self):
         """
@@ -330,6 +354,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                                'classes that inherit from BaseCleaningRule'.
                                format(clazz))
                     raise TypeError(message)
+
+        self.__validate_bool(self._run_for_synthetic, 'run_for_synthetic')
 
     @property
     def depends_on_classes(self):
@@ -409,6 +435,13 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         Get the table tag of the sandbox for this class instance.
         """
         return self._table_tag
+
+    @property
+    def run_for_synthetic(self):
+        """
+        Get the command to run a rule for synthetic data.
+        """
+        return self._run_for_synthetic
 
     @affected_tables.setter
     def affected_tables(self, affected_tables):

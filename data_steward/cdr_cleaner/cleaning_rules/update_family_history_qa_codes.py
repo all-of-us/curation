@@ -83,7 +83,8 @@ class UpdateFamilyHistoryCodes(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer,
-                         depends_on=[SetConceptIdsForSurveyQuestionsAnswers])
+                         depends_on=[SetConceptIdsForSurveyQuestionsAnswers],
+                         run_for_synthetic=True)
 
         self.counts_query = COUNTS_QUERY.render(project_id=self.project_id,
                                                 dataset_id=self.dataset_id,

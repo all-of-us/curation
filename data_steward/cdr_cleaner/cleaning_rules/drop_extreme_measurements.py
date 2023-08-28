@@ -9,7 +9,7 @@ participant.
 
 This is expected to drop a very small number of rows (less than 300 total) based on values in the current CDR.
 
-Original Issue: DC-624 
+Original Issue: DC-624
 """
 
 # Python Imports
@@ -83,13 +83,13 @@ WHERE
     )
     --drop all bmi records out of bounds --
     OR (m.measurement_source_concept_id = 903124
-    AND value_as_number NOT BETWEEN 10 AND 125)    
+    AND value_as_number NOT BETWEEN 10 AND 125)
     )
 """)
 
 DELETE_HEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
-WHERE 
+WHERE
   EXISTS (
   --subquery to select associated bmi records --
   WITH outbound_heights AS (
@@ -131,7 +131,7 @@ AND value_as_number NOT BETWEEN 30 AND 250)
 
 DELETE_BMI_ROWS_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
-WHERE 
+WHERE
   EXISTS (
   --subquery to select associated height and weight records --
   WITH outbound_bmi AS (
@@ -161,11 +161,12 @@ class DropExtremeMeasurements(BaseCleaningRule):
         """
         Initialize the class with proper information.
 
-        Set the issue numbers, description and affected datasets. As other tickets may affect
-        this SQL, append them to the list of Jira Issues.
-        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        :param project_id: Name of the project
+        :param dataset_id: Name of the dataset where the queries should be run
+        :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
+        #TODO use sandbox_dataset_id for CR
+        :return:
         """
-
         desc = ('remove extreme physical measurement outliers')
         super().__init__(issue_numbers=['DC-624', 'DC-849'],
                          description=desc,
@@ -174,7 +175,8 @@ class DropExtremeMeasurements(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
     def get_query_specs(self):
         """

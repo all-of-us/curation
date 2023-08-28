@@ -58,7 +58,8 @@ class DropMultipleMeasurements(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 table_namer=None):
+                 table_namer=None,
+                 run_for_synthetic=True):
         """
         Initialize the class with proper information.
 

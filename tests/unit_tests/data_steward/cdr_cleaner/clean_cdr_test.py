@@ -319,7 +319,8 @@ class CleanCDRTest(unittest.TestCase):
             sandbox_dataset_id=self.sandbox_dataset_id,
             rules=rules,
             table_namer=DataStage.EHR.value,
-            run_as=cdr_sa)
+            run_as=cdr_sa,
+            run_synthetic=False)
 
         # Test get_queries() function call
         args = [
@@ -348,4 +349,5 @@ class CleanCDRTest(unittest.TestCase):
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             rules=rules,
-            table_namer=DataStage.EHR.value)
+            table_namer=DataStage.EHR.value,
+            run_synthetic=False)

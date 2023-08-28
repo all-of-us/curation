@@ -98,7 +98,7 @@ SELECT DISTINCT
 FROM `{{rdr_dataset_id}}.{{domain_table}}` AS t
 JOIN `{{rdr_dataset_id}}._mapping_{{domain_table}}` AS v
 ON t.{{domain_table}}_id = v.{{domain_table}}_id
-{% if domain_table not in ['survey_conduct', 'person'] %}
+{% if domain_table not in ['survey_conduct', 'person'] and 'synthetic' not in combined_sandbox_dataset_id %}
 UNION ALL
 SELECT DISTINCT
     '{{ehr_dataset_id}}' AS src_dataset_id,
@@ -114,6 +114,8 @@ WHERE EXISTS
     (SELECT 1 FROM `{{combined_sandbox_dataset_id}}.{{ehr_consent_table_id}}` AS c
      WHERE t.person_id = c.person_id)
 {% endif %}
+{% endif %}
+-- closes the synthetic only needs if/else clause --
 {% endif %}
 """)
 

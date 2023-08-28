@@ -36,7 +36,7 @@ ZIPS_WITH_WHITESPACE_SANDBOX = 'dc1633_zips_with_whitespace'
 SANDBOX_ZIPS_WITH_WHITESPACE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{whitespace_sandbox}}` AS
 SELECT * FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}`
-WHERE observation_source_concept_id = 1585250 
+WHERE observation_source_concept_id = 1585250
 AND REGEXP_CONTAINS(value_as_string, ' ')
 """)
 
@@ -47,8 +47,8 @@ SANDBOX_INVALID_ZIP_CODES = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
 -- Selects all zips that are less than 5 digits in length and/or alpha-numeric --
 SELECT * FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}`
-WHERE observation_source_concept_id = 1585250 
-AND (LENGTH(value_as_string) < 5 
+WHERE observation_source_concept_id = 1585250
+AND (LENGTH(value_as_string) < 5
 OR NOT REGEXP_CONTAINS(value_as_string, r'^[0-9]{5}(?:-[0-9]{4})?$'))
 -- Using union distinct to prevent duplicates --
 UNION DISTINCT (
@@ -101,7 +101,8 @@ class UpdateInvalidZipCodes(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
     def get_query_specs(self, *args, **keyword_args):
         """

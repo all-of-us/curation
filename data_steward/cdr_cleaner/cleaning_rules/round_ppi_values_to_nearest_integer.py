@@ -66,8 +66,9 @@ class RoundPpiValuesToNearestInteger(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = "Runs the query which make sure if the value_as_number field is an integer. \
-    If it is not, It will be rounded to the nearest integer in observation table."
+        desc = ("Runs the query which make sure if the value_as_number field "
+                "is an integer.  If it is not, It will be rounded to the "
+                "nearest integer in observation table.")
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
@@ -75,7 +76,8 @@ class RoundPpiValuesToNearestInteger(BaseCleaningRule):
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         run_for_synthetic=True)
 
     def get_query_specs(self):
         """

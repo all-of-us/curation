@@ -96,8 +96,12 @@ class CleanCDREngineTest(TestCase):
 
     def test_infer_rule(self):
         clazz = FakeRuleClass
-        _, _, rule_info = ce.infer_rule(clazz, self.project, self.dataset_id,
-                                        self.sandbox_id, self.table_namer,
+        _, _, rule_info = ce.infer_rule(clazz,
+                                        self.project,
+                                        self.dataset_id,
+                                        self.sandbox_id,
+                                        self.table_namer,
+                                        run_synthetic=False,
                                         **self.kwargs)
         self.assertTrue(
             inspect.ismethod(rule_info.pop(cdr_consts.QUERY_FUNCTION)))
@@ -115,8 +119,12 @@ class CleanCDREngineTest(TestCase):
         self.assertDictEqual(rule_info, expected_rule_info)
 
         clazz = fake_rule_func
-        _, _, rule_info = ce.infer_rule(clazz, self.project, self.dataset_id,
-                                        self.sandbox_id, self.table_namer,
+        _, _, rule_info = ce.infer_rule(clazz,
+                                        self.project,
+                                        self.dataset_id,
+                                        self.sandbox_id,
+                                        self.table_namer,
+                                        run_synthetic=False,
                                         **self.kwargs)
         self.assertTrue(
             inspect.isfunction(rule_info.pop(cdr_consts.QUERY_FUNCTION)))

@@ -27,10 +27,10 @@ LOGGER = logging.getLogger(__name__)
 
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS (
-    SELECT * 
+    SELECT *
     FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
     WHERE survey_conduct_id NOT IN (
-        SELECT DISTINCT questionnaire_response_id 
+        SELECT DISTINCT questionnaire_response_id
         FROM `{{project_id}}.{{dataset_id}}.observation`
         WHERE questionnaire_response_id IS NOT NULL
     )
@@ -40,7 +40,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_i
 DELETE_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
 WHERE survey_conduct_id IN (
-    SELECT DISTINCT survey_conduct_id 
+    SELECT DISTINCT survey_conduct_id
     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}`
 )
 """)
@@ -69,7 +69,8 @@ class DropOrphanedSurveyConductIds(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
     def setup_rule(self, client):
         """

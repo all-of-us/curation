@@ -93,7 +93,8 @@ class GenerateExtTables(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
         self._mapping_dataset_id = mapping_dataset_id
         self.mapping_table_ids = []

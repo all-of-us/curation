@@ -36,7 +36,7 @@ SANDBOX_SURVEY_CONDUCT = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS (
 SELECT * FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
 WHERE survey_concept_id != survey_source_concept_id
-OR survey_concept_id NOT IN (SELECT concept_id FROM `{{project_id}}.{{dataset_id}}.concept` WHERE vocabulary_id IN ('PPI','AoU_Custom','AoU_General')) 
+OR survey_concept_id NOT IN (SELECT concept_id FROM `{{project_id}}.{{dataset_id}}.concept` WHERE vocabulary_id IN ('PPI','AoU_Custom','AoU_General'))
 )
 """)
 
@@ -80,7 +80,8 @@ class UpdateSurveySourceConceptId(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          depends_on=[CleanSurveyConductRecurringSurveys],
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """

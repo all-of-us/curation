@@ -163,7 +163,8 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
                          affected_tables=['observation'],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         run_for_synthetic=True)
 
     def get_query_specs(self):
         """
