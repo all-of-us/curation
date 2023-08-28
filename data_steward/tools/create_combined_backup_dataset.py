@@ -382,7 +382,7 @@ def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
     """Create and load AOU_DEATH table.
     NOTE: `primary_death_record` is all `False` at this point. The CR
         `CalculatePrimaryDeathRecord` updates the table at the end of the
-        Unioned EHR data tier creation.
+        Combined data tier creation.
     NOTE: Site masking for `aou_death` happens here, too. 
         (Other tables are site masked by GenerateExtTables)
     :param client: a BigQuery client object
@@ -410,7 +410,6 @@ def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
         rdr_dataset=rdr_dataset,
         unioned_ehr_dataset=unioned_ehr_dataset,
         aou_death=AOU_DEATH,
-        death=DEATH,
         ehr_consent=combine_consts.EHR_CONSENT_TABLE_ID,
         site_masking=SITE_MASKING_TABLE_ID)
     job = client.query(query)
