@@ -17,9 +17,9 @@ import app_identity
 import bq_utils
 from resources import mapping_table_for
 from utils import auth, pipeline_logging
-from common import (CDR_SCOPES, DEATH, MAPPING_PREFIX, METADATA,
-                    PID_RID_MAPPING, QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
-                    FACT_RELATIONSHIP, COPE_SURVEY_MAP)
+from common import (CDR_SCOPES, DEATH, METADATA, PID_RID_MAPPING,
+                    QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO, FACT_RELATIONSHIP,
+                    COPE_SURVEY_MAP)
 from utils import auth
 from utils import pipeline_logging
 from common import CDR_SCOPES, FACT_RELATIONSHIP, METADATA, DEATH
@@ -150,6 +150,10 @@ def main(raw_args=None):
 
     bq_client.build_and_copy_contents(datasets.get('staging', 'UNSET'),
                                       datasets.get('clean', 'UNSET'))
+
+    # Create an empty DEATH for clean RDR. Actual data is in AOU_DEATH.
+    _ = bq_client.create_tables(
+        [f"{bq_client.project}.{datasets.get('clean', 'UNSET')}.{DEATH}"])
 
     # update sandbox description and labels
     sandbox_dataset = bq_client.get_dataset(datasets.get(
