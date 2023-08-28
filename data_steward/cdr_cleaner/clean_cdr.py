@@ -142,6 +142,7 @@ from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY, CRON_RE
 from cdr_cleaner.cleaning_rules.generate_research_device_ids import GenerateResearchDeviceIds
 from cdr_cleaner.cleaning_rules.deid.fitbit_device_id import DeidFitbitDeviceId
 from cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct import DropViaSurveyConduct
+from cdr_cleaner.cleaning_rules.generate_wear_study_table import GenerateWearStudyTable
 
 # Third party imports
 
@@ -201,6 +202,7 @@ RDR_CLEANING_CLASSES = [
     (CleanSmokingPpi,),
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
+    (CalculateBmi,),
     (DropExtremeMeasurements,),
     (DropMultipleMeasurements,),
     (CleanByBirthYear,),
@@ -242,7 +244,6 @@ COMBINED_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (GenerateExtTables,),
-    (CalculateBmi,),  # dependent on GenerateExtTables
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (PopulateSurveyConductExt,),
@@ -292,6 +293,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (CalculatePrimaryDeathRecord,),
+    (GenerateWearStudyTable,),
     (DropViaSurveyConduct,),  # should run after wear study table creation
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -354,7 +356,8 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (FreeTextSurveyResponseSuppression,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
-    (DropViaSurveyConduct,),
+    (GenerateWearStudyTable,),
+    (DropViaSurveyConduct,),  # should run after wear study table creation
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run

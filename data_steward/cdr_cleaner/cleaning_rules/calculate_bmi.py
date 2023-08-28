@@ -1,6 +1,6 @@
 """
 Some participants self-report their height and weight. This CR calculates the BMI for
-those self-reported measurements. (Note BMIs are already calculated if the data is from HPO sites.)
+those self-reported measurements. (Note BMIs are already calculated if the data is in-person PM or from HPO.)
 
 Each participant can self-report their height and weight multiple times. BMIs are calculated
 for each self-reported hight/weight pair. BMIs are not calculated if either height or weight is missing.
@@ -12,10 +12,8 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 from common import JINJA_ENV, MEASUREMENT
-from constants.cdr_cleaner.clean_cdr import (CONTROLLED_TIER_DEID_CLEAN, QUERY,
-                                             REGISTERED_TIER_DEID_CLEAN)
+from constants.cdr_cleaner.clean_cdr import (QUERY, RDR)
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -33,10 +31,12 @@ WITH self_reported_height AS (
         m.measurement_time,
         e.src_id
     FROM `{{project}}.{{dataset}}.measurement` m
-    JOIN `{{project}}.{{dataset}}.measurement_ext` e
+    JOIN `{{project}}.{{dataset}}._mapping_measurement` e
     ON m.measurement_id = e.measurement_id
-    WHERE e.src_id LIKE 'Participant Portal%'
+    WHERE e.src_id IN ('ce', 'vibrent')
+    AND m.measurement_type_concept_id = 32865
     AND m.measurement_concept_id = 3036277
+    AND m.value_as_number IS NOT NULL
 ), self_reported_weight AS (
     SELECT
         m.measurement_id, 
@@ -46,10 +46,12 @@ WITH self_reported_height AS (
         m.measurement_date,
         e.src_id
     FROM `{{project}}.{{dataset}}.measurement` m
-    JOIN `{{project}}.{{dataset}}.measurement_ext` e
+    JOIN `{{project}}.{{dataset}}._mapping_measurement` e
     ON m.measurement_id = e.measurement_id
-    WHERE e.src_id LIKE 'Participant Portal%'
+    WHERE e.src_id IN ('ce', 'vibrent')
+    AND m.measurement_type_concept_id = 32865
     AND m.measurement_concept_id = 3025315
+    AND m.value_as_number IS NOT NULL
 )
 SELECT
     ROW_NUMBER() OVER(
@@ -64,19 +66,24 @@ SELECT
     h.measurement_datetime,
     h.measurement_time,
     32865 AS measurement_type_concept_id,
-    NULL AS operator_concept_id,
+    0 AS operator_concept_id,
     w.value_as_number / POW(h.value_as_number / 100, 2) AS value_as_number,
-    NULL AS value_as_concept_id,
+    0 AS value_as_concept_id,
     9531 AS unit_concept_id,
     NULL AS range_low,
     NULL AS range_high,
     NULL AS provider_id,
     h.visit_occurrence_id,
     NULL AS visit_detail_id,
-    CAST(NULL AS STRING) AS measurement_source_value,
-    NULL AS measurement_source_concept_id,
+    'bmi' AS measurement_source_value,
+    903124 AS measurement_source_concept_id,
     'kg/m2' AS unit_source_value,
-    CAST(NULL AS STRING) AS value_source_value,
+    CONCAT(
+        CAST(
+            ROUND(w.value_as_number / POW(h.value_as_number / 100, 2), 1)
+            AS STRING
+        ), ' kg/m2'
+    ) AS value_source_value,
     h.src_id
 FROM self_reported_height h
 JOIN self_reported_weight w
@@ -113,8 +120,8 @@ SELECT
 FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 """)
 
-INSERT_EXT_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.measurement_ext`
+INSERT_MAPPING_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}._mapping_measurement`
 SELECT 
     measurement_id,
     src_id
@@ -131,17 +138,13 @@ class CalculateBmi(BaseCleaningRule):
                  table_namer=None):
         desc = ("Calculate BMI for self-reported height and weight.")
 
-        super().__init__(issue_numbers=['dc3223'],
+        super().__init__(issue_numbers=['dc3239', 'dc3385'],
                          description=desc,
-                         affected_datasets=[
-                             REGISTERED_TIER_DEID_CLEAN,
-                             CONTROLLED_TIER_DEID_CLEAN
-                         ],
+                         affected_datasets=[RDR],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[MEASUREMENT],
-                         depends_on=[GenerateExtTables],
                          table_namer=table_namer)
 
     def get_query_specs(self):
@@ -167,7 +170,7 @@ class CalculateBmi(BaseCleaningRule):
             },
             {
                 QUERY:
-                    INSERT_EXT_QUERY.render(
+                    INSERT_MAPPING_QUERY.render(
                         project=self.project_id,
                         dataset=self.dataset_id,
                         sandbox_dataset=self.sandbox_dataset_id,
