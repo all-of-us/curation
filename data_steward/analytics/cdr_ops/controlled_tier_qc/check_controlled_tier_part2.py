@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -13,1362 +12,543 @@
 #     name: python3
 # ---
 
-# # DST-251 Add more QA/QCs for the Controlled Tier data
+# # QA queries on new CDR row suppression
 #
-# We want to mirror the QCs in here   to add more checks to the Controlled Tier (CT).
+# Verify all rows identified for suppression in the deid dataset have been set to null.
 #
-# The privacy checks against the CT are done. But we need more QCs that check against the OMOP rules AND against the Program constraints.
-#
-# Create a notebook for the following checks AND commit them here. If you are just starting working WITH curation, follow the instructions here  .
-#
-# The checks are:
-#
-# 1.all the birthdates are set to 15th June of the birth year in person table
-#
-# 2 No dates earlier than birth dates
-#
-# 3 No dates earlier than 1980 in any table, except for the observation
-#
-# 4 No dates after death:done
-#
-# 5 No WITHdrawn participants: need pdr access
-#
-# 6 No data after participant's suspension: need pdr access
-#
-# 7 All participants have basics
-#
-# 8 All participants WITH EHR data have said yes to EHR consents
-#
-# 9 All participants WITH Fitbit have said yes to primary consents: need PDR access
-#
-# 10 All primary keys are in _ext
-#
-# 11 No duplicated primary keys
-#
-# 12 OMOP tables should have standard concept ids
-#
-# 13 observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date
-#
-# 14 all other observation concept ids WITH dates similar to birth dates other than the 3 above should be removed
-#
-# 15 All the descendants of ancestor_concept_id IN (4054924, 141771) -- motor vehicle accidents should be dropped in condition_occurrence table
+# (Query results: ThIS query returned no results.)
+
+import urllib
+import pandas as pd
+from common import JINJA_ENV
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
 # Parameters
 project_id = ""
-rt_dataset = ""
-ct_dataset = ""
-earliest_ehr_date = ""
-cut_off_date = ""
+deid_cdr = ""
+com_cdr ="" 
+run_as=""
 
 # +
-import pandas as pd
-from analytics.cdr_ops.notebook_utils import execute
-from common import JINJA_ENV
-from gcloud.bq import BigQueryClient
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
 
-client = BigQueryClient(project_id)
-
-pd.options.display.max_rows = 120
+client = BigQueryClient(project_id, credentials=impersonation_creds)
 # -
 
-# summary will have a summary in the end
-df = pd.DataFrame(columns=['query', 'result'])
+# df will have a summary in the end
+df = pd.DataFrame(columns = ['query', 'result']) 
 
-# wear_consent and wear_consent_ptsc question and module concepts where not in multiple surveys.
-# The concepts found in multiple surveys are: 'resultsconsent_helpmewithconsent' and 'helpmewithconsent_name'
-WEAR_SURVEY_CODES = ['havesmartphone',
-                      'wearwatch',
-                      'usetracker',
-                      'wear12months',
-                      'receivesms',
-                      'frequency',
-                      'agreetoshare',
-                      'onlyparticipantinhousehold',
-                      'haveaddress',
-                      'resultsconsent_wear',
-                      'email_help_consent',
-                      'timeofday',
-                      'wearconsent_signature',
-                      'wearconsent_todaysdate',
-                      'wear_consent',
-                      'wear_consent_ptsc']
-
-# # Query1: all the birthdates are set to 15th June of the birth year in person table
-#
-
-# +
-# step1 , to get the tables AND columns that have person_id, size >1 AND DATE columns AND save to a data frame
-query = JINJA_ENV.from_string("""
-
-SELECT
-'person' as table_name,
-'birth_datetime' as column_name,
-count (*) as row_counts_failures
-    FROM {{project_id}}.{{ct_dataset}}.person
-    where EXTRACT(MONTH FROM DATE (birth_datetime))!=6
-    or EXTRACT(DAY FROM DATE (birth_datetime)) !=15
-""")
-
-q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-res = execute(client, q)
-res.shape
-# -
-
-res
-
-if res.iloc[:, 2].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query1: all the birthdates are set to 06-15 in person table',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query1: all the birthdates are set to 06-15 in person table',
-            'result':
-                'Failure'
-        },
-        ignore_index=True)
-
-# # Query2: No dates before birth_date
-#
-
-# +
-# step1 , to get the tables AND columns that have person_id, size >1 AND DATE columns AND save to a data frame
-query = JINJA_ENV.from_string("""
-
-WITH
-    table1 AS (
-    SELECT
-      table_name,
-      column_name
-    FROM
-      `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
-    WHERE
-      column_name='person_id' ),
-    table2 AS (
-    SELECT
-      table_id AS table_name,
-      row_count
-    FROM
-      `{{project_id}}.{{ct_dataset}}.__TABLES__`
-    WHERE
-      row_count>1)
-
-  SELECT
-    table_name,
-    column_name
-  FROM
-    `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS` c
-  WHERE
-    table_name IN (
-    SELECT
-      DISTINCT table_name
-    FROM
-      table2
-    WHERE
-      table_name IN (
-      SELECT
-        DISTINCT table_name
-      FROM
-        table1))
-    AND c.data_type IN ('DATE','TIMESTAMP')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(birth)')
-""")
-
-q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-target_tables = execute(client, q)
-target_tables.shape
-# -
-
-target_tables
-
-
-def my_sql(table_name, column_name):
-
-    query = JINJA_ENV.from_string("""
-    WITH rt_map as (
-     SELECT
-  research_id AS person_id,
-  SAFE_CAST (birth_datetime AS DATE) AS birth_date
-FROM
-  {{project_id}}.{{rt_dataset}}.person
-JOIN
-  {{project_id}}.{{rt_dataset}}._deid_map
-USING
-  (person_id)
-  )
-
-SELECT
-'{{table_name}}' AS table_name,
-'{{column_name}}' AS column_name,
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_birth_date
-
-FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
-JOIN rt_map r USING (person_id)
-WHERE  DATE(c.{{column_name}})< r.birth_date
-""")
-    q = query.render(project_id=project_id,
-                     rt_dataset=rt_dataset,
-                     ct_dataset=ct_dataset,
-                     table_name=table_name,
-                     column_name=column_name)
-    df11 = execute(client, q)
-    return df11
-
-
-# use a loop to get table name AND column name AND run sql function
-result = [
-    my_sql(table_name, column_name) for table_name, column_name in zip(
-        target_tables['table_name'], target_tables['column_name'])
-]
-result
-
-# +
-# AND then get the result back FROM loop result list
-n = len(target_tables.index)
-res2 = pd.DataFrame(result[0])
-
-for x in range(1, n):
-    res2 = res2.append(result[x])
-
-res2 = res2.sort_values(by='row_counts_failure', ascending=False)
-res2
-# -
-
-if res2.iloc[:, 3].sum() == 0:
-    df = df.append(
-        {
-            'query': 'Query2: No dates before birth_date',
-            'result': 'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query2: No dates before birth_date',
-            'result': 'Failure'
-        },
-        ignore_index=True)
-
-# # Query3: No dates after 30_days_after_death
-
-# need to do obs table seperatly
-df1 = target_tables
-df1 = df1[df1.table_name.str.contains("obs")]
-df1 = df1[~df1.table_name.str.contains("period")]
-target_tables2 = df1
-target_tables2
-
-
-def my_sql(table_name, column_name):
-
-    query = JINJA_ENV.from_string("""
-
-    WITH df1 as (
-SELECT
-person_id,c.{{column_name}},
-DATE_ADD(d.death_date, INTERVAL 30 DAY) AS after_death_30_days
-
-FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
-FULL JOIN `{{project_id}}.{{ct_dataset}}.aou_death` d USING (person_id)
-WHERE  DATE(c.{{column_name}}) > d.death_date
-AND d.primary_death_record = TRUE
-AND c.{{table_name}}_concept_id NOT IN (4013886, 4135376, 4271761)
-)
-
-SELECT
-'{{table_name}}' AS table_name,
-'{{column_name}}' AS column_name,
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_after_death_30_days
-
-FROM df1
-WHERE  DATE({{column_name}}) > after_death_30_days
-
-""")
-    q = query.render(project_id=project_id,
-                     ct_dataset=ct_dataset,
-                     table_name=table_name,
-                     column_name=column_name)
-    df11 = execute(client, q)
-    return df11
-
-
-# +
-result = [
-    my_sql(table_name, column_name) for table_name, column_name in zip(
-        target_tables2['table_name'], target_tables2['column_name'])
-]
-result
-
-# AND then get the result back FROM loop result list
-n = len(target_tables2.index)
-res2 = pd.DataFrame(result[0])
-
-for x in range(1, n):
-    res2 = res2.append(result[x])
-
-res2 = res2.sort_values(by='row_counts_failure', ascending=False)
-res2
-# -
-
-# then do the rest of tables
-df1 = target_tables
-df1 = df1[~df1.table_name.str.contains("obs")]
-target_tables2 = df1
-target_tables2
-
-
-def my_sql(table_name, column_name):
-
-    query = JINJA_ENV.from_string("""
-
-    WITH death_30_days as (
-SELECT
-c.{{column_name}},
-DATE_ADD(d.death_date, INTERVAL 30 DAY) AS after_death_30_days
- FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
- JOIN `{{project_id}}.{{ct_dataset}}.aou_death` d USING (person_id)
-WHERE  DATE(c.{{column_name}}) > d.death_date
-AND d.primary_death_record = TRUE
-)
-
-SELECT
-'{{table_name}}' AS table_name,
-'{{column_name}}' AS column_name,
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_after_death_30_days
-FROM death_30_days
-WHERE  DATE({{column_name}}) > after_death_30_days
-""")
-    q = query.render(project_id=project_id,
-                     ct_dataset=ct_dataset,
-                     table_name=table_name,
-                     column_name=column_name)
-    df11 = execute(client, q)
-    return df11
-
-
-# +
-result = [
-    my_sql(table_name, column_name) for table_name, column_name in zip(
-        target_tables2['table_name'], target_tables2['column_name'])
-]
-result
-
-# AND then get the result back FROM loop result list
-n = len(target_tables2.index)
-res21 = pd.DataFrame(result[0])
-
-for x in range(1, n):
-    res21 = res21.append(result[x])
-
-res21 = res21.sort_values(by='row_counts_failure', ascending=False)
-res21
-# -
-
-# combine both results
-res2 = res2.append(res21, ignore_index=True)
-res2
-
-if res2.iloc[:, 3].sum() == 0:
-    df = df.append({
-        'query': 'Query3: No dates after death',
-        'result': 'PASS'
-    },
-                   ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query3: No dates after death',
-            'result': 'Failure'
-        },
-        ignore_index=True)
-
-# # Query4: No dates earlier than 1980 in any table, except for the observation
-
-# get target tables WITHout observation
-df1 = target_tables
-df1 = df1[~df1.table_name.str.contains("obs")]
-target_tables2 = df1
-target_tables2
-
-
-def my_sql(table_name, column_name):
-
-    query = JINJA_ENV.from_string("""
-
-SELECT
-'{{table_name}}' AS table_name,
-'{{column_name}}' AS column_name,
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_cutoff_date
-FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
-WHERE  DATE(c.{{column_name}}) < '{{earliest_ehr_date}}'
-""")
-    q = query.render(project_id=project_id,
-                     ct_dataset=ct_dataset,
-                     table_name=table_name,
-                     column_name=column_name,
-                     earliest_ehr_date=earliest_ehr_date)
-    df11 = execute(client, q)
-    return df11
-
-
-result = [
-    my_sql(table_name, column_name) for table_name, column_name in zip(
-        target_tables2['table_name'], target_tables2['column_name'])
-]
-
-# +
-n = len(target_tables2.index)
-res2 = pd.DataFrame(result[0])
-
-for x in range(1, n):
-    res2 = res2.append(result[x])
-
-res2 = res2.sort_values(by='row_counts_failure', ascending=False)
-res2
-# -
-
-if res2.iloc[:, 3].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query4: No dates earlier than 1980 in any table, except for the observation',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query4: No dates earlier than 1980 in any table, except for the observation',
-            'result':
-                'Failure'
-        },
-        ignore_index=True)
-
-# # query 7  All participants have basics,done
-
-# +
-query = JINJA_ENV.from_string("""
-WITH person_all as (
-SELECT person_id FROM `{{project_id}}.{{ct_dataset}}.person`),
-
-person_basics as (
-SELECT distinct person_id
-FROM
-`{{project_id}}.{{ct_dataset}}.concept`
-JOIN `{{project_id}}.{{ct_dataset}}.concept_ancestor` on (concept_id=ancestor_concept_id)
-JOIN `{{project_id}}.{{ct_dataset}}.observation` on (descendant_concept_id=observation_concept_id)
-JOIN `{{project_id}}.{{ct_dataset}}.observation_ext` USING(observation_id)
-WHERE observation_concept_id NOT IN (40766240,43528428,1585389)
-AND concept_class_id='Module'
-AND concept_name IN ('The Basics')
-AND NOT REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
-AND questionnaire_response_id is not null)
-
-SELECT
-'observation' AS table_name,
-'person_id' AS column_name,
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_bascis
-
-FROM person_all
-WHERE person_id NOT IN (SELECT person_id FROM person_basics)
-""")
-
-q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-df1 = execute(client, q)
-df1.shape
-# -
-
-df1
-
-if df1.iloc[:, 3].sum() == 0:
-    df = df.append(
-        {
-            'query': 'Query7: All participants have basics',
-            'result': 'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query7: All participants have basics',
-            'result': 'Failure'
-        },
-        ignore_index=True)
-
-# # query 8 All participants WITH EHR data have said yes to EHR consents
-#
-# yes to 1586099 EHR Consent PII: Consent Permission
-
-# +
-query = JINJA_ENV.from_string("""
-WITH person_ehr as (
-  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.observation`
-  JOIN `{{project_id}}.{{ct_dataset}}.observation_ext` USING (observation_id)
-  WHERE REGEXP_CONTAINS(src_id, r'(?i)EHR site')
-
-  UNION DISTINCT
-
-  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.measurement`
-  JOIN `{{project_id}}.{{ct_dataset}}.measurement_ext` USING (measurement_id)
-  WHERE REGEXP_CONTAINS(src_id, r'(?i)EHR site')
-
-  UNION DISTINCT
-
-  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.condition_occurrence`
-  JOIN `{{project_id}}.{{ct_dataset}}.condition_occurrence_ext` USING (condition_occurrence_id)
-  WHERE REGEXP_CONTAINS(src_id, r'(?i)EHR site')
-
-  UNION DISTINCT
-
-  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.device_exposure`
-  JOIN `{{project_id}}.{{ct_dataset}}.device_exposure_ext` USING (device_exposure_id)
-  WHERE REGEXP_CONTAINS(src_id, r'(?i)EHR site')
-
-  UNION DISTINCT
-
-  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.drug_exposure`
-  JOIN `{{project_id}}.{{ct_dataset}}.drug_exposure_ext` USING (drug_exposure_id)
-  WHERE REGEXP_CONTAINS(src_id, r'(?i)EHR site')
-
-  UNION DISTINCT
-
-  SELECT distinct person_id FROM `{{project_id}}.{{ct_dataset}}.visit_occurrence`
-  JOIN `{{project_id}}.{{ct_dataset}}.visit_occurrence_ext` USING (visit_occurrence_id)
-  WHERE REGEXP_CONTAINS(src_id, r'(?i)EHR site')
-),
-
-person_yes as (
-  SELECT
-    distinct person_id
-  FROM
-    `{{project_id}}.{{ct_dataset}}.observation`
-  WHERE
-    observation_concept_id = 1586099
-  AND
-    value_source_concept_id = 1586100
-)
-
-SELECT
-'person_ehr' AS table_name,
-'person_id' AS column_name,
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_EHR_consent_permission
-
-FROM person_ehr
-WHERE  person_id NOT IN (SELECT person_id FROM person_yes)
-""")
-
-q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-df1 = execute(client, q)
-df1.shape
-df1
-# -
-
-if df1.iloc[:, 3].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query8: All participants WITH EHR data have said yes to EHR consents',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query8: All participants WITH EHR data have said yes to EHR consents',
-            'result':
-                'Failure'
-        },
-        ignore_index=True)
-
-# # Query 10 All primary keys are in _ext
-
-# +
-query = JINJA_ENV.from_string("""
-WITH
-    table1 AS (
-    SELECT
-      table_name,
-      column_name
-    FROM
-      `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
-    WHERE
-      column_name='person_id' ),
-    table2 AS (
-    SELECT
-      table_id AS table_name,
-      row_count
-    FROM
-      `{{project_id}}.{{ct_dataset}}.__TABLES__`
-    WHERE
-      row_count>1)
-
-  SELECT
-    table_name,
-    column_name
-  FROM
-    `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS` c
-  WHERE
-    table_name IN (
-    SELECT
-      DISTINCT table_name
-    FROM
-      table2
-    WHERE
-     (table_name IN (
-      SELECT
-        DISTINCT table_name
-      FROM
-        table1))
-    AND REGEXP_CONTAINS(column_name, r'(?i)(_id)')
-    AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(person_)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_concept)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_site)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(provider)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(response)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(location)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(source)')
-      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
-      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(unique)')
-      )
-
-      OR (
-    (table_name IN (
-      SELECT
-        DISTINCT table_name
-      FROM
-        table1))
-        AND REGEXP_CONTAINS(table_name, r'(?i)(visit)')
-        AND REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
-
-    OR (
-    (table_name IN (
-      SELECT
-        DISTINCT table_name
-      FROM
-        table1))
-        AND REGEXP_CONTAINS(table_name, r'(?i)(person)')
-         AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person_ext)')
-        AND REGEXP_CONTAINS(column_name, r'(?i)(person_id)')
-     )
-   """)
-
-q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-target_tables = execute(client, q)
-target_tables.shape
-# -
-
-target_tables
-
-
-def my_sql(table_name, column_name):
-
-    query = JINJA_ENV.from_string("""
-    SELECT
-'{{table_name}}' AS table_name,
-'{{column_name}}' AS column_name,
-
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_primary_key_match
-
-FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
-JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}_ext` ext USING ({{column_name}})
-WHERE  c.{{column_name}} !=ext.{{column_name}}
-""")
-    q = query.render(project_id=project_id,
-                     ct_dataset=ct_dataset,
-                     table_name=table_name,
-                     column_name=column_name)
-    df11 = execute(client, q)
-    return df11
-
-
-result = [
-    my_sql(table_name, column_name) for table_name, column_name in zip(
-        target_tables['table_name'], target_tables['column_name'])
-]
-result
-
-# +
-n = len(target_tables.index)
-res2 = pd.DataFrame(result[0])
-
-for x in range(1, n):
-    res2 = res2.append(result[x])
-
-res2 = res2.sort_values(by='row_counts_failure', ascending=False)
-res2
-# -
-
-if res2.iloc[:, 3].sum() == 0:
-    df = df.append(
-        {
-            'query': 'Query10: All primary keys are in _ext',
-            'result': 'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query10: All primary keys are in _ext',
-            'result': 'Failure'
-        },
-        ignore_index=True)
-
-# # query 11 No duplicated primary keys¶
-
-# +
-query = JINJA_ENV.from_string("""
-
-WITH
-    table1 AS (
-    SELECT
-      table_name,
-      column_name
-    FROM
-      `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
-    WHERE
-      column_name='person_id' ),
-    table2 AS (
-    SELECT
-      table_id AS table_name,
-      row_count
-    FROM    `{{project_id}}.{{ct_dataset}}.__TABLES__`
-    WHERE     row_count>1)
-
-  SELECT
-    table_name,
-    column_name
-  FROM
-    `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS` c
-  WHERE
-    table_name IN (
-    SELECT
-      DISTINCT table_name
-    FROM
-      table2
-    WHERE
-     (table_name IN (
-      SELECT
-        DISTINCT table_name
-      FROM
-        table1))
-    AND REGEXP_CONTAINS(column_name, r'(?i)(_id)')
-    AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(person_)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_concept)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_site)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(provider)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(response)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(location)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(source)')
-      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
-      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(unique)')
-      )
-
-      OR (
-          (table_name IN (
-      SELECT
-        DISTINCT table_name
-      FROM
-        table1))
-        AND REGEXP_CONTAINS(table_name, r'(?i)(visit)')
-        AND REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
-
-    OR (
-           (table_name IN (
-      SELECT
-        DISTINCT table_name
-      FROM
-        table1))
-        AND REGEXP_CONTAINS(table_name, r'(?i)(person)')
-         AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person_ext)')
-        AND REGEXP_CONTAINS(column_name, r'(?i)(person_id)')
-     )
- """)
-
-q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-target_tables = execute(client, q)
-target_tables.shape
-# -
-
-target_tables
-
-
-def my_sql(table_name, column_name):
-
-    query = JINJA_ENV.from_string("""
-
-SELECT
-'{{table_name}}' AS table_name,
-'{{column_name}}' AS column_name,
-{{column_name}},
-
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_primary_key_match
-FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
-GROUP BY {{column_name}}
-HAVING COUNT(*) >1
-""")
-    q = query.render(project_id=project_id,
-                     ct_dataset=ct_dataset,
-                     table_name=table_name,
-                     column_name=column_name)
-    df11 = execute(client, q)
-    return df11
-
-
-result = [
-    my_sql(table_name, column_name) for table_name, column_name in zip(
-        target_tables['table_name'], target_tables['column_name'])
-]
-result
-
-# +
-n = len(target_tables.index)
-res2 = pd.DataFrame(result[0])
-
-for x in range(1, n):
-    res2 = res2.append(result[x])
-
-res2 = res2.sort_values(by='row_counts_failure', ascending=False)
-res2
-# -
-
-if res2.empty:
-    df = df.append(
-        {
-            'query': 'Query11 No duplicated primary keys',
-            'result': 'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query11 No duplicated primary keys',
-            'result': 'Failure'
-        },
-        ignore_index=True)
-
-# # Query 12 OMOP tables should have standard concept ids, done WITH questions
-
-# +
-query = JINJA_ENV.from_string("""
-
-WITH
-    table1 AS (
-    SELECT
-      table_name,
-      column_name
-    FROM
-      `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
-    WHERE
-      column_name='person_id' ),
-    table2 AS (
-    SELECT
-      table_id AS table_name,
-      row_count
-    FROM
-      `{{project_id}}.{{ct_dataset}}.__TABLES__`
-    WHERE
-      row_count>1)
-
-  SELECT
-    table_name,
-    column_name
-  FROM
-    `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS` c
-  WHERE
-    table_name IN (
-    SELECT
-      DISTINCT table_name
-    FROM
-      table2
-    WHERE
-     table_name IN (
-      SELECT
-        DISTINCT table_name
-      FROM
-        table1))
-    AND REGEXP_CONTAINS(column_name, r'(?i)(_concept_id)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_source)')
-""")
-
-q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-target_tables = execute(client, q)
-target_tables.shape
-# -
-
-target_tables
-
-
-def my_sql(table_name, column_name):
-
-    query = JINJA_ENV.from_string("""
-
-SELECT
-'{{table_name}}' AS table_name,
-'{{column_name}}' AS column_name,
-
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_primary_key_match
-
-FROM `{{project_id}}.{{ct_dataset}}.concept` c
-JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}`  ON (concept_id={{column_name}})
-WHERE  standard_concept !='S'
-AND {{column_name}} !=0
-""")
-    q = query.render(project_id=project_id,
-                     ct_dataset=ct_dataset,
-                     table_name=table_name,
-                     column_name=column_name)
-    df11 = execute(client, q)
-    return df11
-
-
-result = [
-    my_sql(table_name, column_name) for table_name, column_name in zip(
-        target_tables['table_name'], target_tables['column_name'])
-]
-result
-
-# +
-n = len(target_tables.index)
-res2 = pd.DataFrame(result[0])
-
-for x in range(1, n):
-    res2 = res2.append(result[x])
-
-res2 = res2.sort_values(by='row_counts_failure', ascending=False)
-res2
-# -
-
-if res2.iloc[:, 3].sum() == 0:
-    df = df.append(
-        {
-            'query': 'Query12: OMOP tables should have standard concept ids',
-            'result': 'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query12: OMOP tables should have standard concept ids',
-            'result': 'Failure'
-        },
-        ignore_index=True)
-
-# # Query 13 observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date
-
-# +
+# # 1 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
 
 query = JINJA_ENV.from_string("""
-
- WITH rows_having_brith_date as (
-
- SELECT distinct observation_id
- FROM
-`{{project_id}}.{{rt_dataset}}.observation` ob
-JOIN {{project_id}}.{{rt_dataset}}.person p USING (person_id)
-WHERE  observation_concept_id in (4013886, 4135376, 4271761)
-AND observation_date=DATE(p.birth_datetime)
- )
-
- SELECT
-'observation' AS table_name,
-'observation_date' AS column_name,
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_birth_date_cut_Off
-FROM `{{project_id}}.{{ct_dataset}}.observation`
-WHERE observation_id IN (SELECT observation_id FROM rows_having_brith_date)
-AND observation_date != '{{cut_off_date}}'
- """)
-
-q = query.render(project_id=project_id,
-                 rt_dataset=rt_dataset,
-                 ct_dataset=ct_dataset,
-                 cut_off_date=cut_off_date)
-df1 = execute(client, q)
-df1.shape
-# -
-
-df1
-
-if df1.iloc[:, 3].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query13: observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query13: observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date',
-            'result':
-                'Failure'
-        },
-        ignore_index=True)
-
-#
-# # Query 14 done all other observation concept ids WITH dates similar to birth dates other than the 3 above should be removed
-
-# +
-query = JINJA_ENV.from_string("""
-
- WITH rows_having_brith_date as (
-
+WITH df1 AS (
 SELECT observation_id
-  FROM {{project_id}}.{{rt_dataset}}.observation ob
-JOIN  {{project_id}}.{{rt_dataset}}.person p USING (person_id)
- WHERE observation_concept_id NOT IN (4013886, 4135376, 4271761)
-  AND observation_date=DATE(p.birth_datetime)
-  )
-
-SELECT
-'observation' AS table_name,
- 'observation_date' AS column_name,
- COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_no_birth_date
-FROM `{{project_id}}.{{ct_dataset}}.observation` ob
-WHERE  observation_id IN (SELECT observation_id FROM rows_having_brith_date)
-""")
-
-q = query.render(project_id=project_id,
-                 rt_dataset=rt_dataset,
-                 ct_dataset=ct_dataset)
-df1 = execute(client, q)
-df1.shape
-# -
-
-df1
-
-if df1.iloc[:, 3].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query14: no birth_date in observation table except (4013886, 4135376, 4271761)',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query14: no birth_date in observation table except (4013886, 4135376, 4271761)',
-            'result':
-                'Failure'
-        },
-        ignore_index=True)
-
-# # Query 15:  All the descendants of ancestor_concept_id IN (4054924, 141771) -- motor vehicle accidents should be dropped in condition table¶
-
-# +
-query = JINJA_ENV.from_string("""
-
-SELECT
-'condition_occurrence' AS table_name,
- 'concept_id' AS column_name,
- COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_no_two_concept_ids
-FROM `{{project_id}}.{{ct_dataset}}.condition_occurrence`
-JOIN `{{project_id}}.{{ct_dataset}}.concept` c ON (condition_concept_id=c.concept_id)
-JOIN `{{project_id}}.{{ct_dataset}}.concept_ancestor` ON (c.concept_id=descendant_concept_id)
-WHERE ancestor_concept_id IN (4054924, 141771)
-""")
-
-q = query.render(project_id=project_id,
-                 rt_dataset=rt_dataset,
-                 ct_dataset=ct_dataset)
-
-df1 = execute(client, q)
-df1.shape
-# -
-
-df1
-
-if df1.iloc[:, 3].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query15: All the descendants of ancestor_concept_id IN (4054924, 141771)  be dropped in condition table',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query15: All the descendants of ancestor_concept_id IN (4054924, 141771)  be dropped in condition table',
-            'result':
-                'Failure'
-        },
-        ignore_index=True)
-
-# # Query 16:  All the data from drug_era, condition_era, and dose_era tables is dropped
-
-# +
-era_tables = ['dose_era', 'drug_era', 'condition_era']
-
-
-def query_template(table_era):
-
-    query = JINJA_ENV.from_string("""
-      WITH df1 AS (
-        SELECT
-          `{{table_era}}_id`
-        FROM
-          `{{project_id}}.{{ct_dataset}}.{{table_era}}`
-      )
-
-      SELECT
-        '{{table_era}}' as table_name, COUNT(*) AS row_count
-      FROM
-        df1
-    """)
-
-    q = query.render(project_id=project_id,
-                     ct_dataset=ct_dataset,
-                     table_era=table_era)
-    df2 = execute(client, q)
-    return df2
-
-
-result = []
-for table in era_tables:
-    result.append(query_template(table))
-
-n = len(era_tables)
-res2 = pd.DataFrame(result[0])
-
-for x in range(1, n):
-    res2 = res2.append(result[x])
-
-res2 = res2.sort_values(by='row_count', ascending=False)
-
-if res2['row_count'].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query16: All the data from drug_era, condition_era, and dose_era tables is dropped',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query16: All the data from drug_era, condition_era, and dose_era tables is dropped',
-            'result':
-                'Failure'
-        },
-        ignore_index=True)
-res2
-
-# # final summary result
-# -
-
-
-# # Q17 Wear study table
-#
-# DC-3340
-#
-# This check confirms that the wear_study table contains:
-# 1. Only one row per participant
-# 2. Wear study participants are also found in the CDR person table.
-# 3. Wear study participants have primary consent records in observation.
-#
-# **If check fails:**<br>
-# * The issue `participant with multiple records` means that those participants have multiple rows in the wear_study table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table. <br>
-# * The issue `not in person table` means that participants exist in the wear_study table that aren't in the person table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table.<br>
-# * The issue `no primary consent` means that participants exist in the wear_study table that do not have proper primary consent. Investigate the issue. It is possible that there is another way to determine primary consent. <br>
-
-# +
-query = JINJA_ENV.from_string("""
-
-WITH latest_primary_consent_records AS ( -- most current consent record per person --
-    SELECT person_id, observation_source_value, MAX(observation_date) AS latest_date,
-    FROM `{{project_id}}.{{ct_dataset}}.observation` o
-    WHERE REGEXP_CONTAINS(observation_source_value, '(?i)extraconsent_agreetoconsent')
-    GROUP BY person_id, observation_source_value
+FROM    `{{project_id}}.{{com_cdr}}.observation`
+WHERE observation_source_value LIKE '%SitePairing%'
+OR observation_source_value LIKE '%ArizonaSpecific%'
+OR observation_source_value LIKE 'EastSoutheastMichigan%'
+OR observation_source_value LIKE 'SitePairing_%' 
 )
 
-SELECT
-  'participant with multiple records' as issue,
-  COUNT(person_id) as bad_rows
-FROM `{{project_id}}.{{ct_dataset}}.wear_study` ws
-GROUP BY person_id
-HAVING COUNT(person_id)>1
-
-UNION ALL
-
-SELECT
-  'not in person table' as issue,
-  COUNT(person_id) as bad_rows
-FROM `{{project_id}}.{{ct_dataset}}.wear_study` ws
-WHERE person_id not in ( -- person table --
-  SELECT person_id
-  FROM `{{project_id}}.{{ct_dataset}}.person` o
-  )
-UNION ALL
-
-SELECT
-  'no primary consent' as issue,
-  COUNT(person_id) as bad_rows
-FROM `{{project_id}}.{{ct_dataset}}.wear_study` ws
-WHERE person_id not in (  -- aou consenting participants --
-  SELECT cte.person_id
-  FROM latest_primary_consent_records cte
-    LEFT JOIN ( -- any positive primary consent --
-      SELECT *
-      FROM `{{project_id}}.{{ct_dataset}}.observation` o
-      WHERE REGEXP_CONTAINS(o.observation_source_value, '(?i)extraconsent_agreetoconsent')
-      AND o.value_as_concept_id = 45877994
-    ON cte.person_id = o.person_id
-    AND cte.latest_consent_date = o.observation_date
-  WHERE o.person_id IS NOT NULL
-  )
-
-""")
-q = query.render(project_id=project_id,
-                 ct_dataset=ct_dataset)
-df1 = execute(client, q)
-
-if df1['bad_rows'].sum() == 0:
-    df = df.append(
-        {
-            'query': 'Query17  wear_study table is as expected.',
-            'result': 'PASS'
-        },
-        ignore_index=True)
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1)
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+ """)
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q)  
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query1 three colmns suppression in observation table', 'result' : 'PASS'},  
+                ignore_index = True) 
 else:
-    df = df.append(
-        {
-            'query': 'Query17 wear_study table is not as expected. See notes in the description.',
-            'result': 'Failure'
-        },
-        ignore_index=True)
-
-
-# +
-# Query 18:  Check that wear_consent records are suppressed in the 'observation' and 'survey_conduct' tables
-# -
-
-query = JINJA_ENV.from_string("""
-SELECT
-  'observation' as table,
-  COUNT(*) AS bad_rows
-FROM
-  `{{project_id}}.{{ct_dataset}}.observation` o
-  LEFT JOIN   `{{project_id}}.{{ct_dataset}}.survey_conduct` sc
-  ON sc.survey_conduct_id = o.questionnaire_response_id
-WHERE sc.survey_concept_id IN (2100000011,2100000012) -- captures questions asked in multiple surveys --
-OR LOWER(observation_source_value) IN UNNEST ({{wear_codes}}) -- captures those that might be missing from survey_conduct --
-GROUP BY 1
-UNION ALL
-SELECT
-  'survey_conduct' as table,
-  COUNT(*) AS bad_rows
-FROM
-  `{{project_id}}.{{ct_dataset}}.survey_conduct` sc
-WHERE sc.survey_concept_id IN (2100000011,2100000012)
-GROUP BY 1
-""")
-q = query.render(project_id=project_id,
-            ct_dataset=ct_dataset,
-            wear_codes=WEAR_SURVEY_CODES)
-df1=execute(client, q)
-if df1['bad_rows'].sum()==0:
- df = df.append({'query' : 'Query18 wear_consent records are cleaned as expected.', 'result' : 'PASS'},
-                ignore_index = True)
-else:
- df = df.append({'query' : 'Query18 wear_consent records have not been cleaned as expected.', 'result' : 'Failure'},
-                ignore_index = True)
+ df = df.append({'query' : 'Query1 observation', 'result' : 'Failure'},  
+                ignore_index = True) 
 df1
 
+# # 2 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+# ## error in new cdr
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM    `{{project_id}}.{{com_cdr}}.observation`
+WHERE observation_source_value LIKE 'PIIName_%'
+OR observation_source_value LIKE 'PIIAddress_%'
+OR observation_source_value LIKE 'StreetAddress_%'
+OR observation_source_value LIKE 'ConsentPII_%'
+OR observation_source_value LIKE 'TheBasics_CountryBornTextBox'
+OR observation_source_value LIKE 'PIIContactInformation_Phone'
+OR observation_source_value LIKE 'Language_SpokenWrittenLanguage'
+OR observation_source_value LIKE 'SocialSecurity_%' 
+)
+
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q)  
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query2 observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query2 observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# +
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM    `{{project_id}}.{{com_cdr}}.observation`
+WHERE observation_source_value LIKE 'PIIName_%'
+OR observation_source_value LIKE 'PIIAddress_%'
+OR observation_source_value LIKE 'StreetAddress_%'
+OR observation_source_value LIKE 'ConsentPII_%'
+OR observation_source_value LIKE 'TheBasics_CountryBornTextBox'
+OR observation_source_value LIKE 'PIIContactInformation_Phone'
+OR observation_source_value LIKE 'Language_SpokenWrittenLanguage'
+OR observation_source_value LIKE 'SocialSecurity_%' 
+)
+
+SELECT  distinct observation_source_value,value_source_value, value_as_string
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL) 
+OR (value_as_string IS NOT NULL)) 
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q)  
+
+df1
+# -
+
+# # 3 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+# ## error in new cdr
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT  observation_id
+FROM    `{{project_id}}.{{com_cdr}}.observation`
+WHERE observation_source_value LIKE '%_Signature'
+OR observation_source_value LIKE 'ExtraConsent__%' 
+)
+
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q)  
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query3 observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query3 observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# +
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT  observation_id
+FROM    `{{project_id}}.{{com_cdr}}.observation`
+WHERE observation_source_value LIKE '%_Signature'
+OR observation_source_value LIKE 'ExtraConsent__%' 
+)
+
+SELECT 
+distinct observation_source_value,value_source_value, value_as_string
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q)  
+
+df1
+# -
+
+# # 4 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM `{{project_id}}.{{com_cdr}}.observation`
+WHERE observation_source_value LIKE '%Specific' 
+OR observation_source_value LIKE '%NoneOfTheseDescribeMe%' 
+OR observation_source_value LIKE '%RaceEthnicityNoneOfThese_%' 
+OR observation_source_value LIKE 'NoneOfTheseDescribeMe%'
+OR observation_source_value LIKE 'WhatTribeAffiliation_%'
+)
+
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q)  
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query4 observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query4 observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# # 5 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+# ## error in new cdr
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM `{{project_id}}.{{com_cdr}}.observation`
+WHERE observation_source_value LIKE '%Gender%' 
+OR observation_source_value LIKE '%Sexuality%' 
+OR observation_source_value LIKE '%SexAtBirthNoneOfThese_%' 
+)
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+ FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query5 Observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query5 Observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# +
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM `{{project_id}}.{{com_cdr}}.observation`
+WHERE observation_source_value LIKE '%Gender%' 
+OR observation_source_value LIKE '%Sexuality%' 
+OR observation_source_value LIKE '%SexAtBirthNoneOfThese_%' 
+)
+SELECT distinct observation_source_value,value_source_value, value_as_string
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)  
+OR (value_as_string IS NOT NULL))  
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+
+df1
+# -
+
+# # 6 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM  `{{project_id}}.{{com_cdr}}.observation`
+WHERE  observation_source_value LIKE '%ContactInfo_%' 
+OR observation_source_value LIKE 'PersonOneAddress_%' 
+OR observation_source_value LIKE 'SecondContactsAddress_%'  
+)
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query6 Observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query6 Observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# # 7 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM  `{{project_id}}.{{com_cdr}}.observation`
+WHERE observation_source_value LIKE 'EmploymentWorkAddress_%'  
+)
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+ """)
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query7 observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query7 observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# # 8 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM  `{{project_id}}.{{com_cdr}}.observation`
+WHERE  observation_source_value LIKE 'PersonalMedicalHistory_AdditionalDiagnosis' 
+OR observation_source_value LIKE 'ActiveDuty_AvtiveDutyServeStatus' 
+OR observation_source_value LIKE 'OtherSpecify_OtherDrugsTextBox' 
+OR observation_source_value LIKE 'notes')
+
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null 
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query8 observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query8 observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# # 9 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM `{{project_id}}.{{com_cdr}}.observation`
+WHERE  observation_source_value LIKE 'OrganTransplantDescription_OtherOrgan'
+OR observation_source_value LIKE 'OrganTransplantDescription_OtherTissue')
+
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query9 observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query9 observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# # 10 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM `{{project_id}}.{{com_cdr}}.observation`
+WHERE  observation_source_value LIKE 'LivingSituation_CurrentLiving'
+OR observation_source_value LIKE 'LivingSituation_LivingSituationFreeText')
+
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query10 observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query10 observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# # 11 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM  `{{project_id}}.{{com_cdr}}.observation`
+WHERE  observation_source_value LIKE 'OutsideTravel6Month_OutsideTravel6MonthWhereTravel'
+OR observation_source_value LIKE 'OutsideTravel6Month_OutsideTravel6MonthWhere')
+
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+
+
+    """)
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query11 observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query11 observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# # 12 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+# ## error in new cdr
+
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM `{{project_id}}.{{com_cdr}}.observation`
+WHERE  observation_source_value LIKE 'HowOldWereYou%FreeTextBox' 
+OR observation_source_value LIKE '%_WhichConditions%' 
+OR observation_source_value LIKE '%_OtherCancer%' 
+OR observation_source_value LIKE 'OtherCondition_%' 
+OR observation_source_value LIKE 'Other%FreeTextBox' 
+OR observation_source_value LIKE 'Other%FreeText' )
+
+SELECT 
+SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
+SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null,
+SUM(CASE WHEN observation_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_source_value_not_null
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL)  
+OR (value_source_value IS NOT NULL) 
+OR (value_as_string IS NOT NULL))  
+ """)
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query12 observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query12 observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+# +
+query = JINJA_ENV.from_string("""
+WITH df1 AS (
+SELECT observation_id
+FROM `{{project_id}}.{{com_cdr}}.observation`
+WHERE  observation_source_value LIKE 'HowOldWereYou%FreeTextBox' 
+OR observation_source_value LIKE '%_WhichConditions%' 
+OR observation_source_value LIKE '%_OtherCancer%' 
+OR observation_source_value LIKE 'OtherCondition_%' 
+OR observation_source_value LIKE 'Other%FreeTextBox' 
+OR observation_source_value LIKE 'Other%FreeText' )
+
+SELECT distinct observation_source_value,value_source_value,value_as_string
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE observation_id IN (SELECT observation_id FROM df1) 
+AND ((observation_source_value IS NOT NULL) 
+OR (value_source_value IS NOT NULL)
+OR (value_as_string IS NOT NULL))
+ """)
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+
+df1
+# -
+
+# # 13 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
+
+query = JINJA_ENV.from_string("""
+
+SELECT 
+SUM(CASE WHEN observation_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_observation_concept_id_not_null
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE    observation_concept_id IN (4013886,4271761,4135376,1585559,43529714,1585917,1585913,43529731,43529729,
+43529730,1585933,1585929,1585965)
+""")
+q = query.render(project_id=project_id,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query13 observation_concept_id suppression in observation', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query13 observation_concept_id suppression in observation', 'result' : 'Failure'},  
+                ignore_index = True) 
+df1
+
+
+# # Summary_row_suppression
 
 # +
 def highlight_cells(val):
     color = 'red' if 'Failure' in val else 'white'
-    return f'background-color: {color}'
-
+    return f'background-color: {color}' 
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
