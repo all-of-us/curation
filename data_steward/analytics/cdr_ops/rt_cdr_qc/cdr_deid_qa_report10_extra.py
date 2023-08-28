@@ -866,7 +866,7 @@ WHERE person_id not in ( -- person table --
   SELECT person_id
   FROM `{{project_id}}.{{rt_cdr_deid}}.person` o
   )
-
+  
 UNION ALL
 
 SELECT
@@ -927,7 +927,7 @@ SELECT
   COUNT(*) AS bad_rows
 FROM
   `{{project_id}}.{{rt_cdr_deid}}.survey_conduct` sc
-WHERE sc.survey_concept_id IN (2100000011,2100000012)
+WHERE sc.survey_concept_id IN (2100000011,2100000012) 
 GROUP BY 1
 """)
 q = query.render(project_id=project_id,
