@@ -54,6 +54,140 @@ WEAR_SURVEY_CODES = [
     'wear_consent_ptsc'
 ]
 
+expected_strings = ["sensitivetype2_mentalhealth","sensitivetype2_hivaids","sensitivetype2_substanceuse",
+                    "sensitivetype2_genetictesting","sensitivetype2_domesticviolence","ehrconsentpii_todaysdate",
+                    "ehrconsentpii_todaysdateilhippawitness","smoking_dailysmokestartingagenumber",
+                    "smoking_numberofyearsnumber","self_reported_weight_pounds","self_reported_weight_kg",
+                    "otherkidneycondition_motherfreetextbox","otherkidneycondition_fatherfreetextbox",
+                    "otherkidneycondition_siblingfreetextbox","otherkidneycondition_daughterfreetextbox",
+                    "otherkidneycondition_sonfreetextbox","otherkidneycondition_grandparentfreetextbox",
+                    "otherrespiratory_motherfreetextbox","otherrespiratory_fatherfreetextbox",
+                    "otherrespiratory_siblingfreetextbox","otherrespiratory_daughterfreetextbox",
+                    "otherrespiratory_sonfreetextbox","otherrespiratory_grandparentfreetextbox",
+                    "organtransplant_hearttransplantdate","organtransplant_kidneytransplantdate",
+                    "organtransplant_livertransplantdate","organtransplant_lungtransplantdate",
+                    "organtransplant_pancreastransplantdate","organtransplant_intestinetransplantdate",
+                    "organtransplant_otherorgantransplantdate","organtransplant_corneatransplantdate",
+                    "organtransplant_bonetransplantdate","organtransplant_valvetransplantdate",
+                    "organtransplant_skintransplantdate","organtransplant_bloodvesseltransplantdate",
+                    "organtransplant_othertissuetransplantdate","livingsituation_howmanypeople",
+                    "livingsituation_peopleunder18","socialsecurity_socialsecuritynumber",
+                    "secondarycontactinfo_persononefirstname","secondarycontactinfo_secondcontactsfirstname",
+                    "outsidetravel6month_outsidetravel6monthwheretraveled","cdc_covid_19_7_xx23_other_cope_a_204",
+                    "dmfs_29_additionaldose_other","cdc_covid_xx_b_firstdose_other",
+                    "cdc_covid_xx_symptom_seconddose_cope_350","mhqukb_48_age","mhqukb_50_number","mhqukb_51_number",
+                    "mhqukb_52_number","mhqukb_53_number","cidi5_24","cidi5_20","cidi5_28","cidi5_31",
+                    "resultsconsent_emailmecopy","resultsconsent_signaturedate","helpmewithconsent_name",
+                    "other_reasons","other_concerns","signature_type","ehrconsentpii_helpwithconsentsignature",
+                    "cidi5_15","mhqukb_25_number","mhqukb_26_age","mhqukb_28_age","ss_2_age","ss_3_number",
+                    "ss_3_age_1","ss_3_age_2","english_exploring_the_mind_consent_form","etm_help_name",
+                    "self_reported_height_ft","self_reported_height_in","self_reported_height_cm",
+                    "extraconsent_signature_type","extraconsent_todaysdate","consentpii_helpwithconsentsignature",
+                    "piiname_first","piiname_middle","piiname_last","piiaddress_streetaddress",
+                    "piiaddress_streetaddress2","streetaddress_piicity","streetaddress_piizip",
+                    "piicontactinformation_phone","piibirthinformation_birthdate","timeofday","wearconsent_todaysdate",
+                    "attemptquitsmoking_completelyquitage","smoking_currentdailycigarettenumber",
+                    "smoking_averagedailycigarettenumber","overallhealth_hysterectomyhistoryage",
+                    "overallhealthovaryremovalhistoryage","outsidetravel6month_outsidetravel6monthhowlong",
+                    "urs_8c","cdc_covid_19_7_xx22_date","cope_a_126","ipaq_1_cope_a_24","ipaq_2_cope_a_160",
+                    "ipaq_2_cope_a_85","ipaq_3_cope_a_24","ipaq_4_cope_a_160","ipaq_4_cope_a_85","ipaq_5_cope_a_24",
+                    "ipaq_6_cope_a_160","ipaq_6_cope_a_85","cope_a_160","cope_a_85","copect_50_xx19_cope_a_57",
+                    "copect_50_xx19_cope_a_198","copect_50_xx19_cope_a_152","lifestyle_2_xx12_cope_a_57",
+                    "lifestyle_2_xx12_cope_a_198","lifestyle_2_xx12_cope_a_152","cdc_covid_xx_symptom_cope_350",
+                    "basics_xx","basics_xx20","cdc_covid_xx_a_date1","cdc_covid_xx_a_date2",
+                    "otherheartorbloodcondition_motherfreetextbox","otherheartorbloodcondition_fatherfreetextbox",
+                    "otherheartorbloodcondition_siblingfreetextbox","otherheartorbloodcondition_daughterfreetextbox",
+                    "otherheartorbloodcondition_sonfreetextbox","otherheartorbloodcondition_grandparentfreetextbox",
+                    "otherdigestivecondition_grandparentfreetextbox","otherbrainnervoussystem_motherfreetextbox",
+                    "othercancer_motherfreetextbox","othercancer_fatherfreetextbox","othercancer_siblingfreetextbox",
+                    "othercancer_daughterfreetextbox","othercancer_sonfreetextbox","othercancer_grandparentfreetextbox",
+                    "othercancer_freetextbox","otherheartorbloodcondition_freetextbox",
+                    "otherdigestivecondition_freetextbox","otherdiabetes_freetextbox","otherthyroid_freetextbox",
+                    "otherhormoneendocrine_freetextbox","otherkidneycondition_freetextbox",
+                    "otherrespiratory_freetextbox", "otherbonejointmuscle_freetextbox",
+                    "otherhearingeye_freetextbox","otherdiagnosis_freetextbox",
+                    "otherinfectiousdisease_freetextbox","dmfs_29a","cdc_covid_xx_b_other","cu_covid_cope_a_204",
+                    "basics_11a_cope_a_33","cdc_covid_19_n_a2","nhs_covid_fhc17b_cope_a_226","msds_17_c",
+                    "cdc_covid_19_n_a4","cdc_covid_19_n_a8","cope_aou_xx_2_a","cdc_covid_xx_a_date3",
+                    "cdc_covid_xx_a_date4","cdc_covid_xx_a_date5","cdc_covid_xx_a_date6",
+                    "cdc_covid_xx_a_date7","cdc_covid_xx_a_date8","cdc_covid_xx_a_date9",
+                    "cdc_covid_xx_a_date10","cdc_covid_xx_a_date11","cdc_covid_xx_a_date12",
+                    "cdc_covid_xx_a_date13","cdc_covid_xx_a_date14","cdc_covid_xx_a_date15","cdc_covid_xx_a_date16",
+                    "cdc_covid_xx_a_date17","otherdigestivecondition_motherfreetextbox",
+                    "otherdigestivecondition_fatherfreetextbox","otherdigestivecondition_siblingfreetextbox",
+                    "otherdigestivecondition_daughterfreetextbox","otherdigestivecondition_sonfreetextbox",
+                    "otherdiabetes_motherfreetextbox","otherdiabetes_fatherfreetextbox",
+                    "otherdiabetes_siblingfreetextbox","otherdiabetes_grandparentfreetextbox",
+                    "otherthyroid_motherfreetextbox","otherthyroid_fatherfreetextbox",
+                    "otherthyroid_siblingfreetextbox","otherthyroid_daughterfreetextbox",
+                    "otherthyroid_sonfreetextbox","otherthyroid_grandparentfreetextbox",
+                    "otherhormoneendocrine_motherfreetextbox","otherhormoneendocrine_fatherfreetextbox",
+                    "otherhormoneendocrine_siblingfreetextbox","otherhormoneendocrine_daughterfreetextbox",
+                    "otherhormoneendocrine_sonfreetextbox","otherhormoneendocrine_grandparentfreetextbox",
+                    "otherbrainnervoussystem_fatherfreetextbox","otherbrainnervoussystem_siblingfreetextbox",
+                    "otherbrainnervoussystem_daughterfreetextbox","otherbrainnervoussystem_sonfreetextbox",
+                    "otherbrainnervoussystem_grandparentfreetextbox","othermentalhealthsubstanceuse_motherfreetextbox",
+                    "othermentalhealthsubstanceuse_fatherfreetextbox",
+                    "othermentalhealthsubstanceuse_siblingfreetextbox",
+                    "othermentalhealthsubstanceuse_daughterfreetextbox","othermentalhealthsubstanceuse_sonfreetextbox",
+                    "othermentalhealthsubstanceuse_grandparentfreetextb","otherarthritis_motherfreetextbox",
+                    "otherarthritis_fatherfreetextbox","otherarthritis_siblingfreetextbox",
+                    "otherarthritis_daughterfreetextbox","otherarthritis_sonfreetextbox",
+                    "otherarthritis_freetextbox",
+                    "otherarthritis_grandparentfreetextbox","otherbonejointmuscle_motherfreetextbox",
+                    "otherbonejointmuscle_fatherfreetextbox","otherbonejointmuscle_siblingfreetextbox",
+                    "otherbonejointmuscle_daughterfreetextbox","otherbonejointmuscle_sonfreetextbox",
+                    "otherbonejointmuscle_grandparentfreetextbox","otherhearingeye_motherfreetextbox",
+                    "otherhearingeye_fatherfreetextbox","otherhearingeye_siblingfreetextbox",
+                    "otherhearingeye_daughterfreetextbox","otherhearingeye_sonfreetextbox"
+                    ,"otherhearingeye_grandparentfreetextbox","otherdiagnosis_motherfreetextbox",
+                    "otherdiagnosis_fatherfreetextbox","otherdiagnosis_siblingfreetextbox",
+                    "otherdiagnosis_daughterfreetextbox","otherdiagnosis_sonfreetextbox",
+                    "otherdiagnosis_grandparentfreetextbox","otherbrainnervoussystem_freetextbox",
+                    "cdc_covid_xx_b_seconddose_other","dmfs_29_seconddose_other","thebasics_countryborntextbox",
+                    "whatraceethnicity_raceethnicitynoneofthese","aian_tribe","aiannoneofthesedescribeme_aianfreetext",
+                    "noneofthesedescribeme_asianfreetext","blacknoneofthesedescribeme_blackfreetext",
+                    "hispanicnoneofthesedescribeme_hispanicfreetext","menanoneofthesedescribeme_menafreetext",
+                    "nhpinoneofthesedescribeme_nhpifreetext","whitenoneofthesedescribeme_whitefreetext",
+                    "specifiedgender_specifiedgendertextbox","sexatbirthnoneofthese_sexatbirthtextbox",
+                    "somethingelse_sexualitysomethingelsetextbox","otherhealthplan_freetext",
+                    "employmentworkaddress_addresslineone","employmentworkaddress_addresslinetwo",
+                    "employmentworkaddress_city","employmentworkaddress_zipcode","employmentworkaddress_country",
+                    "livingsituation_livingsituationfreetext","secondarycontactinfo_persononemiddleinitial",
+                    "secondarycontactinfo_persononelastname","secondarycontactinfo_persononeaddressone",
+                    "secondarycontactinfo_persononeaddresstwo","persononeaddress_persononeaddresscity",
+                    "persononeaddress_persononeaddresszipcode","secondarycontactinfo_persononeemail",
+                    "secondarycontactinfo_persononetelephone","secondarycontactinfo_secondcontactsmiddleinitial",
+                    "secondarycontactinfo_secondcontactslastname","secondarycontactinfo_secondcontactsaddressone",
+                    "secondarycontactinfo_secondcontactsaddresstwo","secondcontactsaddress_secondcontactcity",
+                    "secondcontactsaddress_secondcontactzipcode","secondarycontactinfo_secondcontactsemail",
+                    "secondarycontactinfo_secondcontactsnumber","otherspecify_otherdrugstextbox",
+                    "otherorgan_freetextbox","othertissue_freetextbox","otherdelayedmedicalcare_freetext",
+                    "sdoh_eds_follow_up_1_xx","tsu_ds5_13_xx42_cope_a_226","eds_follow_up_1_xx",
+                    "othercondition_motherfreetextbox","othercondition_fatherfreetextbox",
+                    "othercondition_siblingfreetextbox","othercondition_daughterfreetextbox",
+                    "othercondition_sonfreetextbox","othercondition_grandparentfreetextbox",
+                    "cdc_covid_xx_b_dose3_other","cdc_covid_xx_symptom_cope_350_dose3","cdc_covid_xx_type_dose3_other",
+                    "cdc_covid_xx_b_dose4_other",
+                    "cdc_covid_xx_symptom_cope_350_dose4","cdc_covid_xx_type_dose4_other","cdc_covid_xx_b_dose5_other",
+                    "cdc_covid_xx_symptom_cope_350_dose5","cdc_covid_xx_type_dose5_other","cdc_covid_xx_b_dose6_other",
+                    "cdc_covid_xx_symptom_cope_350_dose6","cdc_covid_xx_type_dose6_other","cdc_covid_xx_b_dose7_other",
+                    "cdc_covid_xx_symptom_cope_350_dose7","cdc_covid_xx_type_dose7_other","cdc_covid_xx_b_dose8_other",
+                    "cdc_covid_xx_symptom_cope_350_dose8","cdc_covid_xx_type_dose8_other","cdc_covid_xx_b_dose9_other",
+                    "cdc_covid_xx_symptom_cope_350_dose9","cdc_covid_xx_type_dose9_other","cdc_covid_xx_b_dose10_other",
+                    "cdc_covid_xx_symptom_cope_350_dose10","cdc_covid_xx_type_dose10_other",
+                    "cdc_covid_xx_b_dose11_other","cdc_covid_xx_symptom_cope_350_dose11",
+                    "cdc_covid_xx_type_dose11_other","cdc_covid_xx_b_dose12_other",
+                    "cdc_covid_xx_symptom_cope_350_dose12","cdc_covid_xx_type_dose12_other",
+                    "cdc_covid_xx_b_dose13_other","cdc_covid_xx_symptom_cope_350_dose13",
+                    "cdc_covid_xx_type_dose13_other","cdc_covid_xx_b_dose14_other",
+                    "cdc_covid_xx_symptom_cope_350_dose14","cdc_covid_xx_type_dose14_other",
+                    "cdc_covid_xx_b_dose15_other","cdc_covid_xx_symptom_cope_350_dose15",
+                    "cdc_covid_xx_type_dose15_other","cdc_covid_xx_b_dose16_other",
+                    "cdc_covid_xx_symptom_cope_350_dose16","cdc_covid_xx_type_dose16_other",
+                    "cdc_covid_xx_b_dose17_other","cdc_covid_xx_symptom_cope_350_dose17",
+                    "cdc_covid_xx_type_dose17_other"]
+
 # # Table comparison
 # The export should generally contain the same tables from month to month.
 # Tables found only in the old or the new export are listed below.
@@ -365,20 +499,34 @@ ORDER BY 2 DESC
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
-# # Check if numeric data in value_as_string
+# # Check numeric data in value_as_string
 # Some numeric data is expected in value_as_string.  For example, zip codes or other contact specific information.
+#
+# **If the check fails, manually review the results. If 
 
+# +
 tpl = JINJA_ENV.from_string("""
 SELECT
   observation_source_value
  ,COUNT(1) AS n
 FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE SAFE_CAST(value_as_string AS INT64) IS NOT NULL
+AND value_source_concept_id = 0
+AND LOWER(observation_source_value) NOT IN UNNEST ({{expected_strings}}) 
+AND NOT REGEXP_CONTAINS(LOWER(observation_source_value), '(?i)snap|signature|address|email|number|cohortgroup')
 GROUP BY 1
 ORDER BY 2 DESC
 """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id,expected_strings=expected_strings)
+df = execute(client, query)
+
+success_msg = 'All records with a number in value_as_string are expected to be text.'
+failure_msg = 'Some records that have a number value_as_string might not be expected. See description.'
+
+render_message(df,
+                success_msg,
+                failure_msg)
+# -
 
 # # All COPE `questionnaire_response_id`s are in COPE version map
 # Any `questionnaire_response_id`s missing from the map will be listed below.
