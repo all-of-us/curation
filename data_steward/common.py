@@ -251,6 +251,7 @@ EXT_SUFFIX = '_ext'
 DEID_MAP = '_deid_map'
 MAX_DEID_DATE_SHIFT = 364
 COPE_SURVEY_MAP = 'cope_survey_semantic_version_map'
+EHR_CONSENT_VALIDATION = 'consent_validation'
 
 # pipeline_tables dataset and contents
 PIPELINE_TABLES = 'pipeline_tables'

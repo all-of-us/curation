@@ -317,7 +317,7 @@ result
 # If the query fails use these hints to help investigate.
 # * not_research_device_ids  - These 'deidentified' device_ids are not in the masking table. Did the CR run that updates the masking table with new research_device_ids?
 # * check_uuid_format - These deidentified device_ids should have the uuid format and not NULL.
-# * check_uuid_unique - All deidentified device_ids for a device_id/person_id should be unique. If not, replace the non-unique research_device_ids in the masking table with new UUIDs. 
+# * check_uuid_unique - All deidentified device_ids for a device_id/person_id should be unique. If not, replace the non-unique research_device_ids in the masking table with new UUIDs.
 #
 # Device_id is being deidentified by a combination of the following cleaning rules.
 # 1. generate_research_device_ids - Keeps the masking table(wearables_device_id_masking) updated.
@@ -358,16 +358,101 @@ FROM check_uuid_unique
 
 result = execute(client, query)
 
-if sum(result['bad_rows']) == 0:    
-    summary = summary.append(        {
-            'query': 'Query7 device_id was deidentified properly for all records.',
+if sum(result['bad_rows']) == 0:
+    summary = summary.append(
+        {
+            'query':
+                'Query7 device_id was deidentified properly for all records.',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    summary = summary.append(
+        {
+            'query':
+                'Query7 device_id was not deidentified properly. See query description for hints.',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
+result
+
+# -
+
+# # Check de-identification of src_ids.
+#
+# DC-3376
+#
+# This check verifies that src_ids in fitbit tables were updated successfully.
+
+# +
+src_id_check = JINJA_ENV.from_string("""
+SELECT  
+    count(records) as bad_src_id_match_rows,
+    '{{table}}' as table,
+FROM (
+    SELECT 
+        distinct person_id,
+        src_id, 
+        count(person_id) as records
+    FROM 
+        `{{project}}.{{deid_cdr_fitbit}}.{{table}}`
+    GROUP BY 
+        1,2
+) ft
+
+LEFT JOIN
+
+(
+    SELECT 
+        distinct prm.research_id, 
+        ft.person_id, 
+        src_id 
+    FROM
+        `{{project}}.{{non_deid_fitbit}}.{{table}}` ft
+    LEFT JOIN 
+        `{{project}}.{{pipeline_tables}}.primary_pid_rid_mapping` prm 
+    ON
+      prm.person_id = ft.person_id 
+) st
+ON
+    ft.person_id = st.research_id
+JOIN
+    `{{project}}.{{pipeline_tables}}.site_maskings` sm
+ON
+    sm.hpo_id = st.src_id
+WHERE
+    ft.src_id != sm.src_id
+OR
+    NOT REGEXP_CONTAINS(ft.src_id, r'(?i)Participant Portal')  
+OR
+    ft.src_id is NULL
+""")
+
+queries_list = []
+for table in FITBIT_TABLES:
+    queries_list.append(
+        src_id_check.render(project=project_id,
+                            deid_cdr_fitbit=deid_cdr_fitbit,
+                            non_deid_fitbit=non_deid_fitbit,
+                            table=table,
+                            pipeline_tables=pipeline))
+union_all_query = '\nUNION ALL\n'.join(queries_list)
+
+result = execute(client, union_all_query)
+
+if sum(result['bad_src_id_match_rows']) == 0:
+    summary = summary.append(
+        {
+            'query': 'Query8 Check de-identification of src_ids.',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     summary = summary.append(
         {
-            'query': 'Query7 device_id was not deidentified properly. See query description for hints.',
+            'query': 'Query8 Check de-identification of src_ids.',
             'result': 'Failure'
         },
         ignore_index=True)

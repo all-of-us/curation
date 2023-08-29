@@ -21,6 +21,8 @@ from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 
 LOGGER = logging.getLogger(__name__)
 
+JIRA_ISSUE_NUMBERS = ['DC1644', 'DC3355']
+
 EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE = '_ehr_unconsented_pids'
 
 AFFECTED_TABLES = [
@@ -55,6 +57,17 @@ WHERE
   WHERE
     rn = 1
     AND value_source_concept_id = 1586100)
+OR
+  person_id IN ( -- persons without valid consent status --
+  SELECT
+    person_id
+  FROM
+    `{{project}}.{{dataset}}.consent_validation`
+  WHERE
+    consent_for_electronic_health_records IS NULL
+  OR 
+    UPPER(consent_for_electronic_health_records) != 'SUBMITTED'
+)
 )
 """)
 
@@ -113,7 +126,7 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
             'All EHR data associated with a participant if their EHR consent is not present in the observation '
             'table will be sandboxed and dropped from the CDR.')
 
-        super().__init__(issue_numbers=['DC1644'],
+        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
                          affected_tables=AFFECTED_TABLES,
