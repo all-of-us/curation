@@ -127,8 +127,8 @@ def main(raw_args=None):
     ]
     skip_tables = [
         DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING,
-        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
-        'consent_validation', 'wear_consent'
+        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO, 'consent_validation',
+        'wear_consent'
     ] + common.VOCABULARY_TABLES
 
     for domain_table in domain_tables:

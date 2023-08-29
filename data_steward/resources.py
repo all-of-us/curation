@@ -657,6 +657,7 @@ def is_rdr_dataset(dataset_id):
     """
     return 'rdr' in dataset_id
 
+
 def get_git_tag():
     """
     gets latest git tag.
