@@ -41,6 +41,7 @@ class BigQueryJobWaitError(RuntimeError):
         super(BigQueryJobWaitError, self).__init__(msg)
 
 
+@deprecated(reason='get_rdr_project_id is deprecated')
 def get_rdr_project_id():
     return os.environ.get('RDR_PROJECT_ID')
 
