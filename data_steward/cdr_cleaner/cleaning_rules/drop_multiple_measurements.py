@@ -7,45 +7,67 @@ entries are incorrect. Data quality would improve if these earlier entries were 
 Scope: Develop a cleaning rule to remove all but the most recent of each Physical Measurement for all participants.
 Relevant measurement_source_concept_ids are listed in query
 
+For height, weight, and BMI, we must keep the most recent of both in-person PM and self-report PM.
 """
+
+# Python Imports
 import logging
 
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 # Project imports
-from common import JINJA_ENV
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
+from common import JINJA_ENV, MEASUREMENT
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC847']
-MEASUREMENT = 'measurement'
+ISSUE_NUMBERS = ['DC617', 'DC847', 'DC3380']
 
-SANDBOX_INVALID_MULT_MEASUREMENTS = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE
-  `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS 
-SELECT
-  *
-FROM
-(SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id, measurement_source_concept_id ORDER BY
-      measurement_datetime DESC) AS row_num
- FROM `{{project}}.{{dataset}}.measurement`
- WHERE measurement_source_concept_id IN (903131,903119,903107,903124,903115,903126,903136,903118,903135,903132,
-                                         903110,903112,903117,903109,903127,1586218,903133,903111,903120,903113,
-                                         903129,903105,903125,903114,903134,903116,903106,903108,903123,903130,
-                                         903128,903122,903121)
- ORDER BY person_id, measurement_source_concept_id, row_num)
+SANDBOX_MULT_MEASUREMENTS = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS 
+SELECT *
+FROM (
+    SELECT
+        *, 
+        ROW_NUMBER() OVER(PARTITION BY
+            person_id, measurement_source_concept_id
+            ORDER BY measurement_datetime DESC
+        ) AS row_num
+    FROM `{{project}}.{{dataset}}.measurement`
+    WHERE measurement_source_concept_id IN (
+        903131, 903119, 903107, 903115, 903126, 903136, 903118, 903135, 903132,
+        903110, 903112, 903117, 903109, 903127, 1586218, 903111, 903120, 903113,
+        903129, 903105, 903125, 903114, 903134, 903116, 903106, 903108, 903123,
+        903130, 903128, 903122
+    )
+)
 WHERE row_num != 1
 """)
 
-REMOVE_INVALID_MULT_MEASUREMENTS = JINJA_ENV.from_string("""
-DELETE FROM
-  `{{project}}.{{dataset}}.measurement`
-WHERE
-(person_id, measurement_concept_id, measurement_id, measurement_date, measurement_datetime)
-IN( SELECT
-    (person_id, measurement_concept_id, measurement_id, measurement_date, measurement_datetime)
-    FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` )
+# For height, weight, and BMI, we must consider in-person vs self-report
+# by looking at measurement_type_concept_id
+SANDBOX_HEIGHT_WEIGHT_BMI = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
+SELECT *
+FROM (
+    SELECT 
+        *, 
+        ROW_NUMBER() OVER(PARTITION BY 
+            person_id, measurement_source_concept_id, measurement_type_concept_id 
+            ORDER BY measurement_datetime DESC
+        ) AS row_num
+    FROM `{{project}}.{{dataset}}.measurement`
+    WHERE measurement_source_concept_id IN (903133, 903121, 903124)
+)
+WHERE row_num != 1
+""")
+
+REMOVE_MULT_MEASUREMENTS = JINJA_ENV.from_string("""
+DELETE FROM `{{project}}.{{dataset}}.measurement`
+WHERE measurement_id IN (
+    SELECT measurement_id FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
+)
 """)
 
 
@@ -74,6 +96,7 @@ class DropMultipleMeasurements(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
+                         depends_on=[DropExtremeMeasurements],
                          table_namer=table_namer)
 
     def get_query_specs(self):
@@ -87,7 +110,16 @@ class DropMultipleMeasurements(BaseCleaningRule):
 
         sandbox_invalid_rows = {
             cdr_consts.QUERY:
-                SANDBOX_INVALID_MULT_MEASUREMENTS.render(
+                SANDBOX_MULT_MEASUREMENTS.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    intermediary_table=self.get_sandbox_tablenames()[0])
+        }
+
+        sandbox_height_weight_bmi = {
+            cdr_consts.QUERY:
+                SANDBOX_HEIGHT_WEIGHT_BMI.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
@@ -96,14 +128,16 @@ class DropMultipleMeasurements(BaseCleaningRule):
 
         delete_invalid_rows = {
             cdr_consts.QUERY:
-                REMOVE_INVALID_MULT_MEASUREMENTS.render(
+                REMOVE_MULT_MEASUREMENTS.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
                     intermediary_table=self.get_sandbox_tablenames()[0])
         }
 
-        return [sandbox_invalid_rows, delete_invalid_rows]
+        return [
+            sandbox_invalid_rows, sandbox_height_weight_bmi, delete_invalid_rows
+        ]
 
     def setup_rule(self, client):
         """
