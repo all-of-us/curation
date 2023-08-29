@@ -9,7 +9,7 @@ import mock
 import bq_utils
 import resources
 from app_identity import get_application_id, PROJECT_ID
-from common import AOU_DEATH, SITE_MASKING_TABLE_ID
+from common import AOU_DEATH, SITE_MASKING_TABLE_ID, BIGQUERY_DATASET_ID
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
