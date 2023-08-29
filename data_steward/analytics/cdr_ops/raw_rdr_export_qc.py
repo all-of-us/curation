@@ -54,6 +54,7 @@ WEAR_SURVEY_CODES = [
     'wear_consent_ptsc'
 ]
 
+# Static list created by querying the redcap surveys. In case of needed update, query provided in the comments of DC3407
 expected_strings = ["sensitivetype2_mentalhealth","sensitivetype2_hivaids","sensitivetype2_substanceuse",
                     "sensitivetype2_genetictesting","sensitivetype2_domesticviolence","ehrconsentpii_todaysdate",
                     "ehrconsentpii_todaysdateilhippawitness","smoking_dailysmokestartingagenumber",
@@ -502,7 +503,8 @@ execute(client, query)
 # # Check numeric data in value_as_string
 # Some numeric data is expected in value_as_string.  For example, zip codes or other contact specific information.
 #
-# **If the check fails, manually review the results. If 
+# **If the check fails, manually review the results. <br>
+# As new surveys are created the static list `expected_strings` will need to be updated. This is one possible reason for this check to fail with false positives.
 
 # +
 tpl = JINJA_ENV.from_string("""
