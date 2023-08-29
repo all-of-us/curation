@@ -1140,7 +1140,7 @@ def validate_pii():
 def ps_api_cron():
     project = bq_utils.app_identity.get_application_id()
     bq_client = BigQueryClient(project)
-    rdr_project_id = bq_utils.get_rdr_project_id()
+    rdr_project_id = os.environ.get('RDR_PROJECT_ID')
     drc_dataset_id = common.DRC_OPS
     logging.info(f"Fetching Participant Summary API data")
     fetch_and_store_full_ps_data(bq_client, project, rdr_project_id,
