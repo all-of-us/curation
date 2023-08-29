@@ -113,8 +113,19 @@ UNION_ALL = '''
 '''
 
 LOAD_AOU_DEATH = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{output_dataset}}.{{aou_death}}`
-AS
+INSERT INTO `{{project}}.{{output_dataset}}.{{aou_death}}`
+(
+    aou_death_id,
+    person_id,
+    death_date,
+    death_datetime,
+    death_type_concept_id,
+    cause_concept_id,
+    cause_source_value,
+    cause_source_concept_id,
+    src_id,
+    primary_death_record
+)
 WITH union_aou_death AS (
     {% for hpo_id in hpo_ids %}
     SELECT
@@ -877,6 +888,11 @@ def create_load_aou_death(bq_client, project_id, input_dataset_id,
         `CalculatePrimaryDeathRecord` updates the table at the end of the
         Unioned EHR data tier creation.
     """
+    bq_utils.create_standard_table(AOU_DEATH,
+                                   f'{UNIONED_EHR}_{AOU_DEATH}',
+                                   drop_existing=True,
+                                   dataset_id=output_dataset_id)
+
     # Filter out HPO sites without death data submission.
     hpo_ids_with_death = [
         hpo_id for hpo_id in hpo_ids
