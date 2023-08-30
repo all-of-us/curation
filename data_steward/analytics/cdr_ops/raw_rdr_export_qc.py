@@ -321,9 +321,6 @@ else:
 
 # -
 
-h = (.1 * sum(df['count_mapped']))
-h
-
 # # Dates are equal in observation_date and observation_datetime
 # Any mismatches are listed below.
 
