@@ -140,8 +140,8 @@ expected_strings = ["sensitivetype2_mentalhealth","sensitivetype2_hivaids","sens
                     "otherbonejointmuscle_daughterfreetextbox","otherbonejointmuscle_sonfreetextbox",
                     "otherbonejointmuscle_grandparentfreetextbox","otherhearingeye_motherfreetextbox",
                     "otherhearingeye_fatherfreetextbox","otherhearingeye_siblingfreetextbox",
-                    "otherhearingeye_daughterfreetextbox","otherhearingeye_sonfreetextbox"
-                    ,"otherhearingeye_grandparentfreetextbox","otherdiagnosis_motherfreetextbox",
+                    "otherhearingeye_daughterfreetextbox","otherhearingeye_sonfreetextbox",
+                    "otherhearingeye_grandparentfreetextbox","otherdiagnosis_motherfreetextbox",
                     "otherdiagnosis_fatherfreetextbox","otherdiagnosis_siblingfreetextbox",
                     "otherdiagnosis_daughterfreetextbox","otherdiagnosis_sonfreetextbox",
                     "otherdiagnosis_grandparentfreetextbox","otherbrainnervoussystem_freetextbox",
@@ -187,7 +187,8 @@ expected_strings = ["sensitivetype2_mentalhealth","sensitivetype2_hivaids","sens
                     "cdc_covid_xx_type_dose15_other","cdc_covid_xx_b_dose16_other",
                     "cdc_covid_xx_symptom_cope_350_dose16","cdc_covid_xx_type_dose16_other",
                     "cdc_covid_xx_b_dose17_other","cdc_covid_xx_symptom_cope_350_dose17",
-                    "cdc_covid_xx_type_dose17_other"]
+                    "cdc_covid_xx_type_dose17_other","othermentalhealthsubstanceuse_freetextbox",
+                    "otherdiabetes_daughterfreetextbox","otherdiabetes_sonfreetextbox"]
 
 # # Table comparison
 # The export should generally contain the same tables from month to month.
