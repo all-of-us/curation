@@ -37,7 +37,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}
     WHERE {% for key in foreign_keys %}
         (
             {{key}} NOT IN (
-                SELECT {{key}} FROM `{{dataset_id}}.{{key[:-3]}}`
+                SELECT {{key}} FROM `{{project_id}}.{{dataset_id}}.{{key[:-3]}}`
             )
             AND {{key}} IS NOT NULL
         ){% if not loop.last -%} OR {% endif %}
@@ -54,7 +54,7 @@ UPDATE_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.{{table_name}}`
 SET {{key}} = NULL
 WHERE {{key}} NOT IN (
-    SELECT {{key}} FROM `{{dataset_id}}.{{key[:-3]}}`
+    SELECT {{key}} FROM `{{project_id}}.{{dataset_id}}.{{key[:-3]}}`
 ) AND {{key}} IS NOT NULL
 """)
 
