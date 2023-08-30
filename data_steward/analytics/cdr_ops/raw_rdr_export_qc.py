@@ -30,6 +30,7 @@ from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
 from resources import old_map_short_codes_path
+from IPython.display import display, HTML
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
