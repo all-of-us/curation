@@ -1,0 +1,98 @@
+[
+  {
+    "type": "integer",
+    "name": "specimen_id",
+    "mode": "required",
+    "description": "A unique identifier for each specimen."
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "A foreign key identifier to the Person for whom the Specimen is recorded."
+  },
+  {
+    "type": "integer",
+    "name": "specimen_concept_id",
+    "mode": "required",
+    "description": "A foreign key referring to a Standard Concept identifier in the Standardized Vocabularies for the Specimen."
+  },
+  {
+    "type": "integer",
+    "name": "specimen_type_concept_id",
+    "mode": "required",
+    "description": "A foreign key referring to the Concept identifier in the Standardized Vocabularies reflecting the system of record from which the Specimen was represented in the source data."
+  },
+  {
+    "type": "date",
+    "name": "specimen_date",
+    "mode": "required",
+    "description": "The date the specimen was obtained from the Person."
+  },
+  {
+    "type": "timestamp",
+    "name": "specimen_datetime",
+    "mode": "nullable",
+    "description": "The date and time on the date when the Specimen was obtained from the person."
+  },
+  {
+    "type": "float",
+    "name": "quantity",
+    "mode": "nullable",
+    "description": "The amount of specimen collection from the person during the sampling procedure."
+  },
+  {
+    "type": "integer",
+    "name": "unit_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Standard Concept identifier for the Unit associated with the numeric quantity of the Specimen collection."
+  },
+  {
+    "type": "integer",
+    "name": "anatomic_site_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Standard Concept identifier for the anatomic location of specimen collection."
+  },
+  {
+    "type": "integer",
+    "name": "disease_status_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Standard Concept identifier for the Disease Status of specimen collection."
+  },
+  {
+    "type": "string",
+    "name": "specimen_source_id",
+    "mode": "nullable",
+    "description": "The Specimen identifier as it appears in the source data."
+  },
+  {
+    "type": "string",
+    "name": "specimen_source_value",
+    "mode": "nullable",
+    "description": "The Specimen value as it appears in the source data. This value is mapped to a Standard Concept in the Standardized Vocabularies and the original code is, stored here for reference."
+  },
+  {
+    "type": "string",
+    "name": "unit_source_value",
+    "mode": "nullable",
+    "description": "The information about the Unit as detailed in the source."
+  },
+  {
+    "type": "string",
+    "name": "anatomic_site_source_value",
+    "mode": "nullable",
+    "description": "The information about the anatomic site as detailed in the source."
+  },
+  {
+    "type": "string",
+    "name": "disease_status_source_value",
+    "mode": "nullable",
+    "description": "The information about the disease status as detailed in the source."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]
