@@ -14,6 +14,7 @@ in the table it references.
 
 # Python imports
 import logging
+from typing import Dict
 
 # Project Imports
 import resources
@@ -45,8 +46,8 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}
 
 DELETE_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.{{table_name}}`
-WHERE person_id NOT IN (
-    SELECT person_id FROM `{{project_id}}.{{dataset_id}}.person`
+WHERE {{key}} NOT IN (
+    SELECT {{key}} FROM `{{project_id}}.{{dataset_id}}.{{key[:-3]}}`
 )""")
 
 UPDATE_QUERY = JINJA_ENV.from_string("""
@@ -98,15 +99,16 @@ class NullInvalidForeignKeys(BaseCleaningRule):
             if self.has_foreign_key(table)
         ]
 
-    def get_field_names(self, table):
+    def get_column_mode_dict(self, table) -> Dict[str, str]:
         """
-        This method gets the list of field names in a table affected by the cleaning rule
-
+        This method gets the dict of field names as keys and nullable/required as values.
         :param table: single table in the list of affected tables
-        :return: list of field names in a single affected table
+        :return: dict. Table's column names as keys and the column's mode (nullable/required) as values.
         """
-        field_names = [field['name'] for field in resources.fields_for(table)]
-        return field_names
+        return {
+            field['name']: field['mode']
+            for field in resources.fields_for(table)
+        }
 
     def get_foreign_keys(self, table):
         """
@@ -116,8 +118,8 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         :return: list of foreign keys
         """
         foreign_keys_flags = []
-        for field_name in self.get_field_names(table):
-            if field_name in FOREIGN_KEYS_FIELDS and field_name != table + '_id':
+        for field_name in self.get_column_mode_dict(table).keys():
+            if field_name in FOREIGN_KEYS_FIELDS and field_name != f'{table}_id':
                 foreign_keys_flags.append(field_name)
         return foreign_keys_flags
 
@@ -153,12 +155,13 @@ class NullInvalidForeignKeys(BaseCleaningRule):
             sandbox_queries.append(sandbox_query)
 
             for key in self.get_foreign_keys(table):
-                if key == 'person_id':
+                if self.get_column_mode_dict(table)[key] == 'required':
                     query = {
                         QUERY:
                             DELETE_QUERY.render(project_id=self.project_id,
                                                 dataset_id=self.dataset_id,
-                                                table_name=table)
+                                                table_name=table,
+                                                key=key)
                     }
 
                 else:

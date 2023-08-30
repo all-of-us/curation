@@ -14,11 +14,12 @@ from dateutil import parser
 # Project imports
 from app_identity import PROJECT_ID
 from common import (AOU_DEATH, CARE_SITE, LOCATION, PERSON,
-                    PROCEDURE_OCCURRENCE, PROVIDER, VISIT_OCCURRENCE)
+                    PROCEDURE_OCCURRENCE, PROVIDER, VISIT_DETAIL,
+                    VISIT_OCCURRENCE)
 from cdr_cleaner.cleaning_rules.null_invalid_foreign_keys import NullInvalidForeignKeys
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
-sandbox_table_names = [AOU_DEATH, PROCEDURE_OCCURRENCE, PERSON]
+sandbox_table_names = [AOU_DEATH, PROCEDURE_OCCURRENCE, PERSON, VISIT_DETAIL]
 
 
 class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
@@ -46,7 +47,7 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
 
         selected_table_names = [
             PROVIDER, VISIT_OCCURRENCE, LOCATION, CARE_SITE,
-            PROCEDURE_OCCURRENCE, PERSON, AOU_DEATH
+            PROCEDURE_OCCURRENCE, PERSON, AOU_DEATH, VISIT_DETAIL
         ]
 
         for table_name in sandbox_table_names:
@@ -121,16 +122,12 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
         VALUES
             -- invalid person_id foreign key. will be sandboxed and deleted --
             (111, 0, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 1, 2),
-
             -- invalid provider_id foreign key. will be sandboxed and nulled --
             (222, 555, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 0, 2),
-
             -- invalid visit_occurrence_id foreign key, will be sandboxed and nulled --
             (333, 666, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 1, 0),
-
             -- NULL visit_occurrence_id and valid provider_id. nothing will be sandboxed or nulled --
             (443, 777, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 1, NULL),
-
             -- all foreign keys valid. nothing will be sandboxed or nulled --
             (444, 777, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 1, 2)"""
         ).render(fq_dataset_name=self.fq_dataset_name)
@@ -142,13 +139,10 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
         VALUES
             -- invalid location_id foreign key. will be sandboxed and nulled --
             (555, 101, 1985, 101, 101, 0, 1, 4),
-
             -- invalid care_site_id foreign key. will be sandboxed and nulled --
             (666, 101, 1989, 101, 101, 3, 1, 0),
-
             -- invalid location_id AND provider_id foreign key. will be sandboxed and nulled --
             (667, 101, 1989, 101, 101, 999, 999, 4),
-
             -- all foreign keys valid. nothing will be sandboxed or nulled --
             (777, 101, 1995, 101, 101, 3, 1, 4)""").render(
             fq_dataset_name=self.fq_dataset_name)
@@ -160,14 +154,31 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
             -- Valid person_id. Nothing happens. --
             ('a1', 555, date('2020-05-05'), 0, 0, 0, 'rdr', False),
             ('a2', 555, date('2021-05-05'), 0, 0, 0, 'hpo_b', False),
-            -- Invalid person_id. Deleted --
+            -- Invalid person_id. will be sandboxed and deleted --
             ('a3', 9999, date('2020-05-05'), 0, 0, 0, 'rdr', False),
             ('a4', 9999, date('2021-05-05'), 0, 0, 0, 'hpo_b', False)
         """).render(fq_dataset_name=self.fq_dataset_name)
 
+        visit_detail = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.visit_detail`
+            (visit_detail_id, person_id, visit_detail_concept_id, visit_detail_start_date, visit_detail_end_date, 
+             visit_detail_type_concept_id, visit_occurrence_id, provider_id, care_site_id)
+        VALUES
+            -- All foreign keys are valid. Nothing happens --
+            (1001, 555, 0, '2000-01-01', '2000-01-02', 0, 2, 1, 4),
+            -- Invalid person_id. will be sandboxed and deleted --
+            (1002, 9999, 0, '1980-12-31', '1981-01-01', 0, 2, 1, 4),
+            -- Invalid visit_occurrence_id. will be sandboxed and deleted. visit_occurrence_id is REQUIRED for visit_detail --
+            (1003, 555, 0, '2022-01-01', '2022-01-02', 0, 9999, 1, 4),
+            -- Invalid provider_id. will be sandboxed and nulled --
+            (1004, 555, 0, '1981-01-01', '1981-01-01', 0, 2, 9999, 4),
+            -- Invalid care_site_id. will be sandboxed and nulled --
+            (1005, 555, 0, '2022-01-01', '2022-01-01', 0, 2, 1, 9999)
+        """).render(fq_dataset_name=self.fq_dataset_name)
+
         self.load_test_data([
             provider, visit_occurrence, location, care_site,
-            procedure_occurrence, person, aou_death
+            procedure_occurrence, person, aou_death, visit_detail
         ])
 
         tables_and_counts = [
@@ -221,6 +232,25 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
                 'loaded_ids': ['a1', 'a2', 'a3', 'a4'],
                 'sandboxed_ids': ['a3', 'a4'],
                 'cleaned_values': [('a1', 555), ('a2', 555)]
+            },
+            {
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name, VISIT_DETAIL]),
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[3],
+                'fields': [
+                    'visit_detail_id', 'person_id', 'visit_occurrence_id',
+                    'provider_id', 'care_site_id'
+                ],
+                'loaded_ids': [1001, 1002, 1003, 1004, 1005],
+                'sandboxed_ids': [1002, 1003, 1004, 1005],
+                'cleaned_values': [
+                    # valid test values, no changes
+                    (1001, 555, 2, 1, 4),
+                    # cleaned invalid test values
+                    (1004, 555, 2, None, 4),
+                    (1005, 555, 2, 1, None)
+                ]
             }
         ]
 
