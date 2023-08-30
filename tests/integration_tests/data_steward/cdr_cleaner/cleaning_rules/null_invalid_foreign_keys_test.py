@@ -165,15 +165,15 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
              visit_detail_type_concept_id, visit_occurrence_id, provider_id, care_site_id)
         VALUES
             -- All foreign keys are valid. Nothing happens --
-            (1001, 555, 0, '2000-01-01', '2000-01-02', 0, 2, 1, 4),
+            (1001, 555, 0, '2020-05-05', '2020-05-05', 0, 2, 1, 4),
             -- Invalid person_id. will be sandboxed and deleted --
-            (1002, 9999, 0, '1980-12-31', '1981-01-01', 0, 2, 1, 4),
+            (1002, 9999, 0, '2020-05-05', '2020-05-05', 0, 2, 1, 4),
             -- Invalid visit_occurrence_id. will be sandboxed and deleted. visit_occurrence_id is REQUIRED for visit_detail --
-            (1003, 555, 0, '2022-01-01', '2022-01-02', 0, 9999, 1, 4),
+            (1003, 555, 0, '2020-05-05', '2020-05-05', 0, 9999, 1, 4),
             -- Invalid provider_id. will be sandboxed and nulled --
-            (1004, 555, 0, '1981-01-01', '1981-01-01', 0, 2, 9999, 4),
+            (1004, 555, 0, '2020-05-05', '2020-05-05', 0, 2, 9999, 4),
             -- Invalid care_site_id. will be sandboxed and nulled --
-            (1005, 555, 0, '2022-01-01', '2022-01-01', 0, 2, 1, 9999)
+            (1005, 555, 0, '2020-05-05', '2020-05-05', 0, 2, 1, 9999)
         """).render(fq_dataset_name=self.fq_dataset_name)
 
         self.load_test_data([
