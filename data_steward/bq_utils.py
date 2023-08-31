@@ -50,6 +50,7 @@ def get_output_project_id():
     return os.environ.get('OUTPUT_PROJECT_ID')
 
 
+@deprecated(reason='Use common.BIGQUERY_DATASET_ID instead')
 def get_dataset_id():
     return os.environ.get('BIGQUERY_DATASET_ID')
 
