@@ -56,6 +56,7 @@ def get_dataset_id():
     return os.environ.get('BIGQUERY_DATASET_ID')
 
 
+@deprecated(reason='Use common.UNIONED_DATASET_ID instead')
 def get_unioned_dataset_id():
     return os.environ.get('UNIONED_DATASET_ID')
 
