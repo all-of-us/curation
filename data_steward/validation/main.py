@@ -37,8 +37,7 @@ import resources
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
-from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
-    initialize_logging
+from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging
 from retraction import retract_data_bq, retract_data_gcs
 from validation import achilles, achilles_heel, ehr_union, export, hpo_report
 from validation import email_notification as en
@@ -171,7 +170,7 @@ def _upload_achilles_files(hpo_id: str = None,
                            target_bucket: str = None) -> list:
     """
     uploads achilles web files to the corresponding hpo bucket
-    
+
     :hpo_id: which hpo bucket do these files go into
     :returns:
     """
@@ -1147,11 +1146,6 @@ def ps_api_cron():
                                  drc_dataset_id)
 
     return consts.PS_API_SUCCESS
-
-
-@app.before_first_request
-def set_up_logging():
-    initialize_logging()
 
 
 app.add_url_rule(consts.PREFIX + 'ValidateAllHpoFiles',
