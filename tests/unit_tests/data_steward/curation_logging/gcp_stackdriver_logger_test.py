@@ -7,7 +7,7 @@ from mock import patch
 from mock import MagicMock, PropertyMock
 
 from google.api.monitored_resource_pb2 import MonitoredResource
-from google.cloud.logging_v2.proto.log_entry_pb2 import LogEntryOperation
+from curation_logging.google.logging.v2.log_entry_pb2 import LogEntryOperation
 from google.protobuf import json_format as gcp_json_format, any_pb2 as gcp_any_pb2
 import pytz
 
