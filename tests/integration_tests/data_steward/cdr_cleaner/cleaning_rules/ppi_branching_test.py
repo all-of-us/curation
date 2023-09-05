@@ -1,11 +1,14 @@
+# Python imports
 import datetime
 import time
 from typing import Any, Optional, Union, Tuple, Set, Dict
 
+# Third party imports
 import google.api_core.exceptions
 from google.cloud import bigquery
 from google.cloud.bigquery import Table, TimePartitioning
 
+# Project imports
 import app_identity
 from gcloud.bq import BigQueryClient
 from cdr_cleaner.cleaning_rules import ppi_branching
