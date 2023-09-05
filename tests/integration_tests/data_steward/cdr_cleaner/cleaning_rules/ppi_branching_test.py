@@ -8,7 +8,6 @@ from google.cloud.bigquery import Table, TimePartitioning
 
 import app_identity
 from gcloud.bq import BigQueryClient
-import bq_utils
 from cdr_cleaner.cleaning_rules import ppi_branching
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
