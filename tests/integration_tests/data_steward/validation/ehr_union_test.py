@@ -660,7 +660,7 @@ class EhrUnionAllDeathTest(BaseTest.BigQueryTestBase):
         super().initialize_class_vars()
 
         cls.project_id = os.environ.get(PROJECT_ID)
-        cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
+        cls.dataset_id = UNIONED_DATASET_ID
 
         cls.hpo_ids = [FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID]
 
