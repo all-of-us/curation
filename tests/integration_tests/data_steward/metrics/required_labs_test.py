@@ -40,7 +40,7 @@ class RequiredLabsTest(unittest.TestCase):
         # Clients
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
-        self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
+        self.rdr_dataset_id = common.RDR_DATASET_ID
         # Cleanup
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(self.bq_client, self.dataset_id)
