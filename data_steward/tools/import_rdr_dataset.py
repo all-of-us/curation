@@ -171,7 +171,7 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
             if table == 'cope_survey_semantic_version_map':
                 sql = (f'SELECT {fields_name_str} '
                        f'FROM `{source_table_id}` '
-                       f'where participant_id is not Null')
+                       f'WHERE participant_id IS NOT Null')
             else:
                 sql = (f'SELECT {fields_name_str} ' f'FROM `{source_table_id}`')
 

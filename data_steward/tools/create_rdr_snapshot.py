@@ -18,7 +18,8 @@ from resources import mapping_table_for
 from utils import auth, pipeline_logging
 from common import (AOU_DEATH, CDR_SCOPES, DEATH, METADATA, PID_RID_MAPPING,
                     QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO, FACT_RELATIONSHIP,
-                    COPE_SURVEY_MAP, VOCABULARY_TABLES, BIGQUERY_DATASET_ID)
+                    COPE_SURVEY_MAP, VOCABULARY_TABLES, BIGQUERY_DATASET_ID,
+                    EHR_CONSENT_VALIDATION, WEAR_CONSENT)
 from utils import auth
 from utils import pipeline_logging
 from common import CDR_SCOPES, FACT_RELATIONSHIP, METADATA, DEATH
@@ -124,9 +125,8 @@ def main(raw_args=None):
             f'{bq_client.project}.{datasets.get("staging")}')
     ]
     skip_tables = [
-        AOU_DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING,
-        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO, 'consent_validation',
-        'wear_consent'
+        AOU_DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING, WEAR_CONSENT,
+        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO, EHR_CONSENT_VALIDATION
     ] + VOCABULARY_TABLES
 
     for domain_table in domain_tables:
