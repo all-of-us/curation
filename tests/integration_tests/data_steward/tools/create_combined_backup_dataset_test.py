@@ -46,13 +46,13 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
         print('**************************************************************')
         # TODO base class this
         cls.ehr_dataset_id = BIGQUERY_DATASET_ID
-        rdr_dataset_id = bq_utils.get_rdr_dataset_id()
+        cls.rdr_dataset_id = RDR_DATASET_ID
         test_util.delete_all_tables(cls.bq_client, cls.ehr_dataset_id)
-        test_util.delete_all_tables(cls.bq_client, rdr_dataset_id)
+        test_util.delete_all_tables(cls.bq_client, cls.rdr_dataset_id)
         test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
         cls.load_dataset_from_files(cls.ehr_dataset_id,
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
-        cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
+        cls.load_dataset_from_files(cls.rdr_dataset_id, test_util.RDR_PATH)
 
     @classmethod
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
@@ -96,7 +96,6 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
         return job_id
 
     def setUp(self):
-        self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         self.combined_dataset_id = bq_utils.get_combined_dataset_id()
         test_util.delete_all_tables(self.bq_client, self.combined_dataset_id)
 
@@ -182,7 +181,7 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
 
     def get_unconsented_ehr_records_count(self, table_name):
         query = UNCONSENTED_EHR_COUNTS_QUERY.format(
-            rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+            rdr_dataset_id=self.rdr_dataset_id,
             ehr_dataset_id=self.ehr_dataset_id,
             combined_dataset_id=self.combined_dataset_id,
             domain_table=table_name,
@@ -262,7 +261,7 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
                 ' (SELECT 1 FROM `{combined_dataset_id}.{domain_table}` AS t '
                 '  WHERE t.{domain_table}_id = m.{domain_table}_id)').format(
                     domain_table=domain_table,
-                    rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+                    rdr_dataset_id=self.rdr_dataset_id,
                     combined_dataset_id=bq_utils.get_combined_dataset_id(),
                     mapping_table=mapping_table)
             response = bq_utils.query(query)
@@ -300,9 +299,8 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(cls.bq_client, cls.ehr_dataset_id)
-        test_util.delete_all_tables(cls.bq_client, rdr_dataset_id)
+        test_util.delete_all_tables(cls.bq_client, cls.rdr_dataset_id)
         test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
 
