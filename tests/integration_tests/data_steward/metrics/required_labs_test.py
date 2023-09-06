@@ -22,7 +22,7 @@ from validation.metrics.required_labs import (
 
 class RequiredLabsTest(unittest.TestCase):
 
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = common.BIGQUERY_DATASET_ID
     project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
 
@@ -54,7 +54,7 @@ class RequiredLabsTest(unittest.TestCase):
 
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(self.bq_client, bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
 
     @classmethod
     def tearDownClass(cls):

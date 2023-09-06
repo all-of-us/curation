@@ -128,7 +128,7 @@ def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
     running_jobs = []
     for table_name in table_names:
         gcs_path = f'gs://{test_resources_bucket}/{table_name}.csv'
-        dataset_id = bq_utils.get_dataset_id()
+        dataset_id = common.BIGQUERY_DATASET_ID
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         load_results = bq_utils.load_csv(table_name, gcs_path, app_id,
                                          dataset_id, table_id)

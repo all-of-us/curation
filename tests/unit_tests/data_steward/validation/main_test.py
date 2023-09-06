@@ -647,17 +647,17 @@ class ValidationMainTest(TestCase):
         self.assertIn(incorrect_folder_prefix,
                       report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY])
 
+    @mock.patch('validation.main.BIGQUERY_DATASET_ID', 'input_dataset')
     @mock.patch('validation.main._upload_achilles_files')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
     @mock.patch('validation.ehr_union.main')
     @mock.patch('bq_utils.get_unioned_dataset_id')
-    @mock.patch('bq_utils.get_dataset_id')
     @mock.patch('bq_utils.app_identity.get_application_id')
     @mock.patch('api_util.check_cron')
     def test_union_ehr(self, mock_check_cron, mock_get_application_id,
-                       mock_get_dataset_id, mock_get_unioned_dataset_id,
-                       mock_ehr_union_main, mock_run_achilles, mock_run_export,
+                       mock_get_unioned_dataset_id, mock_ehr_union_main,
+                       mock_run_achilles, mock_run_export,
                        mock_upload_achilles_files):
 
         application_id = 'application_id'
@@ -668,7 +668,6 @@ class ValidationMainTest(TestCase):
         self.mock_bq_client.return_value = mock_client
         mock_check_cron.return_value = True
         mock_get_application_id.return_value = application_id
-        mock_get_dataset_id.return_value = input_dataset
         mock_get_unioned_dataset_id.return_value = output_dataset
 
         main.app.testing = True

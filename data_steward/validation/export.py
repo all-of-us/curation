@@ -6,6 +6,7 @@ from io import open
 # Project imports
 import bq_utils
 import resources
+from common import BIGQUERY_DATASET_ID
 
 EXPORT_PATH = os.path.join(resources.resource_files_path, 'export')
 RESULTS_SCHEMA_PLACEHOLDER = '@results_database_schema.'
@@ -72,7 +73,7 @@ def export_from_path(p, datasource_id):
             sql = fp.read()
             sql = render(sql,
                          datasource_id,
-                         results_schema=bq_utils.get_dataset_id(),
+                         results_schema=BIGQUERY_DATASET_ID,
                          vocab_schema='')
             query_result = bq_utils.query(sql)
             # TODO reshape results

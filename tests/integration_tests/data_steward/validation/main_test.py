@@ -26,7 +26,7 @@ from validation.metrics import required_labs
 
 
 class ValidationMainTest(unittest.TestCase):
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = common.BIGQUERY_DATASET_ID
     project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
 
@@ -47,7 +47,7 @@ class ValidationMainTest(unittest.TestCase):
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
 
-        self.bigquery_dataset_id: str = bq_utils.get_dataset_id()
+        self.bigquery_dataset_id: str = common.BIGQUERY_DATASET_ID
         self.folder_prefix: str = '2019-01-01-v1/'
 
         self.storage_client = StorageClient(self.project_id)
