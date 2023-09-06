@@ -160,7 +160,11 @@ class StoreNewDuplicateMeasurementConceptIds(BaseCleaningRule):
     Store only new occurrences of duplicate lab measurement values.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id, namer=None):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         desc = (
             f'All new duplicate measurement concept_ids will be identified via SQL and '
             f'stored in a sandbox table.  '
@@ -173,7 +177,7 @@ class StoreNewDuplicateMeasurementConceptIds(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=namer)
+                         table_namer=table_namer)
 
     def get_query_specs(self):
         """

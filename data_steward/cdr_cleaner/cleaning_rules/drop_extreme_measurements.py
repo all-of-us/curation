@@ -17,137 +17,74 @@ import logging
 
 # Project Imports
 from common import JINJA_ENV, MEASUREMENT
-import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.calculate_bmi import CalculateBmi
 
 LOGGER = logging.getLogger(__name__)
 
-# Global constants
-
-# Queries
-
-SANDBOX_HEIGHT_WEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
-SELECT
-    *
-FROM `{{project_id}}.{{dataset_id}}.measurement` m
+CREATE_SANDBOX = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
+SELECT * FROM `{{project}}.{{dataset}}.measurement` m
 WHERE
     (
-    EXISTS (
-    --subquery to select associated bmi records --
-    WITH outbound_heights AS (
-    SELECT person_id, measurement_datetime
-    FROM `{{project_id}}.{{dataset_id}}.measurement`
-    WHERE measurement_source_concept_id = 903133
-    AND value_as_number NOT BETWEEN 90 AND 228
+        -- select BMI row associated with extreme height --
+        EXISTS (
+            WITH extreme_heights AS (
+                SELECT person_id, measurement_type_concept_id, measurement_datetime
+                FROM `{{project}}.{{dataset}}.measurement`
+                WHERE measurement_source_concept_id = 903133 AND value_as_number NOT BETWEEN 90 AND 228
+            )
+            SELECT 1 FROM extreme_heights
+            WHERE m.measurement_source_concept_id = 903124
+            AND m.person_id = extreme_heights.person_id
+            AND m.measurement_type_concept_id = extreme_heights.measurement_type_concept_id
+            AND m.measurement_datetime = extreme_heights.measurement_datetime
+        )
+        -- select all extreme height --
+        OR (m.measurement_source_concept_id = 903133 AND m.value_as_number NOT BETWEEN 90 AND 228)
+    ) OR (
+        -- select BMI row associated with extreme weight --
+        EXISTS (
+            WITH extreme_weights AS (
+                SELECT person_id, measurement_type_concept_id, measurement_datetime
+                FROM `{{project}}.{{dataset}}.measurement`
+                WHERE measurement_source_concept_id = 903121 AND value_as_number NOT BETWEEN 30 AND 250
+            )
+            SELECT 1 FROM extreme_weights
+            WHERE m.measurement_source_concept_id = 903124
+            AND m.person_id = extreme_weights.person_id
+            AND m.measurement_type_concept_id = extreme_weights.measurement_type_concept_id
+            AND m.measurement_datetime = extreme_weights.measurement_datetime
+        )
+        -- select all extreme weight --
+        OR (m.measurement_source_concept_id = 903121 AND m.value_as_number NOT BETWEEN 30 AND 250)
+    ) OR (
+        -- select height & weight rows associated with extreme BMI --
+        EXISTS (
+            WITH extreme_bmi AS (
+                SELECT person_id, measurement_type_concept_id, measurement_datetime
+                FROM `{{project}}.{{dataset}}.measurement`
+                WHERE measurement_source_concept_id = 903124 AND value_as_number NOT BETWEEN 10 AND 125
+            )
+            SELECT 1 FROM extreme_bmi
+            WHERE m.measurement_source_concept_id IN (903133, 903121)
+            AND m.person_id = extreme_bmi.person_id
+            AND m.measurement_type_concept_id = extreme_bmi.measurement_type_concept_id
+            AND m.measurement_datetime = extreme_bmi.measurement_datetime
+        )
+        -- select all extreme BMI --
+        OR (m.measurement_source_concept_id = 903124 AND m.value_as_number NOT BETWEEN 10 AND 125)    
     )
-    --drop BMI row associated with PID where height is out of bounds --
-    (SELECT person_id FROM outbound_heights
-    WHERE m.measurement_source_concept_id = 903124
-    AND m.measurement_datetime = outbound_heights.measurement_datetime)
-    )
-    --drop all height records out of bounds --
-    OR (m.measurement_source_concept_id = 903133
-    AND value_as_number NOT BETWEEN 90 AND 228)
-) OR (
-    EXISTS (
-    --subquery to select associated bmi records --
-    WITH outbound_weights AS (
-    SELECT person_id, measurement_datetime
-    FROM `{{project_id}}.{{dataset_id}}.measurement`
-    WHERE measurement_source_concept_id = 903121
-    AND value_as_number NOT BETWEEN 30 AND 250
-    )
-    --drop BMI row associated with PID where height is out of bounds --
-    (SELECT person_id FROM outbound_weights
-    WHERE m.measurement_source_concept_id = 903124
-    AND m.measurement_datetime = outbound_weights.measurement_datetime)
-    )
-    --drop all height records out of bounds --
-    OR (m.measurement_source_concept_id = 903121
-    AND value_as_number NOT BETWEEN 30 AND 250)
-    )
-  OR (
-    EXISTS (
-    --subquery to select associated height and weight records --
-    WITH outbound_bmi AS (
-    SELECT person_id, measurement_datetime
-    FROM `{{project_id}}.{{dataset_id}}.measurement`
-    WHERE measurement_source_concept_id = 903124
-    AND value_as_number NOT BETWEEN 10 AND 125
-    )
-    --drop height & weight rows associated with PID where bmi is out of bounds --
-    (SELECT person_id FROM outbound_bmi
-    WHERE m.measurement_source_concept_id IN(903133, 903121)
-    AND m.measurement_datetime = outbound_bmi.measurement_datetime)
-    )
-    --drop all bmi records out of bounds --
-    OR (m.measurement_source_concept_id = 903124
-    AND value_as_number NOT BETWEEN 10 AND 125)    
-    )
+)
 """)
 
-DELETE_HEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
-DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
-WHERE 
-  EXISTS (
-  --subquery to select associated bmi records --
-  WITH outbound_heights AS (
-  SELECT person_id, measurement_datetime
-  FROM `{{project_id}}.{{dataset_id}}.measurement`
-  WHERE measurement_source_concept_id = 903133
-  AND value_as_number NOT BETWEEN 90 AND 228
-  )
---drop BMI row associated with PID where height is out of bounds --
-(SELECT person_id FROM outbound_heights
-WHERE m.measurement_source_concept_id = 903124
-AND m.measurement_datetime = outbound_heights.measurement_datetime)
+DELETE_SANDBOXED = JINJA_ENV.from_string("""
+DELETE FROM `{{project}}.{{dataset}}.measurement`
+WHERE measurement_id IN (
+  SELECT measurement_id
+  FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 )
---drop all height records out of bounds --
-OR (m.measurement_source_concept_id = 903133
-AND value_as_number NOT BETWEEN 90 AND 228)
-""")
-
-DELETE_WEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
-DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
-WHERE EXISTS (
-  --subquery to select associated bmi records --
-  WITH outbound_weights AS (
-  SELECT person_id, measurement_datetime
-  FROM `{{project_id}}.{{dataset_id}}.measurement`
-  WHERE measurement_source_concept_id = 903121
-  AND value_as_number NOT BETWEEN 30 AND 250
-  )
---drop BMI row associated with PID where height is out of bounds --
-(SELECT person_id FROM outbound_weights
-WHERE m.measurement_source_concept_id = 903124
-AND m.measurement_datetime = outbound_weights.measurement_datetime)
-)
---drop all height records out of bounds --
-OR (m.measurement_source_concept_id = 903121
-AND value_as_number NOT BETWEEN 30 AND 250)
-
-""")
-
-DELETE_BMI_ROWS_QUERY = JINJA_ENV.from_string("""
-DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
-WHERE 
-  EXISTS (
-  --subquery to select associated height and weight records --
-  WITH outbound_bmi AS (
-  SELECT person_id, measurement_datetime
-  FROM `{{project_id}}.{{dataset_id}}.measurement`
-  WHERE measurement_source_concept_id = 903124
-  AND value_as_number NOT BETWEEN 10 AND 125
-  )
---drop height & weight rows associated with PID where bmi is out of bounds --
-(SELECT person_id FROM outbound_bmi
-WHERE m.measurement_source_concept_id IN(903133, 903121)
-AND m.measurement_datetime = outbound_bmi.measurement_datetime)
-)
---drop all bmi records out of bounds --
-OR (m.measurement_source_concept_id = 903124
-AND value_as_number NOT BETWEEN 10 AND 125)
 """)
 
 
@@ -174,6 +111,7 @@ class DropExtremeMeasurements(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
+                         depends_on=[CalculateBmi],
                          table_namer=table_namer)
 
     def get_query_specs(self):
@@ -185,34 +123,25 @@ class DropExtremeMeasurements(BaseCleaningRule):
             are optional but the query is required.
         """
 
-        queries_list = []
+        sandbox_query = {
+            cdr_consts.QUERY:
+                CREATE_SANDBOX.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(MEASUREMENT))
+        }
 
-        sandbox_query = dict()
-        sandbox_query[
-            cdr_consts.QUERY] = SANDBOX_HEIGHT_WEIGHT_ROWS_QUERY.render(
-                project_id=self.project_id, dataset_id=self.dataset_id)
-        sandbox_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        sandbox_query[cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
-        sandbox_query[cdr_consts.DESTINATION_TABLE] = self.sandbox_table_for(
-            MEASUREMENT)
-        queries_list.append(sandbox_query)
+        delete_query = {
+            cdr_consts.QUERY:
+                DELETE_SANDBOXED.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(MEASUREMENT))
+        }
 
-        height_query = dict()
-        height_query[cdr_consts.QUERY] = DELETE_HEIGHT_ROWS_QUERY.render(
-            dataset_id=self.dataset_id, project_id=self.project_id)
-        queries_list.append(height_query)
-
-        weight_query = dict()
-        weight_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.render(
-            dataset_id=self.dataset_id, project_id=self.project_id)
-        queries_list.append(weight_query)
-
-        bmi_query = dict()
-        bmi_query[cdr_consts.QUERY] = DELETE_BMI_ROWS_QUERY.render(
-            dataset_id=self.dataset_id, project_id=self.project_id)
-        queries_list.append(bmi_query)
-
-        return queries_list
+        return [sandbox_query, delete_query]
 
     def setup_rule(self, client):
         """

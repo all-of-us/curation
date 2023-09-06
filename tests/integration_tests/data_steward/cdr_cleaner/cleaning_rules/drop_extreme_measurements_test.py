@@ -1,15 +1,13 @@
 """
-Integration test for drop_extreme_measurements mmodule
+Integration test for drop_extreme_measurements module
 
 DC-1211
 """
 
 # Python Imports
 import os
-from datetime import date
 
 # Third party imports
-from dateutil import parser
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -18,76 +16,37 @@ from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeas
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 EXTREME_MEASUREMENTS_TEMPLATE = JINJA_ENV.from_string("""
-INSERT INTO 
-    `{{project_id}}.{{dataset_id}}.measurement`
-    
+INSERT INTO `{{project_id}}.{{dataset_id}}.measurement`
 (measurement_id, person_id, measurement_concept_id, measurement_date, measurement_datetime,
-measurement_time, measurement_type_concept_id, operator_concept_id, value_as_number, value_as_concept_id,
-unit_concept_id, range_low, range_high, provider_id, visit_occurrence_id,
-visit_detail_id, measurement_source_value, measurement_source_concept_id, unit_source_value, value_source_value)
-
+measurement_type_concept_id, value_as_number, measurement_source_value, measurement_source_concept_id)
 VALUES
-
-    (100, 1, 903133, '2009-04-29', TIMESTAMP('2009-04-29'), 
-    NULL, 1000, NULL, 19, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903133, NULL, NULL),
-
-    (200, 2, 903133, '2009-04-29', TIMESTAMP('2009-04-29'), 
-    NULL, 1000, NULL, 230, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903133, NULL, NULL),
-
-    (400, 4, 903124, '2009-04-29', TIMESTAMP('2009-04-29'), 
-    NULL, 1000, NULL, 100, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL),
-
-    (500, 5, 903124, '2010-07-13', TIMESTAMP('2010-07-13'), 
-    NULL, 1000, NULL, 100, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL),
- 
-    (600, 6, 903133, '2011-08-21', TIMESTAMP('2011-08-21'), 
-    NULL, 1000, NULL, 88, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903133, NULL, NULL),
-
-    (300, 3, 903135, '2015-05-14', NULL, 
-    NULL, 1000, NULL, 250, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903135, NULL, NULL),
-
-    (700, 7, 903121, '2009-04-29', TIMESTAMP('2009-04-29'), 
-    NULL, 1000, NULL, 10, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903121, NULL, NULL),
-
-    (800, 8, 903124, '2009-04-29', TIMESTAMP('2009-04-29'), 
-    NULL, 1000, NULL, 10, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL),
-
-    (900, 9, 903121, '2010-04-10', TIMESTAMP('2010-04-10'), 
-    NULL, 1000, NULL, 50, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903121, NULL, NULL),
-
-    (1000, 10, 903121, '2015-02-11', TIMESTAMP('2015-02-11'), 
-    NULL, 1000, NULL, 160, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903121, NULL, NULL),
-
-    (1100, 11, 903124, '2014-02-11', TIMESTAMP('2014-02-11'), 
-    NULL, 1000, NULL, 100, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL),
-
-    (1200, 12, 903124, '2014-02-11', TIMESTAMP('2014-02-11'), 
-    NULL, 1000, NULL, 130, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL)
-    
+    -- Extreme height/weight/BMI. Dropped. --
+    (101, 1, 3036277, '2023-01-01', '2023-01-01 01:00:00', 44818701, 89, 'height', 903133),
+    (102, 2, 3036277, '2023-01-01', '2023-01-01 02:00:00', 32865, 229, 'height', 903133),
+    (103, 3, 3025315, '2023-01-01', '2023-01-01 03:00:00', 44818701, 29, 'weight', 903121),
+    (104, 4, 3025315, '2023-01-01', '2023-01-01 04:00:00', 32865, 251, 'weight', 903121),
+    (105, 5, 3038553, '2023-01-01', '2023-01-01 05:00:00', 44818701, 9, 'bmi', 903124),
+    (106, 6, 3038553, '2023-01-01', '2023-01-01 06:00:00', 32865, 126, 'bmi', 903124),
+    -- Non-extreme height/weight/BMI. Not dropped. --
+    (201, 7, 3036277, '2023-01-01', '2023-01-02 00:00:00', 44818701, 90, 'height', 903133),
+    (202, 8, 3025315, '2023-01-01', '2023-01-02 00:00:00', 32865, 30, 'weight', 903121),
+    (203, 9, 3038553, '2023-01-01', '2023-01-02 00:00:00', 44818701, 10, 'bmi', 903124),
+    -- Non-extreme height/weight associated with extreme BMI. Dropped. --
+    (301, 5, 3036277, '2023-01-01', '2023-01-01 05:00:00', 44818701, 180, 'height', 903133),
+    (302, 6, 3025315, '2023-01-01', '2023-01-01 06:00:00', 32865, 200, 'weight', 903121),
+    -- Non-extreme BMI associated with extreme height or weight. Dropped. --
+    (303, 1, 3038553, '2023-01-01', '2023-01-01 01:00:00', 44818701, 20, 'bmi', 903124),
+    (304, 4, 3038553, '2023-01-01', '2023-01-01 04:00:00', 32865, 20, 'bmi', 903124),
+    -- Non-extreme height associated with extreme weight and vice-versa.  Not dropped. --
+    (401, 3, 3036277, '2023-01-01', '2023-01-01 03:00:00', 44818701, 90, 'height', 903133),
+    (402, 2, 3025315, '2023-01-01', '2023-01-01 02:00:00', 32865, 30, 'weight', 903121),
+    -- In-person vs self-report PM so deemed non-associated though the same datetime. Not dropped. --
+    (501, 5, 3036277, '2023-01-01', '2023-01-01 05:00:00', 32865, 180, 'height', 903133),
+    (502, 6, 3025315, '2023-01-01', '2023-01-01 06:00:00', 44818701, 200, 'weight', 903121),
+    (503, 1, 3038553, '2023-01-01', '2023-01-01 01:00:00', 32865, 20, 'bmi', 903124),
+    (504, 4, 3038553, '2023-01-01', '2023-01-01 04:00:00', 44818701, 20, 'bmi', 903124),
+    -- Irrelevant concept. Not dropped --
+    (999, 1, 903135, '2023-01-01', '2023-01-01 01:00:00', 44818701, 250, 'waist-circumference-mean', 903135)
 """)
 
 
@@ -101,27 +60,19 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
 
         super().initialize_class_vars()
 
-        # Set the test project identifier
         cls.project_id = os.environ.get(PROJECT_ID)
-
-        # Set the expected test datasets
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
-        # Instantiate class
-        cls.rule_instance = DropExtremeMeasurements(
-            cls.project_id,
-            cls.dataset_id,
-            cls.sandbox_id,
-        )
+        cls.rule_instance = DropExtremeMeasurements(cls.project_id,
+                                                    cls.dataset_id,
+                                                    cls.sandbox_id)
 
-        # Generate sandbox table names
         sandbox_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sandbox_table_names:
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
-        # Store measurement table name
         measurement_table_name = f'{cls.project_id}.{cls.dataset_id}.{MEASUREMENT}'
         cls.fq_table_names = [measurement_table_name]
 
@@ -136,59 +87,29 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
-        # Query to insert test records into measurement table
         extreme_measurement_template = EXTREME_MEASUREMENTS_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        # Load test data
         self.load_test_data([extreme_measurement_template])
 
     def test_field_cleaning(self):
         """
-        person_ids 1,2,4,6,7,8, and 12 are sandboxed
+        Test the CR works as designed. 
+        See the inline comment in EXTREME_MEASUREMENTS_TEMPLATE for the expected results.
         """
-
-        # Expected results list
         tables_and_counts = [{
             'fq_table_name':
                 self.fq_table_names[0],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [
-                100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200
+                101, 102, 103, 104, 105, 106, 201, 202, 203, 301, 302, 303, 304,
+                401, 402, 501, 502, 503, 504, 999
             ],
-            'sandboxed_ids': [100, 200, 400, 600, 700, 800, 1200],
-            'fields': [
-                'measurement_id', 'person_id', 'measurement_concept_id',
-                'measurement_date', 'measurement_datetime', 'measurement_time',
-                'measurement_type_concept_id', 'operator_concept_id',
-                'value_as_number', 'value_as_concept_id', 'unit_concept_id',
-                'range_low', 'range_high', 'provider_id', 'visit_occurrence_id',
-                'visit_detail_id', 'measurement_source_value',
-                'measurement_source_concept_id', 'unit_source_value',
-                'value_source_value'
-            ],
-            'cleaned_values': [
-                (300, 3, 903135, date.fromisoformat('2015-05-14'), None, None,
-                 1000, None, 250, None, None, None, None, None, None, None,
-                 None, 903135, None, None),
-                (500, 5, 903124, date.fromisoformat('2010-07-13'),
-                 parser.parse('2010-07-13 00:00:00 UTC'), None, 1000, None, 100,
-                 None, None, None, None, None, None, None, None, 903124, None,
-                 None),
-                (900, 9, 903121, date.fromisoformat('2010-04-10'),
-                 parser.parse('2010-04-10 00:00:00 UTC'), None, 1000, None, 50,
-                 None, None, None, None, None, None, None, None, 903121, None,
-                 None),
-                (1000, 10, 903121, date.fromisoformat('2015-02-11'),
-                 parser.parse('2015-02-11 00:00:00 UTC'), None, 1000, None, 160,
-                 None, None, None, None, None, None, None, None, 903121, None,
-                 None),
-                (1100, 11, 903124, date.fromisoformat('2014-02-11'),
-                 parser.parse('2014-02-11 00:00:00 UTC'), None, 1000, None, 100,
-                 None, None, None, None, None, None, None, None, 903124, None,
-                 None)
-            ]
+            'sandboxed_ids': [101, 102, 103, 104, 105, 106, 301, 302, 303, 304],
+            'fields': ['measurement_id'],
+            'cleaned_values': [(201,), (202,), (203,), (401,), (402,), (501,),
+                               (502,), (503,), (504,), (999,)]
         }]
 
         self.default_test(tables_and_counts)

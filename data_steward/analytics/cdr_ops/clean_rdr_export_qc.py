@@ -143,63 +143,6 @@ WHERE prev_code.value IS NULL OR curr_code.value IS NULL
 query = tpl.render(new_rdr=new_rdr, old_rdr=old_rdr, project_id=project_id)
 execute(client, query)
 
-# # Question codes should have mapped `concept_id`s
-# Question codes in `observation_source_value` should be associated with the concept identified by
-# `observation_source_concept_id` and mapped to a standard concept identified by `observation_concept_id`.
-# The table below lists codes having rows where either field is null or zero and the number of rows where this occurs.
-# This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
-#
-# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export.
-# They are excluded here by filtering out snap codes in the Public PPI Codebook
-# which were loaded into `curation_sandbox.snap_codes`.
-
-tpl = JINJA_ENV.from_string("""
-SELECT
-  observation_source_value
- ,COUNTIF(observation_source_concept_id IS NULL) AS source_concept_id_null
- ,COUNTIF(observation_source_concept_id=0)       AS source_concept_id_zero
- ,COUNTIF(observation_concept_id IS NULL)        AS concept_id_null
- ,COUNTIF(observation_concept_id=0)              AS concept_id_zero
-FROM `{{project_id}}.{{new_rdr}}.observation`
-WHERE observation_source_value IS NOT NULL
-AND observation_source_value != ''
-AND observation_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
-GROUP BY 1
-HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
-ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
-""")
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
-
-# # Answer codes should have mapped `concept_id`s
-# Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id
-# and mapped to a standard concept identified by value_as_concept_id. The table below lists codes having rows
-# where either field is null or zero and the number of rows where this occurs.
-# This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
-#
-# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export.
-# They are excluded here by filtering out snap codes in the Public PPI Codebook
-# which were loaded into `curation_sandbox.snap_codes`.
-#
-
-tpl = JINJA_ENV.from_string("""
-SELECT
-  value_source_value
- ,COUNTIF(value_source_concept_id IS NULL) AS source_concept_id_null
- ,COUNTIF(value_source_concept_id=0)       AS source_concept_id_zero
- ,COUNTIF(value_as_concept_id IS NULL)     AS concept_id_null
- ,COUNTIF(value_as_concept_id=0)           AS concept_id_zero
-FROM `{{project_id}}.{{new_rdr}}.observation`
-WHERE value_source_value IS NOT NULL
-AND value_source_value != ''
-AND value_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
-GROUP BY 1
-HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
-ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
-""")
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
-
 # # Dates are equal in observation_date and observation_datetime
 # Any mismatches are listed below.
 

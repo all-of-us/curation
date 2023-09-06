@@ -1,15 +1,5 @@
 """
 Integration test for drop_multiple_measurements module
-
-Removes all but the most recent of each Physical Measurement for all participants.
-
-Original Issues: DC-847
-
-It is possible for a participant to have multiple records of Physical Measurements. This typically occurs when earlier
-entries are incorrect. Data quality would improve if these earlier entries were removed.  A cleaning rule was developed
-to remove all but the most recent of each Physical Measurement for all participants.  This rule groups measurements from
-a set list of measurement_source_concept_ids by person_id and order by measurement_datetime, keeping only the newest
-record for each person and measurement.
 """
 
 # Python Imports
@@ -38,7 +28,7 @@ class DropMultipleMeasurementsTest(BaseTest.CleaningRulesTestBase):
         # Set the expected test datasets
         dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.dataset_id = dataset_id
-        sandbox_id = dataset_id + '_sandbox'
+        sandbox_id = f"{dataset_id}_sandbox"
         cls.sandbox_id = sandbox_id
 
         cls.rule_instance = DropMultipleMeasurements(project_id, dataset_id,
@@ -68,11 +58,8 @@ class DropMultipleMeasurementsTest(BaseTest.CleaningRulesTestBase):
 
         super().setUp()
 
-    def test_field_cleaning(self):
+    def test_drop_multiple_measurements(self):
         """
-        Tests that the specifications for the SANDBOX_INVALID_MULT_MEASUREMENTS_QUERY and REMOVE_INVALID_MULT_MEASUREMENTS_QUERY
-        perform as designed.
-
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
         """
@@ -89,24 +76,21 @@ class DropMultipleMeasurementsTest(BaseTest.CleaningRulesTestBase):
                 measurement_source_value,
                 value_source_value)
             VALUES
-            (123, 1111111, 3022281, DATE('2015-09-15'), TIMESTAMP('2015-09-15'), 44818701, 903131,
-            'pre-pregnancy-weight', '83.5 kg'),
-            (234, 1111111, 3022281, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 44818701, 903131,
-            'pre-pregnancy-weight', '81.5 kg'),
-            (345, 2222222, 3038553, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 44818701, 903124,
-            'bmi', '101.1 kg/m2'),
-            (456, 2222222, 3038553, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 44818701, 903124,
-            'bmi', '83.2 kg/m2'),
-            (567, 3333333, 3036277, DATE('2015-08-15'), TIMESTAMP('2015-08-15 15:30:00 UTC'), 44818701, 903133,
-            'height','154 cm'),
-            (678, 3333333, 3036277, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 44818701, 903133,
-            'height','155 cm'),
-            (789, 3333333, 3036277, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 44818701, 903133,
-            'height','156 cm'),
-            (890, 4444444, 903111, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 44818701, 903111,
-            'wheelchair-user-status','wheelchair-user'),
-            (901, 4444444, 903111, DATE('2015-09-15'), TIMESTAMP('2015-09-15'), 44818701, 903111,
-            'wheelchair-user-status','wheelchair-user')
+            (11, 1, 3022281, DATE('2015-09-15'), TIMESTAMP('2015-09-15'), 44818701, 903131, 'pre-pregnancy-weight', '83.5 kg'),
+            (12, 1, 3022281, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 44818701, 903131, 'pre-pregnancy-weight', '81.5 kg'),
+            (21, 2, 903111, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 44818701, 903111, 'wheelchair-user-status', 'wheelchair-user'),
+            (22, 2, 903111, DATE('2015-09-15'), TIMESTAMP('2015-09-15'), 44818701, 903111, 'wheelchair-user-status', 'wheelchair-user'),
+            (31, 3, 3036277, DATE('2015-08-15'), TIMESTAMP('2015-08-15 15:30:00 UTC'), 44818701, 903133, 'height', '154 cm'),
+            (32, 3, 3036277, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 44818701, 903133, 'height', '155 cm'),
+            (33, 3, 3036277, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 44818701, 903133, 'height', '156 cm'),
+            (34, 9, 3036277, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 44818701, 903133, 'height', '156 cm'),
+            -- Test case for in-person PM / self-report PM --
+            (41, 4, 3038553, DATE('2015-07-15'), TIMESTAMP('2015-07-15'), 44818701, 903124, 'bmi', '20 kg/m2'),
+            (42, 4, 3038553, DATE('2015-08-15'), TIMESTAMP('2015-08-15'), 44818701, 903124, 'bmi', '21 kg/m2'),
+            (43, 4, 3038553, DATE('2015-07-16'), TIMESTAMP('2015-07-16'), 32865, 903124, 'bmi', '22 kg/m2'),
+            (44, 4, 3038553, DATE('2015-08-16'), TIMESTAMP('2015-08-16'), 32865, 903124, 'bmi', '23 kg/m2'),
+            (45, 4, 3025315, DATE('2015-07-17'), TIMESTAMP('2015-07-16'), 32865, 903121, 'weight', '60 kg'),
+            (46, 4, 3025315, DATE('2015-08-17'), TIMESTAMP('2015-08-16'), 32865, 903121, 'weight', '61 kg')
         """)
 
         query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
@@ -118,11 +102,14 @@ class DropMultipleMeasurementsTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, 'measurement']),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [123, 234, 345, 456, 567, 678, 789, 890, 901],
-            'sandboxed_ids': [234, 345, 678, 789, 890],
+            'loaded_ids': [
+                11, 12, 21, 22, 31, 32, 33, 34, 41, 42, 43, 44, 45, 46
+            ],
+            'sandboxed_ids': [12, 21, 32, 33, 41, 43, 45],
             'fields': ['measurement_id', 'value_source_value'],
-            'cleaned_values': [(123, '83.5 kg'), (456, '83.2 kg/m2'),
-                               (567, '154 cm'), (901, 'wheelchair-user')]
+            'cleaned_values': [(11, '83.5 kg'), (22, 'wheelchair-user'),
+                               (31, '154 cm'), (34, '156 cm'), (42, '21 kg/m2'),
+                               (44, '23 kg/m2'), (46, '61 kg')]
         }]
 
         self.default_test(tables_and_counts)
