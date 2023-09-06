@@ -317,7 +317,7 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = BIGQUERY_DATASET_ID
-        cls.rdr_id = os.environ.get('RDR_DATASET_ID')
+        cls.rdr_id = RDR_DATASET_ID
         cls.unioned_id = os.environ.get('UNIONED_DATASET_ID')
 
         cls.fq_table_names = [
