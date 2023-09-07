@@ -1328,11 +1328,43 @@ FROM `{{project_id}}.{{new_rdr}}.consent_validation`
 GROUP BY person_id
 HAVING n>1
 
+UNION ALL 
+
+SELECT 
+"Consent status does not map to obs" AS issue,
+COUNT(*) AS n
+FROM `{{project_id}}.{{new_rdr}}.consent_validation` cv
+LEFT JOIN (SELECT * FROM `{{project_id}}.{{new_rdr}}.observation` WHERE value_source_value = 'ConsentPermission_Yes') o
+ON cv.person_id = o.person_id AND cv.consent_for_electronic_health_records_authored = CAST(o.observation_datetime AS DATETIME)
+WHERE observation_id IS NULL
+AND (consent_for_electronic_health_records != 'SUBMITTED_NO' -- No consent, therefore no consent status. expected.
+OR consent_for_electronic_health_records IS NULL)
+GROUP BY cv.person_id
+
+UNION ALL 
+
+SELECT 
+"Consent status is NULL" AS issue,
+COUNT(*) AS n
+FROM `{{project_id}}.{{new_rdr}}.consent_validation` cv
+WHERE consent_for_electronic_health_records IS NULL
+GROUP BY cv.person_id
+
+UNION ALL 
+
+SELECT 
+"Multiple responses where both are valid/ where only one is valid" AS issue,
+COUNT(*) AS n
+FROM `{{project_id}}.{{new_rdr}}.consent_validation` cv
+WHERE consent_for_electronic_health_records IS NULL
+GROUP BY cv.person_id
+
 )
 SELECT DISTINCT issue,
 COUNT(*) AS n_person_ids
 FROM cte
 GROUP BY issue
+ORDER BY issue
 
 """).render(project_id=project_id,
             new_rdr=new_rdr)
