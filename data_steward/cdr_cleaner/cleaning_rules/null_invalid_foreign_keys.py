@@ -44,12 +44,14 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}
     {% endfor %}
 )""")
 
+# Delete runs for "required" foreign key columns since they cannot be updated to NULL
 DELETE_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.{{table_name}}`
 WHERE {{key}} NOT IN (
     SELECT {{key}} FROM `{{project_id}}.{{dataset_id}}.{{key[:-3]}}`
 )""")
 
+# Update runs for "nullable" foreign key columns
 UPDATE_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.{{table_name}}`
 SET {{key}} = NULL
@@ -154,6 +156,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
             }
             sandbox_queries.append(sandbox_query)
 
+            # If the foreign key column is not nullable, run DELETE. If nullable, run UPDATE.
             for key in self.get_foreign_keys(table):
                 if self.get_column_mode_dict(table)[key] == 'required':
                     query = {
