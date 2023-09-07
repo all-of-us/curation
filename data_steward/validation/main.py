@@ -34,7 +34,7 @@ import constants.global_variables
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, BIGQUERY_DATASET_ID
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, BIGQUERY_DATASET_ID, UNIONED_DATASET_ID
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
@@ -1033,7 +1033,7 @@ def union_ehr():
     hpo_id = 'unioned_ehr'
     app_id = bq_utils.app_identity.get_application_id()
     input_dataset_id = BIGQUERY_DATASET_ID
-    output_dataset_id = bq_utils.get_unioned_dataset_id()
+    output_dataset_id = UNIONED_DATASET_ID
     bq_client = BigQueryClient(app_id)
     ehr_union.main(input_dataset_id, output_dataset_id, app_id)
 

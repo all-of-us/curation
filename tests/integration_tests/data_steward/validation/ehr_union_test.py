@@ -14,7 +14,7 @@ import cdm
 from app_identity import get_application_id, PROJECT_ID
 from common import (AOU_DEATH, CARE_SITE, DEATH, LOCATION, OBSERVATION, PERSON,
                     SURVEY_CONDUCT, UNIONED_EHR, VISIT_DETAIL, VISIT_OCCURRENCE,
-                    BIGQUERY_DATASET_ID)
+                    BIGQUERY_DATASET_ID, UNIONED_DATASET_ID)
 from constants.validation import ehr_union as eu_constants
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
@@ -54,7 +54,7 @@ class EhrUnionTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
-        self.output_dataset_id = bq_utils.get_unioned_dataset_id()
+        self.output_dataset_id = UNIONED_DATASET_ID
         self.storage_client = StorageClient(self.project_id)
         self.tearDown()
 
