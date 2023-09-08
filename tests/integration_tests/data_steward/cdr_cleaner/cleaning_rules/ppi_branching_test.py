@@ -1,19 +1,22 @@
+# Python imports
 import datetime
 import time
 from typing import Any, Optional, Union, Tuple, Set, Dict
 
+# Third party imports
 import google.api_core.exceptions
 from google.cloud import bigquery
 from google.cloud.bigquery import Table, TimePartitioning
 
+# Project imports
 import app_identity
 from gcloud.bq import BigQueryClient
-import bq_utils
 from cdr_cleaner.cleaning_rules import ppi_branching
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 from utils import sandbox
+from common import RDR_DATASET_ID
 
 TEST_DATA_FIELDS = ('observation_id', 'person_id', 'observation_source_value',
                     'value_as_number', 'value_source_value', 'value_as_string',
@@ -152,7 +155,7 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
 
         super().initialize_class_vars()
         project_id = app_identity.get_application_id()
-        dataset_id = bq_utils.get_rdr_dataset_id()
+        dataset_id = RDR_DATASET_ID
         sandbox_dataset_id = sandbox.get_sandbox_dataset_id(dataset_id)
         rule = PpiBranching(project_id, dataset_id, sandbox_dataset_id)
         cls.dataset_id = dataset_id

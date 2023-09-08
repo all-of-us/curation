@@ -61,6 +61,7 @@ def get_unioned_dataset_id():
     return os.environ.get('UNIONED_DATASET_ID')
 
 
+@deprecated(reason='Use common.RDR_DATASET_ID instead')
 def get_rdr_dataset_id():
     return os.environ.get('RDR_DATASET_ID')
 
