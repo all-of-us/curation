@@ -207,8 +207,7 @@ AND fact_id_2 IS NOT NULL
 """)
 
 LOAD_AOU_DEATH = JINJA_ENV.from_string("""
-CREATE TABLE `{{project}}.{{combined_backup}}.{{aou_death}}`
-AS
+INSERT INTO `{{project}}.{{combined_backup}}.{{aou_death}}`
 SELECT
     aou_death_id,
     person_id,

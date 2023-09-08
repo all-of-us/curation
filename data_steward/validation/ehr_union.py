@@ -113,8 +113,19 @@ UNION_ALL = '''
 '''
 
 LOAD_AOU_DEATH = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{output_dataset}}.{{aou_death}}`
-AS
+INSERT INTO `{{project}}.{{output_dataset}}.{{aou_death}}`
+(
+    aou_death_id,
+    person_id,
+    death_date,
+    death_datetime,
+    death_type_concept_id,
+    cause_concept_id,
+    cause_source_value,
+    cause_source_concept_id,
+    src_id,
+    primary_death_record
+)
 WITH union_aou_death AS (
     {% for hpo_id in hpo_ids %}
     SELECT
@@ -877,6 +888,17 @@ def create_load_aou_death(bq_client, project_id, input_dataset_id,
         `CalculatePrimaryDeathRecord` updates the table at the end of the
         Unioned EHR data tier creation.
     """
+    # EHR Union runs every night so the table needs to be deleted first if exists.
+    bq_client.delete_table(f'{output_dataset_id}.{UNIONED_EHR}_{AOU_DEATH}',
+                           not_found_ok=True)
+
+    table_name = f'{project_id}.{output_dataset_id}.{UNIONED_EHR}_{AOU_DEATH}'
+    schema_list = bq_client.get_table_schema(AOU_DEATH)
+    table_obj = bq.Table(table_name, schema=schema_list)
+    table_obj.clustering_fields = 'person_id'
+    table_obj.time_partitioning = bq.table.TimePartitioning(type_='DAY')
+    bq_client.create_table(table_obj)
+
     # Filter out HPO sites without death data submission.
     hpo_ids_with_death = [
         hpo_id for hpo_id in hpo_ids

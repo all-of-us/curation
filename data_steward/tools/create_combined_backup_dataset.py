@@ -17,7 +17,7 @@ Combine data sets `unioned_ehr` and `rdr` to form another data set `combined_bac
    for records that have a (valid) `visit_occurrence_id`.
 
  * Load `combined_backup.aou_death` with UNION ALL of:
-     1) all `rdr.death`s and
+     1) all `rdr.aou_death`s and
      2) `unioned_ehr.aou_death`s that link to `combined_sandbox.ehr_consent`
  * Site masking for `aou_death` happens here, too. (Other tables are site masked by GenerateExtTables)
 
@@ -44,7 +44,7 @@ from google.cloud.exceptions import GoogleCloudError, NotFound
 from google.cloud import bigquery
 
 # Project imports
-from common import (AOU_DEATH, CDR_SCOPES, DEATH, FACT_RELATIONSHIP,
+from common import (AOU_DEATH, CDR_SCOPES, FACT_RELATIONSHIP,
                     MEASUREMENT_DOMAIN_CONCEPT_ID,
                     OBSERVATION_DOMAIN_CONCEPT_ID, PERSON, PIPELINE_TABLES,
                     RDR_ID_CONSTANT, SITE_MASKING_TABLE_ID, SURVEY_CONDUCT,
@@ -402,6 +402,9 @@ def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
         job.result()
         LOGGER.info(f'Copied {PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID} to '
                     f'{combined_sandbox}.{SITE_MASKING_TABLE_ID}')
+
+    _ = client.create_tables(
+        [f'{client.project}.{combined_backup}.{AOU_DEATH}'])
 
     query = combine_consts.LOAD_AOU_DEATH.render(
         project=project_id,
