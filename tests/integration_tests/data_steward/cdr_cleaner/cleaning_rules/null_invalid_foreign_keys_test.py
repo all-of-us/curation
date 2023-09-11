@@ -2,11 +2,6 @@
 Integration test for cleaning_rules.null_invalid_foreign_keys.py module
 
 Original Issue - DC-1169
-
-The intent of this unit test is to ensure that any invalid foreign keys are nulled out while
-the remaining rows of the table are unchanged. A valid foreign key means that an existing
-foreign key already exists in the table it references. An invalid foreign key means that there
-is NOT an existing foreign key in the table it references
 """
 
 # Python imports
@@ -18,12 +13,13 @@ from dateutil import parser
 
 # Project imports
 from app_identity import PROJECT_ID
-from common import (AOU_DEATH, CARE_SITE, LOCATION, MAPPING_PREFIX, PERSON,
-                    PROCEDURE_OCCURRENCE, PROVIDER, VISIT_OCCURRENCE)
+from common import (AOU_DEATH, CARE_SITE, LOCATION, PERSON,
+                    PROCEDURE_OCCURRENCE, PROVIDER, VISIT_DETAIL,
+                    VISIT_OCCURRENCE)
 from cdr_cleaner.cleaning_rules.null_invalid_foreign_keys import NullInvalidForeignKeys
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
-sandbox_table_names = [AOU_DEATH, PROCEDURE_OCCURRENCE, PERSON]
+sandbox_table_names = [AOU_DEATH, PROCEDURE_OCCURRENCE, PERSON, VISIT_DETAIL]
 
 
 class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
@@ -50,10 +46,8 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
                                                    sandbox_id)
 
         selected_table_names = [
-            f'{MAPPING_PREFIX}{PROVIDER}',
-            f'{MAPPING_PREFIX}{VISIT_OCCURRENCE}',
-            f'{MAPPING_PREFIX}{LOCATION}', f'{MAPPING_PREFIX}{CARE_SITE}',
-            PROCEDURE_OCCURRENCE, PERSON, AOU_DEATH
+            PROVIDER, VISIT_OCCURRENCE, LOCATION, CARE_SITE,
+            PROCEDURE_OCCURRENCE, PERSON, AOU_DEATH, VISIT_DETAIL
         ]
 
         for table_name in sandbox_table_names:
@@ -101,21 +95,22 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
         # procedure_occurrence, person, and aou_death tables, not all of the CDM tables
         mock_get_affected_tables.return_value = sandbox_table_names
 
-        # load statements for the mapping tables
-        mapping_procedure = self.jinja_env.from_string("""
-        INSERT INTO `{{fq_dataset_name}}._mapping_provider` (provider_id)
+        provider = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.provider` (provider_id)
         VALUES (1)""").render(fq_dataset_name=self.fq_dataset_name)
 
-        mapping_visit_occurrence = self.jinja_env.from_string("""
-        INSERT INTO `{{fq_dataset_name}}._mapping_visit_occurrence` (visit_occurrence_id)
-        VALUES (2)""").render(fq_dataset_name=self.fq_dataset_name)
+        visit_occurrence = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.visit_occurrence`
+        (visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_end_date, visit_type_concept_id)
+        VALUES (2, 666, 0, '2023-01-01', '2023-01-01', 0)""").render(
+            fq_dataset_name=self.fq_dataset_name)
 
-        mapping_location = self.jinja_env.from_string("""
-        INSERT INTO `{{fq_dataset_name}}._mapping_location` (location_id)
+        location = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.location` (location_id)
         VALUES (3)""").render(fq_dataset_name=self.fq_dataset_name)
 
-        mapping_care_site = self.jinja_env.from_string("""
-        INSERT INTO `{{fq_dataset_name}}._mapping_care_site` (care_site_id)
+        care_site = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.care_site` (care_site_id)
         VALUES (4)""").render(fq_dataset_name=self.fq_dataset_name)
 
         # load statements for tables to be cleaned through cleaning rule (procedure_occurrence, person)
@@ -125,15 +120,14 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
             (procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_datetime, 
             procedure_type_concept_id, provider_id, visit_occurrence_id)
         VALUES
-            -- invalid person_id foreign key. will be sandboxed and nulled --
+            -- invalid person_id foreign key. will be sandboxed and deleted --
             (111, 0, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 1, 2),
-            
             -- invalid provider_id foreign key. will be sandboxed and nulled --
             (222, 555, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 0, 2),
-            
             -- invalid visit_occurrence_id foreign key, will be sandboxed and nulled --
             (333, 666, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 1, 0),
-            
+            -- NULL visit_occurrence_id and valid provider_id. nothing will be sandboxed or nulled --
+            (443, 777, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 1, NULL),
             -- all foreign keys valid. nothing will be sandboxed or nulled --
             (444, 777, 101, date('2020-03-06'), timestamp('2020-03-06 11:00:00'), 101, 1, 2)"""
         ).render(fq_dataset_name=self.fq_dataset_name)
@@ -145,10 +139,10 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
         VALUES
             -- invalid location_id foreign key. will be sandboxed and nulled --
             (555, 101, 1985, 101, 101, 0, 1, 4),
-            
             -- invalid care_site_id foreign key. will be sandboxed and nulled --
             (666, 101, 1989, 101, 101, 3, 1, 0),
-            
+            -- invalid location_id AND provider_id foreign key. will be sandboxed and nulled --
+            (667, 101, 1989, 101, 101, 999, 999, 4),
             -- all foreign keys valid. nothing will be sandboxed or nulled --
             (777, 101, 1995, 101, 101, 3, 1, 4)""").render(
             fq_dataset_name=self.fq_dataset_name)
@@ -160,63 +154,103 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
             -- Valid person_id. Nothing happens. --
             ('a1', 555, date('2020-05-05'), 0, 0, 0, 'rdr', False),
             ('a2', 555, date('2021-05-05'), 0, 0, 0, 'hpo_b', False),
-            -- Invalid person_id. person_id will be nulled --
+            -- Invalid person_id. will be sandboxed and deleted --
             ('a3', 9999, date('2020-05-05'), 0, 0, 0, 'rdr', False),
             ('a4', 9999, date('2021-05-05'), 0, 0, 0, 'hpo_b', False)
         """).render(fq_dataset_name=self.fq_dataset_name)
 
+        visit_detail = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.visit_detail`
+            (visit_detail_id, person_id, visit_detail_concept_id, visit_detail_start_date, visit_detail_end_date, 
+             visit_detail_type_concept_id, visit_occurrence_id, provider_id, care_site_id)
+        VALUES
+            -- All foreign keys are valid. Nothing happens --
+            (1001, 555, 0, '2020-05-05', '2020-05-05', 0, 2, 1, 4),
+            -- Invalid person_id. will be sandboxed and deleted --
+            (1002, 9999, 0, '2020-05-05', '2020-05-05', 0, 2, 1, 4),
+            -- Invalid visit_occurrence_id. will be sandboxed and deleted. visit_occurrence_id is REQUIRED for visit_detail --
+            (1003, 555, 0, '2020-05-05', '2020-05-05', 0, 9999, 1, 4),
+            -- Invalid provider_id. will be sandboxed and nulled --
+            (1004, 555, 0, '2020-05-05', '2020-05-05', 0, 2, 9999, 4),
+            -- Invalid care_site_id. will be sandboxed and nulled --
+            (1005, 555, 0, '2020-05-05', '2020-05-05', 0, 2, 1, 9999)
+        """).render(fq_dataset_name=self.fq_dataset_name)
+
         self.load_test_data([
-            mapping_procedure, mapping_visit_occurrence, mapping_location,
-            mapping_care_site, procedure_occurrence, person, aou_death
+            provider, visit_occurrence, location, care_site,
+            procedure_occurrence, person, aou_death, visit_detail
         ])
 
         tables_and_counts = [
             {
                 'fq_table_name':
                     '.'.join([self.fq_dataset_name, PROCEDURE_OCCURRENCE]),
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[1],
                 'fields': [
                     'procedure_occurrence_id', 'person_id',
                     'procedure_concept_id', 'procedure_date',
                     'procedure_datetime', 'procedure_type_concept_id',
                     'provider_id', 'visit_occurrence_id'
                 ],
-                'loaded_ids': [111, 222, 333, 444],
+                'loaded_ids': [111, 222, 333, 443, 444],
                 'sandboxed_ids': [111, 222, 333],
                 'cleaned_values': [
                     # cleaned invalid test values
-                    (111, None, 101, self.date, self.datetime, 101, 1, 2),
                     (222, 555, 101, self.date, self.datetime, 101, None, 2),
                     (333, 666, 101, self.date, self.datetime, 101, 1, None),
                     # valid test values, no changes
+                    (443, 777, 101, self.date, self.datetime, 101, 1, None),
                     (444, 777, 101, self.date, self.datetime, 101, 1, 2)
                 ]
             },
             {
                 'fq_table_name':
                     '.'.join([self.fq_dataset_name, PERSON]),
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[2],
                 'fields': [
                     'person_id', 'gender_concept_id', 'year_of_birth',
                     'race_concept_id', 'ethnicity_concept_id', 'location_id',
                     'provider_id', 'care_site_id'
                 ],
-                'loaded_ids': [555, 666, 777],
-                'sandboxed_ids': [555, 666],
+                'loaded_ids': [555, 666, 667, 777],
+                'sandboxed_ids': [555, 666, 667],
                 'cleaned_values': [
                     # cleaned invalid test values
                     (555, 101, 1985, 101, 101, None, 1, 4),
                     (666, 101, 1989, 101, 101, 3, 1, None),
+                    (667, 101, 1989, 101, 101, None, None, 4),
                     # valid test values, no changes
                     (777, 101, 1995, 101, 101, 3, 1, 4)
                 ]
             },
             {
-                'fq_table_name':
-                    '.'.join([self.fq_dataset_name, AOU_DEATH]),
+                'fq_table_name': '.'.join([self.fq_dataset_name, AOU_DEATH]),
+                'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
                 'fields': ['aou_death_id', 'person_id'],
                 'loaded_ids': ['a1', 'a2', 'a3', 'a4'],
                 'sandboxed_ids': ['a3', 'a4'],
-                'cleaned_values': [('a1', 555), ('a2', 555), ('a3', None),
-                                   ('a4', None)]
+                'cleaned_values': [('a1', 555), ('a2', 555)]
+            },
+            {
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name, VISIT_DETAIL]),
+                'fq_sandbox_table_name':
+                    self.fq_sandbox_table_names[3],
+                'fields': [
+                    'visit_detail_id', 'person_id', 'visit_occurrence_id',
+                    'provider_id', 'care_site_id'
+                ],
+                'loaded_ids': [1001, 1002, 1003, 1004, 1005],
+                'sandboxed_ids': [1002, 1003, 1004, 1005],
+                'cleaned_values': [
+                    # valid test values, no changes
+                    (1001, 555, 2, 1, 4),
+                    # cleaned invalid test values
+                    (1004, 555, 2, None, 4),
+                    (1005, 555, 2, 1, None)
+                ]
             }
         ]
 

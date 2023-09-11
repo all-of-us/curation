@@ -57,26 +57,40 @@ maps_to_value AS (
     SELECT
         concept_code,
         concept_id,
-        concept_id_2 AS new_value_as_cocnept_id 
+        concept_id_2 AS new_value_as_concept_id 
     FROM non_standard_concept WHERE relationship_id = 'Maps to value'
 )
 SELECT DISTINCT
     COALESCE(m1.concept_id, m2.concept_id) AS concept_id,
     COALESCE(m1.concept_code, m2.concept_code) AS concept_code,
     m1.new_observation_concept_id,
-    m2.new_value_as_cocnept_id
+    m2.new_value_as_concept_id
 FROM maps_to AS m1
 FULL OUTER JOIN maps_to_value AS m2
 ON m1.concept_id = m2.concept_id
+WHERE m1.new_observation_concept_id IS NOT NULL
 """)
 
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
+
+WITH concepts_with_only_maps_to_value AS (
+    SELECT cr1.concept_id_1
+    FROM (SELECT DISTINCT concept_id_1 
+      FROM `{{project}}.{{dataset}}.concept_relationship` 
+      WHERE relationship_id IN ('Maps to value') ) cr1 
+    LEFT JOIN (SELECT DISTINCT concept_id_1 
+      FROM `{{project}}.{{dataset}}.concept_relationship` 
+      WHERE relationship_id IN ('Maps to') ) cr2
+    USING(concept_id_1)
+    WHERE cr2.concept_id_1 IS NULL
+)
 SELECT DISTINCT o.* FROM `{{project}}.{{dataset}}.observation` o
 JOIN `{{project}}.{{dataset}}.concept` c1 ON o.value_source_concept_id = c1.concept_id
 JOIN `{{project}}.{{dataset}}.concept` c2 ON o.value_source_value = c2.concept_code
 JOIN `{{project}}.{{dataset}}.concept_relationship` cr1 ON c2.concept_id = cr1.concept_id_1
-WHERE c1.standard_concept IS NULL AND cr1.relationship_id = 'Maps to value'
+WHERE c1.standard_concept IS NULL AND cr1.relationship_id = 'Maps to value' 
+AND o.value_source_concept_id NOT IN (SELECT concept_id_1 FROM concepts_with_only_maps_to_value)
 """)
 
 DELETE_QUERY = JINJA_ENV.from_string("""
@@ -96,7 +110,7 @@ SELECT
         PARTITION BY o.observation_id
         ORDER BY
             m.new_observation_concept_id, 
-            m.new_value_as_cocnept_id
+            m.new_value_as_concept_id
         ) * 100000000000 + o.observation_id AS observation_id,
     o.person_id,
     m.new_observation_concept_id AS observation_concept_id,
@@ -105,7 +119,7 @@ SELECT
     o.observation_type_concept_id,
     o.value_as_number,
     o.value_as_string,
-    m.new_value_as_cocnept_id AS value_as_concept_id,
+    m.new_value_as_concept_id AS value_as_concept_id,
     o.qualifier_concept_id,
     o.unit_concept_id,
     o.provider_id,

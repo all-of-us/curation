@@ -70,5 +70,11 @@
     "type": "integer",
     "mode": "nullable",
     "description": "The total number of minutes the user was in wake stage."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "Flag indicating the participant portal that this record originated from."
   }
 ]

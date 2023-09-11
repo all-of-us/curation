@@ -62,7 +62,7 @@ class TopHeelErrorsTest(TestCase):
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
-        self.dataset_id = bq_utils.get_dataset_id()
+        self.dataset_id = common.BIGQUERY_DATASET_ID
         self.storage_client = StorageClient(self.project_id)
         self.bq_client = BigQueryClient(self.project_id)
         self.drc_bucket = self.storage_client.get_drc_bucket()

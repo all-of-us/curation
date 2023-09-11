@@ -22,7 +22,7 @@ from validation.metrics.required_labs import (
 
 class RequiredLabsTest(unittest.TestCase):
 
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = common.BIGQUERY_DATASET_ID
     project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
 
@@ -40,7 +40,7 @@ class RequiredLabsTest(unittest.TestCase):
         # Clients
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
-        self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
+        self.rdr_dataset_id = common.RDR_DATASET_ID
         # Cleanup
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(self.bq_client, self.dataset_id)
@@ -54,7 +54,7 @@ class RequiredLabsTest(unittest.TestCase):
 
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(self.bq_client, bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
 
     @classmethod
     def tearDownClass(cls):
@@ -172,9 +172,9 @@ class RequiredLabsTest(unittest.TestCase):
             .format(project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     table_id=MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE))
-        unique_ancestor_cocnept_response = bq_utils.query(
+        unique_ancestor_concept_response = bq_utils.query(
             unique_ancestor_concept_query)
-        expected_total_labs = unique_ancestor_cocnept_response['totalRows']
+        expected_total_labs = unique_ancestor_concept_response['totalRows']
 
         # Count the number of labs in the measurement table, this number should be equal to the number of labs
         # submitted by the fake site

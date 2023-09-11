@@ -1,9 +1,9 @@
 [
   {
     "type": "integer",
-    "name": "research_id",
+    "name": "person_id",
     "mode": "required",
-    "description": "The participant's research_id."
+    "description": "The participant's id."
   },
   {
     "type": "string",
@@ -21,6 +21,6 @@
     "type": "date",
     "name": "wear_consent_end_date",
     "mode": "nullable",
-    "description": "The date of consent removal."
+    "description": "The date of consent retraction."
   }
 ]

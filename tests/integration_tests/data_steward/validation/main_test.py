@@ -15,18 +15,18 @@ from bs4 import BeautifulSoup as bs
 import bq_utils
 import app_identity
 import common
+import resources
 from constants import bq_utils as bq_consts
 from constants.validation import main as main_consts
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
-import resources
 from tests import test_util
 from validation import main
 from validation.metrics import required_labs
 
 
 class ValidationMainTest(unittest.TestCase):
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = common.BIGQUERY_DATASET_ID
     project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
 
@@ -40,14 +40,14 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_id: str = test_util.FAKE_HPO_ID
-        self.rdr_dataset_id: str = bq_utils.get_rdr_dataset_id()
+        self.rdr_dataset_id: str = common.RDR_DATASET_ID
 
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
         self.mock_get_hpo_name = mock_get_hpo_name.start()
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
 
-        self.bigquery_dataset_id: str = bq_utils.get_dataset_id()
+        self.bigquery_dataset_id: str = common.BIGQUERY_DATASET_ID
         self.folder_prefix: str = '2019-01-01-v1/'
 
         self.storage_client = StorageClient(self.project_id)

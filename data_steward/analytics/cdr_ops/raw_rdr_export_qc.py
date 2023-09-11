@@ -30,6 +30,7 @@ from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
 from resources import old_map_short_codes_path
+from IPython.display import display, HTML
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
@@ -38,29 +39,238 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 # +
 # Get the current old_map_short_codes
-old_map_csv=pd.read_csv(old_map_short_codes_path)
+old_map_csv = pd.read_csv(old_map_short_codes_path)
 
 # These are the long codes expected in the rdr export.
 LONG_CODES = old_map_csv.iloc[:, 1].str.lower().tolist()
 # -
 
 # wear_consent and wear_consent_ptsc concepts that are not associated with an OMOP concept_id.
-WEAR_SURVEY_CODES = ['havesmartphone',
-                      'wearwatch',
-                      'usetracker',
-                      'wear12months',
-                      'receivesms',
-                      'frequency',
-                      'agreetoshare',
-                      'onlyparticipantinhousehold',
-                      'haveaddress',
-                      'resultsconsent_wear',
-                      'email_help_consent',
-                      'timeofday',
-                      'wearconsent_signature',
-                      'wearconsent_todaysdate',
-                      'wear_consent',
-                      'wear_consent_ptsc']
+WEAR_SURVEY_CODES = [
+    'havesmartphone', 'wearwatch', 'usetracker', 'wear12months', 'receivesms',
+    'frequency', 'agreetoshare', 'onlyparticipantinhousehold', 'haveaddress',
+    'resultsconsent_wear', 'email_help_consent', 'timeofday',
+    'wearconsent_signature', 'wearconsent_todaysdate', 'wear_consent',
+    'wear_consent_ptsc'
+]
+
+# This list is created by querying the redcap surveys. In case of needed update, query provided in the comments of DC3407
+expected_strings = ['cidi5_20', 'cidi5_24', 'cidi5_28', 'cidi5_31', 'mhqukb_48_age',
+ 'mhqukb_50_number', 'mhqukb_51_number', 'mhqukb_52_number',
+ 'mhqukb_53_number', 'record_id', 'helpmewithconsent_name',
+ 'other_concerns', 'other_reasons', 'resultsconsent_emailmecopy',
+ 'resultsconsent_signaturedate', 'consentpii_helpwithconsentsignature',
+ 'extraconsent_signature_type', 'extraconsent_todaysdate',
+ 'piiaddress_streetaddress', 'piiaddress_streetaddress2',
+ 'piibirthinformation_birthdate', 'piicontactinformation_phone',
+ 'piiname_first', 'piiname_last', 'piiname_middle',
+ 'streetaddress_piicity', 'streetaddress_piizip', 'basics_11a_cope_a_33',
+ 'basics_xx', 'basics_xx20', 'cdc_covid_19_7_xx22_date', 'cope_a_126',
+ 'cope_a_160', 'cope_a_85', 'copect_50_xx19_cope_a_152',
+ 'copect_50_xx19_cope_a_198', 'copect_50_xx19_cope_a_57',
+ 'cu_covid_cope_a_204', 'eds_follow_up_1_xx', 'ipaq_1_cope_a_24',
+ 'ipaq_2_cope_a_160', 'ipaq_2_cope_a_85', 'ipaq_3_cope_a_24',
+ 'ipaq_4_cope_a_160', 'ipaq_4_cope_a_85', 'ipaq_5_cope_a_24',
+ 'ipaq_6_cope_a_160', 'ipaq_6_cope_a_85', 'lifestyle_2_xx12_cope_a_152',
+ 'lifestyle_2_xx12_cope_a_198', 'lifestyle_2_xx12_cope_a_57',
+ 'tsu_ds5_13_xx42_cope_a_226', 'cdc_covid_19_7_xx23_other_cope_a_204',
+ 'cdc_covid_19_n_a2', 'cdc_covid_19_n_a4', 'cdc_covid_19_n_a8',
+ 'cope_aou_xx_2_a', 'dmfs_29a', 'msds_17_c',
+ 'nhs_covid_fhc17b_cope_a_226', 'ehrconsentpii_helpwithconsentsignature',
+ 'ehrconsentpii_todaysdate', 'ehrconsentpii_todaysdateilhippawitness',
+ 'sensitivetype2_domesticviolence', 'sensitivetype2_genetictesting',
+ 'sensitivetype2_hivaids', 'sensitivetype2_mentalhealth',
+ 'sensitivetype2_substanceuse', 'signature_type', 'cidi5_15',
+ 'mhqukb_25_number', 'mhqukb_26_age', 'mhqukb_28_age', 'ss_2_age',
+ 'ss_3_age_1', 'ss_3_age_2', 'ss_3_number',
+ 'english_exploring_the_mind_consent_form', 'etm_help_name',
+ 'cdc_covid_xx_a_date1', 'cdc_covid_xx_a_date2',
+ 'cdc_covid_xx_b_firstdose_other', 'cdc_covid_xx_b_seconddose_other',
+ 'cdc_covid_xx_symptom_cope_350',
+ 'cdc_covid_xx_symptom_seconddose_cope_350', 'dmfs_29_seconddose_other',
+ 'othercancer_daughterfreetextbox', 'othercancer_fatherfreetextbox',
+ 'othercancer_grandparentfreetextbox', 'othercancer_motherfreetextbox',
+ 'othercancer_siblingfreetextbox', 'othercancer_sonfreetextbox',
+ 'othercondition_daughterfreetextbox', 'othercondition_fatherfreetextbox',
+ 'othercondition_grandparentfreetextbox',
+ 'othercondition_motherfreetextbox', 'othercondition_siblingfreetextbox',
+ 'othercondition_sonfreetextbox', 'cdc_covid_xx_b_other',
+ 'otherdelayedmedicalcare_freetext',
+ 'attemptquitsmoking_completelyquitage', 'otherspecify_otherdrugstextbox',
+ 'smoking_averagedailycigarettenumber',
+ 'smoking_currentdailycigarettenumber',
+ 'smoking_dailysmokestartingagenumber', 'smoking_numberofyearsnumber',
+ 'cdc_covid_xx_a_date10', 'cdc_covid_xx_a_date11',
+ 'cdc_covid_xx_a_date12', 'cdc_covid_xx_a_date13',
+ 'cdc_covid_xx_a_date14', 'cdc_covid_xx_a_date15',
+ 'cdc_covid_xx_a_date16', 'cdc_covid_xx_a_date17', 'cdc_covid_xx_a_date3',
+ 'cdc_covid_xx_a_date4', 'cdc_covid_xx_a_date5', 'cdc_covid_xx_a_date6',
+ 'cdc_covid_xx_a_date7', 'cdc_covid_xx_a_date8', 'cdc_covid_xx_a_date9',
+ 'cdc_covid_xx_b_dose10_other', 'cdc_covid_xx_b_dose11_other',
+ 'cdc_covid_xx_b_dose12_other', 'cdc_covid_xx_b_dose13_other',
+ 'cdc_covid_xx_b_dose14_other', 'cdc_covid_xx_b_dose15_other',
+ 'cdc_covid_xx_b_dose16_other', 'cdc_covid_xx_b_dose17_other',
+ 'cdc_covid_xx_b_dose3_other', 'cdc_covid_xx_b_dose4_other',
+ 'cdc_covid_xx_b_dose5_other', 'cdc_covid_xx_b_dose6_other',
+ 'cdc_covid_xx_b_dose7_other', 'cdc_covid_xx_b_dose8_other',
+ 'cdc_covid_xx_b_dose9_other', 'cdc_covid_xx_symptom_cope_350_dose10',
+ 'cdc_covid_xx_symptom_cope_350_dose11',
+ 'cdc_covid_xx_symptom_cope_350_dose12',
+ 'cdc_covid_xx_symptom_cope_350_dose13',
+ 'cdc_covid_xx_symptom_cope_350_dose14',
+ 'cdc_covid_xx_symptom_cope_350_dose15',
+ 'cdc_covid_xx_symptom_cope_350_dose16',
+ 'cdc_covid_xx_symptom_cope_350_dose17',
+ 'cdc_covid_xx_symptom_cope_350_dose3',
+ 'cdc_covid_xx_symptom_cope_350_dose4',
+ 'cdc_covid_xx_symptom_cope_350_dose5',
+ 'cdc_covid_xx_symptom_cope_350_dose6',
+ 'cdc_covid_xx_symptom_cope_350_dose7',
+ 'cdc_covid_xx_symptom_cope_350_dose8',
+ 'cdc_covid_xx_symptom_cope_350_dose9', 'cdc_covid_xx_type_dose10_other',
+ 'cdc_covid_xx_type_dose11_other', 'cdc_covid_xx_type_dose12_other',
+ 'cdc_covid_xx_type_dose13_other', 'cdc_covid_xx_type_dose14_other',
+ 'cdc_covid_xx_type_dose15_other', 'cdc_covid_xx_type_dose16_other',
+ 'cdc_covid_xx_type_dose17_other', 'cdc_covid_xx_type_dose3_other',
+ 'cdc_covid_xx_type_dose4_other', 'cdc_covid_xx_type_dose5_other',
+ 'cdc_covid_xx_type_dose6_other', 'cdc_covid_xx_type_dose7_other',
+ 'cdc_covid_xx_type_dose8_other', 'cdc_covid_xx_type_dose9_other',
+ 'dmfs_29_additionaldose_other',
+ 'organtransplant_bloodvesseltransplantdate',
+ 'organtransplant_bonetransplantdate',
+ 'organtransplant_corneatransplantdate',
+ 'organtransplant_hearttransplantdate',
+ 'organtransplant_intestinetransplantdate',
+ 'organtransplant_kidneytransplantdate',
+ 'organtransplant_livertransplantdate',
+ 'organtransplant_lungtransplantdate',
+ 'organtransplant_otherorgantransplantdate',
+ 'organtransplant_othertissuetransplantdate',
+ 'organtransplant_pancreastransplantdate',
+ 'organtransplant_skintransplantdate',
+ 'organtransplant_valvetransplantdate', 'otherorgan_freetextbox',
+ 'othertissue_freetextbox',
+ 'outsidetravel6month_outsidetravel6monthhowlong',
+ 'outsidetravel6month_outsidetravel6monthwheretraveled',
+ 'overallhealth_hysterectomyhistoryage',
+ 'overallhealthovaryremovalhistoryage',
+ 'otherarthritis_daughterfreetextbox', 'otherarthritis_fatherfreetextbox',
+ 'otherarthritis_freetextbox', 'otherarthritis_grandparentfreetextbox',
+ 'otherarthritis_motherfreetextbox', 'otherarthritis_siblingfreetextbox',
+ 'otherarthritis_sonfreetextbox',
+ 'otherbonejointmuscle_daughterfreetextbox',
+ 'otherbonejointmuscle_fatherfreetextbox',
+ 'otherbonejointmuscle_freetextbox',
+ 'otherbonejointmuscle_grandparentfreetextbox',
+ 'otherbonejointmuscle_motherfreetextbox',
+ 'otherbonejointmuscle_siblingfreetextbox',
+ 'otherbonejointmuscle_sonfreetextbox',
+ 'otherbrainnervoussystem_daughterfreetextbox',
+ 'otherbrainnervoussystem_fatherfreetextbox',
+ 'otherbrainnervoussystem_freetextbox',
+ 'otherbrainnervoussystem_grandparentfreetextbox',
+ 'otherbrainnervoussystem_motherfreetextbox',
+ 'otherbrainnervoussystem_siblingfreetextbox',
+ 'otherbrainnervoussystem_sonfreetextbox', 'othercancer_freetextbox',
+ 'otherdiabetes_daughterfreetextbox', 'otherdiabetes_fatherfreetextbox',
+ 'otherdiabetes_freetextbox', 'otherdiabetes_grandparentfreetextbox',
+ 'otherdiabetes_motherfreetextbox', 'otherdiabetes_siblingfreetextbox',
+ 'otherdiabetes_sonfreetextbox', 'otherdiagnosis_daughterfreetextbox',
+ 'otherdiagnosis_fatherfreetextbox', 'otherdiagnosis_freetextbox',
+ 'otherdiagnosis_grandparentfreetextbox',
+ 'otherdiagnosis_motherfreetextbox', 'otherdiagnosis_siblingfreetextbox',
+ 'otherdiagnosis_sonfreetextbox',
+ 'otherdigestivecondition_daughterfreetextbox',
+ 'otherdigestivecondition_fatherfreetextbox',
+ 'otherdigestivecondition_freetextbox',
+ 'otherdigestivecondition_grandparentfreetextbox',
+ 'otherdigestivecondition_motherfreetextbox',
+ 'otherdigestivecondition_siblingfreetextbox',
+ 'otherdigestivecondition_sonfreetextbox',
+ 'otherhearingeye_daughterfreetextbox',
+ 'otherhearingeye_fatherfreetextbox', 'otherhearingeye_freetextbox',
+ 'otherhearingeye_grandparentfreetextbox',
+ 'otherhearingeye_motherfreetextbox',
+ 'otherhearingeye_siblingfreetextbox', 'otherhearingeye_sonfreetextbox',
+ 'otherheartorbloodcondition_daughterfreetextbox',
+ 'otherheartorbloodcondition_fatherfreetextbox',
+ 'otherheartorbloodcondition_freetextbox',
+ 'otherheartorbloodcondition_grandparentfreetextbox',
+ 'otherheartorbloodcondition_motherfreetextbox',
+ 'otherheartorbloodcondition_siblingfreetextbox',
+ 'otherheartorbloodcondition_sonfreetextbox',
+ 'otherhormoneendocrine_daughterfreetextbox',
+ 'otherhormoneendocrine_fatherfreetextbox',
+ 'otherhormoneendocrine_freetextbox',
+ 'otherhormoneendocrine_grandparentfreetextbox',
+ 'otherhormoneendocrine_motherfreetextbox',
+ 'otherhormoneendocrine_siblingfreetextbox',
+ 'otherhormoneendocrine_sonfreetextbox',
+ 'otherinfectiousdisease_freetextbox',
+ 'otherkidneycondition_daughterfreetextbox',
+ 'otherkidneycondition_fatherfreetextbox',
+ 'otherkidneycondition_freetextbox',
+ 'otherkidneycondition_grandparentfreetextbox',
+ 'otherkidneycondition_motherfreetextbox',
+ 'otherkidneycondition_siblingfreetextbox',
+ 'otherkidneycondition_sonfreetextbox',
+ 'othermentalhealthsubstanceuse_daughterfreetextbox',
+ 'othermentalhealthsubstanceuse_fatherfreetextbox',
+ 'othermentalhealthsubstanceuse_freetextbox',
+ 'othermentalhealthsubstanceuse_grandparentfreetextb',
+ 'othermentalhealthsubstanceuse_motherfreetextbox',
+ 'othermentalhealthsubstanceuse_siblingfreetextbox',
+ 'othermentalhealthsubstanceuse_sonfreetextbox',
+ 'otherrespiratory_daughterfreetextbox',
+ 'otherrespiratory_fatherfreetextbox', 'otherrespiratory_freetextbox',
+ 'otherrespiratory_grandparentfreetextbox',
+ 'otherrespiratory_motherfreetextbox',
+ 'otherrespiratory_siblingfreetextbox', 'otherrespiratory_sonfreetextbox',
+ 'otherthyroid_daughterfreetextbox', 'otherthyroid_fatherfreetextbox',
+ 'otherthyroid_freetextbox', 'otherthyroid_grandparentfreetextbox',
+ 'otherthyroid_motherfreetextbox', 'otherthyroid_siblingfreetextbox',
+ 'otherthyroid_sonfreetextbox', 'self_reported_height_cm',
+ 'self_reported_height_ft', 'self_reported_height_in',
+ 'self_reported_weight_kg', 'self_reported_weight_pounds',
+ 'sdoh_eds_follow_up_1_xx', 'urs_8c', 'aian_tribe',
+ 'aiannoneofthesedescribeme_aianfreetext',
+ 'blacknoneofthesedescribeme_blackfreetext',
+ 'employmentworkaddress_addresslineone',
+ 'employmentworkaddress_addresslinetwo', 'employmentworkaddress_city',
+ 'employmentworkaddress_country', 'employmentworkaddress_zipcode',
+ 'hispanicnoneofthesedescribeme_hispanicfreetext',
+ 'livingsituation_howmanypeople',
+ 'livingsituation_livingsituationfreetext',
+ 'livingsituation_peopleunder18',
+ 'menanoneofthesedescribeme_menafreetext',
+ 'nhpinoneofthesedescribeme_nhpifreetext',
+ 'noneofthesedescribeme_asianfreetext', 'otherhealthplan_freetext',
+ 'persononeaddress_persononeaddresscity',
+ 'persononeaddress_persononeaddresszipcode',
+ 'secondarycontactinfo_persononeaddressone',
+ 'secondarycontactinfo_persononeaddresstwo',
+ 'secondarycontactinfo_persononeemail',
+ 'secondarycontactinfo_persononefirstname',
+ 'secondarycontactinfo_persononelastname',
+ 'secondarycontactinfo_persononemiddleinitial',
+ 'secondarycontactinfo_persononetelephone',
+ 'secondarycontactinfo_secondcontactsaddressone',
+ 'secondarycontactinfo_secondcontactsaddresstwo',
+ 'secondarycontactinfo_secondcontactsemail',
+ 'secondarycontactinfo_secondcontactsfirstname',
+ 'secondarycontactinfo_secondcontactslastname',
+ 'secondarycontactinfo_secondcontactsmiddleinitial',
+ 'secondarycontactinfo_secondcontactsnumber',
+ 'secondcontactsaddress_secondcontactcity',
+ 'secondcontactsaddress_secondcontactzipcode',
+ 'sexatbirthnoneofthese_sexatbirthtextbox',
+ 'socialsecurity_socialsecuritynumber',
+ 'somethingelse_sexualitysomethingelsetextbox',
+ 'specifiedgender_specifiedgendertextbox', 'thebasics_countryborntextbox',
+ 'whatraceethnicity_raceethnicitynoneofthese',
+ 'whitenoneofthesedescribeme_whitefreetext', 'timeofday',
+ 'wearconsent_todaysdate']
+
 
 # # Table comparison
 # The export should generally contain the same tables from month to month.
@@ -169,20 +379,24 @@ WHERE prev_code.value IS NULL OR curr_code.value IS NULL
 query = tpl.render(new_rdr=new_rdr, old_rdr=old_rdr, project_id=project_id)
 execute(client, query)
 
-# # Question codes should have mapped `concept_id`s
+# # Questions lacking concept_ids to be dropped
 # Question codes in `observation_source_value` should be associated with the concept identified by
 # `observation_source_concept_id` and mapped to a standard concept identified by `observation_concept_id`.
-# The table below lists codes having rows where either field is null or zero and the number of rows where this occurs.
+# The table below lists codes having rows where both fields are null or zero and the number of rows where this occurs.
 # This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 #
-# Snap codes are not modeled in the vocabulary but may be used in the RDR export.
+# **If the check is failing.** The concepts in the results dataframe will need to be reviewed manually. These concepts will have thier rows deleted in later pipeline stages. Confirm the expectation for these concepts. The results of this check should not be refered to the rdr team.
+#
+# More information on the codes that are expected not to map:
+# * Snap codes are not modeled in the vocabulary but may be used in the RDR export.
 # They are excluded here by filtering out snap codes in the Public PPI Codebook
 # which were loaded into `curation_sandbox.snap_codes`.
 #
-# Long codes are not OMOP concepts and are not expected to have concept_ids. This issue is accounted for in the RDR cleaning class `SetConceptIdsForSurveyQuestionsAnswers`.
+# * Long codes are not OMOP concepts and are not expected to have concept_ids. This issue is accounted for in the RDR cleaning class `SetConceptIdsForSurveyQuestionsAnswers`.
 #
-# Wear codes. Most concept codes in the wear survey modules do not have an OMOP concept_id. This is expected as these records will not be included in the CDR.
+# * Wear codes. Most concept codes in the wear survey modules do not have an OMOP concept_id. This is expected as these records will not be included in the CDR.
 
+# +
 tpl = JINJA_ENV.from_string("""
 SELECT
   observation_source_value
@@ -192,45 +406,138 @@ SELECT
  ,COUNTIF(observation_concept_id=0)              AS concept_id_zero
 FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_source_value IS NOT NULL
-AND observation_source_value != ''
-AND observation_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
-AND LOWER(observation_source_value) NOT IN UNNEST ({{wear_codes}})
-AND LOWER(observation_source_value) NOT IN UNNEST ({{long_codes}})
+  AND observation_source_value != ''
+  AND observation_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
+  AND LOWER(observation_source_value) NOT IN UNNEST ({{wear_codes}})
+  AND LOWER(observation_source_value) NOT IN UNNEST ({{long_codes}})
+  AND NOT REGEXP_CONTAINS(observation_source_value,'(?i)consent|sitepairing|pii|michigan|feedback|nonotsure|schedul|address|screen2|get_help|stopoptions|sensitivetype2|withdrawal|etm|other_|stateofcare|organization|reviewagain|results_decision|saliva_whole_blood_transfusion')
 GROUP BY 1
-HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
+HAVING source_concept_id_null + source_concept_id_zero  > 0
+  AND  concept_id_null + concept_id_zero > 0
+  AND MAX(observation_date) > '2019-01-01'
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """)
 query = tpl.render(new_rdr=new_rdr, project_id=project_id,long_codes=LONG_CODES, wear_codes=WEAR_SURVEY_CODES)
-execute(client, query)
+df = execute(client, query)
 
-# # Answer codes should have mapped `concept_id`s
-# Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id
-# and mapped to a standard concept identified by value_as_concept_id. The table below lists codes having rows
-# where either field is null or zero and the number of rows where this occurs.
-# This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
+success_msg = 'Questions expected to have concept_ids have concept_ids'
+failure_msg = 'These question codes did not map to concept_ids. See description.'
+
+render_message(df,
+               success_msg,
+               failure_msg)
+# -
+
+# # Check the ETL mapped `concept_id`s to question codes
+# If most concepts are mapped, this check passes. If only some concepts are not mapping properly these are most likely known vocabulary issues.
 #
-# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export.
-# They are excluded here by filtering out snap codes in the Public PPI Codebook
-# which were loaded into `curation_sandbox.snap_codes`.
+# **If the check fails.** Investigate. If none, or only a few, of the codes are being mapped notify rdr.
 #
 
+# +
 tpl = JINJA_ENV.from_string("""
+WITH cte AS (
 SELECT
-  value_source_value
- ,COUNTIF(value_source_concept_id IS NULL) AS source_concept_id_null
- ,COUNTIF(value_source_concept_id=0)       AS source_concept_id_zero
- ,COUNTIF(value_as_concept_id IS NULL)     AS concept_id_null
- ,COUNTIF(value_as_concept_id=0)           AS concept_id_zero
-FROM `{{project_id}}.{{new_rdr}}.observation`
-WHERE value_source_value IS NOT NULL
-AND value_source_value != ''
-AND value_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.curation_sandbox.snap_codes`)
+  'questions' as field
+  ,observation_source_value as code
+  ,COUNTIF(observation_source_concept_id IS NULL OR observation_source_concept_id=0 OR observation_concept_id IS NULL OR observation_concept_id=0) AS n_not_mapped_by_etl 
+  ,COUNTIF(observation_source_concept_id IS NOT NULL AND observation_source_concept_id != 0 AND observation_concept_id IS NOT NULL AND observation_concept_id != 0) AS n_mapped_by_etl 
+  FROM `{{project_id}}.{{new_rdr}}.observation`
+LEFT JOIN (SELECT concept_id_1 FROM `{{project_id}}.{{new_rdr}}.concept_relationship` WHERE relationship_id = 'Maps to') cr1
+ON observation_source_concept_id = cr1.concept_id_1
+WHERE cr1.concept_id_1 IS NOT NULL 
+GROUP BY 2
+
+)
+SELECT 
+  field,
+  COUNTIF(n_not_mapped_by_etl != 0) AS count_not_mapped,
+  COUNTIF(n_mapped_by_etl != 0) AS count_mapped
+FROM cte
 GROUP BY 1
-HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
-ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
+
+
 """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id, long_codes=LONG_CODES)
+df = execute(client, query)
+
+if sum(df['count_not_mapped']) > .33 * sum(df['count_mapped']):
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:red">FAILURE</span>
+                </h3>
+                <p>
+                    Concept_ids are not being mapped. See description.
+                </p>
+            '''))
+else:
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:green">PASS</span>
+                </h3>
+                <p>
+                    Concept_ids have been mapped.
+                </p>
+                
+            '''))
+# -
+
+# # Check the ETL mapped `concept_id`s to answer codes
+# If most concepts are mapped, this check passes. If only some concepts are not mapping properly these are most likely known vocabulary issues.
+#
+# **If the check fails.** Investigate. If none, or only a few, of the codes are being mapped notify rdr.
+
+# +
+tpl = JINJA_ENV.from_string("""
+WITH cte AS (
+SELECT
+  'answers' as field
+  ,value_source_value as code
+  ,COUNTIF(value_source_value IS NOT NULL AND value_source_value != '' AND value_source_concept_id IS NULL OR value_source_concept_id=0 OR value_as_concept_id IS NULL OR value_as_concept_id=0) AS n_not_mapped_by_etl 
+  ,COUNTIF(value_source_value IS NOT NULL AND value_source_value != '' AND value_source_concept_id IS NOT NULL AND value_source_concept_id != 0 AND value_as_concept_id IS NOT NULL AND value_as_concept_id != 0) AS n_mapped_by_etl 
+FROM `{{project_id}}.{{new_rdr}}.observation`
+LEFT JOIN (SELECT distinct concept_id_1 FROM `{{project_id}}.{{new_rdr}}.concept_relationship` WHERE relationship_id IN ('Maps to','Mapped from','Maps to value')) cr2
+ON value_source_concept_id = cr2.concept_id_1
+WHERE cr2.concept_id_1 IS NOT NULL 
+GROUP BY 2
+)
+SELECT distinct field,
+countif(n_not_mapped_by_etl != 0) as count_not_mapped,
+countif(n_mapped_by_etl != 0) as count_mapped
+FROM cte
+GROUP BY 1
+
+
+""")
+query = tpl.render(new_rdr=new_rdr, project_id=project_id, long_codes=LONG_CODES)
+df = execute(client, query)
+
+if sum(df['count_not_mapped']) > .33 * sum(df['count_mapped']):
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:red">FAILURE</span>
+                </h3>
+                <p>
+                    Concept_ids are not being mapped. See description.
+                </p>
+            '''))
+else:
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:green">PASS</span>
+                </h3>
+                <p>
+                    Concept_ids have been mapped.
+                </p>
+                
+            '''))
+
+
+# -
 
 # # Dates are equal in observation_date and observation_datetime
 # Any mismatches are listed below.
@@ -276,20 +583,35 @@ ORDER BY 2 DESC
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
-# # Check if numeric data in value_as_string
+# # Check numeric data in value_as_string
 # Some numeric data is expected in value_as_string.  For example, zip codes or other contact specific information.
+#
+# **If the check fails, manually review the results.** <br>
+# False positives are possible. The suggested first step of investigation is to run the query in the comments of DC3407. This will provide any new text type questions from the surveys that can be added to the list `expected_strings`.
 
+# +
 tpl = JINJA_ENV.from_string("""
 SELECT
   observation_source_value
  ,COUNT(1) AS n
 FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE SAFE_CAST(value_as_string AS INT64) IS NOT NULL
+AND value_source_concept_id = 0
+AND LOWER(observation_source_value) NOT IN UNNEST ({{expected_strings}}) 
+AND NOT REGEXP_CONTAINS(LOWER(observation_source_value), '(?i)snap|signature|address|email|number|cohortgroup')
 GROUP BY 1
 ORDER BY 2 DESC
 """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id,expected_strings=expected_strings)
+df = execute(client, query)
+
+success_msg = 'All records with a number in value_as_string are expected to be text.'
+failure_msg = 'Some records that have a number value_as_string might not be expected. See description.'
+
+render_message(df,
+                success_msg,
+                failure_msg)
+# -
 
 # # All COPE `questionnaire_response_id`s are in COPE version map
 # Any `questionnaire_response_id`s missing from the map will be listed below.
@@ -830,7 +1152,8 @@ execute(client, query)
 
 # From CDR V8, Curation receives HealthPro deceased records from RDR. We must ensure the incoming records follow the requirement.
 # Here is the highlight of the technical requirement of the incoming `death` records from RDR.
-# - Person_id, death_date, death_datetime, death_type_concept_id populated
+# - Person_id and death_type_concept_id are populated
+# - Death_date and death_datetime are populated but can be NULL
 # - Map all deceased records from HealthPro as “Case Report Form” (concept ID: 32809)
 # - Cause_concept_id, cause_source_value, and cause_source_concept_id columns, set value to NULL
 # - Src_id filled in with “healthpro”
@@ -838,14 +1161,14 @@ execute(client, query)
 # +
 query_if_empty = JINJA_ENV.from_string("""
 SELECT COUNT(*)
-FROM `{{project_id}}.{{dataset}}.death`
+FROM `{{project_id}}.{{dataset}}.aou_death`
 HAVING COUNT(*) = 0
 """).render(project_id=project_id, dataset=new_rdr)
 df_if_empty = execute(client, query_if_empty)
 
 query_if_duplicate = JINJA_ENV.from_string("""
 SELECT person_id, COUNT(*) 
-FROM `{{project_id}}.{{dataset}}.death`
+FROM `{{project_id}}.{{dataset}}.aou_death`
 GROUP BY person_id
 HAVING COUNT(*) > 1
 """).render(project_id=project_id, dataset=new_rdr)
@@ -854,7 +1177,7 @@ df_if_duplicate = execute(client, query_if_duplicate)
 query = JINJA_ENV.from_string("""
 SELECT
     person_id
-FROM `{{project_id}}.{{dataset}}.death`
+FROM `{{project_id}}.{{dataset}}.aou_death`
 WHERE death_type_concept_id != 32809
 OR cause_concept_id IS NOT NULL
 OR cause_source_value IS NOT NULL
@@ -863,9 +1186,10 @@ OR src_id != 'healthpro'
 """).render(project_id=project_id, dataset=new_rdr)
 df = execute(client, query)
 
-success_msg_if_empty = 'Death table has some records.'
-failure_msg_if_empty = '''
-    Death table is empty. We expect HealthPro deceased records. Contact RDR and have them send HealthPro deceased records.
+success_msg_if_empty = 'AOU_DEATH table has some records.'
+failure_msg_if_empty = '''AOU_DEATH table is empty. Investigate if the data is empty from the beginning or our import is not working.
+If it's empty from the beginning, contact RDR and have them send HealthPro deceased records. 
+If it's import issue, investigate what's causing the issue and solve the issue ASAP.
 '''
 success_msg_if_duplicate = 'Death records are up to one record per person_id.'
 failure_msg_if_duplicate = '''
@@ -880,14 +1204,14 @@ failure_msg = '''
 render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 
 render_message(df_if_duplicate,
-                success_msg_if_duplicate,
-                failure_msg_if_duplicate,
-                failure_msg_args={'code_count': len(df_if_duplicate)})
+               success_msg_if_duplicate,
+               failure_msg_if_duplicate,
+               failure_msg_args={'code_count': len(df_if_duplicate)})
 
 render_message(df,
-                success_msg,
-                failure_msg,
-                failure_msg_args={'code_count': len(df)})
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
 # -
 # # Check src_ids
 # Check that every record contains a valid src_id. The check passes if no records are returned.
@@ -926,7 +1250,6 @@ for table in SRC_ID_TABLES:
 all_queries = '\nUNION ALL\n'.join(queries)
 execute(client, f'{src_ids_table}\n{all_queries}')
 
-
 # # Check Wear Consent Counts
 #
 # `Wear_consent` and `wear_consent_ptsc` records should be seen in the export.
@@ -954,6 +1277,3 @@ GROUP BY 1
             new_rdr=new_rdr,
             wear_codes=WEAR_SURVEY_CODES)
 execute(client, query)
-
-
-

@@ -13,6 +13,7 @@ import cdr_cleaner.clean_cdr_engine as clean_engine
 from cdr_cleaner.cleaning_rules.backfill_lifestyle import BackfillLifestyle
 from cdr_cleaner.cleaning_rules.backfill_overall_health import BackfillOverallHealth
 from cdr_cleaner.cleaning_rules.backfill_the_basics import BackfillTheBasics
+from cdr_cleaner.cleaning_rules.calculate_bmi import CalculateBmi
 from cdr_cleaner.cleaning_rules.calculate_primary_death_record import CalculatePrimaryDeathRecord
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
@@ -48,10 +49,11 @@ from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import RemoveEhr
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
 from cdr_cleaner.cleaning_rules.truncate_era_tables import TruncateEraTables
-from cdr_cleaner.cleaning_rules.clean_digital_health_data import CleanDigitalHealthStatus
+# from cdr_cleaner.cleaning_rules.clean_digital_health_data import CleanDigitalHealthStatus
 from cdr_cleaner.cleaning_rules.remove_non_existing_pids import RemoveNonExistingPids
 from cdr_cleaner.cleaning_rules.drop_invalid_sleep_level_records import DropInvalidSleepLevelRecords
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
+from cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id import FitbitDeidSrcID
 from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
     RemoveFitbitDataIfMaxAgeExceeded
@@ -139,7 +141,9 @@ import constants.global_variables
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY, CRON_RETRACTION
 from cdr_cleaner.cleaning_rules.generate_research_device_ids import GenerateResearchDeviceIds
+from cdr_cleaner.cleaning_rules.deid.fitbit_device_id import DeidFitbitDeviceId
 from cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct import DropViaSurveyConduct
+from cdr_cleaner.cleaning_rules.generate_wear_study_table import GenerateWearStudyTable
 
 # Third party imports
 
@@ -199,6 +203,7 @@ RDR_CLEANING_CLASSES = [
     (CleanSmokingPpi,),
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
+    (CalculateBmi,),
     (DropExtremeMeasurements,),
     (DropMultipleMeasurements,),
     (CleanByBirthYear,),
@@ -209,6 +214,7 @@ RDR_CLEANING_CLASSES = [
     (DropParticipantsWithoutAnyBasics,),
     (StoreExpectedCTList,),
     (DropOrphanedSurveyConductIds,),
+    (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),
 ]
 
@@ -251,8 +257,9 @@ COMBINED_CLEANING_CLASSES = [
 FITBIT_CLEANING_CLASSES = [
     (TruncateFitbitData,),
     (RemoveParticipantDataPastDeactivationDate,),
-    (CleanDigitalHealthStatus,),
-    (DropInvalidSleepLevelRecords,),
+    # (CleanDigitalHealthStatus,),
+    (
+        DropInvalidSleepLevelRecords,),
     (RemoveNonExistingPids,),  # assumes combined dataset is ready for reference
     (GenerateResearchDeviceIds,),
 ]
@@ -288,6 +295,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (CalculatePrimaryDeathRecord,),
+    (GenerateWearStudyTable,),
     (DropViaSurveyConduct,),  # should run after wear study table creation
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -317,7 +325,10 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
 
 REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
     (RemoveFitbitDataIfMaxAgeExceeded,),
+    (DeidFitbitDeviceId,
+    ),  # This rule must occur so that PID can map to device_id
     (FitbitPIDtoRID,),
+    (FitbitDeidSrcID,),
     (RemoveNonExistingPids,),  # assumes RT dataset is ready for reference
     (FitbitDateShiftRule,),
 ]
@@ -348,7 +359,8 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (FreeTextSurveyResponseSuppression,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
-    (DropViaSurveyConduct,),
+    (GenerateWearStudyTable,),
+    (DropViaSurveyConduct,),  # should run after wear study table creation
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -374,7 +386,10 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
 ]
 
 CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
+    (DeidFitbitDeviceId,
+    ),  # This rule must occur so that PID can map to device_id
     (FitbitPIDtoRID,),
+    (FitbitDeidSrcID,),
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
     (DropViaSurveyConduct,),
 ]

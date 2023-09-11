@@ -181,7 +181,7 @@ def main(app_id, dataset_id, file_name, all_hpo=False, file_format=None):
     if app_id is None:
         app_id = app_identity.get_application_id()
     if dataset_id is None:
-        dataset_id = bq_utils.get_dataset_id()
+        dataset_id = common.BIGQUERY_DATASET_ID
     if os.path.exists(file_name):
         # Do not overwrite existing
         #        raise RuntimeError('File {} already exists'.format(file_name))

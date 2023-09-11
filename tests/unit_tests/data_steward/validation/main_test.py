@@ -6,6 +6,9 @@ import datetime
 import re
 from unittest import TestCase, mock
 
+# Third party imports
+from google.api_core.exceptions import ServiceUnavailable
+
 # Project imports
 import common
 import resources
@@ -13,7 +16,7 @@ from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
 from validation import main
-from tests.test_util import mock_google_http_error, mock_google_cloud_error
+from tests.test_util import mock_google_http_error, mock_google_cloud_error, mock_google_service_unavailable_error
 
 
 class ValidationMainTest(TestCase):
@@ -549,6 +552,19 @@ class ValidationMainTest(TestCase):
         self.assertEqual(mock_hpo_bucket.copy_blob.call_count, 2)
         mock_hpo_bucket.copy_blob.assert_has_calls(expected, any_order=True)
 
+    @mock.patch('validation.main.process_hpo_copy')
+    @mock.patch('api_util.check_cron')
+    def test_copy_files_retry(self, mock_check_cron, mock_process_hpo_copy):
+        mock_process_hpo_copy.side_effect = mock_google_service_unavailable_error(
+        )
+
+        # Checks that 503 error has been raised.
+        with self.assertRaises(ServiceUnavailable):
+            main.copy_files('fake_hpo_id')
+
+        #Checks that job has been retried once
+        self.assertEqual(mock_process_hpo_copy.call_count, 2)
+
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())
@@ -631,37 +647,32 @@ class ValidationMainTest(TestCase):
         self.assertIn(incorrect_folder_prefix,
                       report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY])
 
+    @mock.patch('validation.main.UNIONED_DATASET_ID', 'output_dataset')
+    @mock.patch('validation.main.BIGQUERY_DATASET_ID', 'input_dataset')
     @mock.patch('validation.main._upload_achilles_files')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
     @mock.patch('validation.ehr_union.main')
-    @mock.patch('bq_utils.get_unioned_dataset_id')
-    @mock.patch('bq_utils.get_dataset_id')
     @mock.patch('bq_utils.app_identity.get_application_id')
     @mock.patch('api_util.check_cron')
     def test_union_ehr(self, mock_check_cron, mock_get_application_id,
-                       mock_get_dataset_id, mock_get_unioned_dataset_id,
                        mock_ehr_union_main, mock_run_achilles, mock_run_export,
                        mock_upload_achilles_files):
 
         application_id = 'application_id'
-        input_dataset = 'input_dataset'
-        output_dataset = 'output_dataset'
         mock_client = mock.MagicMock()
 
         self.mock_bq_client.return_value = mock_client
         mock_check_cron.return_value = True
         mock_get_application_id.return_value = application_id
-        mock_get_dataset_id.return_value = input_dataset
-        mock_get_unioned_dataset_id.return_value = output_dataset
 
         main.app.testing = True
         main.before_first_request_funcs = []
         with main.app.test_client() as c:
             c.get(main_consts.PREFIX + 'UnionEHR')
 
-            mock_ehr_union_main.assert_called_once_with(input_dataset,
-                                                        output_dataset,
+            mock_ehr_union_main.assert_called_once_with('input_dataset',
+                                                        'output_dataset',
                                                         application_id)
             mock_run_achilles.assert_called_once_with(mock_client,
                                                       'unioned_ehr')

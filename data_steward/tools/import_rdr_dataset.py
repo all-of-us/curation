@@ -5,7 +5,8 @@
 # access the dataset in BigQuery.
 
 # Python imports
-from argparse import ArgumentParser
+from datetime import datetime
+from typing import List, Dict
 import logging
 
 # Third party imports
@@ -15,8 +16,10 @@ from google.api_core.exceptions import NotFound
 # Project imports
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
-from common import CDR_SCOPES, JINJA_ENV
-from resources import replace_special_characters_for_labels, validate_date_string, rdr_src_id_schemas, cdm_schemas
+from common import CDR_SCOPES, AOU_DEATH, DEATH
+from resources import (replace_special_characters_for_labels,
+                       validate_date_string, rdr_src_id_schemas, cdm_schemas,
+                       fields_for)
 from tools.snapshot_by_query import BIGQUERY_DATA_TYPES
 from tools.import_rdr_omop import copy_vocab_tables
 
@@ -79,6 +82,24 @@ def parse_rdr_args(raw_args=None):
     return parser.parse_args(raw_args)
 
 
+def get_destination_schemas() -> Dict[str, List[Dict[str, str]]]:
+    """
+    Returns the dict that has the schema of destination tables.
+    Key features:
+        (1) CDM tables and RDR tables are the keys of the dict,
+        (2) DEATH is excluded, AOU_DEATH is included, and
+        (3) rdr_xyz schema is used where possible.
+    """
+    schema_dict = cdm_schemas()
+    schema_dict.update(rdr_src_id_schemas())
+
+    # Use aou_death instead of death for destination
+    schema_dict[AOU_DEATH] = fields_for(AOU_DEATH)
+    del schema_dict[DEATH]
+
+    return schema_dict
+
+
 def create_rdr_tables(client, destination_dataset, rdr_project,
                       rdr_source_dataset):
     """
@@ -86,19 +107,28 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
 
     Uses the client to load data directly from the dataset into
     a table.
+    
+    NOTE: Death records are loaded to AOU_DEATH table. We do not
+    create DEATH table here because RDR's death records contain
+    NULL death_date records, which violates CDM's DEATH definition.
+    We assign `aou_death_id` using UUID on the fly. 
+    `primary_death_record` is set to FALSE here. The CR CalculatePrimaryDeathRecord
+    will update it to the right values later in the RDR data stage.
 
     :param client: a BigQueryClient
     :param destination_dataset: the existing local dataset to load file data into
     :param rdr_project: the source rdr project containing the data
     :param rdr_source_dataset: the source rdr dataset containing the data
     """
-    schema_dict = cdm_schemas()
-    schema_dict.update(rdr_src_id_schemas())
+    schema_dict = get_destination_schemas()
 
     for table, schema in schema_dict.items():
 
         destination_table_id = f'{client.project}.{destination_dataset}.{table}'
-        source_table_id = f'{rdr_project}.{rdr_source_dataset}.{table}'
+        if table == AOU_DEATH:
+            source_table_id = f'{rdr_project}.{rdr_source_dataset}.{DEATH}'
+        else:
+            source_table_id = f'{rdr_project}.{rdr_source_dataset}.{table}'
 
         # rdr consent table is ingested as consent_validation
         if table == 'consent_validation':
@@ -130,6 +160,18 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
             LOGGER.info(
                 f'Copying source table `{source_table_id}` to destination table `{destination_table_id}`'
             )
+
+            sc_list = []
+            for item in schema_list:
+                if item.name == 'aou_death_id':
+                    field = 'GENERATE_UUID() AS aou_death_id'
+                elif item.name == 'primary_death_record':
+                    field = 'FALSE AS primary_death_record'
+                else:
+                    field = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
+                sc_list.append(field)
+
+            fields_name_str = ',\n'.join(sc_list)
 
             # copy contents from source dataset to destination dataset
             sql = tpl.render(schema_list=schema_list,

@@ -11,7 +11,7 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import AOU_DEATH, JINJA_ENV, UNIONED_EHR
+from common import AOU_DEATH, JINJA_ENV
 from constants.cdr_cleaner.clean_cdr import (
     COMBINED, CONTROLLED_TIER_DEID, CONTROLLED_TIER_DEID_BASE,
     CONTROLLED_TIER_DEID_CLEAN, QUERY, REGISTERED_TIER_DEID,

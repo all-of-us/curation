@@ -5,8 +5,6 @@ Integration test for store_new_duplicate_measurement_concept_ids.py
 # Python imports
 import os
 from datetime import datetime, timezone
-
-# Third party imports
 import mock
 
 # Project imports
@@ -52,12 +50,20 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
         cls.fq_table_names.append(
-            f'{cls.project_id}.pipeline_tables.{IDENTICAL_LABS_LOOKUP_TABLE}')
+            f'{cls.project_id}.{cls.dataset_id}.{IDENTICAL_LABS_LOOKUP_TABLE}')
 
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
+
+    def setUp(self):
+        super().setUp()
+        self.pipeline_tables_patcher = mock.patch(
+            'cdr_cleaner.cleaning_rules.store_new_duplicate_measurement_concept_ids.PIPELINE_TABLES',
+            self.dataset_id)
+        self.mock_pipeline_tables_patcher = self.pipeline_tables_patcher.start()
+        self.addCleanup(self.pipeline_tables_patcher.stop)
 
     def test_store_new_duplicate_measurement_concept_ids(self):
         """
@@ -123,7 +129,7 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         P_LOOKUP_TEMPLATE = JINJA_ENV.from_string("""
-        INSERT INTO `{{project_id}}.pipeline_tables.{{lookup_table}}`
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{lookup_table}}`
         (value_as_concept_id,vac_name,vac_vocab,aou_standard_vac,
                date_added)
         VALUES
@@ -131,6 +137,7 @@ class StoreNewDuplicateMeasurementConceptIdsTest(BaseTest.CleaningRulesTestBase
             (100011, 'Increased', 'LOINC', 100011, '2022-01-01'),
             (100012, 'Increased', 'SNOMED',100011, '2022-01-01')
         """).render(project_id=self.project_id,
+                    dataset_id=self.dataset_id,
                     lookup_table=IDENTICAL_LABS_LOOKUP_TABLE)
 
         self.load_test_data(

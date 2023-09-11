@@ -34,7 +34,7 @@ import constants.global_variables
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, BIGQUERY_DATASET_ID, UNIONED_DATASET_ID
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
@@ -590,7 +590,7 @@ def get_hpo_name(hpo_id):
 
 def render_query(query_str, **kwargs):
     project_id = app_identity.get_application_id()
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = BIGQUERY_DATASET_ID
     return query_str.format(project_id=project_id,
                             dataset_id=dataset_id,
                             **kwargs)
@@ -725,7 +725,7 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
             if table_name not in resources.CDM_TABLES:
                 raise ValueError(f'{table_name} is not a valid table to load')
 
-            dataset_id: str = bq_utils.get_dataset_id()
+            dataset_id: str = BIGQUERY_DATASET_ID
 
             gcs_object_path: str = (f'gs://{hpo_bucket.name}/'
                                     f'{folder_prefix}'
@@ -1032,8 +1032,8 @@ def copy_files(hpo_id):
 def union_ehr():
     hpo_id = 'unioned_ehr'
     app_id = bq_utils.app_identity.get_application_id()
-    input_dataset_id = bq_utils.get_dataset_id()
-    output_dataset_id = bq_utils.get_unioned_dataset_id()
+    input_dataset_id = BIGQUERY_DATASET_ID
+    output_dataset_id = UNIONED_DATASET_ID
     bq_client = BigQueryClient(app_id)
     ehr_union.main(input_dataset_id, output_dataset_id, app_id)
 
@@ -1140,7 +1140,7 @@ def validate_pii():
 def ps_api_cron():
     project = bq_utils.app_identity.get_application_id()
     bq_client = BigQueryClient(project)
-    rdr_project_id = bq_utils.get_rdr_project_id()
+    rdr_project_id = os.environ.get('RDR_PROJECT_ID')
     drc_dataset_id = common.DRC_OPS
     logging.info(f"Fetching Participant Summary API data")
     fetch_and_store_full_ps_data(bq_client, project, rdr_project_id,

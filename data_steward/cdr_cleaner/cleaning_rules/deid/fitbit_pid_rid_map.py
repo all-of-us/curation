@@ -7,6 +7,7 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
+from cdr_cleaner.cleaning_rules.deid.fitbit_device_id import DeidFitbitDeviceId
 from common import FITBIT_TABLES
 
 LOGGER = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ class FitbitPIDtoRID(PIDtoRID):
                  sandbox_dataset_id,
                  mapping_dataset_id,
                  mapping_table_id,
+                 depends_on=[DeidFitbitDeviceId],
                  table_namer=None):
         """
         Initialize the class with proper info.

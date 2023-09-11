@@ -14,12 +14,11 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 from gcloud.bq import BigQueryClient
 from utils import auth, pipeline_logging
 import app_identity
-import bq_utils
 from resources import mapping_table_for
 from utils import auth, pipeline_logging
-from common import (CDR_SCOPES, DEATH, MAPPING_PREFIX, METADATA,
-                    PID_RID_MAPPING, QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
-                    FACT_RELATIONSHIP, COPE_SURVEY_MAP)
+from common import (AOU_DEATH, CDR_SCOPES, DEATH, METADATA, PID_RID_MAPPING,
+                    QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO, FACT_RELATIONSHIP,
+                    COPE_SURVEY_MAP, BIGQUERY_DATASET_ID)
 from utils import auth
 from utils import pipeline_logging
 from common import CDR_SCOPES, FACT_RELATIONSHIP, METADATA, DEATH
@@ -118,13 +117,14 @@ def main(raw_args=None):
         f'RDR dataset COPY from `{args.rdr_dataset}` to `{datasets.get("staging")}` has completed'
     )
 
-    # Create the mapping tables. Death and Metadata are not included
+    # Create mapping tables. aou_death and Metadata do not need mapping tables so they are excluded.
+    # death does not exist in the RDR staging so it is not in the list.
     domain_tables = [
         table.table_id for table in bq_client.list_tables(
             f'{bq_client.project}.{datasets.get("staging")}')
     ]
     skip_tables = [
-        DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING,
+        AOU_DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING,
         QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO
     ]
     for domain_table in domain_tables:
@@ -150,6 +150,10 @@ def main(raw_args=None):
 
     bq_client.build_and_copy_contents(datasets.get('staging', 'UNSET'),
                                       datasets.get('clean', 'UNSET'))
+
+    # Create an empty DEATH for clean RDR. Actual data is in AOU_DEATH.
+    _ = bq_client.create_tables(
+        [f"{bq_client.project}.{datasets.get('clean', 'UNSET')}.{DEATH}"])
 
     # update sandbox description and labels
     sandbox_dataset = bq_client.get_dataset(datasets.get(
@@ -248,7 +252,7 @@ def mapping_query(table_name, dataset_id=None, project_id=None):
     :return: the query
     """
     if dataset_id is None:
-        dataset_id = bq_utils.get_dataset_id()
+        dataset_id = BIGQUERY_DATASET_ID
     if project_id is None:
         project_id = app_identity.get_application_id()
 

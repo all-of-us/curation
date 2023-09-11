@@ -41,6 +41,7 @@ class BigQueryJobWaitError(RuntimeError):
         super(BigQueryJobWaitError, self).__init__(msg)
 
 
+@deprecated(reason='get_rdr_project_id is deprecated')
 def get_rdr_project_id():
     return os.environ.get('RDR_PROJECT_ID')
 
@@ -50,14 +51,17 @@ def get_output_project_id():
     return os.environ.get('OUTPUT_PROJECT_ID')
 
 
+@deprecated(reason='Use common.BIGQUERY_DATASET_ID instead')
 def get_dataset_id():
     return os.environ.get('BIGQUERY_DATASET_ID')
 
 
+@deprecated(reason='Use common.UNIONED_DATASET_ID instead')
 def get_unioned_dataset_id():
     return os.environ.get('UNIONED_DATASET_ID')
 
 
+@deprecated(reason='Use common.RDR_DATASET_ID instead')
 def get_rdr_dataset_id():
     return os.environ.get('RDR_DATASET_ID')
 

@@ -99,7 +99,7 @@ from common import (AOU_DEATH, CARE_SITE, DEATH, FACT_RELATIONSHIP,
                     ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION, MAPPING_PREFIX,
                     MEASUREMENT_DOMAIN_CONCEPT_ID, OBSERVATION, PERSON,
                     PERSON_DOMAIN_CONCEPT_ID, SURVEY_CONDUCT, UNIONED_EHR,
-                    VISIT_DETAIL, VISIT_OCCURRENCE)
+                    VISIT_DETAIL, VISIT_OCCURRENCE, BIGQUERY_DATASET_ID)
 from constants.validation import ehr_union as eu_constants
 from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
@@ -113,8 +113,19 @@ UNION_ALL = '''
 '''
 
 LOAD_AOU_DEATH = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{output_dataset}}.{{aou_death}}`
-AS
+INSERT INTO `{{project}}.{{output_dataset}}.{{aou_death}}`
+(
+    aou_death_id,
+    person_id,
+    death_date,
+    death_datetime,
+    death_type_concept_id,
+    cause_concept_id,
+    cause_source_value,
+    cause_source_concept_id,
+    src_id,
+    primary_death_record
+)
 WITH union_aou_death AS (
     {% for hpo_id in hpo_ids %}
     SELECT
@@ -232,7 +243,7 @@ def mapping_query(client,
     :return: the query
     """
     if dataset_id is None:
-        dataset_id = bq_utils.get_dataset_id()
+        dataset_id = BIGQUERY_DATASET_ID
     if project_id is None:
         project_id = app_identity.get_application_id()
     subqueries = _mapping_subqueries(client, table_name, hpo_ids, dataset_id,
@@ -810,7 +821,7 @@ def move_ehr_person_to_observation(output_dataset_id, ehr_cutoff_date=None):
                    person_to_obs_query=get_person_to_observation_query(
                        output_dataset_id, ehr_cutoff_date=ehr_cutoff_date))
     logging.info(
-        f'Copying EHR person table from {bq_utils.get_dataset_id()} to unioned dataset. Query is `{q}`'
+        f'Copying EHR person table from {BIGQUERY_DATASET_ID} to unioned dataset. Query is `{q}`'
     )
     dst_table_id = output_table_for(OBSERVATION)
     dst_dataset_id = output_dataset_id
@@ -861,7 +872,7 @@ def map_ehr_person_to_observation(output_dataset_id, ehr_cutoff_date=None):
     dst_dataset_id = output_dataset_id
     dst_table_id = mapping_table_for(table_name)
     logging.info(
-        f'Mapping EHR person table from {bq_utils.get_dataset_id()} to unioned dataset. Query is `{q}`'
+        f'Mapping EHR person table from {BIGQUERY_DATASET_ID} to unioned dataset. Query is `{q}`'
     )
     query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
 
@@ -877,6 +888,17 @@ def create_load_aou_death(bq_client, project_id, input_dataset_id,
         `CalculatePrimaryDeathRecord` updates the table at the end of the
         Unioned EHR data tier creation.
     """
+    # EHR Union runs every night so the table needs to be deleted first if exists.
+    bq_client.delete_table(f'{output_dataset_id}.{UNIONED_EHR}_{AOU_DEATH}',
+                           not_found_ok=True)
+
+    table_name = f'{project_id}.{output_dataset_id}.{UNIONED_EHR}_{AOU_DEATH}'
+    schema_list = bq_client.get_table_schema(AOU_DEATH)
+    table_obj = bq.Table(table_name, schema=schema_list)
+    table_obj.clustering_fields = 'person_id'
+    table_obj.time_partitioning = bq.table.TimePartitioning(type_='DAY')
+    bq_client.create_table(table_obj)
+
     # Filter out HPO sites without death data submission.
     hpo_ids_with_death = [
         hpo_id for hpo_id in hpo_ids

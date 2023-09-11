@@ -14,6 +14,7 @@ import logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from constants.cdr_cleaner.clean_cdr import REGISTERED_TIER_DEID, CONTROLLED_TIER_DEID, QUERY
 from common import JINJA_ENV, OBSERVATION, SURVEY_CONDUCT
+from cdr_cleaner.cleaning_rules.generate_wear_study_table import GenerateWearStudyTable
 
 LOGGER = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ class DropViaSurveyConduct(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            depends_on=None,
+            depends_on=[GenerateWearStudyTable],
             table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:

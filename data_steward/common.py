@@ -120,6 +120,9 @@ SLEEP_DAILY_SUMMARY = 'sleep_daily_summary'
 SLEEP_LEVEL = 'sleep_level'
 DEVICE = 'device'
 
+# Wearables supplement
+WEAR_STUDY = 'wear_study'
+
 FITBIT_TABLES = [
     ACTIVITY_SUMMARY, HEART_RATE_MINUTE_LEVEL, HEART_RATE_SUMMARY,
     STEPS_INTRADAY, SLEEP_DAILY_SUMMARY, SLEEP_LEVEL, DEVICE
@@ -248,6 +251,7 @@ EXT_SUFFIX = '_ext'
 DEID_MAP = '_deid_map'
 MAX_DEID_DATE_SHIFT = 364
 COPE_SURVEY_MAP = 'cope_survey_semantic_version_map'
+EHR_CONSENT_VALIDATION = 'consent_validation'
 
 # pipeline_tables dataset and contents
 PIPELINE_TABLES = 'pipeline_tables'
@@ -305,3 +309,8 @@ CDR_SCOPES = [
 
 # Default Concept valid_start_date
 DEFAULT_CONCEPT_VALID_START_DATE = '1970-01-01'
+
+# OS imports
+BIGQUERY_DATASET_ID = os.environ.get('BIGQUERY_DATASET_ID')
+UNIONED_DATASET_ID = os.environ.get('UNIONED_DATASET_ID')
+RDR_DATASET_ID = os.environ.get('RDR_DATASET_ID')

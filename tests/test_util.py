@@ -6,6 +6,7 @@ from typing import Optional
 # Third party imports
 import googleapiclient.errors
 from google.cloud.exceptions import GoogleCloudError
+from google.api_core.exceptions import ServiceUnavailable
 import requests
 
 # Project imports
@@ -127,7 +128,7 @@ def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
     running_jobs = []
     for table_name in table_names:
         gcs_path = f'gs://{test_resources_bucket}/{table_name}.csv'
-        dataset_id = bq_utils.get_dataset_id()
+        dataset_id = common.BIGQUERY_DATASET_ID
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         load_results = bq_utils.load_csv(table_name, gcs_path, app_id,
                                          dataset_id, table_id)
@@ -388,3 +389,8 @@ def drop_hpo_id_bucket_name_table(client, dataset_id):
 
 def mock_google_cloud_error(content: bytes = b'418: I\'m a teapot'):
     return GoogleCloudError(message=content.decode())
+
+
+def mock_google_service_unavailable_error(
+    content: bytes = b'418: I\'m a teapot'):
+    return ServiceUnavailable(message=content.decode())

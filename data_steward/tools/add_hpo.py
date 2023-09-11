@@ -53,13 +53,13 @@ WITH available_new_src_ids AS (
    SELECT 
      "{{hpo_id}}" AS hpo_id,
      CONCAT('EHR site ', new_id) AS src_id,
-     "{{us_state}}" AS state,
-     {{value_source_concept_id}} AS value_source_concept_id
+     {% if us_state %} "{{us_state}}" {% else %} CAST(NULL AS STRING) {% endif %} AS state,
+     {% if value_source_concept_id %} {{value_source_concept_id}} {% else %} NULL {% endif %} AS value_source_concept_id
    FROM UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
    WHERE new_id NOT IN (
      SELECT CAST(SUBSTR(src_id, -3) AS INT64) 
     FROM `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}`
-    WHERE hpo_id != 'rdr'
+    WHERE REGEXP_CONTAINS(src_id, r'EHR site [0-9]{3}')
   )
 )
 SELECT LOWER(hpo_id), src_id, state, value_source_concept_id
@@ -543,15 +543,19 @@ if __name__ == '__main__':
                         '--bucket_name',
                         required=True,
                         help='Name of the GCS bucket')
-    parser.add_argument('-s',
-                        '--us_state',
-                        required=True,
-                        type=check_state_code_format,
-                        help="Site's State as PIIState_XY.")
-    parser.add_argument('-v',
-                        '--value_source_concept_id',
-                        required=True,
-                        help="Value Source Concept ID of the site's state.")
+    parser.add_argument(
+        '-s',
+        '--us_state',
+        required=False,
+        type=check_state_code_format,
+        help=("Site's State as PIIState_XY. "
+              "Do not specify if the HPO does not belong to a specific state."))
+    parser.add_argument(
+        '-v',
+        '--value_source_concept_id',
+        required=False,
+        help=("Value Source Concept ID of the site's state."
+              "Do not specify if the HPO does not belong to a specific state."))
     parser.add_argument(
         '-t',
         '--addition_type',

@@ -31,7 +31,7 @@ def load_analyses(hpo_id):
     :return: None
     """
     project_id = app_identity.get_application_id()
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = common.BIGQUERY_DATASET_ID
     table_name = resources.get_table_id(table_name=ACHILLES_ANALYSIS,
                                         hpo_id=hpo_id)
     csv_path = os.path.join(resources.resource_files_path,

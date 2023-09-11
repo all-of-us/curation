@@ -167,7 +167,7 @@ def get_lab_concept_summary_query(client, hpo_id):
     :param hpo_id: Identifies the HPO site
     :return: 
     """
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = common.BIGQUERY_DATASET_ID
     hpo_measurement_table = resources.get_table_id(common.MEASUREMENT,
                                                    hpo_id=hpo_id)
 

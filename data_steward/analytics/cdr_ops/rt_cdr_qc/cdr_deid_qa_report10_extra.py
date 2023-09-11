@@ -51,6 +51,25 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # df will have a summary in the end
 df = pd.DataFrame(columns=['query', 'result'])
 
+# wear_consent and wear_consent_ptsc question and module concepts where not in multiple surveys.
+# The concepts found in multiple surveys are: 'resultsconsent_helpmewithconsent' and 'helpmewithconsent_name'
+WEAR_SURVEY_CODES = ['havesmartphone',
+                      'wearwatch',
+                      'usetracker',
+                      'wear12months',
+                      'receivesms',
+                      'frequency',
+                      'agreetoshare',
+                      'onlyparticipantinhousehold',
+                      'haveaddress',
+                      'resultsconsent_wear',
+                      'email_help_consent',
+                      'timeofday',
+                      'wearconsent_signature',
+                      'wearconsent_todaysdate',
+                      'wear_consent',
+                      'wear_consent_ptsc']
+
 # + [markdown] papermill={"duration": 0.02327, "end_time": "2021-02-02T22:30:32.708257", "exception": false, "start_time": "2021-02-02T22:30:32.684987", "status": "completed"} tags=[]
 # # Q1 No person exists over 89 in the dataset:
 # -
@@ -804,6 +823,124 @@ else:
             'result': 'Failure'
         },
         ignore_index=True)
+
+# # Q13 Wear study table
+#
+# DC-3340
+#
+# This check confirms that the wear_study table contains:
+# 1. Only one row per participant
+# 2. Wear study participants are also found in the CDR person table.
+# 3. Wear study participants have primary consent records in observation.
+#
+# **If check fails:**<br>
+# * The issue `participant with multiple records` means that those participants have multiple rows in the wear_study table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table. <br>
+# * The issue `not in person table` means that participants exist in the wear_study table that aren't in the person table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table.<br>
+# * The issue `no primary consent` means that participants exist in the wear_study table that do not have proper primary consent. Investigate the issue. It is possible that there is another way to determine primary consent. <br>
+#
+
+# +
+query = JINJA_ENV.from_string("""
+
+WITH latest_primary_consent_records AS ( -- most current consent record per person --
+    SELECT person_id, observation_source_value, MAX(observation_date) AS latest_date,
+    FROM `{{project_id}}.{{rt_cdr_deid}}.observation` o
+    WHERE REGEXP_CONTAINS(observation_source_value, '(?i)extraconsent_agreetoconsent')
+    GROUP BY person_id, observation_source_value
+)
+
+SELECT
+  'participant with multiple records' as issue,
+  COUNT(person_id) as bad_rows
+FROM `{{project_id}}.{{rt_cdr_deid}}.wear_study` ws
+GROUP BY person_id
+HAVING COUNT(person_id)>1
+
+UNION ALL
+
+SELECT
+  'not in person table' as issue,
+  COUNT(person_id) as bad_rows
+FROM `{{project_id}}.{{rt_cdr_deid}}.wear_study` ws
+WHERE person_id not in ( -- person table --
+  SELECT person_id
+  FROM `{{project_id}}.{{rt_cdr_deid}}.person` o
+  )
+  
+UNION ALL
+
+SELECT
+  'no primary consent' as issue,
+  COUNT(person_id) as bad_rows
+FROM `{{project_id}}.{{rt_cdr_deid}}.wear_study` ws
+WHERE person_id not in (  -- aou consenting participants --
+  SELECT cte.person_id
+  FROM latest_primary_consent_records cte
+    LEFT JOIN ( -- any positive primary consent --
+      SELECT *
+      FROM `{{project_id}}.{{rt_cdr_deid}}.observation` o
+      WHERE REGEXP_CONTAINS(o.observation_source_value, '(?i)extraconsent_agreetoconsent')
+      AND o.value_as_concept_id = 45877994
+    ON cte.person_id = o.person_id
+    AND cte.latest_consent_date = o.observation_date
+  WHERE o.person_id IS NOT NULL
+  )
+
+""")
+q = query.render(project_id=project_id,
+                 rt_cdr_deid=rt_cdr_deid)
+df1 = execute(client, q)
+
+if df1['bad_rows'].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query13  wear_study table is as expected.',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Query13 wear_study table is not as expected. See notes in the description.',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+
+# +
+# Query 14:  Check that wear_consent records are suppressed in the 'observation' and 'survey_conduct' tables
+# -
+
+query = JINJA_ENV.from_string("""
+SELECT
+  'observation' as table,
+  COUNT(*) AS bad_rows
+FROM
+  `{{project_id}}.{{rt_cdr_deid}}.observation` o
+  LEFT JOIN   `{{project_id}}.{{rt_cdr_deid}}.survey_conduct` sc
+  ON sc.survey_conduct_id = o.questionnaire_response_id
+WHERE sc.survey_concept_id IN (2100000011,2100000012) -- captures questions asked in multiple surveys --
+OR LOWER(observation_source_value) IN UNNEST ({{wear_codes}}) -- captures those that might be missing from survey_conduct --
+GROUP BY 1
+UNION ALL
+SELECT
+  'survey_conduct' as table,
+  COUNT(*) AS bad_rows
+FROM
+  `{{project_id}}.{{rt_cdr_deid}}.survey_conduct` sc
+WHERE sc.survey_concept_id IN (2100000011,2100000012) 
+GROUP BY 1
+""")
+q = query.render(project_id=project_id,
+            rt_cdr_deid=rt_cdr_deid,
+            wear_codes=WEAR_SURVEY_CODES)
+df1=execute(client, q)
+if df1['bad_rows'].sum()==0:
+ df = df.append({'query' : 'Query14 wear_consent records are cleaned as expected.', 'result' : 'PASS'},
+                ignore_index = True)
+else:
+ df = df.append({'query' : 'Query14 wear_consent records have not been cleaned as expected.', 'result' : 'Failure'},
+                ignore_index = True)
+df1
 
 # # Summary_deid_extra_validation
 

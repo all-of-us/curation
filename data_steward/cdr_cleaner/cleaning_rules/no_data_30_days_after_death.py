@@ -10,6 +10,7 @@ from collections import ChainMap
 
 # Project Imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.cleaning_rules.calculate_primary_death_record import CalculatePrimaryDeathRecord
 from constants.cdr_cleaner.clean_cdr import (COMBINED,
                                              CONTROLLED_TIER_DEID_CLEAN, QUERY,
                                              REGISTERED_TIER_DEID_CLEAN)
@@ -17,7 +18,7 @@ from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC816', 'DC404', 'DC2771', 'DC2788']
+JIRA_ISSUE_NUMBERS = ['DC816', 'DC404', 'DC2771', 'DC2788', 'DC3235']
 
 # add table names as keys and temporal representations as values into a dictionary
 TEMPORAL_TABLES_WITH_START_DATE = {
@@ -26,7 +27,8 @@ TEMPORAL_TABLES_WITH_START_DATE = {
     'condition_occurrence': 'condition_start_date',
     'drug_exposure': 'drug_exposure_start_date',
     'drug_era': 'drug_era_start_date',
-    'device_exposure': 'device_exposure_start_date'
+    'device_exposure': 'device_exposure_start_date',
+    'survey_conduct': 'survey_start_date'
 }
 
 TEMPORAL_TABLES_WITH_END_DATE = {
@@ -35,7 +37,8 @@ TEMPORAL_TABLES_WITH_END_DATE = {
     'condition_occurrence': 'condition_end_date',
     'drug_exposure': 'drug_exposure_end_date',
     'drug_era': 'drug_era_end_date',
-    'device_exposure': 'device_exposure_end_date'
+    'device_exposure': 'device_exposure_end_date',
+    'survey_conduct': 'survey_end_date'
 }
 
 TEMPORAL_TABLES_WITH_DATE = {
@@ -142,7 +145,11 @@ def get_end_date(table):
 
 class NoDataAfterDeath(BaseCleaningRule):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -156,8 +163,6 @@ class NoDataAfterDeath(BaseCleaningRule):
             'person_id exist more than 30 days after the death_date of the primary death record.'
         )
 
-        # get all affected tables by combining the two dicts
-
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[
@@ -168,7 +173,8 @@ class NoDataAfterDeath(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=None)
+                         depends_on=[CalculatePrimaryDeathRecord],
+                         table_namer=table_namer)
 
     def get_sandbox_query_for(self, table):
         """

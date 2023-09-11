@@ -11,6 +11,7 @@ from unittest.mock import patch
 # Project imports
 import app_identity
 import bq_utils
+from common import BIGQUERY_DATASET_ID
 from tests import test_util
 from retraction import retract_data_gcs as rd
 from gcloud.gcs import StorageClient
@@ -19,7 +20,7 @@ from gcloud.bq import BigQueryClient
 
 class RetractDataGcsTest(TestCase):
 
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = BIGQUERY_DATASET_ID
     project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
 

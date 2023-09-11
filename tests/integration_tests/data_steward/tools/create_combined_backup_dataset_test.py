@@ -9,7 +9,7 @@ import mock
 import bq_utils
 import resources
 from app_identity import get_application_id, PROJECT_ID
-from common import AOU_DEATH, DEATH, SITE_MASKING_TABLE_ID
+from common import AOU_DEATH, SITE_MASKING_TABLE_ID, BIGQUERY_DATASET_ID, RDR_DATASET_ID
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
@@ -37,7 +37,7 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
     project_id = get_application_id()
     storage_client = StorageClient(project_id)
     bq_client = BigQueryClient(project_id)
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = BIGQUERY_DATASET_ID
 
     @classmethod
     def setUpClass(cls):
@@ -45,14 +45,14 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
         # TODO base class this
-        ehr_dataset_id = bq_utils.get_dataset_id()
-        rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-        test_util.delete_all_tables(cls.bq_client, ehr_dataset_id)
-        test_util.delete_all_tables(cls.bq_client, rdr_dataset_id)
+        cls.ehr_dataset_id = BIGQUERY_DATASET_ID
+        cls.rdr_dataset_id = RDR_DATASET_ID
+        test_util.delete_all_tables(cls.bq_client, cls.ehr_dataset_id)
+        test_util.delete_all_tables(cls.bq_client, cls.rdr_dataset_id)
         test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
-        cls.load_dataset_from_files(ehr_dataset_id,
+        cls.load_dataset_from_files(cls.ehr_dataset_id,
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
-        cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
+        cls.load_dataset_from_files(cls.rdr_dataset_id, test_util.RDR_PATH)
 
     @classmethod
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
@@ -96,8 +96,6 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
         return job_id
 
     def setUp(self):
-        self.ehr_dataset_id = bq_utils.get_dataset_id()
-        self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         self.combined_dataset_id = bq_utils.get_combined_dataset_id()
         test_util.delete_all_tables(self.bq_client, self.combined_dataset_id)
 
@@ -183,8 +181,8 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
 
     def get_unconsented_ehr_records_count(self, table_name):
         query = UNCONSENTED_EHR_COUNTS_QUERY.format(
-            rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
-            ehr_dataset_id=bq_utils.get_dataset_id(),
+            rdr_dataset_id=self.rdr_dataset_id,
+            ehr_dataset_id=self.ehr_dataset_id,
             combined_dataset_id=self.combined_dataset_id,
             domain_table=table_name,
             ehr_consent_table_id='_ehr_consent')
@@ -263,7 +261,7 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
                 ' (SELECT 1 FROM `{combined_dataset_id}.{domain_table}` AS t '
                 '  WHERE t.{domain_table}_id = m.{domain_table}_id)').format(
                     domain_table=domain_table,
-                    rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
+                    rdr_dataset_id=self.rdr_dataset_id,
                     combined_dataset_id=bq_utils.get_combined_dataset_id(),
                     mapping_table=mapping_table)
             response = bq_utils.query(query)
@@ -301,10 +299,8 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        ehr_dataset_id = bq_utils.get_dataset_id()
-        rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-        test_util.delete_all_tables(cls.bq_client, ehr_dataset_id)
-        test_util.delete_all_tables(cls.bq_client, rdr_dataset_id)
+        test_util.delete_all_tables(cls.bq_client, cls.ehr_dataset_id)
+        test_util.delete_all_tables(cls.bq_client, cls.rdr_dataset_id)
         test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
 
@@ -320,12 +316,12 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
 
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.sandbox_id = os.environ.get('BIGQUERY_DATASET_ID')
-        cls.rdr_id = os.environ.get('RDR_DATASET_ID')
+        cls.sandbox_id = BIGQUERY_DATASET_ID
+        cls.rdr_id = RDR_DATASET_ID
         cls.unioned_id = os.environ.get('UNIONED_DATASET_ID')
 
         cls.fq_table_names = [
-            f'{cls.project_id}.{cls.rdr_id}.{DEATH}',
+            f'{cls.project_id}.{cls.rdr_id}.{AOU_DEATH}',
             f'{cls.project_id}.{cls.unioned_id}.{AOU_DEATH}',
             f'{cls.project_id}.{cls.dataset_id}.{SITE_MASKING_TABLE_ID}'
         ]
@@ -341,32 +337,34 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
         super().setUp()
 
         insert_rdr = self.jinja_env.from_string("""
-            INSERT INTO `{{project_id}}.{{rdr_id}}.{{death}}`
+            INSERT INTO `{{project_id}}.{{rdr_id}}.{{aou_death}}`
             VALUES
-            (1, '2020-01-01', NULL, 0, NULL, NULL, NULL),
-            (2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL),
-            (3, '2020-01-01', NULL, 0, NULL, NULL, NULL),
-            (4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL),
-            (5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL),
-            (6, '2020-01-01', NULL, 0, NULL, NULL, NULL)
-        """).render(project_id=self.project_id, rdr_id=self.rdr_id, death=DEATH)
+            ('31499c51', 1, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'healthpro', True),
+            ('9c51-c8b', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'healthpro', True),
+            ('1-c8be-4', 3, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'healthpro', True),
+            ('c8be-4d6', 4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'healthpro', True),
+            ('be-4d628', 5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL, 'healthpro', True),
+            ('4d62-863', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'healthpro', True)
+        """).render(project_id=self.project_id,
+                    rdr_id=self.rdr_id,
+                    aou_death=AOU_DEATH)
 
         insert_ehr = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{unioned_id}}.{{aou_death}}`
             VALUES
-            ('5597-4a2', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
+            ('5597-4a2', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo a', True),
             ('b2e8594f', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
             ('af7bc10c', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', False),
             ('0-ac18-4', 3, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo a', False),
-            ('a35510e4', 3, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
+            ('a35510e4', 3, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo b', True),
             ('7b9bf804', 3, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo c', False),
             ('4c2e69fa', 4, '2020-01-02', '2020-01-02 00:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
             ('28c-c4bc', 4, '2020-01-03', '2020-01-03 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
-            ('49fe-984', 4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', False),
+            ('49fe-984', 4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', True),
             ('eb9fe66b', 5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
             ('rg4375-8', 5, '2020-01-01', '2020-01-01 06:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
-            ('3e8a-4-7', 5, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', False),
-            ('a309f2fb', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo a', False),
+            ('3e8a-4-7', 5, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', True),
+            ('a309f2fb', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo a', True),
             ('3fd2e818', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo b', False),
             ('75db-410', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo c', False)
         """).render(project_id=self.project_id,

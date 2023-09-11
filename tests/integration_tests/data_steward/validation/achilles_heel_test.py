@@ -22,7 +22,7 @@ ACHILLES_RESULTS_DERIVED_COUNT = 282
 
 class AchillesHeelTest(unittest.TestCase):
 
-    dataset_id = bq_utils.get_dataset_id()
+    dataset_id = common.BIGQUERY_DATASET_ID
     project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
 
@@ -37,7 +37,7 @@ class AchillesHeelTest(unittest.TestCase):
     def setUp(self):
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
-        self.dataset = bq_utils.get_dataset_id()
+        self.dataset = common.BIGQUERY_DATASET_ID
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(self.bq_client, self.dataset)
 
