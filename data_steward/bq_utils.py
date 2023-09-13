@@ -71,6 +71,7 @@ def get_combined_snapshot_dataset_id():
     return os.environ.get('COMBINED_SNAPSHOT')
 
 
+@deprecated(reason='Use common.COMBINED_DATASET_ID instead')
 def get_combined_dataset_id():
     return os.environ.get('COMBINED_DATASET_ID')
 
