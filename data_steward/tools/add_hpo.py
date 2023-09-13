@@ -172,6 +172,8 @@ def add_src_hpos_allowed_state_file_df(hpo_id, us_state,
     :param src_hpos_allowed_state_path: path to csv file containing hpo site information
     :raises ValueError if hpo_id already exists in the lookup table
     """
+    hpo_id = hpo_id.lower()
+
     hpo_table = bq_utils.get_hpo_site_state_info()
     hpo_table_df = pd.DataFrame(hpo_table)
     if hpo_id in set(hpo_table_df['hpo_id']) and us_state in set(
@@ -244,8 +246,9 @@ def add_src_hpos_allowed_state_csv(hpo_id, us_state, value_source_concept_id,
     hpo_file_df = add_src_hpos_allowed_state_file_df(
         hpo_id, us_state, value_source_concept_id, src_hpos_allowed_state_path)
     hpo_file_df.to_csv(src_hpos_allowed_state_path,
-                       quoting=csv.QUOTE_ALL,
-                       index=False)
+                       quoting=csv.QUOTE_NONE,
+                       index=False,
+                       float_format=lambda x: '%d' % x)
 
 
 def add_hpo_site_to_csv_files(hpo_id,
