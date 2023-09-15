@@ -6,7 +6,8 @@ from analytics.cdr_ops.controlled_tier_qc.sql.query_templates import (
     QUERY_SUPPRESSED_REQUIRED_FIELD_NOT_EMPTY,
     QUERY_SUPPRESSED_NUMERIC_NOT_ZERO, QUERY_VEHICLE_ACCIDENT_SUPPRESSION_ICD9,
     QUERY_VEHICLE_ACCIDENT_SUPPRESSION_ICD10, QUERY_CANCER_CONCEPT_SUPPRESSION,
-    QUERY_SUPPRESSED_FREE_TEXT_RESPONSE, QUERY_GEOLOCATION_SUPPRESSION)
+    QUERY_SUPPRESSED_FREE_TEXT_RESPONSE, QUERY_GEOLOCATION_SUPPRESSION,
+    CONTROLLED_TIER_RACE_SUBCATEGORY)
 
 
 def check_field_suppression(check_df,
@@ -16,7 +17,7 @@ def check_field_suppression(check_df,
                             mapping_dataset=None,
                             questionnaire_response_dataset=None):
     """Run field suppression check
-    
+
     Parameters
     ----------
     check_df: pd.DataFrame
@@ -68,7 +69,7 @@ def check_vehicle_accident_suppression(check_df,
                                        mapping_dataset=None,
                                        questionnaire_response_dataset=None):
     """Run motor vehicle accident suppression check
-    
+
     Parameters
     ----------
     check_df: pd.DataFrame
@@ -104,7 +105,7 @@ def check_field_cancer_concept_suppression(check_df,
                                            mapping_dataset=None,
                                            questionnaire_response_dataset=None):
     """Run suppression check for some cancer concepts
-    
+
     Parameters
     ----------
     check_df: pd.DataFrame
@@ -152,3 +153,13 @@ def check_field_geolocation_records_suppression(
     questionnaire_response_dataset=None):
     return run_check_by_row(check_df, QUERY_GEOLOCATION_SUPPRESSION, project_id,
                             post_deid_dataset)
+
+
+def check_race_subcategory_expansion(check_df,
+                                     project_id,
+                                     post_deid_dataset,
+                                     pre_deid_dataset=None,
+                                     mapping_dataset=None,
+                                     questionnaire_response_dataset=None):
+    return run_check_by_row(check_df, CONTROLLED_TIER_RACE_SUBCATEGORY,
+                            project_id, post_deid_dataset)
