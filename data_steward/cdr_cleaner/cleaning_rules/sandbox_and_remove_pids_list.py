@@ -22,4 +22,5 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
                          affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=[])
