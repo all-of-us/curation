@@ -264,7 +264,7 @@ WHERE {{ column_name }} IN (
 )
 """
 
-CONTROLLED_TIER_RACE_SUBCATEGORY = """
+QUERY_VERIFY_RACE_SUBCATEGORY = """
 SELECT value_as_concept_id, COUNT AS Count
 FROM (
   SELECT

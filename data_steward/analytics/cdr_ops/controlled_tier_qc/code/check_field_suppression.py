@@ -7,7 +7,7 @@ from analytics.cdr_ops.controlled_tier_qc.sql.query_templates import (
     QUERY_SUPPRESSED_NUMERIC_NOT_ZERO, QUERY_VEHICLE_ACCIDENT_SUPPRESSION_ICD9,
     QUERY_VEHICLE_ACCIDENT_SUPPRESSION_ICD10, QUERY_CANCER_CONCEPT_SUPPRESSION,
     QUERY_SUPPRESSED_FREE_TEXT_RESPONSE, QUERY_GEOLOCATION_SUPPRESSION,
-    CONTROLLED_TIER_RACE_SUBCATEGORY)
+    QUERY_VERIFY_RACE_SUBCATEGORY)
 
 
 def check_field_suppression(check_df,
@@ -132,12 +132,12 @@ def check_field_cancer_concept_suppression(check_df,
 
 
 def check_field_freetext_response_suppression(
-    check_df,
-    project_id,
-    post_deid_dataset,
-    pre_deid_dataset=None,
-    mapping_dataset=None,
-    questionnaire_response_dataset=None):
+        check_df,
+        project_id,
+        post_deid_dataset,
+        pre_deid_dataset=None,
+        mapping_dataset=None,
+        questionnaire_response_dataset=None):
     free_text_concept = run_check_by_row(check_df,
                                          QUERY_SUPPRESSED_FREE_TEXT_RESPONSE,
                                          project_id, post_deid_dataset)
@@ -145,12 +145,12 @@ def check_field_freetext_response_suppression(
 
 
 def check_field_geolocation_records_suppression(
-    check_df,
-    project_id,
-    post_deid_dataset,
-    pre_deid_dataset=None,
-    mapping_dataset=None,
-    questionnaire_response_dataset=None):
+        check_df,
+        project_id,
+        post_deid_dataset,
+        pre_deid_dataset=None,
+        mapping_dataset=None,
+        questionnaire_response_dataset=None):
     return run_check_by_row(check_df, QUERY_GEOLOCATION_SUPPRESSION, project_id,
                             post_deid_dataset)
 
@@ -161,5 +161,5 @@ def check_race_subcategory_expansion(check_df,
                                      pre_deid_dataset=None,
                                      mapping_dataset=None,
                                      questionnaire_response_dataset=None):
-    return run_check_by_row(check_df, CONTROLLED_TIER_RACE_SUBCATEGORY,
-                            project_id, post_deid_dataset)
+    return run_check_by_row(check_df, QUERY_VERIFY_RACE_SUBCATEGORY, project_id,
+                            post_deid_dataset)
