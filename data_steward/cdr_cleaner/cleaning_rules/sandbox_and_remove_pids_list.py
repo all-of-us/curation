@@ -7,7 +7,7 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
     Removes all participant data using a list of participants.
     """
 
-    def __init__(self):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper information.
         """
