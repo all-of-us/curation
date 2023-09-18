@@ -13,4 +13,12 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
         """
         Initialize the class with proper information.
         """
-        super().__init__(issue_numbers=ISSUE_NUMBERS)
+
+        desc = (
+            'Sandbox and remove participant data from a list of participants.')
+
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
+                         description=desc,
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
