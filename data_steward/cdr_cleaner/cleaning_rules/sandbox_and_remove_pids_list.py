@@ -13,6 +13,10 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper information.
+
+        Set the issue numbers, description and affected datasets. As other tickets may affect
+        this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
 
         desc = 'Sandbox and remove participant data from a list of participants.'
