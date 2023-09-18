@@ -18,6 +18,7 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
 
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
+                         affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
