@@ -28,3 +28,7 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[])
+
+
+def parse_args():
+    pass
