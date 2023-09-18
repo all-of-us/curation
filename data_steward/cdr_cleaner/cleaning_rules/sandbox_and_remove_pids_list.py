@@ -1,6 +1,8 @@
 # Project imports
 from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids import SandboxAndRemovePids
 
+ISSUE_NUMBERS = ['DC3442']
+
 
 class SandboxAndRemovePidsList(SandboxAndRemovePids):
     """
@@ -11,4 +13,4 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
         """
         Initialize the class with proper information.
         """
-        super().__init__()
+        super().__init__(issue_numbers=ISSUE_NUMBERS)
