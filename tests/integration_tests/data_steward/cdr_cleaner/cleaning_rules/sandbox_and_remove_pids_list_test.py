@@ -1,3 +1,7 @@
+"""
+Integration test for SandboxAndRemovePidsList module
+"""
+
 # Project Imports
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
