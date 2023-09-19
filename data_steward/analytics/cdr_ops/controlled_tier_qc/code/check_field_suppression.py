@@ -6,8 +6,7 @@ from analytics.cdr_ops.controlled_tier_qc.sql.query_templates import (
     QUERY_SUPPRESSED_REQUIRED_FIELD_NOT_EMPTY,
     QUERY_SUPPRESSED_NUMERIC_NOT_ZERO, QUERY_VEHICLE_ACCIDENT_SUPPRESSION_ICD9,
     QUERY_VEHICLE_ACCIDENT_SUPPRESSION_ICD10, QUERY_CANCER_CONCEPT_SUPPRESSION,
-    QUERY_SUPPRESSED_FREE_TEXT_RESPONSE, QUERY_GEOLOCATION_SUPPRESSION,
-    QUERY_VERIFY_RACE_SUBCATEGORY)
+    QUERY_SUPPRESSED_FREE_TEXT_RESPONSE, QUERY_GEOLOCATION_SUPPRESSION)
 
 
 def check_field_suppression(check_df,
@@ -152,14 +151,4 @@ def check_field_geolocation_records_suppression(
         mapping_dataset=None,
         questionnaire_response_dataset=None):
     return run_check_by_row(check_df, QUERY_GEOLOCATION_SUPPRESSION, project_id,
-                            post_deid_dataset)
-
-
-def check_race_subcategory_expansion(check_df,
-                                     project_id,
-                                     post_deid_dataset,
-                                     pre_deid_dataset=None,
-                                     mapping_dataset=None,
-                                     questionnaire_response_dataset=None):
-    return run_check_by_row(check_df, QUERY_VERIFY_RACE_SUBCATEGORY, project_id,
                             post_deid_dataset)
