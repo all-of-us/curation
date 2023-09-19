@@ -53,7 +53,7 @@
 #
 # 15 All the descendants of ancestor_concept_id IN (4054924, 141771) -- motor vehicle accidents should be dropped in condition_occurrence table
 #
-# 19 Test for the presences of at least race/ethnicity sub category
+# 19 Test for the presences of at least one race/ethnicity sub category
 #
 
 # + tags=["parameters"]
