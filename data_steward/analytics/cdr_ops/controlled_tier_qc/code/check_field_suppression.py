@@ -16,7 +16,7 @@ def check_field_suppression(check_df,
                             mapping_dataset=None,
                             questionnaire_response_dataset=None):
     """Run field suppression check
-
+    
     Parameters
     ----------
     check_df: pd.DataFrame
@@ -68,7 +68,7 @@ def check_vehicle_accident_suppression(check_df,
                                        mapping_dataset=None,
                                        questionnaire_response_dataset=None):
     """Run motor vehicle accident suppression check
-
+    
     Parameters
     ----------
     check_df: pd.DataFrame
@@ -104,7 +104,7 @@ def check_field_cancer_concept_suppression(check_df,
                                            mapping_dataset=None,
                                            questionnaire_response_dataset=None):
     """Run suppression check for some cancer concepts
-
+    
     Parameters
     ----------
     check_df: pd.DataFrame
@@ -131,12 +131,12 @@ def check_field_cancer_concept_suppression(check_df,
 
 
 def check_field_freetext_response_suppression(
-        check_df,
-        project_id,
-        post_deid_dataset,
-        pre_deid_dataset=None,
-        mapping_dataset=None,
-        questionnaire_response_dataset=None):
+    check_df,
+    project_id,
+    post_deid_dataset,
+    pre_deid_dataset=None,
+    mapping_dataset=None,
+    questionnaire_response_dataset=None):
     free_text_concept = run_check_by_row(check_df,
                                          QUERY_SUPPRESSED_FREE_TEXT_RESPONSE,
                                          project_id, post_deid_dataset)
@@ -144,11 +144,11 @@ def check_field_freetext_response_suppression(
 
 
 def check_field_geolocation_records_suppression(
-        check_df,
-        project_id,
-        post_deid_dataset,
-        pre_deid_dataset=None,
-        mapping_dataset=None,
-        questionnaire_response_dataset=None):
+    check_df,
+    project_id,
+    post_deid_dataset,
+    pre_deid_dataset=None,
+    mapping_dataset=None,
+    questionnaire_response_dataset=None):
     return run_check_by_row(check_df, QUERY_GEOLOCATION_SUPPRESSION, project_id,
                             post_deid_dataset)
