@@ -34,6 +34,12 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[])
 
+    def get_query_specs(self):
+        sandbox_records_queries = self.get_sandbox_queries('lookup_table')
+        remove_pids_queries = self.get_remove_pids_queries('lookup_table')
+
+        return sandbox_records_queries + remove_pids_queries
+
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
