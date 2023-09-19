@@ -1390,7 +1390,7 @@ q = query.render(
     ct_dataset=ct_dataset,
 )
 result = execute(client, q)
-if not df1.empty:
+if not result.empty:
     df = df.append(
         {
             'query': 'Query19 race/ethnicity sub-categories exist.',
