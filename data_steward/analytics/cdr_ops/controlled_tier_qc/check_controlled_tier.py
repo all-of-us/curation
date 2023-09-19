@@ -31,25 +31,9 @@ pd.set_option('display.width', None)
 
 #  If you want to ignore specific QC rule(s): Remove those rules from to_include
 to_include = [
-    # 'DC-1370',
-    # 'DC-1377',
-    # 'DC-1346',
-    # 'DC-1348',
-    # 'DC-1355',
-    # 'DC-1357',
-    # 'DC-1359',
-    # 'DC-1362',
-    # 'DC-1364',
-    # 'DC-1366',
-    # 'DC-1368',
-    # 'DC-1373',
-    # 'DC-1382',
-    # 'DC-1388',
-    # 'DC-1496',
-    # 'DC-1527',
-    # 'DC-1535',
-    # 'DC-2112',
-    'DC-3438',
+    'DC-1370', 'DC-1377', 'DC-1346', 'DC-1348', 'DC-1355', 'DC-1357', 'DC-1359',
+    'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368', 'DC-1373', 'DC-1382', 'DC-1388',
+    'DC-1496', 'DC-1527', 'DC-1535', 'DC-2112'
 ]
 checks = run_qc(project_id,
                 post_deid_dataset,
@@ -136,8 +120,4 @@ display_check_detail_of_rule(checks, 'DC-1535', to_include)
 
 # # [DC-2112: Suppression of identifiable COPE survey questions](https://precisionmedicineinitiative.atlassian.net/browse/DC-2112)
 
-#display_check_detail_of_rule(checks, 'DC-2112', to_include)
-
-# # [DC-3438 Add a check in controlled_tier_qc to verify the race/ethnicity subcategory expansion](https://precisionmedicineinitiative.atlassian.net/browse/DC-3438)
-
-display_check_detail_of_rule(checks, 'DC-3438', to_include)
+display_check_detail_of_rule(checks, 'DC-2112', to_include)
