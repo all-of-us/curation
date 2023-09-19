@@ -44,9 +44,10 @@ def parse_args():
 
 
 if __name__ == '__main__':
+    import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parse_args()
+    ARGS = parser.default_parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
