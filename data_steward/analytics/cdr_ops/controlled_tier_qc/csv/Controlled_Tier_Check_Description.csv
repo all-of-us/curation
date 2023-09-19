@@ -17,4 +17,3 @@ DC-1496,Concept,check_concept_suppression,Verify suppression of some COPE survey
 DC-1527,Concept,check_concept_suppression,Verify suppression of organ transplant concepts
 DC-1535,Field,check_field_geolocation_records_suppression,Verify suppression of geolocation records
 DC-2112,Concept,check_concept_suppression,Verify suppression of some COPE survey responses
-DC-3438,Concept,check_race_subcategory_expansion,verify the race/ethnicity subcategory expansion
