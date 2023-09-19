@@ -1,6 +1,11 @@
+# Python imports
+import logging
+
 # Project imports
 from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids import SandboxAndRemovePids
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3442']
 
