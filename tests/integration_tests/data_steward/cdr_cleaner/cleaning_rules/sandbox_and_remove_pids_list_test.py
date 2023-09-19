@@ -1,1 +1,4 @@
-class SandboxAndRemovePidsListTest()
+# Project Imports
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+
+class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
