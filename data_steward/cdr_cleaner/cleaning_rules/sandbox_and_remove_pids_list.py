@@ -50,19 +50,14 @@ if __name__ == '__main__':
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(
-            ARGS.project_id,
-            ARGS.dataset_id,
-            ARGS.sandbox_dataset_id, [(SandboxAndRemovePidsList,)],
-            ehr_dataset_id=ARGS.ehr_dataset_id,
-            validation_dataset_id=ARGS.validation_dataset_id)
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(SandboxAndRemovePidsList,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(
-            ARGS.project_id,
-            ARGS.dataset_id,
-            ARGS.sandbox_dataset_id, [(SandboxAndRemovePidsList,)],
-            ehr_dataset_id=ARGS.ehr_dataset_id,
-            validation_dataset_id=ARGS.validation_dataset_id)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(SandboxAndRemovePidsList,)])
