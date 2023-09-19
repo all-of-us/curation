@@ -35,14 +35,6 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
                          affected_tables=[])
 
 
-def parse_args():
-    """
-    This function expands the default argument list defined in cdr_cleaner.args_parser
-    :return: an expanded argument list object
-    """
-    pass
-
-
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
