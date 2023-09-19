@@ -11,3 +11,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         print('**************************************************************')
 
         super().initialize_class_vars()
+        pass
+
+    def setUp(self):
+        pass
