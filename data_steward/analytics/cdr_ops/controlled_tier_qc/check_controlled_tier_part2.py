@@ -52,6 +52,9 @@
 # 14 all other observation concept ids WITH dates similar to birth dates other than the 3 above should be removed
 #
 # 15 All the descendants of ancestor_concept_id IN (4054924, 141771) -- motor vehicle accidents should be dropped in condition_occurrence table
+#
+# 19 Test for the presences of at least race/ethnicity sub category
+#
 
 # + tags=["parameters"]
 # Parameters
@@ -1364,6 +1367,44 @@ else:
         },
         ignore_index=True)
 df1
+
+# +
+# Query 19:  Check for the existence of at least one race/ethnicity sub-categories
+# -
+
+query = JINJA_ENV.from_string("""
+SELECT COUNT(*), value_source_value FROM `{{project_id}}.{{ct_dataset}}.observation`
+WHERE value_source_concept_id IN (1585605, 1585606, 1585607, 1585608, 1585609, 1585610, 1585611, 1585612,1585613, 1585614, -- Asian --
+                        1585616, 1585617, 1585618, 1585619, 1585620, 1585621, 1585622, 1585623, 1585624, 1585625, 1585626, 1585627,  -- African --
+                        1585345, 1585346, 1586086, 1586087, 1586088, 1586089, 1586090, 1586091, 1586092, 1586093, -- Spanish --
+                        1585316, 1585633, 1585630, 1585631, 1585629, 1585319, 1585318, 1585317, 1585632, -- Middle Eastern --
+                        1585321, 1585322, 1585323, 1585324, 1585325, 1585328, 1585329, 1585330, -- Pacific --
+                        1585339, 1585332, 1585334, 1585337, 1585338, 1585340, 1585341, 1585342, -- European --
+                        1586149) -- None of these fully Describe me --
+
+GROUP BY value_source_value
+ORDER BY value_source_value
+""")
+q = query.render(
+    project_id=project_id,
+    ct_dataset=ct_dataset,
+)
+result = execute(client, q)
+if not df1.empty:
+    df = df.append(
+        {
+            'query': 'Query19 race/ethnicity sub-categories exist.',
+            'result': 'PASS',
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Query19 race/ethnicity sub-categories DO NOT exist.',
+            'result': 'Failure',
+        },
+        ignore_index=True)
+result
 
 
 # +
