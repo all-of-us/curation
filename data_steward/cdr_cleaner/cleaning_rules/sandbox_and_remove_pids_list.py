@@ -36,3 +36,28 @@ def parse_args():
     :return: an expanded argument list object
     """
     pass
+
+
+if __name__ == '__main__':
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    ARGS = parse_args()
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(SandboxAndRemovePidsList,)],
+            ehr_dataset_id=ARGS.ehr_dataset_id,
+            validation_dataset_id=ARGS.validation_dataset_id)
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(SandboxAndRemovePidsList,)],
+            ehr_dataset_id=ARGS.ehr_dataset_id,
+            validation_dataset_id=ARGS.validation_dataset_id)
