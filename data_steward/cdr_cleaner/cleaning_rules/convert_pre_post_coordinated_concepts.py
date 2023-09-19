@@ -143,8 +143,8 @@ INSERT_MAPPING_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}._mapping_observation`
 (observation_id, src_id)
 SELECT 
-    -- ROW_NUMBER() here can be 1 - 4. So, the newly generated IDs will be --
-    -- in the range of 100,000,000,000 - 499,999,999,999. --
+    -- New observation_ids are assigned in the same way as INSERT_QUERY --
+    -- so IDs align between observation and its mapping table --
     ROW_NUMBER() OVER(
         PARTITION BY o.observation_id
         ORDER BY
