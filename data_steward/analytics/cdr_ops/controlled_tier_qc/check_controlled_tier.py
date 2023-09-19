@@ -30,11 +30,9 @@ pd.set_option('display.max_colwidth', -1)
 pd.set_option('display.width', None)
 
 #  If you want to ignore specific QC rule(s): Remove those rules from to_include
-to_include = [
-    'DC-1370', 'DC-1377', 'DC-1346', 'DC-1348', 'DC-1355', 'DC-1357', 'DC-1359',
-    'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368', 'DC-1373', 'DC-1382', 'DC-1388',
-    'DC-1496', 'DC-1527', 'DC-1535', 'DC-2112'
-]
+to_include = ['DC-1370', 'DC-1377', 'DC-1346', 'DC-1348', 'DC-1355', 'DC-1357', 'DC-1359',
+            'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368', 'DC-1373', 'DC-1382', 'DC-1388',
+            'DC-1496', 'DC-1527', 'DC-1535', 'DC-2112']
 checks = run_qc(project_id,
                 post_deid_dataset,
                 pre_deid_dataset,
