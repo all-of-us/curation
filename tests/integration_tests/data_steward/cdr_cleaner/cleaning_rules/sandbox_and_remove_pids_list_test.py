@@ -15,3 +15,6 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
 
     def setUp(self):
         pass
+
+    def test_sandbox_and_remove_pids_list(self):
+        pass
