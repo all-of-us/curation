@@ -1,10 +1,14 @@
 """
 Integration test for SandboxAndRemovePidsList module
 """
+# Python imports
+import os
 
 # Project Imports
+from app_identity import PROJECT_ID
+from common import JINJA_ENV, COMBINED_DATASET_ID
+from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids_list import SandboxAndRemovePidsList
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import JINJA_ENV
 
 OBSERVATION_TABLE_TEMPLATE = JINJA_ENV.from_string("""
     INSERT INTO `{{project_id}}.{{dataset_id}}.observation` 
@@ -149,8 +153,25 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         print(cls.__name__)
         print('**************************************************************')
 
-        super().initialize_class_vars()
-        pass
+        # Set the test project identifier
+        cls.project_id = os.environ.get(PROJECT_ID)
+
+        # Set the expected test datasets
+        cls.dataset_id = COMBINED_DATASET_ID
+
+        # Instantiate class
+        cls.rule_instance = SandboxAndRemovePidsList(project_id='',
+                                                     dataset_id='',
+                                                     sandbox_dataset_id='')
+
+        # Generates list of fully qualified table names
+        affected_table_names = cls.rule_instance.affected_tables
+        for table_name in affected_table_names:
+            cls.fq_table_names.append(
+                f'{cls.project_id}.{cls.dataset_id}.{table_name}')
+
+        # call super to set up the client, create datasets
+        cls.up_class = super().setUpClass()
 
     def setUp(self):
         pass
