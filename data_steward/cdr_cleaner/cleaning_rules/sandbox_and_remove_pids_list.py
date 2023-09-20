@@ -35,8 +35,10 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
                          affected_tables=[])
 
     def get_query_specs(self) -> list:
-        sandbox_records_queries = self.get_sandbox_queries('lookup_table')
-        remove_pids_queries = self.get_remove_pids_queries('lookup_table')
+        sandbox_records_queries = self.get_sandbox_queries(
+            lookup_table='lookup_table')
+        remove_pids_queries = self.get_remove_pids_queries(
+            lookup_table='lookup_table')
 
         return sandbox_records_queries + remove_pids_queries
 
