@@ -43,6 +43,16 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
         return sandbox_records_queries + remove_pids_queries
 
 
+def parse_args():
+    """
+    This function expands the default argument list defined in cdr_cleaner.args_parser
+    :return: an expanded argument list object
+    """
+
+    import cdr_cleaner.args_parser as parser
+    pass
+
+
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
