@@ -20,22 +20,24 @@ from typing import Dict, List
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from constants.cdr_cleaner.clean_cdr import QUERY
-from common import JINJA_ENV, OBSERVATION, PERSON
+from common import JINJA_ENV, OBSERVATION, PERSON, MAPPING_PREFIX
 from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
-BACKFILL_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.{{obs}}`
-({{obs_fields}})
+SANDBOX_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
 WITH person_who_answered_survey AS (
     SELECT
         person_id,
+        m.src_id,
         MAX(observation_date) AS observation_date,
         MAX(observation_datetime) AS observation_datetime,
-    FROM `{{project}}.{{dataset}}.{{obs}}`
+    FROM `{{project}}.{{dataset}}.{{obs}}` o
+    JOIN `{{project}}.{{dataset}}.{{mapping_obs}}` m
+    USING (observation_id)
     WHERE observation_source_concept_id IN ({{backfill_concepts}})
-    GROUP BY person_id
+    GROUP BY person_id, src_id
 ),
 backfill_survey AS (
     SELECT DISTINCT 
@@ -62,7 +64,8 @@ missing_survey AS (
         pwas.observation_datetime,
         bs.observation_type_concept_id,
         bs.observation_source_value,
-        bs.observation_source_concept_id
+        bs.observation_source_concept_id,
+        pwas.src_id
     FROM person_who_answered_survey pwas
     CROSS JOIN backfill_survey bs
     {% if additional_backfill_conditions -%}
@@ -113,8 +116,25 @@ SELECT
     CAST(NULL AS STRING) AS qualifier_source_value,
     903096 AS value_source_concept_id,
     'PMI_Skip' AS value_source_value, 
-    NULL AS questionnaire_response_id 
+    NULL AS questionnaire_response_id,
+    src_id 
 FROM missing_survey
+)
+""")
+
+BACKFILL_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{obs}}`
+({{obs_fields}})
+SELECT {{obs_fields}}
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+""")
+
+# create _mapping_observation records for the backfilled observations
+APPEND_MAPPING_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{mapping_obs}}`
+(observation_id, src_id)
+SELECT observation_id, src_id
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 """)
 
 
@@ -170,19 +190,54 @@ class AbstractBackfillSurveyRecords(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        # No sandbox table exists for this CR because it runs only an INSERT statement.
-        return []
+        """
+        generates sandbox table names
+        """
+        sandbox_table = self.sandbox_table_for(OBSERVATION)
+        return [sandbox_table]
 
     def get_query_specs(self) -> query_spec_list:
-        query = BACKFILL_QUERY.render(
-            project=self.project_id,
-            dataset=self.dataset_id,
-            obs=OBSERVATION,
-            pers=PERSON,
-            obs_fields=', '.join(
-                field['name'] for field in fields_for(OBSERVATION)),
-            backfill_concepts=", ".join(
-                [str(concept_id) for concept_id in self.backfill_concepts]),
-            additional_backfill_conditions=self.additional_backfill_conditions)
+        query_list = []
+        query_list.append({
+            QUERY:
+                SANDBOX_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
+                    obs=OBSERVATION,
+                    mapping_obs=MAPPING_PREFIX + OBSERVATION,
+                    pers=PERSON,
+                    rdr_obs_fields=', '.join(
+                        field['name']
+                        for field in fields_for('rdr_observation')),
+                    backfill_concepts=", ".join([
+                        str(concept_id) for concept_id in self.backfill_concepts
+                    ]),
+                    additional_backfill_conditions=self.
+                    additional_backfill_conditions)
+        })
 
-        return [{QUERY: query}]
+        query_list.append({
+            QUERY:
+                BACKFILL_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
+                    obs=OBSERVATION,
+                    obs_fields=', '.join(
+                        field['name'] for field in fields_for(OBSERVATION)))
+        })
+
+        query_list.append({
+            QUERY:
+                APPEND_MAPPING_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    mapping_obs=MAPPING_PREFIX + OBSERVATION,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION))
+        })
+
+        return query_list
