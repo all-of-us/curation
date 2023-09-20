@@ -144,4 +144,6 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         pass
 
     def test_sandbox_and_remove_pids_list(self):
+        """
+        """
         pass
