@@ -266,8 +266,8 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
         }
 
         return [
-            sandbox_query_dict, delete_query_dict, insert_query_dict,
-            insert_mapping_query_dict, delete_mapping_query_dict
+            sandbox_query_dict, insert_query_dict, insert_mapping_query_dict,
+            delete_query_dict, delete_mapping_query_dict
         ]
 
     def setup_rule(self, client, *args, **keyword_args):
