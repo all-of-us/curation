@@ -302,7 +302,8 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
 
         # gets the deactivated participant dataset to ensure it's up-to-date
-        df = psr.get_deactivated_participants(self.api_project_id,
+        df = psr.get_deactivated_participants(client,
+                                              self.api_project_id,
                                               DEACTIVATED_PARTICIPANTS_COLUMNS)
 
         LOGGER.info(f"Found '{len(df)}' deactivated participants via RDR API")

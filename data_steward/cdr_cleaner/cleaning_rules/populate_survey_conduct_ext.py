@@ -34,7 +34,7 @@ class PopulateSurveyConductExt(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 clean_survey_dataset_id=None,
+                 clean_survey_dataset_id,
                  table_namer=None):
         """
         Initialize the class with proper information.

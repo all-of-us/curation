@@ -1,5 +1,5 @@
 import cdm
-from common import (DEATH, JINJA_ENV, PERSON, SURVEY_CONDUCT)
+from common import (DEATH, JINJA_ENV, PERSON, SURVEY_CONDUCT, EHR_CONSENT_VALIDATION)
 
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
@@ -10,7 +10,7 @@ FOREIGN_KEYS_FIELDS = [
     'visit_occurrence_id', 'location_id', 'care_site_id', 'provider_id',
     'visit_detail_id'
 ]
-RDR_TABLES_TO_COPY = [PERSON, SURVEY_CONDUCT]
+RDR_TABLES_TO_COPY = [PERSON, SURVEY_CONDUCT, EHR_CONSENT_VALIDATION]
 DOMAIN_TABLES = list(
     set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY) - set([DEATH]))
 TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + DOMAIN_TABLES
@@ -87,12 +87,12 @@ COPY_RDR_QUERY = JINJA_ENV.from_string(
 MAPPING_QUERY = JINJA_ENV.from_string("""
 SELECT DISTINCT
     '{{rdr_dataset_id}}' AS src_dataset_id,
-    {{domain_table}}_id AS src_{{domain_table}}_id,
+    t.{{domain_table}}_id AS src_{{domain_table}}_id,
     v.src_id as src_hpo_id,
     {% if domain_table in ['survey_conduct', 'person'] %}
-    {{domain_table}}_id AS {{domain_table}}_id,
+    t.{{domain_table}}_id AS {{domain_table}}_id,
     {% else %}
-    {{domain_table}}_id + {{mapping_constant}} AS {{domain_table}}_id,
+    t.{{domain_table}}_id + {{mapping_constant}} AS {{domain_table}}_id,
     {% endif %}
     '{{domain_table}}' as src_table_id
 FROM `{{rdr_dataset_id}}.{{domain_table}}` AS t
