@@ -10,7 +10,7 @@ from dateutil import parser
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.backfill_lifestyle import BackfillLifestyle
-from common import JINJA_ENV, OBSERVATION, PERSON
+from common import JINJA_ENV, OBSERVATION, PERSON, MAPPING_PREFIX
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 OBSERVATION_TMPL = JINJA_ENV.from_string("""
@@ -43,6 +43,26 @@ VALUES
     (3, 8532, 2001, 999, 99999)
 """)
 
+MAPPING_TMPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{dataset}}._mapping_observation`
+    (observation_id INT64, src_id STRING)
+    ;
+INSERT INTO `{{project}}.{{dataset}}._mapping_observation`
+(observation_id, src_id)
+VALUES
+    (101, 'src_1'),
+    (102, 'src_1'),
+    (103, 'src_1'),
+    (104, 'src_1'),
+    (105, 'src_1'),
+    (106, 'src_1'),
+    (107, 'src_1'),
+    (201, 'src_1'),
+    (301, 'src_2'),
+    (302, 'src_2'),
+    (303, 'src_2')
+""")
+
 
 class BackfillLifestyleTest(BaseTest.CleaningRulesTestBase):
 
@@ -61,11 +81,19 @@ class BackfillLifestyleTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = BackfillLifestyle(cls.project_id, cls.dataset_id,
                                               cls.sandbox_id)
 
-        cls.fq_sandbox_table_names = []
+        # NOTE _mapping_observation is not in cls.fq_table_names because its columns are different from the ones
+        # defined in the resource_files folder. It has the columns defined in `create_rdr_snapshot.py` instead.
+        cls.fq_mapping_table_name = f'{cls.project_id}.{cls.dataset_id}.{MAPPING_PREFIX}{OBSERVATION}'
+
+        # Generate sandbox table names
+        sandbox_table_names = cls.rule_instance.get_sandbox_tablenames()
+        for table_name in sandbox_table_names:
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{OBSERVATION}',
-            f'{cls.project_id}.{cls.dataset_id}.{PERSON}',
+            f'{cls.project_id}.{cls.dataset_id}.{PERSON}'
         ]
 
         super().setUpClass()
@@ -81,8 +109,10 @@ class BackfillLifestyleTest(BaseTest.CleaningRulesTestBase):
                                                      dataset=self.dataset_id)
         insert_person = PERSON_TMPL.render(project=self.project_id,
                                            dataset=self.dataset_id)
+        insert_mapping = MAPPING_TMPL.render(project=self.project_id,
+                                             dataset=self.dataset_id)
 
-        queries = [insert_observation, insert_person]
+        queries = [insert_observation, insert_person, insert_mapping]
         self.load_test_data(queries)
 
     def test_backfill_lifestyle(self):
@@ -99,13 +129,13 @@ class BackfillLifestyleTest(BaseTest.CleaningRulesTestBase):
         """
         tables_and_counts = [{
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
+                self.fq_table_names[0],
             'fq_sandbox_table_name':
-                None,
+                self.fq_sandbox_table_names[0],
             'loaded_ids': [
                 101, 102, 103, 104, 105, 106, 107, 201, 301, 302, 303
             ],
-            'sandboxed_ids': [],
+            'sandboxed_ids': [304, 305, 306, 307],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id',
@@ -128,6 +158,22 @@ class BackfillLifestyleTest(BaseTest.CleaningRulesTestBase):
                 (306, 3, 1586190, self.date_2022, 45905771, 1586190, None),
                 (307, 3, 40766357, self.date_2022, 45905771, 1586198, None)
             ]
+        }, {
+            'fq_table_name':
+                self.fq_mapping_table_name,
+            'loaded_ids': [
+                101, 102, 103, 104, 105, 106, 107, 201, 301, 302, 303
+            ],
+            'fields': ['observation_id', 'src_id'],
+            'cleaned_values': [(101, 'src_1'), (102, 'src_1'), (103, 'src_1'),
+                               (104, 'src_1'), (105, 'src_1'), (106, 'src_1'),
+                               (107, 'src_1'), (201, 'src_1'), (301, 'src_2'),
+                               (302, 'src_2'), (303, 'src_2'), (304, 'src_2'),
+                               (305, 'src_2'), (306, 'src_2'), (307, 'src_2')]
         }]
 
         self.default_test(tables_and_counts)
+
+    def tearDown(self):
+        self.client.delete_table(self.fq_mapping_table_name, not_found_ok=True)
+        super().tearDown()
