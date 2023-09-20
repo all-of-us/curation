@@ -96,43 +96,27 @@ MEASUREMENT_DATA_TEMPLATE = JINJA_ENV.from_string("""
         (18,501,3025315,"2018-01-03","2018-01-03 01:00:00 UTC",44818702,4172703,222.0,null,null,null,null,50921,18,"29463-7",3025315,"LBS","","2020-01-01",88)
 """)
 
-AOU_DEATH = JINJA_ENV.from_string("""
+AOU_DEATH_TEMPLATE = JINJA_ENV.from_string("""
     INSERT INTO 
         `{{project_id}}.{{dataset_id}}.aou_death`
             (aou_death_id, person_id, death_date, death_type_concept_id, cause_concept_id, cause_source_concept_id, src_id, primary_death_record)
         VALUES
             ('a10101', 101, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
-            ('a10102', 101, date('2020-05-05'), 0, 0, 0, 'Participant Portal 1', False),
-            ('a10201', 102, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
             ('a10202', 102, date('2020-05-05'), 0, 0, 0, 'Participant Portal 1', False),
             ('a10301', 103, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
-            ('a10302', 103, date('2020-05-05'), 0, 0, 0, 'Participant Portal 1', False),
-            ('a10401', 104, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
             ('a10402', 104, date('2020-05-05'), 0, 0, 0, 'Participant Portal 1', False),
-            ('a20101', 201, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
             ('a20102', 201, date('2020-05-05'), 0, 0, 0, 'Participant Portal 2', False),
-            ('a20201', 202, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
             ('a20202', 202, date('2020-05-05'), 0, 0, 0, 'Participant Portal 2', False),
-            ('a20301', 203, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
             ('a20302', 203, date('2020-05-05'), 0, 0, 0, 'Participant Portal 2', False),
             ('a20401', 204, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
-            ('a20402', 204, date('2020-05-05'), 0, 0, 0, 'Participant Portal 2', False),
             ('a30101', 301, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
-            ('a30102', 301, date('2020-05-05'), 0, 0, 0, 'Participant Portal 3', False),
-            ('a30201', 302, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
             ('a30202', 302, date('2020-05-05'), 0, 0, 0, 'Participant Portal 3', False),
-            ('a30301', 303, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
             ('a30302', 303, date('2020-05-05'), 0, 0, 0, 'Participant Portal 3', False),
             ('a30401', 304, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
-            ('a30402', 304, date('2020-05-05'), 0, 0, 0, 'Participant Portal 3', False),
             ('a40101', 401, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
-            ('a40102', 401, date('2020-05-05'), 0, 0, 0, 'Participant Portal 4', False),
-            ('a40201', 402, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
             ('a40202', 402, date('2020-05-05'), 0, 0, 0, 'Participant Portal 4', False),
             ('a40301', 403, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
-            ('a40302', 403, date('2020-05-05'), 0, 0, 0, 'Participant Portal 4', False),
             ('a40401', 404, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
-            ('a40402', 404, date('2020-05-05'), 0, 0, 0, 'Participant Portal 4', False)
 """)
 
 LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
@@ -202,8 +186,11 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             project_id=self.project_id, dataset_id=self.dataset_id)
         measurement_records_query = MEASUREMENT_DATA_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
+        aou_death_records_query = AOU_DEATH_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
         table_test_queries = [
-            observation_records_query, measurement_records_query
+            observation_records_query, measurement_records_query,
+            aou_death_records_query
         ]
 
         self.load_test_data([lookup_table_query] + table_test_queries)
