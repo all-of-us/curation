@@ -126,7 +126,19 @@ AOU_DEATH = JINJA_ENV.from_string("""
             ('a40302', 403, date('2020-05-05'), 0, 0, 0, 'Participant Portal 4', False),
             ('a40401', 404, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
             ('a40402', 404, date('2020-05-05'), 0, 0, 0, 'Participant Portal 4', False)
-        """)
+""")
+
+LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
+    INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.lookup_table` 
+        (participant_id)
+    VALUES
+        (104),
+        (202),
+        (204),
+        (301),
+        (401),
+        (403),
+""")
 
 
 class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
