@@ -229,15 +229,6 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    # dataset_arg = {
-    #     parser.SHORT_ARGUMENT: '-m',
-    #     parser.LONG_ARGUMENT: '--dataset_id',
-    #     parser.ACTION: 'store',
-    #     parser.DEST: 'dataset_id',
-    #     parser.HELP: 'Identifies the dataset containing the mapping tables',
-    #     parser.REQUIRED: True
-    # }
-    #
     ARGS = parser.default_parse_args()
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
