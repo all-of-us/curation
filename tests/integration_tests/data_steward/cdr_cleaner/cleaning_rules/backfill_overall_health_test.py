@@ -173,7 +173,10 @@ class BackfillOverallHealthTest(BaseTest.CleaningRulesTestBase):
                 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,
                 114, 115, 116, 201, 301, 302, 303, 401, 402, 403
             ],
-            'sandboxed_ids': [404,405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428],
+            'sandboxed_ids': [
+                404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416,
+                417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428
+            ],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id',

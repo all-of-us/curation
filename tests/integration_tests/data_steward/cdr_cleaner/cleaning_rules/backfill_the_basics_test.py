@@ -78,6 +78,7 @@ VALUES
     (303, 'src_2')
 """)
 
+
 class BackfillTheBasicsTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
@@ -152,7 +153,9 @@ class BackfillTheBasicsTest(BaseTest.CleaningRulesTestBase):
                 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,
                 114, 115, 201, 301, 302, 303
             ],
-            'sandboxed_ids': [304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315],
+            'sandboxed_ids': [
+                304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315
+            ],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id',
@@ -195,20 +198,42 @@ class BackfillTheBasicsTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 self.fq_mapping_table_name,
             'loaded_ids': [
-                101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 301, 302, 303
+                101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,
+                114, 115, 301, 302, 303
             ],
             'fields': ['observation_id', 'src_id'],
-            'cleaned_values': [(101, 'src_1'), (102, 'src_1'), (103, 'src_1'),
-                               (104, 'src_1'), (105, 'src_1'), (106, 'src_1'),
-                               (107, 'src_1'), (108, 'src_1'), (109, 'src_1'),
-                               (110, 'src_1'), (111, 'src_1'), (112, 'src_1'),
-                               (113, 'src_1'), (114, 'src_1'), (115, 'src_1'),
-                               (301, 'src_2'), (302, 'src_2'), (303, 'src_2'),
-                               (304, 'src_2'), (305, 'src_2'), (306, 'src_2'),
-                               (307, 'src_2'), (308, 'src_2'), (309, 'src_2'),
-                               (310, 'src_2'), (311, 'src_2'), (312, 'src_2'),
-                               (313, 'src_2'), (314, 'src_2'), (315, 'src_2'),
-                               ]
+            'cleaned_values': [
+                (101, 'src_1'),
+                (102, 'src_1'),
+                (103, 'src_1'),
+                (104, 'src_1'),
+                (105, 'src_1'),
+                (106, 'src_1'),
+                (107, 'src_1'),
+                (108, 'src_1'),
+                (109, 'src_1'),
+                (110, 'src_1'),
+                (111, 'src_1'),
+                (112, 'src_1'),
+                (113, 'src_1'),
+                (114, 'src_1'),
+                (115, 'src_1'),
+                (301, 'src_2'),
+                (302, 'src_2'),
+                (303, 'src_2'),
+                (304, 'src_2'),
+                (305, 'src_2'),
+                (306, 'src_2'),
+                (307, 'src_2'),
+                (308, 'src_2'),
+                (309, 'src_2'),
+                (310, 'src_2'),
+                (311, 'src_2'),
+                (312, 'src_2'),
+                (313, 'src_2'),
+                (314, 'src_2'),
+                (315, 'src_2'),
+            ]
         }]
 
         self.default_test(tables_and_counts)
