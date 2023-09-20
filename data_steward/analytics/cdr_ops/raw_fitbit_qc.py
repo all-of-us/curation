@@ -26,7 +26,7 @@ run_as = ""  # Service account email for impersonation
 # Run this QC notebook as soon as we load the Fitbit tables into the curation project.
 # See DC-3444's attachment for the original list of validation criteria.
 
-from common import JINJA_ENV
+from common import JINJA_ENV, STEPS_INTRADAY, HEART_RATE_INTRADAY
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
@@ -37,30 +37,32 @@ impersonation_creds = auth.get_impersonation_credentials(
 
 client = BigQueryClient(project_id, credentials=impersonation_creds)
 
-# # STEPS_INTRADAY table
+# # STEPS_INTRADAY, HEART_RATE_INTRADAY table
 
-# Validation criteria for steps_intraday is the following:
+# Validation criteria for steps_intraday and heart_rate_intraday is the following:
 # - Field names and data types match the approved schema's
 # - The table includes both PTSC and CE data per the src_id field
 
 # +
-query = JINJA_ENV.from_string("""
-SELECT src_id, COUNT(*)
-FROM `{{project_id}}.{{dataset}}.steps_intraday`
-GROUP BY src_id ORDER BY src_id
-""").render(project_id=project_id, dataset=dataset_id)
-df = execute(client, query)
+for table in [STEPS_INTRADAY, HEART_RATE_INTRADAY]:
+    query = JINJA_ENV.from_string("""
+    SELECT src_id, COUNT(*)
+    FROM `{{project_id}}.{{dataset}}.{{table}}`
+    GROUP BY src_id ORDER BY src_id
+    """).render(project_id=project_id, dataset=dataset_id, table=table)
+    df = execute(client, query)
 
-check_status = "Look at the result and see if it meets all the following criteria."
-msg = (
-    "The result must show that <br>"
-    "(1) The table has records from both PTSC and CE, and<br>"
-    "(2) all the records' src_ids are either PTSC or CE (= No other src_id in this table) <br>"
-    "If any of (1) - (2) does not look good, the source records are not properly prepared. "
-    "Bring up the issue to the RDR team so they can fix it.")
-
-display(
-    HTML(
-        f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
-    ))
+    check_status = f"<b>{table}:</b> Look at the result and see if it meets all the following criteria."
+    msg = (
+        "The result must show that <br>"
+        "(1) The table has records from both PTSC and CE, and<br>"
+        "(2) all the records' src_ids are either PTSC or CE (= No other src_id in this table) <br>"
+        "If any of (1) - (2) does not look good, the source records are not properly prepared. "
+        f"Bring up the issue to the RDR team so they can fix it.<br><b>{table}:</b>"
+    )
+    display(
+        HTML(
+            f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
+        ))
+    display(df)
 # -
