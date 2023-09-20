@@ -37,7 +37,7 @@ class BackfillTheBasics(AbstractBackfillSurveyRecords):
             'This rule extends the abstract class AbstractBackfillSurveyRecords for the skip record creation.'
         )
 
-        super().__init__(issue_numbers=['DC3097'],
+        super().__init__(issue_numbers=['DC3097','DC3458'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          affected_tables=[OBSERVATION],
