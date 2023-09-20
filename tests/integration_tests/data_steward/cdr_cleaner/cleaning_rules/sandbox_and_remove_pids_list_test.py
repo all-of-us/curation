@@ -4,6 +4,9 @@ Integration test for SandboxAndRemovePidsList module
 # Python imports
 import os
 
+# Third party imports
+from google.cloud.bigquery import Table
+
 # Project Imports
 from app_identity import PROJECT_ID
 from common import JINJA_ENV, COMBINED_DATASET_ID
@@ -133,7 +136,7 @@ AOU_DEATH = JINJA_ENV.from_string("""
 """)
 
 LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
-    INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.lookup_table` 
+    INSERT INTO `{{project_id}}.{{dataset_id}}.lookup_table` 
         (participant_id)
     VALUES
         (104),
@@ -174,7 +177,36 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         cls.up_class = super().setUpClass()
 
     def setUp(self):
-        pass
+        """
+        Create tables and test data
+        """
+        super().setUp()
+
+        # Create a temp lookup_table for testing
+        lookup_table = f'{self.project_id}.{self.dataset_id}.lookup_table'
+        schema = {
+            "type": "integer",
+            "name": "participant_id",
+            "mode": "nullable",
+            "description": ""
+        }
+        self.client.create_table(Table(lookup_table, schema), exists_ok=True)
+        self.fq_table_names.append(lookup_table)
+
+        # Insert temp records into the temp lookup_table
+        lookup_table_query = LOOKUP_TABLE_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+
+        # Insert test records
+        observation_records_query = OBSERVATION_TABLE_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+        measurement_records_query = MEASUREMENT_DATA_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+        table_test_queries = [
+            observation_records_query, measurement_records_query
+        ]
+
+        self.load_test_data([lookup_table_query] + table_test_queries)
 
     def test_sandbox_and_remove_pids_list(self):
         """
