@@ -10,10 +10,6 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3442']
 
-# Query template to create lookup_table
-COPY_LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
-""")
-
 
 class SandboxAndRemovePidsList(SandboxAndRemovePids):
     """
@@ -72,7 +68,24 @@ def parse_args():
     """
 
     import cdr_cleaner.args_parser as parser
-    pass
+
+    additional_arguments = [{
+        parser.SHORT_ARGUMENT: '-r',
+        parser.LONG_ARGUMENT: '--rdr_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'rdr_dataset_id',
+        parser.HELP: 'rdr_dataset_id',
+        parser.REQUIRED: True
+    }, {
+        parser.SHORT_ARGUMENT: '-l',
+        parser.LONG_ARGUMENT: '--lookup_table',
+        parser.ACTION: 'store',
+        parser.DEST: 'lookup_table',
+        parser.HELP: 'lookup_table',
+        parser.REQUIRED: True
+    }]
+    args = parser.default_parse_args(additional_arguments)
+    return args
 
 
 if __name__ == '__main__':
