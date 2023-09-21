@@ -13,7 +13,7 @@ ISSUE_NUMBERS = ['DC3442']
 # Query template to copy lookup_table
 COPY_LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE 
-    `{{project_id}}.{{sandbox_dataset_id}}.{{lookup_table}}` AS (
+    `{{project_id}}.{{sandbox_dataset_id}}._{{lookup_table}}` AS (
         SELECT
             participant_id AS person_id,
             hpo_id
