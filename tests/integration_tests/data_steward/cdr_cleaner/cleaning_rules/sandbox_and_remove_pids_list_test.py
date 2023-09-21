@@ -193,7 +193,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             aou_death_records_query
         ]
 
-        self.load_test_data([lookup_table_query] + table_test_queries)
+        # self.load_test_data([lookup_table_query] + table_test_queries)
 
     def test_sandbox_and_remove_pids_list(self):
         """
