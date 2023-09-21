@@ -88,6 +88,24 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
 
         return sandbox_records_queries + remove_pids_queries
 
+    def get_sandbox_tablenames(self):
+        """
+        generates sandbox table names
+        """
+        pass
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup.
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables.
+        """
+        raise NotImplementedError("Please fix me.")
+
 
 def parse_args():
     """
