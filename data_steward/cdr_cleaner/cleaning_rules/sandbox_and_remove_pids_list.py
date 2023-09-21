@@ -34,6 +34,23 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[])
 
+    def setup_rule(self, client: BigQueryClient):
+        """
+        Get list of tables that have a person_id column, excluding mapping tables
+        :param ehr_only: For Combined dataset, True if removing only EHR records. False if removing both RDR and EHR records.
+        """
+
+        person_table_query = PERSON_TABLE_QUERY.render(project=self.project_id,
+                                                       dataset=self.dataset_id,
+                                                       ehr_only=ehr_only)
+        person_tables = client.query(person_table_query).result()
+
+        self.affected_tables = [
+            table.get('table_name')
+            for table in person_tables
+            if table.get('table_name') in CDM_TABLES + [AOU_DEATH]
+        ]
+
     def get_query_specs(self) -> list:
         sandbox_records_queries = self.get_sandbox_queries(
             lookup_table='lookup_table')
