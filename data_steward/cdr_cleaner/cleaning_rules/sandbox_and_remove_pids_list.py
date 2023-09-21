@@ -31,7 +31,8 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
     Removes all participant data using a list of participants.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
+                 rdr_dataset_id, lookup_table):
         """
         Initialize the class with proper information.
 
@@ -39,6 +40,9 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
+
+        self.rdr_dataset_id = rdr_dataset_id
+        self.lookup_table = lookup_table
 
         desc = 'Sandbox and remove participant data from a list of participants.'
 
