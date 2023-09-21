@@ -40,7 +40,6 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # # STEPS_INTRADAY table
 
 # Validation criteria for steps_intraday is the following:
-# - Field names and data types match the approved schema's
 # - The table includes both PTSC and CE data per the src_id field
 
 # +
@@ -63,4 +62,7 @@ display(
     HTML(
         f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
     ))
+
+display(df)
+
 # -
