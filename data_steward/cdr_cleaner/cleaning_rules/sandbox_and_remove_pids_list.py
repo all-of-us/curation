@@ -10,7 +10,7 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3442']
 
-# Query template to create lookup_table
+# Query template to copy lookup_table
 COPY_LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE 
     `{{project_id}}.{{sandbox_dataset_id}}.{{lookup_table}}` AS (
