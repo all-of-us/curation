@@ -18,7 +18,8 @@ from resources import mapping_table_for
 from utils import auth, pipeline_logging
 from common import (AOU_DEATH, CDR_SCOPES, DEATH, METADATA, PID_RID_MAPPING,
                     QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO, FACT_RELATIONSHIP,
-                    COPE_SURVEY_MAP, BIGQUERY_DATASET_ID)
+                    COPE_SURVEY_MAP, VOCABULARY_TABLES, BIGQUERY_DATASET_ID,
+                    EHR_CONSENT_VALIDATION, WEAR_CONSENT)
 from utils import auth
 from utils import pipeline_logging
 from common import CDR_SCOPES, FACT_RELATIONSHIP, METADATA, DEATH
@@ -124,9 +125,10 @@ def main(raw_args=None):
             f'{bq_client.project}.{datasets.get("staging")}')
     ]
     skip_tables = [
-        AOU_DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING,
-        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO
-    ]
+        AOU_DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING, WEAR_CONSENT,
+        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO, EHR_CONSENT_VALIDATION
+    ] + VOCABULARY_TABLES
+
     for domain_table in domain_tables:
         if domain_table in skip_tables:
             continue
@@ -145,15 +147,15 @@ def main(raw_args=None):
         args.export_date, '--run_as', args.run_as_email
     ]
 
+    # Create an empty DEATH for clean RDR. Actual data is in AOU_DEATH.
+    _ = bq_client.create_tables(
+        [f"{bq_client.project}.{datasets.get('staging', 'UNSET')}.{DEATH}"])
+
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
     clean_cdr.main(args=all_cleaning_args)
 
     bq_client.build_and_copy_contents(datasets.get('staging', 'UNSET'),
                                       datasets.get('clean', 'UNSET'))
-
-    # Create an empty DEATH for clean RDR. Actual data is in AOU_DEATH.
-    _ = bq_client.create_tables(
-        [f"{bq_client.project}.{datasets.get('clean', 'UNSET')}.{DEATH}"])
 
     # update sandbox description and labels
     sandbox_dataset = bq_client.get_dataset(datasets.get(

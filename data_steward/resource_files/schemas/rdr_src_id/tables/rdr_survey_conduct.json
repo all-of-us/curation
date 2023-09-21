@@ -122,7 +122,7 @@
     {
         "name": "validated_survey_source_value",
         "description": "Source value representing the validation status of the survey.",
-        "type": "integer",
+        "type": "string",
         "mode": "nullable"
     },
     {
