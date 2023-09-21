@@ -35,7 +35,7 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[])
 
-    def setup_rule(self, client: BigQueryClient):
+    def setup_rule(self, client: BigQueryClient, ehr_only: bool = False):
         """
         Get list of tables that have a person_id column, excluding mapping tables
         :param ehr_only: For Combined dataset, True if removing only EHR records. False if removing both RDR and EHR records.
