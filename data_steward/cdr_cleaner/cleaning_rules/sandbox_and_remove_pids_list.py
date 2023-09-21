@@ -10,6 +10,21 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3442']
 
+# Query template to create lookup_table
+COPY_LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE 
+    `{{project_id}}.{{sandbox_dataset_id}}.{{lookup_table}}` AS (
+        SELECT
+            participant_id AS person_id,
+            hpo_id
+            src_id,
+            consent_for_study_enrollment_authored,
+            withdrawal_status
+        FROM
+            `{{project_id}}.{{rdr_dataset_id}}.{{lookup_table}}`                                       
+)
+""")
+
 
 class SandboxAndRemovePidsList(SandboxAndRemovePids):
     """
@@ -51,6 +66,15 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
             for table in person_tables
             if table.get('table_name') in CDM_TABLES + [AOU_DEATH]
         ]
+
+        # Create lookup_table
+        copy_lookup_table_query = COPY_LOOKUP_TABLE_TEMPLATE.render(
+            project_id=self.project_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
+            rdr_dataset_id=self.rdr_dataset_id,
+            lookup_table=self.lookup_table)
+
+        client.query(copy_lookup_table_query).result()
 
     def get_query_specs(self) -> list:
         sandbox_records_queries = self.get_sandbox_queries(
