@@ -10,6 +10,9 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3442']
 
+COPY_LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
+""")
+
 
 class SandboxAndRemovePidsList(SandboxAndRemovePids):
     """
