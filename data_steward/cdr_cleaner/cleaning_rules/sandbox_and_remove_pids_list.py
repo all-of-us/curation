@@ -2,7 +2,7 @@
 import logging
 
 # Project imports
-from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids import SandboxAndRemovePids
+from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids import SandboxAndRemovePids, PERSON_TABLE_QUERY
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from gcloud.bq import BigQueryClient
 
