@@ -131,6 +131,28 @@ LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
         (403),
 """)
 
+LOOKUP_TABLE_SCHEMA = [{
+    "type": "integer",
+    "name": "participant_id",
+    "mode": "nullable"
+}, {
+    "type": "integer",
+    "name": "hpo_id",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable"
+}, {
+    "type": "DATE",
+    "name": "consent_for_study_enrollment_authored",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "withdrawal_status",
+    "mode": "nullable"
+}]
+
 
 class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
 
@@ -168,13 +190,8 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
 
         # Create a temp lookup_table for testing
         lookup_table = f'{self.project_id}.{self.sandbox_id}.lookup_table'
-        schema = {
-            "type": "integer",
-            "name": "participant_id",
-            "mode": "nullable",
-            "description": ""
-        }
-        self.client.create_table(Table(lookup_table, schema), exists_ok=True)
+        self.client.create_table(Table(lookup_table, LOOKUP_TABLE_SCHEMA),
+                                 exists_ok=True)
         self.fq_sandbox_table_names.append(lookup_table)
 
         # Insert temp records into the temp lookup_table
