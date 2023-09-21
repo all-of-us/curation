@@ -167,11 +167,13 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
 
         # Set the expected test datasets
         cls.dataset_id = COMBINED_DATASET_ID
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         # Instantiate class
-        cls.rule_instance = SandboxAndRemovePidsList(project_id='',
-                                                     dataset_id='',
-                                                     sandbox_dataset_id='')
+        cls.rule_instance = SandboxAndRemovePidsList(
+            project_id=cls.project_id,
+            dataset_id=cls.dataset_id,
+            sandbox_dataset_id=cls.sandbox_id)
 
         # Generates list of fully qualified table names
         affected_table_names = cls.rule_instance.affected_tables
