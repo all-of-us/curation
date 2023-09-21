@@ -92,18 +92,23 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.default_parse_args()
+    ARGS = parser.parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(SandboxAndRemovePidsList,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(SandboxAndRemovePidsList,)],
+            rdr_dataset_id=ARGS.rdr_dataset_id,
+            lookup_table=ARGS.lookup_table)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(SandboxAndRemovePidsList,)])
+                                   [(SandboxAndRemovePidsList,)],
+                                   rdr_dataset_id=ARGS.rdr_dataset_id,
+                                   lookup_table=ARGS.lookup_table)
