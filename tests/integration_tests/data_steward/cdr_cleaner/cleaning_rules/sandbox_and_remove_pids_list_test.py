@@ -120,7 +120,7 @@ AOU_DEATH_TEMPLATE = JINJA_ENV.from_string("""
 """)
 
 LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
-    INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.lookup_table` 
+    INSERT INTO `{{project_id}}.{{rdr_dataset_id}}.{{lookup_table}}` 
         (participant_id)
     VALUES
         (104),
@@ -194,7 +194,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
-        # Create a temp lookup_table for testing
+        # Create a temp lookup_table in rdr_dataset for testing
         lookup_table = f'{self.project_id}.{self.rdr_dataset_id}.{self.lookup_table}'
         self.client.create_table(Table(lookup_table, LOOKUP_TABLE_SCHEMA),
                                  exists_ok=True)
@@ -202,7 +202,9 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
 
         # Insert temp records into the temp lookup_table
         lookup_table_query = LOOKUP_TABLE_TEMPLATE.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            project_id=self.project_id,
+            rdr_dataset_id=self.rdr_dataset_id,
+            lookup_table=self.lookup_table)
 
         # Insert test records
         observation_records_query = OBSERVATION_TABLE_TEMPLATE.render(
