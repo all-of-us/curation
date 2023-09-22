@@ -13,7 +13,7 @@ ISSUE_NUMBERS = ['DC3442']
 # Query template to copy lookup_table from rdr dataset to combined sandbox dataset
 COPY_LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE 
-    `{{project_id}}.{{sandbox_dataset_id}}.{{new_lookup_table}}` AS (
+    `{{project_id}}.{{sandbox_dataset_id}}.{{combined_lookup_table}}` AS (
         SELECT
             participant_id AS person_id,
             hpo_id
@@ -21,7 +21,7 @@ CREATE OR REPLACE TABLE
             consent_for_study_enrollment_authored,
             withdrawal_status
         FROM
-            `{{project_id}}.{{rdr_dataset_id}}.{{lookup_table}}`                                       
+            `{{project_id}}.{{rdr_dataset_id}}.{{rdr_lookup_table}}`                                       
     )
 """)
 
@@ -77,8 +77,8 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
             project_id=self.project_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             rdr_dataset_id=self.rdr_dataset_id,
-            lookup_table=self.rdr_lookup_table,
-            new_lookup_table=self.combined_lookup_table)
+            rdr_lookup_table=self.rdr_lookup_table,
+            combined_lookup_table=self.combined_lookup_table)
 
         client.query(copy_lookup_table_query).result()
 
