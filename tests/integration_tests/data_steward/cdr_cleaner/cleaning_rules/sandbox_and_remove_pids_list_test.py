@@ -168,6 +168,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         # Set the expected test datasets
         cls.dataset_id = COMBINED_DATASET_ID
         cls.rdr_dataset_id = RDR_DATASET_ID
+        cls.lookup_table = 'lookup_table'
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         # Instantiate class
@@ -176,7 +177,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             dataset_id=cls.dataset_id,
             sandbox_dataset_id=cls.sandbox_id,
             rdr_dataset_id=RDR_DATASET_ID,
-            lookup_table='lookup_table')
+            lookup_table=cls.lookup_table)
 
         # Generates list of fully qualified table names
         affected_table_names = cls.rule_instance.affected_tables
@@ -194,7 +195,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         super().setUp()
 
         # Create a temp lookup_table for testing
-        lookup_table = f'{self.project_id}.{self.sandbox_id}.lookup_table'
+        lookup_table = f'{self.project_id}.{self.rdr_dataset_id}.{self.lookup_table}'
         self.client.create_table(Table(lookup_table, LOOKUP_TABLE_SCHEMA),
                                  exists_ok=True)
         self.fq_sandbox_table_names.append(lookup_table)
