@@ -66,3 +66,20 @@ display(
 display(df)
 
 # -
+
+# # ACTIVITY_SUMMARY table
+
+# Validation criteria for activity_summary is the following:
+# - The table includes both PTSC and CE data per the src_id field
+
+# +
+query = JINJA_ENV.from_string("""
+SELECT src_id, COUNT(*) as row_count
+FROM `{{project_id}}.{{dataset}}.activity_summary`
+GROUP BY src_id ORDER BY src_id
+""").render(project_id=project_id, dataset=dataset_id)
+df = execute(client, query)
+
+display(df)
+
+# -
