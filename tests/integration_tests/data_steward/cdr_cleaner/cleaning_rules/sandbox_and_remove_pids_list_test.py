@@ -182,7 +182,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             lookup_table=cls.lookup_table)
 
         # Generates list of fully qualified table names
-        affected_table_names = cls.rule_instance.affected_tables
+        affected_table_names = ['observation', 'measurement', 'aou_death']
         for table_name in affected_table_names:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
@@ -200,7 +200,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         lookup_table = f'{self.project_id}.{self.rdr_dataset_id}.{self.lookup_table}'
         self.client.create_table(Table(lookup_table, LOOKUP_TABLE_SCHEMA),
                                  exists_ok=True)
-        self.fq_sandbox_table_names.append(lookup_table)
+        self.fq_table_names.append(lookup_table)
 
         # Insert temp records into the temp lookup_table
         lookup_table_query = LOOKUP_TABLE_TEMPLATE.render(
@@ -220,7 +220,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             aou_death_records_query
         ]
 
-        # self.load_test_data([lookup_table_query] + table_test_queries)
+        self.load_test_data([lookup_table_query] + table_test_queries)
 
     def test_sandbox_and_remove_pids_list(self):
         """
