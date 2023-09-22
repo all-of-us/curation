@@ -226,5 +226,6 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
 
     def test_sandbox_and_remove_pids_list(self):
         """
+        Validates that the data for participants in the lookup table has been removed. 
         """
         pass
