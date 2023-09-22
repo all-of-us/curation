@@ -22,7 +22,7 @@ CREATE OR REPLACE TABLE
             withdrawal_status
         FROM
             `{{project_id}}.{{rdr_dataset_id}}.{{lookup_table}}`                                       
-)
+    )
 """)
 
 
