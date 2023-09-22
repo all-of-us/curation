@@ -120,10 +120,10 @@ def parse_args():
 
     additional_arguments = [{
         parser.SHORT_ARGUMENT: '-r',
-        parser.LONG_ARGUMENT: '--rdr_dataset_id',
+        parser.LONG_ARGUMENT: '--rdr_dataset',
         parser.ACTION: 'store',
-        parser.DEST: 'rdr_dataset_id',
-        parser.HELP: 'rdr_dataset_id',
+        parser.DEST: 'rdr_dataset',
+        parser.HELP: 'rdr_dataset',
         parser.REQUIRED: True
     }, {
         parser.SHORT_ARGUMENT: '-l',
@@ -149,7 +149,7 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(SandboxAndRemovePidsList,)],
-            rdr_dataset_id=ARGS.rdr_dataset_id,
+            rdr_dataset_id=ARGS.rdr_dataset,
             lookup_table=ARGS.lookup_table)
         for query in query_list:
             LOGGER.info(query)
@@ -159,5 +159,5 @@ if __name__ == '__main__':
                                    ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
                                    [(SandboxAndRemovePidsList,)],
-                                   rdr_dataset_id=ARGS.rdr_dataset_id,
+                                   rdr_dataset_id=ARGS.rdr_dataset,
                                    lookup_table=ARGS.lookup_table)
