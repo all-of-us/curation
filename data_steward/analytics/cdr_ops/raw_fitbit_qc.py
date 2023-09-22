@@ -80,6 +80,19 @@ GROUP BY src_id ORDER BY src_id
 """).render(project_id=project_id, dataset=dataset_id)
 df = execute(client, query)
 
+check_status = "Look at the result and see if it meets all the following criteria."
+msg = (
+    "The result must show that <br>"
+    "(1) The table has records from both PTSC and CE, and<br>"
+    "(2) all the records' src_ids are either PTSC or CE (= No other src_id in this table) <br>"
+    "If any of (1) - (2) does not look good, the source records are not properly prepared. "
+    "Bring up the issue to the RDR team so they can fix it.")
+
+display(
+    HTML(
+        f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
+    ))
+
 display(df)
 
 # -
