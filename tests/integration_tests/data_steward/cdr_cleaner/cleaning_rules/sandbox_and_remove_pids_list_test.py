@@ -116,7 +116,7 @@ AOU_DEATH_TEMPLATE = JINJA_ENV.from_string("""
             ('a40101', 401, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
             ('a40202', 402, date('2020-05-05'), 0, 0, 0, 'Participant Portal 4', False),
             ('a40301', 403, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
-            ('a40401', 404, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False),
+            ('a40401', 404, date('2020-05-05'), 0, 0, 0, 'Staff Portal: HealthPro', False)
 """)
 
 LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
