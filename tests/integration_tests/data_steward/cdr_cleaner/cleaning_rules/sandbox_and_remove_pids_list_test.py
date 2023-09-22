@@ -162,6 +162,8 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         print(cls.__name__)
         print('**************************************************************')
 
+        super().initialize_class_vars()
+
         # Set the test project identifier
         cls.project_id = os.environ.get(PROJECT_ID)
 
