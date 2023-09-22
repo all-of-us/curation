@@ -44,7 +44,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 # +
 query = JINJA_ENV.from_string("""
-SELECT src_id, COUNT(*)
+SELECT src_id, COUNT(*) AS row_count
 FROM `{{project_id}}.{{dataset}}.steps_intraday`
 GROUP BY src_id ORDER BY src_id
 """).render(project_id=project_id, dataset=dataset_id)
