@@ -1385,27 +1385,62 @@ WHERE value_source_concept_id IN (1585605, 1585606, 1585607, 1585608, 1585609, 1
 GROUP BY value_source_value
 ORDER BY value_source_value
 """)
-q = query.render(
-    project_id=project_id,
-    ct_dataset=ct_dataset,
+q = query.render(project_id=project_id,
+                 ct_dataset=ct_dataset,
 )
 result = execute(client, q)
 if not result.empty:
     df = df.append(
         {
-            'query': 'Query19 race/ethnicity sub-categories exist.',
-            'result': 'PASS',
+            'query': 'Query19 existence of at least one race/ethnicity sub-categories',
+            'result': 'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query19 race/ethnicity sub-categories DO NOT exist.',
-            'result': 'Failure',
+            'query': 'Query19 At least one race/ethnicity sub-categories DOES NOT exist',
+            'result': 'Failure'
         },
         ignore_index=True)
 result
 
+# Query 20: verify all race/ethnicity values are top-level, not subcategories
+# -
+
+query = JINJA_ENV.from_string("""
+SELECT ethnicity_concept_id, ethnicity_source_concept_id, ethnicity_source_value, count(*)
+FROM `{{project_id}}.{{ct_dataset}}.person`
+WHERE ethnicity_concept_id NOT IN (38003563, 38003564, 1586148, 903079, 903096, 0)
+AND ethnicity_source_concept_id NOT IN (38003563, 38003564, 1586148, 903079, 903096, 0)
+GROUP BY 1, 2, 3
+
+UNION ALL
+
+SELECT race_concept_id, race_source_concept_id, race_source_value, count(*)
+FROM `{{project_id}}.{{ct_dataset}}.person`
+WHERE race_concept_id NOT IN (2000000008, 1177221, 45882607, 903096, 0)
+AND race_source_concept_id NOT IN (1586141, 1586142, 1586143, 1586144, 1586145, 1586146, 903079, 0)
+GROUP BY 1, 2, 3
+""")
+q = query.render(project_id=project_id,
+                 ct_dataset=ct_dataset)
+result = execute(client, q)
+if result.empty:
+    df = df.append(
+        {
+            'query': 'Query20 All race/ethnicity categories are top-level',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Query20 All race/ethnicity categories are NOT top-level.',
+            'result': 'Failure',
+        },
+        ignore_index=True)
+result
 
 # +
 def highlight_cells(val):
