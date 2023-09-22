@@ -197,29 +197,31 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         super().setUp()
 
         # Create a temp lookup_table in rdr_dataset for testing
-        lookup_table = f'{self.project_id}.{self.rdr_dataset_id}.{self.lookup_table}'
-        self.client.create_table(Table(lookup_table, LOOKUP_TABLE_SCHEMA),
+        lookup_table_name = f'{self.project_id}.{self.rdr_dataset_id}.{self.lookup_table}'
+        self.client.create_table(Table(lookup_table_name, LOOKUP_TABLE_SCHEMA),
                                  exists_ok=True)
-        self.fq_table_names.append(lookup_table)
+        self.fq_table_names.append(lookup_table_name)
 
-        # Insert temp records into the temp lookup_table
+        # Build temp lookup table records query
         lookup_table_query = LOOKUP_TABLE_TEMPLATE.render(
             project_id=self.project_id,
             rdr_dataset_id=self.rdr_dataset_id,
             lookup_table=self.lookup_table)
 
-        # Insert test records
+        # Build test data queries
         observation_records_query = OBSERVATION_TABLE_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
         measurement_records_query = MEASUREMENT_DATA_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
         aou_death_records_query = AOU_DEATH_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
+
         table_test_queries = [
             observation_records_query, measurement_records_query,
             aou_death_records_query
         ]
 
+        # Load test data
         self.load_test_data([lookup_table_query] + table_test_queries)
 
     def test_sandbox_and_remove_pids_list(self):
