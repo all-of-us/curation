@@ -10,10 +10,10 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3442']
 
-# Query template to copy lookup_table
+# Query template to copy lookup_table from rdr dataset to combined sandbox dataset
 COPY_LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE 
-    `{{project_id}}.{{sandbox_dataset_id}}._{{lookup_table}}` AS (
+    `{{project_id}}.{{sandbox_dataset_id}}.{{new_lookup_table}}` AS (
         SELECT
             participant_id AS person_id,
             hpo_id
@@ -42,7 +42,8 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
         """
 
         self.rdr_dataset_id = rdr_dataset_id
-        self.lookup_table = lookup_table
+        self.rdr_lookup_table = lookup_table
+        self.combined_lookup_table = f'_{"_".join(ISSUE_NUMBERS).lower()}_{self.rdr_lookup_table}'
 
         desc = 'Sandbox and remove participant data from a list of participants.'
 
@@ -71,20 +72,21 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
             if table.get('table_name') in CDM_TABLES + [AOU_DEATH]
         ]
 
-        # Create lookup_table
+        # Copy lookup_table
         copy_lookup_table_query = COPY_LOOKUP_TABLE_TEMPLATE.render(
             project_id=self.project_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             rdr_dataset_id=self.rdr_dataset_id,
-            lookup_table=self.lookup_table)
+            lookup_table=self.rdr_lookup_table,
+            new_lookup_table=self.combined_lookup_table)
 
         client.query(copy_lookup_table_query).result()
 
     def get_query_specs(self) -> list:
         sandbox_records_queries = self.get_sandbox_queries(
-            lookup_table='lookup_table')
+            lookup_table=self.combined_lookup_table)
         remove_pids_queries = self.get_remove_pids_queries(
-            lookup_table='lookup_table')
+            lookup_table=self.combined_lookup_table)
 
         return sandbox_records_queries + remove_pids_queries
 
