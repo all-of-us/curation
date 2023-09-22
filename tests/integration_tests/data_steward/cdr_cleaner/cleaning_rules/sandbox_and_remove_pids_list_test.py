@@ -128,7 +128,7 @@ LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
         (204),
         (301),
         (401),
-        (403),
+        (403)
 """)
 
 LOOKUP_TABLE_SCHEMA = [{
