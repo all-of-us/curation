@@ -13,7 +13,8 @@ ISSUE_NUMBERS = ['DC3442']
 # Query template to copy lookup_table from rdr dataset to combined sandbox dataset
 COPY_LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE 
-    `{{project_id}}.{{sandbox_dataset_id}}.{{combined_lookup_table}}` AS (
+    `{{project_id}}.{{sandbox_dataset_id}}.{{combined_lookup_table}}` AS 
+    (
         SELECT
             participant_id AS person_id,
             hpo_id
