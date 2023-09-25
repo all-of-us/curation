@@ -6,7 +6,7 @@ from datetime import datetime
 from app_identity import PROJECT_ID
 import cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map as pr
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY, SLEEP_DAILY_SUMMARY, SLEEP_LEVEL, DEVICE, DEID_MAP
+from common import ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_INTRADAY, STEPS_INTRADAY, SLEEP_DAILY_SUMMARY, SLEEP_LEVEL, DEVICE, DEID_MAP
 
 
 class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
@@ -105,7 +105,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             (3456, 65, (DATETIME '2020-08-17 17:00:00')),            
             (3456, 70, (DATETIME '2020-08-18 17:00:00'))""").render(
             fq_dataset_name=self.fq_dataset_name,
-            fitbit_table=HEART_RATE_MINUTE_LEVEL)
+            fitbit_table=HEART_RATE_INTRADAY)
         queries.append(hr_query)
 
         hrs_query = self.jinja_env.from_string("""
@@ -198,8 +198,10 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, ACTIVITY_SUMMARY]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[0],
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if ACTIVITY_SUMMARY in sb_name
+            ][0],
             'fields': ['person_id', 'activity_calories', 'date'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456, 3456],
             'sandboxed_ids': [3456],
@@ -211,9 +213,11 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             ]
         }, {
             'fq_table_name':
-                '.'.join([self.fq_dataset_name, HEART_RATE_MINUTE_LEVEL]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[1],
+                '.'.join([self.fq_dataset_name, HEART_RATE_INTRADAY]),
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if HEART_RATE_INTRADAY in sb_name
+            ][0],
             'fields': ['person_id', 'heart_rate_value', 'datetime'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456, 3456],
             'sandboxed_ids': [3456],
@@ -226,8 +230,10 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, HEART_RATE_SUMMARY]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[2],
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if HEART_RATE_SUMMARY in sb_name
+            ][0],
             'fields': ['person_id', 'date', 'calorie_count'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
@@ -240,8 +246,10 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, STEPS_INTRADAY]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[3],
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if STEPS_INTRADAY in sb_name
+            ][0],
             'fields': ['person_id', 'datetime', 'steps'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
@@ -254,8 +262,10 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, SLEEP_DAILY_SUMMARY]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[4],
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if SLEEP_DAILY_SUMMARY in sb_name
+            ][0],
             'fields': ['person_id', 'sleep_date', 'minute_in_bed'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
@@ -268,8 +278,10 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, SLEEP_LEVEL]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[5],
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if SLEEP_LEVEL in sb_name
+            ][0],
             'fields': ['person_id', 'sleep_date', 'duration_in_min'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
@@ -282,8 +294,10 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, DEVICE]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[6],
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if DEVICE in sb_name
+            ][0],
             'fields': ['person_id', 'device_date', 'battery'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],

@@ -15,11 +15,16 @@ from google.cloud.bigquery import Table
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, FITBIT_TABLES, SITE_MASKING_TABLE_ID
+from common import (ACTIVITY_SUMMARY, DEVICE, FITBIT_TABLES,
+                    HEART_RATE_INTRADAY, HEART_RATE_SUMMARY, JINJA_ENV,
+                    SITE_MASKING_TABLE_ID, SLEEP_DAILY_SUMMARY, SLEEP_LEVEL,
+                    STEPS_INTRADAY)
 from cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id import FitbitDeidSrcID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
-ACTIVITY_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
+TEMPLATE_DICT = {
+    ACTIVITY_SUMMARY:
+        JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, activity_calories, date, src_id)
@@ -29,9 +34,9 @@ VALUES
     (2345, 500, date('2020-08-17'), 'pt'),
     (6789, 800, date('2020-08-17'), 'tp'),
     (3456, 1000, date('2020-08-17'), 'pt')
-""")
-
-HEART_RATE_MINUTE_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
+"""),
+    HEART_RATE_INTRADAY:
+        JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, heart_rate_value, datetime, src_id)
@@ -41,9 +46,9 @@ VALUES
     (2345, 55, (DATETIME '2020-08-17 16:00:00'), 'pt'),
     (6789, 40, (DATETIME '2020-08-17 16:30:00'), 'tp'),
     (3456, 65, (DATETIME '2020-08-17 17:00:00'), 'pt')
-""")
-
-HEART_RATE_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
+"""),
+    HEART_RATE_SUMMARY:
+        JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, date, calorie_count, src_id)
@@ -53,9 +58,9 @@ VALUES
     (2345, date('2020-08-17'), 500, 'pt'),
     (6789, date('2020-08-17'), 800, 'tp'),
     (3456, date('2020-08-17'), 1000, 'pt')
-""")
-
-STEPS_INTRADAY_TEMPLATE = JINJA_ENV.from_string("""
+"""),
+    STEPS_INTRADAY:
+        JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, steps, datetime, src_id)
@@ -65,9 +70,9 @@ VALUES
     (2345, 55, (DATETIME '2020-08-17 16:00:00'), 'pt'),
     (6789, 40, (DATETIME '2020-08-17 16:30:00'), 'tp'),
     (3456, 65, (DATETIME '2020-08-17 17:00:00'), 'pt')
-""")
-
-SLEEP_DAILY_SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
+"""),
+    SLEEP_DAILY_SUMMARY:
+        JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, sleep_date, minute_in_bed, src_id)
@@ -77,9 +82,9 @@ VALUES
     (2345, date('2020-08-17'), 745, 'pt'),
     (6789, date('2020-08-17'), 605, 'tp'),
     (3456, date('2020-08-17'), 578, 'pt')
-""")
-
-SLEEP_LEVEL_TEMPLATE = JINJA_ENV.from_string("""
+"""),
+    SLEEP_LEVEL:
+        JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, sleep_date, duration_in_min, src_id)
@@ -89,9 +94,9 @@ VALUES
     (2345, date('2020-08-17'), 22, 'pt'),
     (6789, date('2020-08-17'), 56, 'tp'),
     (3456, date('2020-08-17'), 12, 'pt')
-""")
-
-DEVICE_TEMPLATE = JINJA_ENV.from_string("""
+"""),
+    DEVICE:
+        JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 (person_id, device_date, battery, src_id)
@@ -102,6 +107,7 @@ VALUES
     (6789, date('2020-08-17'), "Medium", 'tp'),
     (3456, date('2020-08-17'), "Medium", 'pt')
 """)
+}
 
 SITE_MASKINGS_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
@@ -164,16 +170,13 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
 
         # Insert test records into fitbit tables
         fitbit_test_queries = []
-        TEMPLATES = [
-            ACTIVITY_SUMMARY_TEMPLATE, HEART_RATE_MINUTE_LEVEL_TEMPLATE,
-            HEART_RATE_SUMMARY_TEMPLATE, STEPS_INTRADAY_TEMPLATE,
-            SLEEP_DAILY_SUMMARY_TEMPLATE, SLEEP_LEVEL_TEMPLATE, DEVICE_TEMPLATE
-        ]
-        for table, template in zip(FITBIT_TABLES, TEMPLATES):
-            test_data_query = template.render(project_id=self.project_id,
-                                              dataset_id=self.dataset_id,
-                                              fitbit_table=table)
-            fitbit_test_queries.append(test_data_query)
+        for table in FITBIT_TABLES:
+            template = TEMPLATE_DICT.get(table)
+            if template:
+                test_data_query = template.render(project_id=self.project_id,
+                                                  dataset_id=self.dataset_id,
+                                                  fitbit_table=table)
+                fitbit_test_queries.append(test_data_query)
 
         # Load test data
         self.load_test_data([site_maskings_query] + fitbit_test_queries)
@@ -184,161 +187,147 @@ class FitbitDeidSrcIDTest(BaseTest.CleaningRulesTestBase):
         """
 
         # Expected results list
-        tables_and_counts = [
-            {
-                'fq_table_name':
-                    self.fq_table_names[0],  # ACTIVITY_SUMMARY
-                'fq_sandbox_table_name':
-                    None,
-                'fields': ['person_id', 'activity_calories', 'date', 'src_id'],
-                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [],
-                'cleaned_values': [
-                    (1234, 100, datetime.fromisoformat('2020-08-17').date(),
-                     'Participant Portal 2'),
-                    (5678, 200, datetime.fromisoformat('2020-08-17').date(),
-                     'Participant Portal 1'),
-                    (2345, 500, datetime.fromisoformat('2020-08-17').date(),
-                     'Participant Portal 2'),
-                    (6789, 800, datetime.fromisoformat('2020-08-17').date(),
-                     'Participant Portal 1'),
-                    (3456, 1000, datetime.fromisoformat('2020-08-17').date(),
-                     'Participant Portal 2')
-                ]
-            },
-            {
-                'fq_table_name':
-                    self.fq_table_names[1],  # HEART_RATE_MINUTE_LEVEL
-                'fq_sandbox_table_name':
-                    None,
-                'fields': [
-                    'person_id', 'heart_rate_value', 'datetime', 'src_id'
-                ],
-                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [],
-                'cleaned_values': [
-                    (1234, 60, datetime.fromisoformat('2020-08-17 15:00:00'),
-                     'Participant Portal 2'),
-                    (5678, 50, datetime.fromisoformat('2020-08-17 15:30:00'),
-                     'Participant Portal 1'),
-                    (2345, 55, datetime.fromisoformat('2020-08-17 16:00:00'),
-                     'Participant Portal 2'),
-                    (6789, 40, datetime.fromisoformat('2020-08-17 16:30:00'),
-                     'Participant Portal 1'),
-                    (3456, 65, datetime.fromisoformat('2020-08-17 17:00:00'),
-                     'Participant Portal 2')
-                ]
-            },
-            {
-                'fq_table_name':
-                    self.fq_table_names[2],  # HEART_RATE_SUMMARY
-                'fq_sandbox_table_name':
-                    None,
-                'fields': ['person_id', 'date', 'calorie_count', 'src_id'],
-                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [],
-                'cleaned_values': [
-                    (1234, datetime.fromisoformat('2020-08-17').date(), 100,
-                     'Participant Portal 2'),
-                    (5678, datetime.fromisoformat('2020-08-17').date(), 200,
-                     'Participant Portal 1'),
-                    (2345, datetime.fromisoformat('2020-08-17').date(), 500,
-                     'Participant Portal 2'),
-                    (6789, datetime.fromisoformat('2020-08-17').date(), 800,
-                     'Participant Portal 1'),
-                    (3456, datetime.fromisoformat('2020-08-17').date(), 1000,
-                     'Participant Portal 2')
-                ]
-            },
-            {
-                'fq_table_name':
-                    self.fq_table_names[3],  # STEPS_INTRADAY
-                'fq_sandbox_table_name':
-                    None,
-                'fields': ['person_id', 'steps', 'datetime', 'src_id'],
-                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [],
-                'cleaned_values': [
-                    (1234, 60, datetime.fromisoformat('2020-08-17 15:00:00'),
-                     'Participant Portal 2'),
-                    (5678, 50, datetime.fromisoformat('2020-08-17 15:30:00'),
-                     'Participant Portal 1'),
-                    (2345, 55, datetime.fromisoformat('2020-08-17 16:00:00'),
-                     'Participant Portal 2'),
-                    (6789, 40, datetime.fromisoformat('2020-08-17 16:30:00'),
-                     'Participant Portal 1'),
-                    (3456, 65, datetime.fromisoformat('2020-08-17 17:00:00'),
-                     'Participant Portal 2')
-                ]
-            },
-            {
-                'fq_table_name':
-                    self.fq_table_names[4],  # SLEEP_DAILY_SUMMARY
-                'fq_sandbox_table_name':
-                    None,
-                'fields': [
-                    'person_id', 'sleep_date', 'minute_in_bed', 'src_id'
-                ],
-                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [],
-                'cleaned_values': [
-                    (1234, datetime.fromisoformat('2020-08-17').date(), 502,
-                     'Participant Portal 2'),
-                    (5678, datetime.fromisoformat('2020-08-17').date(), 443,
-                     'Participant Portal 1'),
-                    (2345, datetime.fromisoformat('2020-08-17').date(), 745,
-                     'Participant Portal 2'),
-                    (6789, datetime.fromisoformat('2020-08-17').date(), 605,
-                     'Participant Portal 1'),
-                    (3456, datetime.fromisoformat('2020-08-17').date(), 578,
-                     'Participant Portal 2')
-                ]
-            },
-            {
-                'fq_table_name':
-                    self.fq_table_names[5],  # SLEEP_LEVEL
-                'fq_sandbox_table_name':
-                    None,
-                'fields': [
-                    'person_id', 'sleep_date', 'duration_in_min', 'src_id'
-                ],
-                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [],
-                'cleaned_values': [
-                    (1234, datetime.fromisoformat('2020-08-17').date(), 42,
-                     'Participant Portal 2'),
-                    (5678, datetime.fromisoformat('2020-08-17').date(), 15,
-                     'Participant Portal 1'),
-                    (2345, datetime.fromisoformat('2020-08-17').date(), 22,
-                     'Participant Portal 2'),
-                    (6789, datetime.fromisoformat('2020-08-17').date(), 56,
-                     'Participant Portal 1'),
-                    (3456, datetime.fromisoformat('2020-08-17').date(), 12,
-                     'Participant Portal 2')
-                ]
-            },
-            {
-                'fq_table_name':
-                    self.fq_table_names[6],  # DEVICE
-                'fq_sandbox_table_name':
-                    None,
-                'fields': ['person_id', 'device_date', 'battery', 'src_id'],
-                'loaded_ids': [1234, 5678, 2345, 6789, 3456],
-                'sandboxed_ids': [],
-                'cleaned_values': [
-                    (1234, datetime.fromisoformat('2020-08-17').date(),
-                     "Medium", 'Participant Portal 2'),
-                    (5678, datetime.fromisoformat('2020-08-17').date(),
-                     "Medium", 'Participant Portal 1'),
-                    (2345, datetime.fromisoformat('2020-08-17').date(),
-                     "Medium", 'Participant Portal 2'),
-                    (6789, datetime.fromisoformat('2020-08-17').date(),
-                     "Medium", 'Participant Portal 1'),
-                    (3456, datetime.fromisoformat('2020-08-17').date(),
-                     "Medium", 'Participant Portal 2')
-                ]
-            }
-        ]
+        tables_and_counts = [{
+            'fq_table_name':
+                '.'.join([self.dataset_id, ACTIVITY_SUMMARY]),
+            'fq_sandbox_table_name':
+                None,
+            'fields': ['person_id', 'activity_calories', 'date', 'src_id'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [],
+            'cleaned_values': [
+                (1234, 100, datetime.fromisoformat('2020-08-17').date(),
+                 'Participant Portal 2'),
+                (5678, 200, datetime.fromisoformat('2020-08-17').date(),
+                 'Participant Portal 1'),
+                (2345, 500, datetime.fromisoformat('2020-08-17').date(),
+                 'Participant Portal 2'),
+                (6789, 800, datetime.fromisoformat('2020-08-17').date(),
+                 'Participant Portal 1'),
+                (3456, 1000, datetime.fromisoformat('2020-08-17').date(),
+                 'Participant Portal 2')
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.dataset_id, HEART_RATE_INTRADAY]),
+            'fq_sandbox_table_name':
+                None,
+            'fields': ['person_id', 'heart_rate_value', 'datetime', 'src_id'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [],
+            'cleaned_values': [
+                (1234, 60, datetime.fromisoformat('2020-08-17 15:00:00'),
+                 'Participant Portal 2'),
+                (5678, 50, datetime.fromisoformat('2020-08-17 15:30:00'),
+                 'Participant Portal 1'),
+                (2345, 55, datetime.fromisoformat('2020-08-17 16:00:00'),
+                 'Participant Portal 2'),
+                (6789, 40, datetime.fromisoformat('2020-08-17 16:30:00'),
+                 'Participant Portal 1'),
+                (3456, 65, datetime.fromisoformat('2020-08-17 17:00:00'),
+                 'Participant Portal 2')
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.dataset_id, HEART_RATE_SUMMARY]),
+            'fq_sandbox_table_name':
+                None,
+            'fields': ['person_id', 'date', 'calorie_count', 'src_id'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [],
+            'cleaned_values': [
+                (1234, datetime.fromisoformat('2020-08-17').date(), 100,
+                 'Participant Portal 2'),
+                (5678, datetime.fromisoformat('2020-08-17').date(), 200,
+                 'Participant Portal 1'),
+                (2345, datetime.fromisoformat('2020-08-17').date(), 500,
+                 'Participant Portal 2'),
+                (6789, datetime.fromisoformat('2020-08-17').date(), 800,
+                 'Participant Portal 1'),
+                (3456, datetime.fromisoformat('2020-08-17').date(), 1000,
+                 'Participant Portal 2')
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.dataset_id, STEPS_INTRADAY]),
+            'fq_sandbox_table_name':
+                None,
+            'fields': ['person_id', 'steps', 'datetime', 'src_id'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [],
+            'cleaned_values': [
+                (1234, 60, datetime.fromisoformat('2020-08-17 15:00:00'),
+                 'Participant Portal 2'),
+                (5678, 50, datetime.fromisoformat('2020-08-17 15:30:00'),
+                 'Participant Portal 1'),
+                (2345, 55, datetime.fromisoformat('2020-08-17 16:00:00'),
+                 'Participant Portal 2'),
+                (6789, 40, datetime.fromisoformat('2020-08-17 16:30:00'),
+                 'Participant Portal 1'),
+                (3456, 65, datetime.fromisoformat('2020-08-17 17:00:00'),
+                 'Participant Portal 2')
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.dataset_id, SLEEP_DAILY_SUMMARY]),
+            'fq_sandbox_table_name':
+                None,
+            'fields': ['person_id', 'sleep_date', 'minute_in_bed', 'src_id'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [],
+            'cleaned_values': [
+                (1234, datetime.fromisoformat('2020-08-17').date(), 502,
+                 'Participant Portal 2'),
+                (5678, datetime.fromisoformat('2020-08-17').date(), 443,
+                 'Participant Portal 1'),
+                (2345, datetime.fromisoformat('2020-08-17').date(), 745,
+                 'Participant Portal 2'),
+                (6789, datetime.fromisoformat('2020-08-17').date(), 605,
+                 'Participant Portal 1'),
+                (3456, datetime.fromisoformat('2020-08-17').date(), 578,
+                 'Participant Portal 2')
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.dataset_id, SLEEP_LEVEL]),
+            'fq_sandbox_table_name':
+                None,
+            'fields': ['person_id', 'sleep_date', 'duration_in_min', 'src_id'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [],
+            'cleaned_values': [
+                (1234, datetime.fromisoformat('2020-08-17').date(), 42,
+                 'Participant Portal 2'),
+                (5678, datetime.fromisoformat('2020-08-17').date(), 15,
+                 'Participant Portal 1'),
+                (2345, datetime.fromisoformat('2020-08-17').date(), 22,
+                 'Participant Portal 2'),
+                (6789, datetime.fromisoformat('2020-08-17').date(), 56,
+                 'Participant Portal 1'),
+                (3456, datetime.fromisoformat('2020-08-17').date(), 12,
+                 'Participant Portal 2')
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.dataset_id, DEVICE]),
+            'fq_sandbox_table_name':
+                None,
+            'fields': ['person_id', 'device_date', 'battery', 'src_id'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [],
+            'cleaned_values': [
+                (1234, datetime.fromisoformat('2020-08-17').date(), "Medium",
+                 'Participant Portal 2'),
+                (5678, datetime.fromisoformat('2020-08-17').date(), "Medium",
+                 'Participant Portal 1'),
+                (2345, datetime.fromisoformat('2020-08-17').date(), "Medium",
+                 'Participant Portal 2'),
+                (6789, datetime.fromisoformat('2020-08-17').date(), "Medium",
+                 'Participant Portal 1'),
+                (3456, datetime.fromisoformat('2020-08-17').date(), "Medium",
+                 'Participant Portal 2')
+            ]
+        }]
 
         # mock the PIPELINE_TABLES
         with mock.patch(
