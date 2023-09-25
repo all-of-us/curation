@@ -95,7 +95,7 @@ class SandboxAndRemovePidsList(SandboxAndRemovePids):
         """
         generates sandbox table names
         """
-        pass
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def setup_validation(self, client):
         """
