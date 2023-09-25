@@ -203,14 +203,14 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         # Build test data queries
         observation_records_query = OBSERVATION_TABLE_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
-        measurement_records_query = MEASUREMENT_DATA_TEMPLATE.render(
+        measurement_records_query = PERSON_DATA_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
-        aou_death_records_query = AOU_DEATH_TEMPLATE.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+        # aou_death_records_query = AOU_DEATH_TEMPLATE.render(
+        #     project_id=self.project_id, dataset_id=self.dataset_id)
 
         table_test_queries = [
-            observation_records_query, measurement_records_query,
-            aou_death_records_query
+            observation_records_query, measurement_records_query
+            # aou_death_records_query
         ]
 
         # Load test data
@@ -220,4 +220,61 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         """
         Validates that the data for participants in the lookup table has been removed. 
         """
-        pass
+        tables_and_counts = [{
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[0],
+            'fields': [
+                'observation_id', 'person_id', 'observation_concept_id',
+                'observation_date', 'observation_type_concept_id'
+            ],
+            'loaded_ids': [
+                10101, 10102, 10201, 10202, 10301, 10302, 10401, 10402, 20101,
+                20102, 20201, 20202, 20301, 20302, 20401, 20402, 30101, 30102,
+                30201, 30202, 30301, 30302, 30401, 30402, 40101, 40102, 40201,
+                40202, 40301, 40302, 40401, 40402
+            ],
+            'sandboxed_ids': [
+                10401, 10402, 20201, 20202, 20401, 20402, 30101, 30102, 40101,
+                40102, 40301, 40302
+            ],
+            'cleaned_values': [
+                (10101, 101, 0, datetime.fromisoformat('2022-01-01').date(), 0),
+                (10102, 101, 0, datetime.fromisoformat('2022-01-01').date(), 0),
+                (10201, 102, 0, datetime.fromisoformat('2022-01-02').date(), 0),
+                (10202, 102, 0, datetime.fromisoformat('2022-01-02').date(), 0),
+                (10301, 103, 0, datetime.fromisoformat('2022-01-03').date(), 0),
+                (10302, 103, 0, datetime.fromisoformat('2022-01-03').date(), 0),
+                (20101, 201, 0, datetime.fromisoformat('2022-01-01').date(), 0),
+                (20102, 201, 0, datetime.fromisoformat('2022-01-01').date(), 0),
+                (20301, 203, 0, datetime.fromisoformat('2022-01-03').date(), 0),
+                (20302, 203, 0, datetime.fromisoformat('2022-01-03').date(), 0),
+                (30201, 302, 0, datetime.fromisoformat('2022-01-02').date(), 0),
+                (30202, 302, 0, datetime.fromisoformat('2022-01-02').date(), 0),
+                (30301, 303, 0, datetime.fromisoformat('2022-01-03').date(), 0),
+                (30302, 303, 0, datetime.fromisoformat('2022-01-03').date(), 0),
+                (30401, 304, 0, datetime.fromisoformat('2022-01-04').date(), 0),
+                (30402, 304, 0, datetime.fromisoformat('2022-01-04').date(), 0),
+                (40201, 402, 0, datetime.fromisoformat('2022-01-02').date(), 0),
+                (40202, 402, 0, datetime.fromisoformat('2022-01-02').date(), 0),
+                (40401, 404, 0, datetime.fromisoformat('2022-01-04').date(), 0),
+                (40402, 404, 0, datetime.fromisoformat('2022-01-04').date(), 0)
+            ]
+        }, {
+            'fq_table_name': f'{self.project_id}.{self.dataset_id}.{PERSON}',
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[1],
+            'fields': [
+                'person_id', 'gender_concept_id', 'year_of_birth',
+                'race_concept_id', 'ethnicity_concept_id'
+            ],
+            'loaded_ids': [
+                101, 102, 103, 104, 201, 202, 203, 204, 301, 302, 303, 304, 401,
+                402, 403, 404
+            ],
+            'sandboxed_ids': [
+                101, 102, 103, 201, 203, 204, 302, 303, 304, 402, 404
+            ],
+            'cleaned_values': []
+        }]
+        self.default_test(tables_and_counts)
