@@ -67,7 +67,7 @@ WHERE (death_datetime IS NOT NULL AND death_datetime >= d.deactivated_datetime)
 OR (death_datetime IS NULL AND death_date >= DATE(d.deactivated_datetime))
 {% elif table_ref.table_id in ['activity_summary', 'heart_rate_summary'] %}
 WHERE date >= DATE(d.deactivated_datetime)
-{% elif table_ref.table_id in ['heart_rate_minute_level', 'steps_intraday']  %}
+{% elif table_ref.table_id in ['heart_rate_intraday', 'steps_intraday']  %}
 WHERE datetime >= DATETIME(d.deactivated_datetime)
 {% elif table_ref.table_id in ['payer_plan_period', 'observation_period']  %}
 WHERE COALESCE({{table_ref.table_id + '_end_date'}},

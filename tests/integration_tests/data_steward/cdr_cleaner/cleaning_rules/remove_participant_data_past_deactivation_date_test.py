@@ -18,8 +18,8 @@ from google.cloud.bigquery import TableReference
 
 # Project imports
 from common import (AOU_DEATH, JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH,
-                    PERSON, SURVEY_CONDUCT, HEART_RATE_MINUTE_LEVEL,
-                    SLEEP_LEVEL, STEPS_INTRADAY, DEVICE)
+                    PERSON, SURVEY_CONDUCT, HEART_RATE_INTRADAY, SLEEP_LEVEL,
+                    STEPS_INTRADAY, DEVICE)
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
@@ -165,7 +165,7 @@ class RemoveParticipantDataPastDeactivationDateTest(
             (4, 3, 0, '2009-08-30 19:33:53 UTC', 0, 0, 0, 0, 0, 0),
             (5, 4, 0, '2009-08-30 19:33:53 UTC', 0, 0, 0, 0, 0, 0)
                 """),
-            HEART_RATE_MINUTE_LEVEL:
+            HEART_RATE_INTRADAY:
                 JINJA_ENV.from_string("""
         INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
         (person_id, datetime, heart_rate_value)
