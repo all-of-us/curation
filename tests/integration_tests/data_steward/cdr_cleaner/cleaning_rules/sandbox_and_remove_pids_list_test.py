@@ -152,6 +152,11 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         cls.lookup_table = 'lookup_table'
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
+        cls.kwargs = {
+            'rdr_dataset_id': cls.rdr_dataset_id,
+            'lookup_table': cls.lookup_table
+        }
+
         # Instantiate class
         cls.rule_instance = SandboxAndRemovePidsList(
             project_id=cls.project_id,
