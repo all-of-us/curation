@@ -13,7 +13,7 @@ from datetime import datetime
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_MINUTE_LEVEL, HEART_RATE_SUMMARY, STEPS_INTRADAY
+from common import FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_INTRADAY, HEART_RATE_SUMMARY, STEPS_INTRADAY
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 import cdr_cleaner.cleaning_rules.clean_digital_health_data as clean_dhd
 
@@ -156,7 +156,7 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
                     (333, '2020-11-26 00:00:00')""").render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
-            fitbit_table=HEART_RATE_MINUTE_LEVEL)
+            fitbit_table=HEART_RATE_INTRADAY)
         queries.append(hr_query)
 
         hrs_query = self.jinja_env.from_string("""
@@ -200,7 +200,7 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
             ]
         }, {
             'fq_table_name':
-                '.'.join([self.dataset_id, HEART_RATE_MINUTE_LEVEL]),
+                '.'.join([self.dataset_id, HEART_RATE_INTRADAY]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[2],
             'fields': ['person_id', 'datetime'],
