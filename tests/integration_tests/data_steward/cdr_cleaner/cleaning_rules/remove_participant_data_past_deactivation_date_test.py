@@ -350,11 +350,11 @@ class RemoveParticipantDataPastDeactivationDateTest(
             'cleaned_values': [('a2',), ('a4',), ('b5',)]
         }, {
             'name':
-                HEART_RATE_MINUTE_LEVEL,
+                HEART_RATE_INTRADAY,
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.{HEART_RATE_MINUTE_LEVEL}',
+                f'{self.project_id}.{self.dataset_id}.{HEART_RATE_INTRADAY}',
             'fq_sandbox_table_name':
-                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(HEART_RATE_MINUTE_LEVEL)}',
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(HEART_RATE_INTRADAY)}',
             'fields': ['person_id', 'heart_rate_value'],
             'loaded_ids': [1, 1],
             'sandboxed_ids': [1],
