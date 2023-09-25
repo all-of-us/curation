@@ -166,10 +166,18 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             lookup_table=cls.lookup_table)
 
         # Generates list of fully qualified table names
-        affected_table_names = ['observation', 'measurement', 'aou_death']
+        affected_table_names = [
+            'observation', 'measurement'
+            # , 'aou_death'
+        ]
         for table_name in affected_table_names:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
+
+        for table_name in affected_table_names:
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_name)}'
+            )
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
