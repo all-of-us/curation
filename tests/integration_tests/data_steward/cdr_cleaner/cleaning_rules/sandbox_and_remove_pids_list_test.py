@@ -3,13 +3,14 @@ Integration test for SandboxAndRemovePidsList module
 """
 # Python imports
 import os
+from datetime import datetime
 
 # Third party imports
 from google.cloud.bigquery import Table
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, COMBINED_DATASET_ID, RDR_DATASET_ID, OBSERVATION, MEASUREMENT
+from common import JINJA_ENV, COMBINED_DATASET_ID, RDR_DATASET_ID, OBSERVATION, PERSON
 from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids_list import SandboxAndRemovePidsList, AOU_DEATH
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
