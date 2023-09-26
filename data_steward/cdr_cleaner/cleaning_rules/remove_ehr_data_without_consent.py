@@ -21,7 +21,7 @@ from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC1644', 'DC3355']
+JIRA_ISSUE_NUMBERS = ['DC1644', 'DC3355', 'DC3434']
 
 EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE = '_ehr_unconsented_pids'
 
@@ -65,8 +65,13 @@ OR
     `{{project}}.{{dataset}}.consent_validation`
   WHERE
     consent_for_electronic_health_records IS NULL
-  OR 
+  OR
     UPPER(consent_for_electronic_health_records) != 'SUBMITTED'
+)
+  OR
+    person_id IN ( -- dup accounts --
+  SELECT participant_id FROM
+    `{{project}}.{{duplicates_dataset}}.{{report_table}}`
 )
 )
 """)
@@ -88,7 +93,7 @@ CREATE OR REPLACE TABLE
       person_id
     FROM
       `{{project}}.{{sandbox_dataset}}.{{unconsented_lookup}}`)
-    AND src_dataset_id LIKE '%ehr%' 
+    AND src_dataset_id LIKE '%ehr%'
   )
 """)
 
@@ -101,7 +106,7 @@ WHERE
   SELECT
     {{domain_table}}_id
   FROM
-    `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)  
+    `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)
 """)
 
 
@@ -111,7 +116,8 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
     sandboxed and dropped from the CDR.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
+                 duplicates_dataset, duplicates_table,):
         """
         Initialize the class with proper information.
 
@@ -132,7 +138,9 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
                          affected_tables=AFFECTED_TABLES,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         duplicates_dataset=duplicates_dataset,
+                         duplicates_table=duplicates_table,)
 
     def get_query_specs(self):
         """
@@ -151,8 +159,9 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    unconsented_lookup=EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE
-                )
+                    unconsented_lookup=EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE,
+                    duplicates_dataset=self.duplicates_dataset,
+                    duplicates_table=self.affected_tables,)
         }
         lookup_queries.append(unconsented_lookup_query)
 
@@ -228,6 +237,7 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            ARGS.duplicates_dataset, ARGS.duplicates_table,
             [(RemoveEhrDataWithoutConsent,)])
         for query in query_list:
             LOGGER.info(query)
@@ -235,4 +245,6 @@ if __name__ == '__main__':
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id, ARGS.cutoff_date,
+                                   ARGS.duplicates_dataset,
+                                   ARGS.duplicates_table,
                                    [(RemoveEhrDataWithoutConsent,)])
