@@ -28,7 +28,7 @@ insert into `{{project_id}}.{{dataset_id}}.person` (person_id, gender_concept_id
 """)
 
 VISIT_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
-insert into `{{project_id}}.{{dataset_id}}.visit_occurrence` 
+insert into `{{project_id}}.{{dataset_id}}.visit_occurrence`
 (visit_occurrence_id,
  person_id,
  visit_concept_id,
@@ -94,7 +94,7 @@ VALUES (1, 'rdr2021'),
 CONSENT_VALIDATION_TEMPLATE = JINJA_ENV.from_string("""
 insert into `{{project_id}}.{{dataset_id}}.consent_validation`
 (person_id, research_id, consent_for_electronic_health_records, consent_for_electronic_health_records_authored, src_id)
-VALUES 
+VALUES
      -- validated consent with varying casing, not cleaned --
        (1, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
      -- validated consent but no consent record in observation, cleaned --
@@ -104,6 +104,8 @@ VALUES
        (3, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
      -- null status. invalid consent, cleaned --
        (4, 0, NULL, (DATETIME '2018-11-26 00:00:00'), 'rdr')
+     -- duplicated record --
+       (2, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),)
 """)
 
 
@@ -183,6 +185,8 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
         3. person_id=3. has a invalid, affirmative consent record.
 
         4. person_id=4. has a invalid(null status), affirmative consent record.
+
+        5. person_id=5. has a duplicated record of person_id=6
         """
 
         # Expected results list
