@@ -167,7 +167,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
 
         # Generates list of fully qualified table names
         affected_table_names = [
-            'observation', 'measurement'
+            'observation', 'person'
             # , 'aou_death'
         ]
         for table_name in affected_table_names:
@@ -203,13 +203,13 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         # Build test data queries
         observation_records_query = OBSERVATION_TABLE_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
-        measurement_records_query = PERSON_DATA_TEMPLATE.render(
+        person_records_query = PERSON_DATA_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
         # aou_death_records_query = AOU_DEATH_TEMPLATE.render(
         #     project_id=self.project_id, dataset_id=self.dataset_id)
 
         table_test_queries = [
-            observation_records_query, measurement_records_query
+            observation_records_query, person_records_query
             # aou_death_records_query
         ]
 
@@ -262,8 +262,10 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
                 (40402, 404, 0, datetime.fromisoformat('2022-01-04').date(), 0)
             ]
         }, {
-            'fq_table_name': f'{self.project_id}.{self.dataset_id}.{PERSON}',
-            'fq_sandbox_table_name': self.fq_sandbox_table_names[1],
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{PERSON}',
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[1],
             'fields': [
                 'person_id', 'gender_concept_id', 'year_of_birth',
                 'race_concept_id', 'ethnicity_concept_id'
@@ -272,9 +274,11 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
                 101, 102, 103, 104, 201, 202, 203, 204, 301, 302, 303, 304, 401,
                 402, 403, 404
             ],
-            'sandboxed_ids': [
-                101, 102, 103, 201, 203, 204, 302, 303, 304, 402, 404
-            ],
-            'cleaned_values': []
+            'sandboxed_ids': [104, 202, 204, 301, 401, 403],
+            'cleaned_values': [(101, 0, 1991, 0, 0), (102, 0, 1992, 0, 0),
+                               (103, 0, 1993, 0, 0), (201, 0, 1991, 0, 0),
+                               (203, 0, 1993, 0, 0), (302, 0, 1992, 0, 0),
+                               (303, 0, 1993, 0, 0), (304, 0, 1994, 0, 0),
+                               (402, 0, 1992, 0, 0), (404, 0, 1994, 0, 0)]
         }]
         self.default_test(tables_and_counts)
