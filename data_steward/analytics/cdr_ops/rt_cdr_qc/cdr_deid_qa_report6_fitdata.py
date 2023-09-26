@@ -37,7 +37,7 @@ run_as = ""  # # using impersonation, run all these queries as this service acco
 date_columns = {
     'activity_summary': 'date',
     'heart_rate_summary': 'date',
-    'heart_rate_minute_level': 'datetime',
+    'heart_rate_intraday': 'datetime',
     'steps_intraday': 'datetime',
     'sleep_level': 'sleep_date',
     'sleep_daily_summary': 'sleep_date',
@@ -172,7 +172,7 @@ result
 #
 # **Note:  Should a failure occur during this (long) query, it is advisable to replace `FITBIT_TABLES` with the table in question**
 #
-# [DC-1786] date shifting should be checked against activity_summary, heart_rate_summary, heart_rate_minute_level, and steps_intraday.
+# [DC-1786] date shifting should be checked against activity_summary, heart_rate_summary, heart_rate_intraday, and steps_intraday.
 
 # +
 query = JINJA_ENV.from_string("""
@@ -272,7 +272,7 @@ result
 #
 # [DC-1788] Add additional person existence check to Fitbit notebook
 #
-# This check should fail if a person_id in the activity_summary, heart_rate_summary, heart_rate_minute_level, or steps_intra_day tables does not exist in a corresponding RT de-identified dataset.
+# This check should fail if a person_id in the activity_summary, heart_rate_summary, heart_rate_intraday, or steps_intra_day tables does not exist in a corresponding RT de-identified dataset.
 
 # +
 query = JINJA_ENV.from_string("""
