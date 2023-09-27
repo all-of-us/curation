@@ -166,10 +166,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             lookup_table=cls.lookup_table)
 
         # Generates list of fully qualified table names
-        affected_table_names = [
-            'observation', 'person'
-            # , 'aou_death'
-        ]
+        affected_table_names = ['observation', 'person', 'aou_death']
         for table_name in affected_table_names:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
@@ -205,12 +202,12 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             project_id=self.project_id, dataset_id=self.dataset_id)
         person_records_query = PERSON_DATA_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
-        # aou_death_records_query = AOU_DEATH_TEMPLATE.render(
-        #     project_id=self.project_id, dataset_id=self.dataset_id)
+        aou_death_records_query = AOU_DEATH_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
 
         table_test_queries = [
-            observation_records_query, person_records_query
-            # aou_death_records_query
+            observation_records_query, person_records_query,
+            aou_death_records_query
         ]
 
         # Load test data
@@ -280,5 +277,45 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
                                (203, 0, 1993, 0, 0), (302, 0, 1992, 0, 0),
                                (303, 0, 1993, 0, 0), (304, 0, 1994, 0, 0),
                                (402, 0, 1992, 0, 0), (404, 0, 1994, 0, 0)]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[2],
+            'fields': [
+                'aou_death_id', 'person_id', 'death_date',
+                'death_type_concept_id', 'cause_concept_id',
+                'cause_source_concept_id', 'src_id', 'primary_death_record'
+            ],
+            'loaded_ids': [
+                'a10101', 'a10202', 'a10301', 'a10402', 'a20102', 'a20202',
+                'a20302', 'a20401', 'a30101', 'a30202', 'a30302', 'a30401',
+                'a40101', 'a40202', 'a40301', 'a40401'
+            ],
+            'sandboxed_ids': [
+                'a10402', 'a20202', 'a20401', 'a30101', 'a40101', 'a40301'
+            ],
+            'cleaned_values': [
+                ('a10101', 101, datetime.fromisoformat('2020-05-05').date(), 0,
+                 0, 0, 'Staff Portal: HealthPro', False),
+                ('a10202', 102, datetime.fromisoformat('2020-05-05').date(), 0,
+                 0, 0, 'Participant Portal 1', False),
+                ('a10301', 103, datetime.fromisoformat('2020-05-05').date(), 0,
+                 0, 0, 'Staff Portal: HealthPro', False),
+                ('a20102', 201, datetime.fromisoformat('2020-05-05').date(), 0,
+                 0, 0, 'Participant Portal 2', False),
+                ('a20302', 203, datetime.fromisoformat('2020-05-05').date(), 0,
+                 0, 0, 'Participant Portal 2', False),
+                ('a30202', 302, datetime.fromisoformat('2020-05-05').date(), 0,
+                 0, 0, 'Participant Portal 3', False),
+                ('a30302', 303, datetime.fromisoformat('2020-05-05').date(), 0,
+                 0, 0, 'Participant Portal 3', False),
+                ('a30401', 304, datetime.fromisoformat('2020-05-05').date(), 0,
+                 0, 0, 'Staff Portal: HealthPro', False),
+                ('a40202', 402, datetime.fromisoformat('2020-05-05').date(), 0,
+                 0, 0, 'Participant Portal 4', False),
+                ('a40401', 404, datetime.fromisoformat('2020-05-05').date(), 0,
+                 0, 0, 'Staff Portal: HealthPro', False),
+            ]
         }]
         self.default_test(tables_and_counts)
