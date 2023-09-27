@@ -76,6 +76,18 @@ def parse_combined_args(raw_args=None):
                         required=True,
                         help='The EHR snapshot dataset ID')
 
+    parser.add_argument('--duplicates_dataset_id',
+                        action='store',
+                        dest='duplicate_dataset_id',
+                        required=True,
+                        help='The dataset that includes duplicate records')
+    parser.add_argument(
+        '--duplicates_table',
+        action='store',
+        dest='duplicate_table',
+        required=True,
+        help='The table (from the dataset) that includes duplicates PIDs')
+
     common_args, unknown_args = parser.parse_known_args(raw_args)
     custom_args = clean_cdr._get_kwargs(unknown_args)
     return common_args, custom_args
@@ -126,7 +138,8 @@ def main(raw_args=None):
         combined_sandbox, '--data_stage', 'combined', "--cutoff_date",
         args.cutoff_date, '--validation_dataset_id', args.validation_dataset_id,
         '--ehr_dataset_id', args.ehr_dataset_id, '--api_project_id',
-        args.api_project_id, '--run_as', args.run_as_email, '-s'
+        args.api_project_id, '--run_as', args.run_as_email, '-s',
+        args.duplicates_dataset, '--dups_dataset'
     ]
 
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
@@ -159,7 +172,7 @@ def main(raw_args=None):
 
 def create_dataset(client, release_tag, dataset_type) -> str:
     """
-    Create a dataset for the specified dataset type in the combined stage. 
+    Create a dataset for the specified dataset type in the combined stage.
 
     :param client: a BigQueryClient
     :param release_tag: the release tag for this CDR
