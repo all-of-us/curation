@@ -71,7 +71,7 @@ OR
   OR
     person_id IN ( -- dup accounts --
   SELECT participant_id FROM
-    `{{project}}.{{duplicates_dataset}}.{{report_table}}`
+    `{{project}}.{{duplicates_dataset}}.{{duplicates_table}}`
 )
 )
 """)
