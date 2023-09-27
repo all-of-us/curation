@@ -114,6 +114,7 @@ VALUES
        (5, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),)
 """)
 
+
 class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
@@ -178,15 +179,15 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
         consent_validation_query = CONSENT_VALIDATION_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
         duplicates_data_query = DUPLICATE_RECORDS_TEMPLATE.render(
-            project_id=self.project_id, duplicates_dataset=self.duplicates_dataset, duplicates_table=self.duplicates_table)
-        )
+            project_id=self.project_id,
+            duplicates_dataset=self.duplicates_dataset,
+            duplicates_table=self.duplicates_table)
 
         # Load test data
         self.load_test_data([
             person_data_query, visit_occurrence_data_query,
             observation_data_query, mapping_observation_query,
-            mapping_visit_query, consent_validation_query,
-            duplicates_data_query
+            mapping_visit_query, consent_validation_query, duplicates_data_query
         ])
 
     def test_remove_ehr_data_without_consent(self):
