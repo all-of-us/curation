@@ -37,7 +37,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 date_columns = {
     'activity_summary': 'date',
     'heart_rate_summary': 'date',
-    'heart_rate_minute_level': 'datetime',
+    'heart_rate_intraday': 'datetime',
     'steps_intraday': 'datetime',
     'sleep_level': 'sleep_date',
     'sleep_daily_summary': 'sleep_date',
