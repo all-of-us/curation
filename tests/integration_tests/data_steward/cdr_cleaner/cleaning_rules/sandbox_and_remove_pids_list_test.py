@@ -10,8 +10,8 @@ from google.cloud.bigquery import Table
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, COMBINED_DATASET_ID, RDR_DATASET_ID, OBSERVATION, PERSON
-from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids_list import SandboxAndRemovePidsList, AOU_DEATH
+from common import JINJA_ENV, COMBINED_DATASET_ID, RDR_DATASET_ID, OBSERVATION, PERSON, AOU_DEATH
+from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids_list import SandboxAndRemovePidsList
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 OBSERVATION_TABLE_TEMPLATE = JINJA_ENV.from_string("""
@@ -171,6 +171,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
+        # Generates list of sandbox table names
         for table_name in affected_table_names:
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_name)}'
@@ -185,10 +186,9 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
-        # Create a temp lookup_table in rdr_dataset for testing
+        # Create a temp lookup_table in rdr dataset for testing
         lookup_table_name = f'{self.project_id}.{self.rdr_dataset_id}.{self.lookup_table}'
-        self.client.create_table(Table(lookup_table_name, LOOKUP_TABLE_SCHEMA),
-                                 exists_ok=True)
+        self.client.create_table(Table(lookup_table_name, LOOKUP_TABLE_SCHEMA))
         self.fq_table_names.append(lookup_table_name)
 
         # Build temp lookup table records query
