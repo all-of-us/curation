@@ -91,6 +91,11 @@ VALUES (1, 'rdr2021'),
        (8, 'unioned_ehr')
 """)
 
+DUPLICATE_RECORDS_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{duplicates_dataset}}.{{duplicates_table}}`
+(person_id) VALUES (5)
+""")
+
 CONSENT_VALIDATION_TEMPLATE = JINJA_ENV.from_string("""
 insert into `{{project_id}}.{{dataset_id}}.consent_validation`
 (person_id, research_id, consent_for_electronic_health_records, consent_for_electronic_health_records_authored, src_id)
@@ -105,9 +110,9 @@ VALUES
      -- null status. invalid consent, cleaned --
        (4, 0, NULL, (DATETIME '2018-11-26 00:00:00'), 'rdr')
      -- duplicated record --
-       (2, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),)
+       (5, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
+       (5, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),)
 """)
-
 
 class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
 
@@ -125,10 +130,14 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
         # Set the expected test datasets
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.duplicates_dataset = 'duplicates_dataset'
+        cls.duplicates_table = 'duplicates_report'
 
         cls.rule_instance = RemoveEhrDataWithoutConsent(cls.project_id,
                                                         cls.dataset_id,
-                                                        cls.sandbox_id)
+                                                        cls.sandbox_id,
+                                                        cls.duplicates_dataset,
+                                                        cls.duplicates_table)
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
         cls.fq_table_names.extend([
@@ -168,12 +177,16 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
             project_id=self.project_id, dataset_id=self.dataset_id)
         consent_validation_query = CONSENT_VALIDATION_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
+        duplicates_data_query = DUPLICATE_RECORDS_TEMPLATE.render(
+            project_id=self.project_id, duplicates_dataset=self.duplicates_dataset, duplicates_table=self.duplicates_table)
+        )
 
         # Load test data
         self.load_test_data([
             person_data_query, visit_occurrence_data_query,
             observation_data_query, mapping_observation_query,
-            mapping_visit_query, consent_validation_query
+            mapping_visit_query, consent_validation_query,
+            duplicates_data_query
         ])
 
     def test_remove_ehr_data_without_consent(self):
