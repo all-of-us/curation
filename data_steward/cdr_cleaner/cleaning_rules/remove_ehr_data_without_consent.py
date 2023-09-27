@@ -116,8 +116,12 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
     sandboxed and dropped from the CDR.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 duplicates_dataset, duplicates_table,):
+    def __init__(
+        self,
+        project_id,
+        dataset_id,
+        sandbox_dataset_id,
+    ):
         """
         Initialize the class with proper information.
 
@@ -138,9 +142,7 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
                          affected_tables=AFFECTED_TABLES,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         duplicates_dataset=duplicates_dataset,
-                         duplicates_table=duplicates_table,)
+                         sandbox_dataset_id=sandbox_dataset_id)
 
     def get_query_specs(self):
         """
@@ -161,7 +163,8 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
                     sandbox_dataset=self.sandbox_dataset_id,
                     unconsented_lookup=EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE,
                     duplicates_dataset=self.duplicates_dataset,
-                    duplicates_table=self.affected_tables,)
+                    duplicates_table=self.affected_tables,
+                )
         }
         lookup_queries.append(unconsented_lookup_query)
 
