@@ -14,9 +14,8 @@ import os
 from dateutil import parser
 
 # Project imports
-from common import FITBIT_TABLES, ACTIVITY_SUMMARY,\
-    HEART_RATE_SUMMARY, SLEEP_LEVEL, SLEEP_DAILY_SUMMARY,\
-    HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY, DEVICE
+from common import (FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_SUMMARY,
+                    HEART_RATE_INTRADAY, STEPS_INTRADAY, DEVICE)
 from app_identity import PROJECT_ID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
@@ -105,7 +104,7 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
             (333, (DATETIME '2020-11-26 00:00:00')),
             (444, (DATETIME '2021-11-26 00:00:00'))""").render(
             fq_dataset_name=self.fq_dataset_name,
-            fitbit_table=HEART_RATE_MINUTE_LEVEL)
+            fitbit_table=HEART_RATE_INTRADAY)
         queries.append(hr_query)
 
         hrs_query = self.jinja_env.from_string("""
@@ -167,10 +166,10 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                                (222, parser.parse('2019-11-26').date())]
         }, {
             'fq_table_name':
-                '.'.join([self.fq_dataset_name, HEART_RATE_MINUTE_LEVEL]),
+                '.'.join([self.fq_dataset_name, HEART_RATE_INTRADAY]),
             'fq_sandbox_table_name': [
                 table for table in self.fq_sandbox_table_names
-                if HEART_RATE_MINUTE_LEVEL in table
+                if HEART_RATE_INTRADAY in table
             ][0],
             'fields': ['person_id', 'datetime'],
             'loaded_ids': [111, 222, 333, 444],
