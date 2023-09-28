@@ -1,5 +1,5 @@
 """
-Integration test for SandboxAndRemovePidsList module
+Integration test for SandboxAndRemovePidsList module.
 """
 # Python imports
 import os
