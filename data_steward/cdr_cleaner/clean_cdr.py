@@ -232,6 +232,7 @@ COMBINED_CLEANING_CLASSES = [
     # wiping out the needed consent related data for cleaning.
     (
         ValidDeathDates,),
+    (SandboxAndRemoveWithdrawnPids,),
     (RemoveEhrDataWithoutConsent,),
     (StoreNewDuplicateMeasurementConceptIds,),
     (DedupMeasurementValueAsConceptId,),
