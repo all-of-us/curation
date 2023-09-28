@@ -1,3 +1,7 @@
+"""
+This cleaning rule uses a list of participants to remove all participant data from combined. 
+"""
+
 # Python imports
 import logging
 
