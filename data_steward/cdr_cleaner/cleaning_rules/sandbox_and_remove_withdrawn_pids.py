@@ -27,7 +27,7 @@ CREATE OR REPLACE TABLE
 """)
 
 
-class SandboxAndRemovePidsList(SandboxAndRemovePids):
+class SandboxAndRemoveWithdrawnPids(SandboxAndRemovePids):
     """
     Removes all participant data using a list of participants.
     """
@@ -148,7 +148,7 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(
             ARGS.project_id,
             ARGS.dataset_id,
-            ARGS.sandbox_dataset_id, [(SandboxAndRemovePidsList,)],
+            ARGS.sandbox_dataset_id, [(SandboxAndRemoveWithdrawnPids,)],
             rdr_dataset_id=ARGS.rdr_dataset,
             lookup_table=ARGS.lookup_table)
         for query in query_list:
@@ -158,6 +158,6 @@ if __name__ == '__main__':
         clean_engine.clean_dataset(ARGS.project_id,
                                    ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(SandboxAndRemovePidsList,)],
+                                   [(SandboxAndRemoveWithdrawnPids,)],
                                    rdr_dataset_id=ARGS.rdr_dataset,
                                    lookup_table=ARGS.lookup_table)
