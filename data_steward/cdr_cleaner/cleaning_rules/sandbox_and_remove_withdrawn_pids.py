@@ -77,7 +77,7 @@ class SandboxAndRemoveWithdrawnPids(SandboxAndRemovePids):
             if table.get('table_name') in CDM_TABLES + [AOU_DEATH]
         ]
 
-        # Copy lookup_table
+        # Copy lookup_table from rdr dataset to combined sandbox dataset
         copy_lookup_table_query = COPY_LOOKUP_TABLE_TEMPLATE.render(
             project_id=self.project_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
