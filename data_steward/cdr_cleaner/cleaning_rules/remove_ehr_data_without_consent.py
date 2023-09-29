@@ -116,14 +116,13 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
     sandboxed and dropped from the CDR.
     """
 
-    def __init__(
-        self,
-        project_id,
-        dataset_id,
-        sandbox_dataset_id,
-        duplicates_dataset,
-        duplicates_table
-    ):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None,
+                 duplicates_dataset=None,
+                 duplicates_table=None):
         """
         Initialize the class with proper information.
 
@@ -134,24 +133,28 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
         :params: truncation_date: the last date that should be included in the
             dataset
         """
-
-        if not duplicates_table or not duplicates_table:
-            raise RuntimeError('duplicate data is not present')
-        else:
-            self.duplicates_dataset = duplicates_dataset
-            self.duplicates_table = duplicates_table
-
         desc = (
             'All EHR data associated with a participant if their EHR consent is not present in the observation '
-            'table will be sandboxed and dropped from the CDR.  This includes duplicate records')
+            'table will be sandboxed and dropped from the CDR.  This includes duplicate records'
+        )
 
-        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
-                         description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
-                         affected_tables=AFFECTED_TABLES,
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+        print('here 1a')
+        print(duplicates_table)
+        if not duplicates_table or not duplicates_table:
+            raise RuntimeError('duplicate data is not present')
+
+        self.duplicates_dataset = duplicates_dataset
+        self.duplicates_table = duplicates_table
+
+        super().__init__(
+            issue_numbers=JIRA_ISSUE_NUMBERS,
+            description=desc,
+            affected_datasets=[cdr_consts.COMBINED],
+            affected_tables=AFFECTED_TABLES,
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+        )
 
     def get_query_specs(self):
         """
@@ -254,7 +257,8 @@ if __name__ == '__main__':
             ARGS.duplicates_table,
             [(RemoveEhrDataWithoutConsent,)],
             duplicates_dataset=ARGS.duplicates_dataset,
-            duplicates_table=ARGS.duplicates_table,)
+            duplicates_table=ARGS.duplicates_table,
+        )
 
         for query in query_list:
             LOGGER.info(query)
@@ -264,7 +268,6 @@ if __name__ == '__main__':
                                    ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
                                    ARGS.cutoff_date,
-                                   duplicates_dataset = ARGS.duplicates_dataset,
-                                   duplicates_table = ARGS.duplicates_table
-                                   ARGS.duplicates_table,
-                                   [(RemoveEhrDataWithoutConsent,)])
+                                   [(RemoveEhrDataWithoutConsent,)],
+                                   duplicates_dataset=ARGS.duplicates_dataset,
+                                   duplicates_table=ARGS.duplicates_table)
