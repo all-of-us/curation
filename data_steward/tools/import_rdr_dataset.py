@@ -137,16 +137,15 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
                 destination_table.time_partitioning = bigquery.table.TimePartitioning(
                     type_='DAY')
 
+        LOGGER.info(f'Creating empty CDM table, `{destination_table_id}`')
+        dest_table_ref = client.create_table(destination_table)
+
         LOGGER.info(
             f'Loading `{source_table_id}` into `{destination_table_id}`')
 
         try:
             LOGGER.info(f'Get table `{source_table_id}` in RDR')
             table_ref = client.get_table(source_table_id)
-
-            LOGGER.info(f'Creating empty CDM table, `{table}`')
-            destination_table = client.create_table(
-                destination_table)  # Make an API request.
 
             LOGGER.info(
                 f'Copying source table `{source_table_id}` to destination table `{destination_table_id}`'
@@ -178,7 +177,7 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
             job_config = bigquery.job.QueryJobConfig(
                 write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
                 priority=bigquery.job.QueryPriority.BATCH,
-                destination=destination_table,
+                destination=dest_table_ref,
                 labels={
                     'table_name':
                         table.lower(),
@@ -192,14 +191,16 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
                       f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
             job = client.query(sql, job_config=job_config, job_id=job_id)
             job.result()  # Wait for the job to complete.
+
         except NotFound:
             LOGGER.info(
-                f'Created empty table in dataset: `{destination_dataset}`')
+                f'`{destination_table_id}` is left empty because either '
+                f'`{source_table_id}` does not exist or has no records.')
+
         else:
-            destination_table = client.get_table(
-                destination_table_id)  # Make an API request.
-        LOGGER.info(f'Loaded {destination_table.num_rows} rows into '
-                    f'`{destination_table.table_id}`.')
+            dest_table_ref = client.get_table(destination_table_id)
+            LOGGER.info(f'Loaded {dest_table_ref.num_rows} rows into '
+                        f'`{dest_table_ref.table_id}`.')
 
     LOGGER.info(
         f"Finished RDR table LOAD from dataset {rdr_project}.{rdr_source_dataset}"
