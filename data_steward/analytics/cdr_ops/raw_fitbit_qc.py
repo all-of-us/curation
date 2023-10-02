@@ -250,7 +250,6 @@ display(df)
 
 # Validation criteria for sleep_daily_summary is the following:
 # - The table includes both PTSC and CE data per the src_id field
-# - At least 40% of participants have at least all sleep level names (awake, light, asleep, deep, restless, wake, rem, unknown) for at least one date
 
 # +
 
