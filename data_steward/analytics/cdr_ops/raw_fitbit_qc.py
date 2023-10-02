@@ -245,3 +245,21 @@ display(
 display(df)
 
 # -
+
+# # SLEEP_DAILY_SUMMARY table
+
+# Validation criteria for sleep_daily_summary is the following:
+# - The table includes both PTSC and CE data per the src_id field
+# - At least 40% of participants have at least all sleep level names (awake, light, asleep, deep, restless, wake, rem, unknown) for at least one date
+
+# +
+
+src_ids_check = JINJA_ENV.from_string("""
+SELECT src_id, COUNT(*) as row_count
+FROM `{{project_id}}.{{dataset}}.sleep_daily_summary`
+GROUP BY src_id ORDER BY src_id
+""").render(project_id=project_id, dataset=dataset_id)
+src_ids_check_results = execute(client, src_ids_check)
+
+display(src_ids_check_results)
+# -
