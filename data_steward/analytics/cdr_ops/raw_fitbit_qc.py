@@ -164,6 +164,20 @@ zones_check_results = execute(client, zone_names_check)
 
 display(src_ids_check_results)
 display(zones_check_results)
+
+check_status = "Look at the result and see if it meets all the following criteria."
+msg = (
+    "The result must show that <br>"
+    "(1) The table has records from both PTSC and CE, and<br>"
+    "(2) all the records' src_ids are either PTSC or CE (= No other src_id in this table) <br>"
+    "(3) The percentage value returned is equal to or greater than 40. <br>"
+    "If any of (1) - (2) does not look good, the source records are not properly prepared. "
+    "Bring up the issue to the RDR team so they can fix it.")
+
+display(
+    HTML(
+        f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
+    ))
 # -
 
 # # ACTIVITY_SUMMARY table
