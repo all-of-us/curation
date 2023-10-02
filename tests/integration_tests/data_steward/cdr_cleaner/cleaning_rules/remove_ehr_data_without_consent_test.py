@@ -176,6 +176,9 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
             f'{cls.project_id}.{cls.sandbox_id}.{EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE}'
         ])
 
+        cls.kwargs['duplicates_dataset'] = cls.duplicates_dataset
+        cls.kwargs['duplicates_table'] = cls.duplicates_table
+
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
 
@@ -235,34 +238,33 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
         """
 
         # Expected results list
-        tables_and_counts = [
-            {
-                'fq_table_name':
-                    f'{self.project_id}.{self.dataset_id}.{VISIT_OCCURRENCE}',
-                'fq_sandbox_table_name':
-                    f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(VISIT_OCCURRENCE)}',
-                'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
-                'sandboxed_ids': [4, 5, 7, 8],
-                'fields': ['visit_occurrence_id', 'person_id'],
-                'cleaned_values': [(1, 1), (2, 1), (3, 1), (6, 2)]
-            },
-            {
-                'fq_table_name':
-                    f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
-                'fq_sandbox_table_name':
-                    f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(OBSERVATION)}',
-                'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                'sandboxed_ids': [4, 5, 7, 8],  #! locate, what about this
-                'fields': [
-                    'observation_id', 'person_id', 'value_source_concept_id',
-                    'observation_source_value'
-                ],
-                'cleaned_values': [
-                    (1, 1, 1586100, 'EHRConsentPII_ConsentPermission'),
-                    (2, 1, 1586100, 'EHRConsentPII_ConsentPermission'),
-                    (3, 1, 123, 'test_value_0'), (6, 2, 456, 'test_value_3')
-                ]
-            }
-        ]
+        tables_and_counts = [{
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{VISIT_OCCURRENCE}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(VISIT_OCCURRENCE)}',
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
+            'sandboxed_ids': [4, 5, 7, 8],
+            'fields': ['visit_occurrence_id', 'person_id'],
+            'cleaned_values': [(1, 1), (2, 1), (3, 1), (6, 2)]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(OBSERVATION)}',
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            'sandboxed_ids': [4, 5, 7, 8],
+            'fields': [
+                'observation_id', 'person_id', 'value_source_concept_id',
+                'observation_source_value'
+            ],
+            'cleaned_values': [
+                (1, 1, 1586100, 'EHRConsentPII_ConsentPermission'),
+                (2, 1, 1586100, 'EHRConsentPII_ConsentPermission'),
+                (3, 1, 123, 'test_value_0'), (6, 2, 456, 'test_value_3'),
+                (9, 5, 123, 'test_value_3'),
+                (10, 5, 1586100, 'EHRConsentPII_ConsentPermission')
+            ]
+        }]
 
         self.default_test(tables_and_counts)
