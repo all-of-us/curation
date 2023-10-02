@@ -138,8 +138,6 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
             'table will be sandboxed and dropped from the CDR.  This includes duplicate records'
         )
 
-        print('here 1a')
-        print(duplicates_table)
         if not duplicates_table or not duplicates_table:
             raise RuntimeError('duplicate data is not present')
 
