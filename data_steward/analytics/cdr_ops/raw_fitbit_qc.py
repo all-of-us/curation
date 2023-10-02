@@ -97,6 +97,74 @@ display(df)
 
 # -
 
+# # HEART_RATE_SUMMARY table
+
+# Validation criteria for heart_rate_summary is the following:
+# - The table includes both PTSC and CE data per the src_id field
+
+# +
+
+src_ids_check = JINJA_ENV.from_string("""
+SELECT src_id, COUNT(*) as row_count
+FROM `{{project_id}}.{{dataset}}.heart_rate_summary`
+GROUP BY src_id ORDER BY src_id
+""").render(project_id=project_id, dataset=dataset_id)
+
+zone_names_check = JINJA_ENV.from_string("""
+WITH distinct_zones AS (
+SELECT 
+    DISTINCT zone_name, 
+    person_id
+FROM 
+    `{{project_id}}.{{dataset}}.heart_rate_summary`
+),
+                                 
+at_least_four_zones AS (
+    SELECT
+        person_id, 
+        COUNT(person_id) AS total
+    FROM
+        distinct_zones
+    GROUP BY
+        person_id
+    HAVING total > 3
+),                 
+
+for_at_least_one_date AS (
+    SELECT 
+        DISTINCT person_id, 
+        date, 
+        COUNT(*) as total
+    FROM 
+        `{{project_id}}.{{dataset}}.heart_rate_summary`
+    WHERE person_id IN (
+        SELECT 
+            person_id
+        FROM
+            at_least_four_zones
+    )
+    GROUP BY 1,2
+    HAVING total > 3
+)                             
+
+SELECT 
+  ROUND((COUNT(*)/(
+    SELECT
+        COUNT(DISTINCT person_id)
+    FROM 
+        distinct_zones
+   ))*100,2) AS percentage
+FROM
+    for_at_least_one_date
+""").render(project_id=project_id, dataset=dataset_id)
+
+src_ids_check_results = execute(client, src_ids_check)
+zones_check_results = execute(client, zone_names_check)
+
+display(src_ids_check_results)
+display(zones_check_results)
+# -
+
 # # ACTIVITY_SUMMARY table
 
 # Validation criteria for activity_summary is the following:
