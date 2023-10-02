@@ -101,6 +101,7 @@ display(df)
 
 # Validation criteria for heart_rate_summary is the following:
 # - The table includes both PTSC and CE data per the src_id field
+# - At least 40% of participants should have at least all 4 zone names for at least one date
 
 # +
 
