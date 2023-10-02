@@ -149,11 +149,11 @@ for_at_least_one_date AS (
 )                             
 
 SELECT 
-  ROUND((COUNT(*)/(
+  ROUND((COUNT(DISTINCT person_id)/(
     SELECT
         COUNT(DISTINCT person_id)
     FROM 
-        distinct_zones
+        `{{project_id}}.{{dataset}}.heart_rate_summary`
    ))*100,2) AS percentage
 FROM
     for_at_least_one_date
