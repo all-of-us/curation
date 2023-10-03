@@ -223,14 +223,27 @@ display(df)
 
 # +
 
-src_ids_check = JINJA_ENV.from_string("""
+query = JINJA_ENV.from_string("""
 SELECT src_id, COUNT(*) as row_count
 FROM `{{project_id}}.{{dataset}}.sleep_daily_summary`
 GROUP BY src_id ORDER BY src_id
 """).render(project_id=project_id, dataset=dataset_id)
-src_ids_check_results = execute(client, src_ids_check)
+df = execute(client, query)
 
-display(src_ids_check_results)
+check_status = "Look at the result and see if it meets all the following criteria."
+msg = (
+    "The result must show that <br>"
+    "(1) The table has records from both PTSC and CE, and<br>"
+    "(2) all the records' src_ids are either PTSC or CE (= No other src_id in this table) <br>"
+    "If any of (1) - (2) does not look good, the source records are not properly prepared. "
+    "Bring up the issue to the RDR team so they can fix it.")
+
+display(
+    HTML(
+        f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
+    ))
+
+display(df)
 # -
 
 # # SLEEP_LEVEL table
