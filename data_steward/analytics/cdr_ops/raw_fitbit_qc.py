@@ -112,41 +112,15 @@ GROUP BY src_id ORDER BY src_id
 """).render(project_id=project_id, dataset=dataset_id)
 
 zone_names_check = JINJA_ENV.from_string("""
-WITH distinct_zones AS (
-SELECT 
-    DISTINCT zone_name, 
-    person_id
-FROM 
-    `{{project_id}}.{{dataset}}.heart_rate_summary`
-),
-                                 
-at_least_four_zones AS (
-    SELECT
-        person_id, 
-        COUNT(person_id) AS total
-    FROM
-        distinct_zones
-    GROUP BY
-        person_id
-    HAVING total > 3
-),                 
-
-for_at_least_one_date AS (
+four_zones_for_at_least_one_date AS (
     SELECT 
-        DISTINCT person_id, 
-        date, 
-        COUNT(*) as total
-    FROM 
+        count(distinct zone_name) as total, person_id, date
+    FROM
         `{{project_id}}.{{dataset}}.heart_rate_summary`
-    WHERE person_id IN (
-        SELECT 
-            person_id
-        FROM
-            at_least_four_zones
-    )
-    GROUP BY 1,2
+    GROUP BY 
+        person_id, date
     HAVING total > 3
-)                             
+)                          
 
 SELECT 
   ROUND((COUNT(DISTINCT person_id)/(
@@ -156,7 +130,7 @@ SELECT
         `{{project_id}}.{{dataset}}.heart_rate_summary`
    ))*100,2) AS percentage
 FROM
-    for_at_least_one_date
+    four_zones_for_at_least_one_date
 """).render(project_id=project_id, dataset=dataset_id)
 
 src_ids_check_results = execute(client, src_ids_check)
