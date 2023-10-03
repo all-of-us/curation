@@ -72,7 +72,8 @@ def get_access_token(client):
         'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
     ]
 
-    credentials = auth.get_impersonation_credentials(client._credentials.service_account_email, target_scopes=scopes)
+    credentials = auth.get_impersonation_credentials(
+        client._credentials.service_account_email, target_scopes=scopes)
 
     request = req.Request()
     credentials.refresh(request)
@@ -307,8 +308,7 @@ def process_digital_health_data_to_json(api_data: List[Dict],
     return participant_records
 
 
-def get_deactivated_participants(client,
-                                 api_project_id: str,
+def get_deactivated_participants(client, api_project_id: str,
                                  columns: List[str]) -> pandas.DataFrame:
     """
     Fetches all deactivated participants via API if suspensionStatus = 'NO_CONTACT'
@@ -331,7 +331,9 @@ def get_deactivated_participants(client,
     # See https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this api.
     params = {'_sort': 'lastModified', 'suspensionStatus': 'NO_CONTACT'}
 
-    participant_data = get_participant_data(client, api_project_id, params=params)
+    participant_data = get_participant_data(client,
+                                            api_project_id,
+                                            params=params)
 
     column_map = {
         'participant_id': 'person_id',

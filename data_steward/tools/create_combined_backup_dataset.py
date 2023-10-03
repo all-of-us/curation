@@ -503,7 +503,8 @@ def main(raw_args=None):
 
     LOGGER.info('EHR + RDR combine started')
     LOGGER.info('Verifying all CDM tables in EHR and RDR datasets...')
-    assert_ehr_and_rdr_tables(client, args.unioned_ehr_dataset, args.rdr_dataset)
+    assert_ehr_and_rdr_tables(client, args.unioned_ehr_dataset,
+                              args.rdr_dataset)
 
     combined_sandbox = create_dataset(client, args.release_tag, 'sandbox')
     ehr_consent(client, args.rdr_dataset, combined_sandbox)

@@ -1,5 +1,6 @@
 import cdm
-from common import (DEATH, JINJA_ENV, PERSON, SURVEY_CONDUCT, EHR_CONSENT_VALIDATION)
+from common import (DEATH, JINJA_ENV, PERSON, SURVEY_CONDUCT,
+                    EHR_CONSENT_VALIDATION)
 
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
