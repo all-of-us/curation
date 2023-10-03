@@ -114,12 +114,14 @@ GROUP BY src_id ORDER BY src_id
 zone_names_check = JINJA_ENV.from_string("""
 with four_zones_for_at_least_one_date AS (
     SELECT 
-        COUNT(DISTINCT zone_name) as total, person_id, date
+        COUNT(DISTINCT zone_name) AS zone_names, 
+        person_id, 
+        date
     FROM
         `{{project_id}}.{{dataset}}.heart_rate_summary`
     GROUP BY 
         person_id, date
-    HAVING total > 3
+    HAVING zone_names > 3
 )                          
 
 SELECT 
