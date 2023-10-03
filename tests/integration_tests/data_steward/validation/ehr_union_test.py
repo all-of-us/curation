@@ -228,7 +228,6 @@ class EhrUnionTest(unittest.TestCase):
         mapping_tables = [
             ehr_union.mapping_table_for(table)
             for table in cdm.tables_to_map() + [PERSON]
-            if not table == SURVEY_CONDUCT
         ]
         output_cdm_tables = [
             ehr_union.output_table_for(table)
@@ -280,35 +279,34 @@ class EhrUnionTest(unittest.TestCase):
         # mapping tables
         tables_to_map = cdm.tables_to_map()
         for table_to_map in tables_to_map:
-            if not table_to_map == SURVEY_CONDUCT:
-                mapping_table = ehr_union.mapping_table_for(table_to_map)
-                expected_fields = {
-                    'src_table_id',
-                    'src_%s_id' % table_to_map,
-                    '%s_id' % table_to_map, 'src_hpo_id', 'src_dataset_id'
-                }
-                mapping_table_obj = self.bq_client.get_table(
-                    f'{self.output_dataset_id}.{mapping_table}')
-                actual_fields = set(
-                    [field.name for field in mapping_table_obj.schema])
-                message = 'Table %s has fields %s when %s expected' % (
-                    mapping_table, actual_fields, expected_fields)
-                self.assertSetEqual(expected_fields, actual_fields, message)
+            mapping_table = ehr_union.mapping_table_for(table_to_map)
+            expected_fields = {
+                'src_table_id',
+                'src_%s_id' % table_to_map,
+                '%s_id' % table_to_map, 'src_hpo_id', 'src_dataset_id'
+            }
+            mapping_table_obj = self.bq_client.get_table(
+                f'{self.output_dataset_id}.{mapping_table}')
+            actual_fields = set(
+                [field.name for field in mapping_table_obj.schema])
+            message = 'Table %s has fields %s when %s expected' % (
+                mapping_table, actual_fields, expected_fields)
+            self.assertSetEqual(expected_fields, actual_fields, message)
 
-                if table_to_map == VISIT_DETAIL:
-                    expected_num_rows = len(self.expected_tables[mapping_table])
-                else:
-                    result_table = ehr_union.output_table_for(table_to_map)
-                    expected_num_rows = len(self.expected_tables[result_table])
+            if table_to_map == VISIT_DETAIL:
+                expected_num_rows = len(self.expected_tables[mapping_table])
+            else:
+                result_table = ehr_union.output_table_for(table_to_map)
+                expected_num_rows = len(self.expected_tables[result_table])
 
-                actual_num_rows = int(mapping_table_obj.num_rows)
-                message = 'Table %s has %s rows when %s expected' % (
-                    mapping_table, actual_num_rows, expected_num_rows)
-                self.assertEqual(expected_num_rows, actual_num_rows, message)
+            actual_num_rows = int(mapping_table_obj.num_rows)
+            message = 'Table %s has %s rows when %s expected' % (
+                mapping_table, actual_num_rows, expected_num_rows)
+            self.assertEqual(expected_num_rows, actual_num_rows, message)
 
         # check for each output table
         for table_name in resources.CDM_TABLES:
-            if not table_name in [SURVEY_CONDUCT, DEATH]:
+            if table_name != DEATH:
                 # output table exists and row count is sum of those submitted by hpos
                 result_table = ehr_union.output_table_for(table_name)
                 expected_rows = self.expected_tables[result_table]
@@ -316,8 +314,7 @@ class EhrUnionTest(unittest.TestCase):
                 table_obj = self.bq_client.get_table(
                     f'{self.output_dataset_id}.{result_table}')
                 actual_count = int(table_obj.num_rows)
-                msg = 'Unexpected row count in table {result_table} after ehr union'.format(
-                    result_table=result_table)
+                msg = f'Unexpected row count in table {result_table} after ehr union'
                 self.assertEqual(expected_count, actual_count, msg)
                 # TODO Compare table rows to expected accounting for the new ids and ignoring field types
                 # q = 'SELECT * FROM {dataset}.{table}'.format(dataset=self.output_dataset_id, table=result_table)
@@ -334,9 +331,8 @@ class EhrUnionTest(unittest.TestCase):
             self.assertSetEqual(expected_output, actual_output)
 
         # explicit check that output person_ids are same as input
-        nyc_person_table_id = resources.get_table_id('person',
-                                                     hpo_id=NYC_HPO_ID)
-        pitt_person_table_id = resources.get_table_id('person',
+        nyc_person_table_id = resources.get_table_id(PERSON, hpo_id=NYC_HPO_ID)
+        pitt_person_table_id = resources.get_table_id(PERSON,
                                                       hpo_id=PITT_HPO_ID)
         q = '''SELECT DISTINCT person_id FROM (
            SELECT person_id FROM {dataset_id}.{nyc_person_table_id}
