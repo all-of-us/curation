@@ -524,7 +524,7 @@ df1
 
 query = JINJA_ENV.from_string("""
 WITH df1 AS (
-SELECT COUNT (*) AS n_row_not_pass
+SELECT 'observation' as table, COUNT (*) AS n_row_not_pass
 FROM  `{{project_id}}.{{com_cdr}}.observation` non_deid
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.person_id=non_deid.person_id
@@ -533,7 +533,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df2 AS (
-SELECT COUNT (*) AS n_row_not_pass
+SELECT 'measurement' as table, COUNT (*) AS n_row_not_pass
 FROM  `{{project_id}}.{{com_cdr}}.measurement` non_deid
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.person_id=non_deid.person_id
@@ -542,7 +542,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df3 AS (
-SELECT COUNT (*) AS n_row_not_pass
+SELECT 'condition_occurrence' as table, COUNT (*) AS n_row_not_pass
 FROM  `{{project_id}}.{{com_cdr}}.condition_occurrence` non_deid
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.person_id=non_deid.person_id
@@ -551,7 +551,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df4 AS (
-SELECT COUNT (*) AS n_row_not_pass
+SELECT 'drug_exposure' as table, COUNT (*) AS n_row_not_pass
 FROM  `{{project_id}}.{{com_cdr}}.drug_exposure` non_deid
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.person_id=non_deid.person_id
@@ -560,7 +560,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df5 AS (
-SELECT COUNT (*) AS n_row_not_pass
+SELECT 'device_exposure' as table, COUNT (*) AS n_row_not_pass
 FROM  `{{project_id}}.{{com_cdr}}.device_exposure` non_deid
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.person_id=non_deid.person_id
@@ -569,7 +569,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df6 AS (
-SELECT COUNT (*) AS n_row_not_pass
+SELECT 'procedure_occurrence' as table, COUNT (*) AS n_row_not_pass
 FROM  `{{project_id}}.{{com_cdr}}.procedure_occurrence` non_deid
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.person_id=non_deid.person_id
@@ -578,7 +578,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df7 AS (
-SELECT COUNT (*) AS n_row_not_pass
+SELECT 'visit_occurrence' as table, COUNT (*) AS n_row_not_pass
 FROM  `{{project_id}}.{{com_cdr}}.visit_occurrence` non_deid
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.person_id=non_deid.person_id
@@ -587,7 +587,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df8 AS (
-SELECT COUNT (*) AS n_row_not_pass
+SELECT 'specimen' as table, COUNT (*) AS n_row_not_pass
 FROM  `{{project_id}}.{{com_cdr}}.specimen` non_deid
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.person_id=non_deid.person_id
@@ -597,15 +597,13 @@ WHERE deid.person_id !=m.research_id
 
 
 SELECT * FROM df1
-JOIN df2 USING(n_row_not_pass)
-JOIN df3 USING(n_row_not_pass)
-JOIN df4 USING(n_row_not_pass)
-JOIN df5 USING(n_row_not_pass)
-JOIN df6 USING(n_row_not_pass)
-JOIN df7 USING(n_row_not_pass)
-JOIN df8 USING(n_row_not_pass)
-
-
+UNION ALL SELECT * FROM df2 
+UNION ALL SELECT * FROM df3 
+UNION ALL SELECT * FROM df4  
+UNION ALL SELECT * FROM df5  
+UNION ALL SELECT * FROM df6  
+UNION ALL SELECT * FROM df7  
+UNION ALL SELECT * FROM df8 
 
 """)
 q = query.render(project_id=project_id,
@@ -704,4 +702,3 @@ def highlight_cells(val):
 
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
-# -
