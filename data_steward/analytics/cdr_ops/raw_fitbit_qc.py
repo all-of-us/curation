@@ -232,11 +232,14 @@ GROUP BY src_id ORDER BY src_id
 check_sleep_levels = JINJA_ENV.from_string("""
 with all_levels_for_at_least_one_date AS (
     SELECT 
-        count(distinct level) as total, person_id, sleep_date
+        COUNT(DISTINCT level) AS levels, 
+        person_id, 
+        sleep_date
     FROM
         `{{project_id}}.{{dataset}}.sleep_level`
-    GROUP BY person_id, sleep_date
-    HAVING total > 7
+    GROUP BY 
+        person_id, sleep_date
+    HAVING levels > 7
 ) 
 
 SELECT 
