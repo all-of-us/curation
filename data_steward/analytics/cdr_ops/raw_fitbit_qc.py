@@ -112,7 +112,7 @@ GROUP BY src_id ORDER BY src_id
 """).render(project_id=project_id, dataset=dataset_id)
 
 zone_names_check = JINJA_ENV.from_string("""
-four_zones_for_at_least_one_date AS (
+with four_zones_for_at_least_one_date AS (
     SELECT 
         count(distinct zone_name) as total, person_id, date
     FROM
