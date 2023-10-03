@@ -252,14 +252,13 @@ display(df)
 # - The table includes both PTSC and CE data per the src_id field
 
 # +
-query = JINJA_ENV.from_string("""
+check_src_ids = JINJA_ENV.from_string("""
 SELECT src_id, COUNT(*) as row_count
 FROM `{{project_id}}.{{dataset}}.sleep_level`
 GROUP BY src_id ORDER BY src_id
 """).render(project_id=project_id, dataset=dataset_id)
-df = execute(client, query)
 
-zone_names_check = JINJA_ENV.from_string("""
+check_sleep_levels = JINJA_ENV.from_string("""
 with all_levels_for_at_least_one_date AS (
     SELECT 
         count(distinct level) as total, person_id, sleep_date
@@ -280,9 +279,11 @@ FROM
     all_levels_for_at_least_one_date
 """).render(project_id=project_id, dataset=dataset_id)
 
-zones_check_results = execute(client, zone_names_check)
+src_ids_check_results = execute(client, check_src_ids)
+sleep_levels_check_results = execute(client, check_sleep_levels)
 
-display(zones_check_results)
+display(src_ids_check_results)
+display(sleep_levels_check_results)
 
 check_status = "Look at the result and see if it meets all the following criteria."
 msg = (
