@@ -956,7 +956,10 @@ def main(input_dataset_id,
     # Create mapping tables. AOU_DEATH and DEATH are not included here.
     for domain_table in cdm.tables_to_map():
         if domain_table == SURVEY_CONDUCT:
-            continue
+            bq_client.create_tables([
+                f'{project_id}.{output_dataset_id}.{mapping_table_for(SURVEY_CONDUCT)}'
+            ],
+                                    exists_ok=True)
         logging.info(f'Mapping {domain_table}...')
         mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
                 project_id, bq_client)
