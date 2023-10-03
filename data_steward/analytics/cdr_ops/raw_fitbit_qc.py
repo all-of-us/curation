@@ -97,6 +97,65 @@ display(df)
 
 # -
 
+# # HEART_RATE_SUMMARY table
+
+# Validation criteria for heart_rate_summary is the following:
+# - The table includes both PTSC and CE data per the src_id field
+# - At least 40% of participants should have at least all 4 zone names for at least one date
+
+# +
+
+src_ids_check = JINJA_ENV.from_string("""
+SELECT src_id, COUNT(*) as row_count
+FROM `{{project_id}}.{{dataset}}.heart_rate_summary`
+GROUP BY src_id ORDER BY src_id
+""").render(project_id=project_id, dataset=dataset_id)
+
+zone_names_check = JINJA_ENV.from_string("""
+with four_zones_for_at_least_one_date AS (
+    SELECT 
+        COUNT(DISTINCT zone_name) AS zone_names, 
+        person_id, 
+        date
+    FROM
+        `{{project_id}}.{{dataset}}.heart_rate_summary`
+    GROUP BY 
+        person_id, date
+    HAVING zone_names > 3
+)                          
+
+SELECT 
+  ROUND((COUNT(DISTINCT person_id)/(
+    SELECT
+        COUNT(DISTINCT person_id)
+    FROM 
+        `{{project_id}}.{{dataset}}.heart_rate_summary`
+   ))*100,2) AS percentage
+FROM
+    four_zones_for_at_least_one_date
+""").render(project_id=project_id, dataset=dataset_id)
+
+src_ids_check_results = execute(client, src_ids_check)
+zones_check_results = execute(client, zone_names_check)
+
+display(src_ids_check_results)
+display(zones_check_results)
+
+check_status = "Look at the result and see if it meets all the following criteria."
+msg = (
+    "The result must show that <br>"
+    "(1) The table has records from both PTSC and CE, and<br>"
+    "(2) all the records' src_ids are either PTSC or CE (= No other src_id in this table) <br>"
+    "(3) The percentage value returned is equal to or greater than 40. <br>"
+    "If any of (1) - (2) - (3) does not look good, the source records are not properly prepared. "
+    "Bring up the issue to the RDR team so they can fix it.")
+
+display(
+    HTML(
+        f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
+    ))
+# -
+
 # # ACTIVITY_SUMMARY table
 
 # Validation criteria for activity_summary is the following:
