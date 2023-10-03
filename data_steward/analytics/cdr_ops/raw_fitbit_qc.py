@@ -229,6 +229,48 @@ GROUP BY src_id ORDER BY src_id
 """).render(project_id=project_id, dataset=dataset_id)
 df = execute(client, query)
 
+zone_names_check = JINJA_ENV.from_string("""
+WITH distinct_sleep_levels AS (
+SELECT 
+    count(DISTINCT level) as total, 
+    person_id
+FROM 
+    `{{project_id}}.{{dataset}}.sleep_level`
+    group by person_id
+having total > 7
+)
+,
+
+for_at_least_one_date AS (
+    SELECT 
+        count(distinct level) as total, person_id, sleep_date
+    FROM
+        `{{project_id}}.{{dataset}}.sleep_level`
+    WHERE person_id IN (
+        SELECT 
+            person_id
+        FROM
+            distinct_sleep_levels
+    )
+    GROUP BY person_id, sleep_date
+    HAVING total > 7
+) 
+
+SELECT 
+  ROUND((COUNT(DISTINCT person_id)/(
+    SELECT
+        COUNT(DISTINCT person_id)
+    FROM 
+        `{{project_id}}.{{dataset}}.sleep_level`
+   ))*100,2) AS percentage
+FROM
+    for_at_least_one_date
+""").render(project_id=project_id, dataset=dataset_id)
+
+zones_check_results = execute(client, zone_names_check)
+
+display(zones_check_results)
+
 check_status = "Look at the result and see if it meets all the following criteria."
 msg = (
     "The result must show that <br>"
