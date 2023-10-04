@@ -873,4 +873,5 @@ query = unconsented_records_tpl.render(project_id=PROJECT_ID,
                                        dataset_id=DATASET_ID,
                                        unconsented=UNCONSENTED)
 result = execute(client, query)
+print(f"found {len(result)} PIDs'")
 result
