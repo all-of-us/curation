@@ -205,14 +205,14 @@ SET ext_tables = Array(
     SELECT table_name, column_name
     FROM `{{project_id}}.{{rt_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where REGEXP_CONTAINS(table_name, r'(?i)(_ext)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)|(language)')
 
     UNION DISTINCT 
 
     SELECT table_name, column_name
     FROM `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where REGEXP_CONTAINS(table_name, r'(?i)(_ext)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)|(language)')
 )
 SELECT AS STRUCT table_name, column_name
 FROM data

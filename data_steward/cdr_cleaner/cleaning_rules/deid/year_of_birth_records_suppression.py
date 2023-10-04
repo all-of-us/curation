@@ -17,7 +17,7 @@ from google.cloud.exceptions import GoogleCloudError
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import AOU_DEATH, AOU_REQUIRED, JINJA_ENV, DEATH, PERSON
+from common import AOU_DEATH, AOU_REQUIRED, JINJA_ENV, DEATH, PERSON, FITBIT_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -120,7 +120,9 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
             project=self.project_id,
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
-            lookup_table=self.sandbox_table_for(LOOKUP_TABLE))
+            lookup_table=self.sandbox_table_for(LOOKUP_TABLE),
+            fitbit_tables_str='"' + '", "'.join(FITBIT_TABLES) + '"',
+        )
 
         try:
             response = client.query(tables_columns_query,
