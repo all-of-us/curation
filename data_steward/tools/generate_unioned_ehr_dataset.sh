@@ -114,7 +114,7 @@ python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary ${unioned_ehr_dataset
 
 #----------------------------------------------------------------------
 # Step 5 copy mapping tables tables
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snapshot} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset_backup} --target_prefix _mapping_ --sync false
+"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_snapshot} --source_prefix _mapping_ --target_dataset ${unioned_ehr_dataset_backup} --target_prefix _mapping_
 
 echo "removing tables copies unintentionally"
 bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_condition_occurrence
