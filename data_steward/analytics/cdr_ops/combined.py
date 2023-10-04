@@ -25,6 +25,8 @@ import pandas as pd
 
 from common import JINJA_ENV, MAPPED_CLINICAL_DATA_TABLES
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
+from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE as UNCONSENTED
+
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
@@ -45,8 +47,6 @@ pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0
 pd.options.display.max_columns = None
 pd.options.display.width = None
-
-# -
 
 # ## Check for duplicates across all unique identifier fields.
 # This query gathers any duplicates of the {table}_id from each OMOP table listed.
@@ -767,21 +767,21 @@ render_message(df_orphaned_check,
 # +
 query = JINJA_ENV.from_string("""
 WITH qc_aou_death AS (
-    SELECT 
-        aou_death_id, 
+    SELECT
+        aou_death_id,
         CASE WHEN aou_death_id IN (
             SELECT aou_death_id FROM `{{project_id}}.{{dataset_id}}.aou_death`
             WHERE death_date IS NOT NULL -- NULL death_date records must not become primary --
             QUALIFY RANK() OVER (
-                PARTITION BY person_id 
+                PARTITION BY person_id
                 ORDER BY
                     LOWER(src_id) NOT LIKE '%healthpro%' DESC, -- EHR records are chosen over HealthPro ones --
                     death_date ASC, -- Earliest death_date records are chosen over later ones --
                     death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
                     src_id ASC -- EHR site that alphabetically comes first is chosen --
-            ) = 1   
+            ) = 1
         ) THEN TRUE ELSE FALSE END AS primary_death_record
-    FROM `{{project}}.{{dataset}}.aou_death`    
+    FROM `{{project}}.{{dataset}}.aou_death`
 )
 SELECT ad.aou_death_id
 FROM `{{project_id}}.{{dataset}}.aou_death` ad
@@ -793,7 +793,7 @@ df = execute(client, query)
 
 success_msg = 'All death records have the correct `primary_death_record` values.'
 failure_msg = '''
-    <b>{code_count}</b> records do not have the correct `primary_death_record` values. 
+    <b>{code_count}</b> records do not have the correct `primary_death_record` values.
     Investigate and confirm if (a) any logic is incorrect, (b) the requirement has changed, or (c) something else.
 '''
 render_message(df,
@@ -828,9 +828,9 @@ render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 ext_template = JINJA_ENV.from_string("""
     SELECT
       table_id
-    FROM 
+    FROM
         `{{project_id}}.{{dataset}}.__TABLES__`
-    WHERE 
+    WHERE
         table_id LIKE '%_ext%'
 """)
 ext_tables_query = ext_template.render(project_id=PROJECT_ID,
@@ -847,7 +847,7 @@ for _, row in ext_tables.iterrows():
         `{{project_id}}.{{dataset}}.{{table_name}}`
       WHERE NOT
           REGEXP_CONTAINS(src_id, r'(?i)(Portal)|(EHR site)')
-      OR 
+      OR
         src_id IS NULL
       GROUP BY 1,2
   """)
@@ -857,3 +857,20 @@ for _, row in ext_tables.iterrows():
     result.append(query)
 results = '\nUNION ALL\n'.join(result)
 execute(client, results)
+
+# ## Verify no participant in the pdr_ehr_dup_report list has EHR data.
+
+unconsented_records_tpl = JINJA_ENV.from_string("""
+SELECT
+  person_id
+FROM
+  `{{project_id}}.{{dataset_id}}.person`
+WHERE EXISTS (
+    SELECT person_id FROM `{{project_id}}.{{dataset_id}}_sandbox.{{unconsented}}`
+  )
+""")
+query = unconsented_records_tpl.render(project_id=PROJECT_ID,
+                                       dataset_id=DATASET_ID,
+                                       unconsented=UNCONSENTED)
+result = execute(client, query)
+result
