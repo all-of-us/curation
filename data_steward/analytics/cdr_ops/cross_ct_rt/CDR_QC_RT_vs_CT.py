@@ -603,10 +603,10 @@ df1[df1["Failure"] == 1]
 
 # # Query8: Verify the wear_study dateshift
 #
-# RT dates should have been shifted back by the number of days designated to each 
+# RT dates should have been shifted back by the number of days designated to each
 # participant via the primary_pid_rid_mapping table.
 #
-# The following query will find any rows in the wear_study tables where the RT date plus the date shift is not equal to the 
+# The following query will find any rows in the wear_study tables where the RT date plus the date shift is not equal to the
 # CT date. If there are resulting rows, make sure the pipeline dateshift ran properly.
 
 # +
@@ -637,10 +637,8 @@ df1 = execute(client, q)
 if df1['bad_rows'].sum() == 0:
     df = df.append(
         {
-            'query':
-                'Query8 Wear_study dates are as expected.',
-            'result':
-                'PASS'
+            'query': 'Query8 Wear_study dates are as expected.',
+            'result': 'PASS'
         },
         ignore_index=True)
 else:
@@ -651,8 +649,7 @@ else:
             'result':
                 'FAIL'
         },
-        ignore_index=True
-                  )
+        ignore_index=True)
     display(df1)
 # -
 
