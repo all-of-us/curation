@@ -46,7 +46,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_first_use_table
                 WITH concept_id_fields AS (
                 SELECT
                     {{ table_info['concept_id_fields'] | join(', ') }},
-                    {{ table_info['primary_datefield'] }}
+                    DATE({{ table_info['primary_datefield'] }}) AS {{ table_info['primary_datefield'] }}
                 FROM `{{project_id}}.{{dataset_id}}.{{table_info['table_name']}}` c
                 ),
                 unpivoted_concept_id_fields AS (

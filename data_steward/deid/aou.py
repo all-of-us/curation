@@ -95,6 +95,8 @@ from common import PIPELINE_TABLES
 from constants.deid.deid import MAX_AGE
 from deid.parser import parse_args
 from deid.press import Press
+from utils import auth
+from common import CDR_SCOPES
 from resources import DEID_PATH
 from tools.concept_ids_suppression import get_all_concept_ids
 
@@ -121,7 +123,7 @@ def create_concept_id_lookup_table(client, input_dataset, credentials):
     :param credentials: bigquery credentials
     """
 
-    lookup_tablename = input_dataset + "._concept_ids_suppression"
+    lookup_tablename = f"{client.project}.{input_dataset}._concept_ids_suppression"
     columns = [
         'vocabulary_id', 'concept_code', 'concept_name', 'concept_id',
         'domain_id', 'rule', 'question'
@@ -131,7 +133,10 @@ def create_concept_id_lookup_table(client, input_dataset, credentials):
     data = get_all_concept_ids(columns, input_dataset, client)
 
     # write this to bigquery.
-    data.to_gbq(lookup_tablename, credentials=credentials, if_exists='replace')
+    data.to_gbq(lookup_tablename,
+                project_id=client.project,
+                credentials=credentials,
+                if_exists='replace')
 
 
 class AOU(Press):
@@ -139,13 +144,15 @@ class AOU(Press):
     def __init__(self, **args):
         args['store'] = 'bigquery'
         Press.__init__(self, **args)
+        self.run_as_email = args.get('run_as_email', '')
         self.private_key = args.get('private_key', '')
-        self.credentials = service_account.Credentials.from_service_account_file(
-            self.private_key)
+        self.credentials = auth.get_impersonation_credentials(
+            self.run_as_email, CDR_SCOPES)
         self.partition = args.get('cluster', False)
         self.priority = args.get('interactive', 'BATCH')
         self.project_id = app_identity.get_application_id()
-        self.bq_client = BigQueryClient(project_id=self.project_id)
+        self.bq_client = BigQueryClient(project_id=self.project_id,
+                                        credentials=self.credentials)
 
         if 'shift' in self.deid_rules:
             #
@@ -221,11 +228,13 @@ class AOU(Press):
         try:
             if query_config:
                 df = pd.read_gbq(sql,
+                                 project_id=self.bq_client.project,
                                  credentials=self.credentials,
                                  dialect='standard',
                                  configuration=query_config)
             else:
                 df = pd.read_gbq(sql,
+                                 project_id=self.bq_client.project,
                                  credentials=self.credentials,
                                  dialect='standard')
 
@@ -400,7 +409,7 @@ class AOU(Press):
         """
         dml = False if dml is None else dml
         table_name = self.get_tablename()
-        client = bq.Client.from_service_account_json(self.private_key)
+        client = self.bq_client  #bq.Client.from_service_account_json(self.private_key)
         #
         # Let's make sure the out dataset exists
         datasets = list(client.list_datasets())

@@ -135,6 +135,11 @@ def parse_args(raw_args=None):
                         dest='rules',
                         help='Filepath to the JSON file containing rules',
                         required=True)
+    parser.add_argument('--run_as',
+                        action='store',
+                        dest='run_as_email',
+                        help='Service account email address to impersonate',
+                        required=True)
     parser.add_argument('--idataset',
                         action='store',
                         dest='idataset',

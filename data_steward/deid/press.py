@@ -18,6 +18,8 @@ from gcloud.bq import BigQueryClient
 import app_identity
 from resources import fields_for
 from deid.rules import Deid, create_on_string
+from utils import auth
+from common import CDR_SCOPES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,10 +72,14 @@ class Press(ABC):
         self.idataset = args.get('idataset', '')
         self.odataset = args.get('odataset', '')
         self.tablepath = args.get('table')
+        self.run_as_email = args.get('run_as_email', '')
+        self.credentials = auth.get_impersonation_credentials(
+            self.run_as_email, CDR_SCOPES)
         self.tablename = os.path.basename(
             self.tablepath).split('.json')[0].strip()
         self.project_id = app_identity.get_application_id()
-        self.bq_client = BigQueryClient(project_id=self.project_id)
+        self.bq_client = BigQueryClient(project_id=self.project_id,
+                                        credentials=self.credentials)
 
         self.logpath = args.get('logs', 'logs')
         set_up_logging(self.logpath, self.idataset)
