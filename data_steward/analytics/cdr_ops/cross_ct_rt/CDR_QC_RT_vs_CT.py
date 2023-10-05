@@ -26,6 +26,7 @@ run_as = ""
 
 # +
 import pandas as pd
+from IPython.display import display
 
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 from common import JINJA_ENV, PIPELINE_TABLES
