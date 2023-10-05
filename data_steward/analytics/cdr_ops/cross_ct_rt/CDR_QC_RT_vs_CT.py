@@ -653,6 +653,73 @@ else:
     display(df1)
 # -
 
+# # Query9: Verify data for withdrawn pids is removed from all tables in rt dataset.
+
+# +
+person_id_tables_query = JINJA_ENV.from_string('''
+SELECT table_name
+FROM `{{project_id}}.{{dataset_id}}.INFORMATION_SCHEMA.COLUMNS`
+WHERE column_name = "person_id"
+''').render(project_id=project_id, dataset_id=rt_dataset)
+pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
+    'table_name').to_list()
+
+query = JINJA_ENV.from_string("""
+    SELECT
+        \{{table_name}}\ as table_name,
+        COUNT(*) as total_records
+    FROM
+        `{{project_id}}.{{dataset_id}}.{{table_name}}`
+    WHERE person_id in (
+        SELECT 
+            research_id
+        FROM
+           `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}`  
+        WHERE person_id in (
+            SELECT
+                person_id
+            FROM
+               `{{project_id}}.{{combined_sandbox_dataset}}.{{lookup_table}}`             
+        )
+    )
+""")
+
+row_counts_queries_list = []
+for table in pid_table_list:
+    row_counts_queries_list.append(
+        query.render(project_id=project_id,
+                     rt_dataset=rt_dataset,
+                     table_name=table,
+                     combined_sandbox_dataset='combined_sandbox_dataset',
+                     lookup_table='withdrawals_list_table',
+                     pipeline_tables=PIPELINE_TABLES,
+                     pid_rid_mapping=PID_RID_MAPPING))
+
+row_counts_union_all_query = '\nUNION ALL\n'.join(row_counts_queries_list)
+
+df1 = execute(client, row_counts_union_all_query)
+
+if df1['total_records'].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query9:  Verify data for withdrawn pids is removed from all tables in rt dataset.',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                'Query9:  Verify data for withdrawn pids is removed from all tables in rt dataset.',
+            'result':
+                'FAIL'
+        },
+        ignore_index=True)
+display(df1)
+# -
+
 # # Summary_CDR_QC_RT_vs_CT_comparison
 
 # if not pass, will be highlighted in red
