@@ -191,7 +191,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         self.client.create_table(Table(lookup_table_name, LOOKUP_TABLE_SCHEMA))
         self.fq_table_names.append(lookup_table_name)
 
-        # Build temp recordslookup table query
+        # Build temp records lookup table query
         lookup_table_query = LOOKUP_TABLE_TEMPLATE.render(
             project_id=self.project_id,
             rdr_dataset_id=self.rdr_dataset_id,
