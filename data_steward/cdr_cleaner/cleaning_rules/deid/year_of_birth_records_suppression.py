@@ -17,7 +17,7 @@ from google.cloud.exceptions import GoogleCloudError
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import AOU_DEATH, AOU_REQUIRED, JINJA_ENV, DEATH, PERSON, FITBIT_TABLES
+from common import AOU_DEATH, AOU_REQUIRED, JINJA_ENV, DEATH, PERSON, FITBIT_TABLES, EHR_CONSENT_VALIDATION
 
 LOGGER = logging.getLogger(__name__)
 
@@ -232,7 +232,9 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
 
         suppression_queries = []
         for table_name, _ in self.tables_and_columns.items():
-            identifier = f'{table_name}_id' if table_name != DEATH else f'{PERSON}_id'
+            identifier = f'{table_name}_id' if table_name not in [
+                DEATH, EHR_CONSENT_VALIDATION
+            ] else f'{PERSON}_id'
             suppression_record_query = suppression_record_query_template.render(
                 project=self.project_id,
                 dataset=self.dataset_id,
