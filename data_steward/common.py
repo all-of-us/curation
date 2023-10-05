@@ -277,7 +277,7 @@ PS_API_VALUES = 'ps_api_values'
 # Dataset labels
 DE_IDENTIFIED = 'de_identified'
 
-# src_id tables from RDR
+# src_id tables from RDR 
 SRC_ID_TABLES = [
     CARE_SITE, CONDITION_ERA, CONDITION_OCCURRENCE, COPE_SURVEY_MAP, COST,
     DEATH, DEVICE_EXPOSURE, DOSE_ERA, DRUG_ERA, DRUG_EXPOSURE,
