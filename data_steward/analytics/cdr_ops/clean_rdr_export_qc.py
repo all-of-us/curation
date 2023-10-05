@@ -27,7 +27,10 @@ rdr_cutoff_date = ""
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
 from IPython.display import display, HTML
-from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES
+from cdm import tables_to_map
+from common import (AOU_DEATH, CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV,
+                    MAPPING_PREFIX, PIPELINE_TABLES)
+from resources import CDM_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
@@ -260,6 +263,53 @@ WHERE curr.table_id IS NULL OR prev.table_id IS NULL
 ''')
 query = tpl.render(new_rdr=new_rdr, old_rdr=old_rdr, project_id=project_id)
 execute(client, query)
+
+# # Confirm all the expected tables are in this dataset
+# This QC confirms all the expected tables are present in this dataset. If not,
+# our pipeline might not be working as expected. Missing tables will
+# break the combined dataset generation. If this check fails, fix the issues before
+# proceeding to the next step.
+# See DC-3454 for the background.
+
+expected_domain_tables = [
+    table_name for table_name in CDM_TABLES if table_name != DEATH
+] + [AOU_DEATH]
+expected_mapping_tables = [
+    f'{MAPPING_PREFIX}{table_name}' for table_name in tables_to_map()
+]
+expected_tables = expected_domain_tables + expected_mapping_tables
+
+tpl = JINJA_ENV.from_string('''
+WITH expected_tables AS (
+{% for table in expected_tables %}
+    SELECT '{{table}}' AS table_id 
+    {% if not loop.last -%} UNION ALL {% endif %}
+{% endfor %}
+)
+SELECT table_id AS missing_table FROM expected_tables
+WHERE table_id NOT IN (SELECT table_id FROM `{{project_id}}.{{new_rdr}}.__TABLES__`)
+''')
+query = tpl.render(project_id=project_id,
+                   new_rdr=new_rdr,
+                   expected_tables=expected_tables)
+df = execute(client, query)
+
+# +
+success_msg = 'All the expected tables are present in this dataset.'
+failure_msg = '''
+<b>{code_count}</b> tables are missing. Check if the missing tables are important ones.<br>
+If it is NOT important (e.g., expected to be empty), simply create an empty table for that
+and move on. Create an investigation ticket so we can investigate it later.<br>
+If it is an important table, troubleshoot and figure out why the table is missing in the 
+dataset before moving on to the next steps.
+'''
+
+render_message(df,
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
+
+# -
 
 # ## Row count comparison
 # Generally the row count of clinical tables should increase from one export to the next.
