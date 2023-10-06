@@ -39,12 +39,13 @@ class RunDeidTest(unittest.TestCase):
         self.skip_tables = 'foo_table'
         self.tablename = 'bar_table'
         self.max_age = '89'
+        self.run_as_email = 'test@test.com'
 
         self.correct_parameter_list = [
             '--idataset', self.input_dataset, '--private_key', self.private_key,
             '--odataset', self.output_dataset, '--action', self.action,
             '--skip-tables', self.skip_tables, '--tables', self.tablename,
-            '--age_limit', self.max_age
+            '--age_limit', self.max_age, '--run_as', self.run_as_email
         ]
 
         self.incorrect_parameter_list = [
@@ -81,6 +82,8 @@ class RunDeidTest(unittest.TestCase):
         correct_parameter_dict['console_log'] = False
         correct_parameter_dict['interactive_mode'] = False
         correct_parameter_dict['input_dataset'] = self.input_dataset
+        correct_parameter_dict['run_as_email'] = correct_parameter_dict.pop(
+            'run_as')
 
         # need to delete idataset argument from correct_parameter_dict because input_dataset argument is returned
         # when self.correct_parameter_list is supplied to parse_args
@@ -121,7 +124,8 @@ class RunDeidTest(unittest.TestCase):
             os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
             '--private_key', self.private_key, '--table', 'fake1', '--action',
             self.action, '--idataset', self.input_dataset, '--log', 'LOGS',
-            '--odataset', self.output_dataset, '--age-limit', self.max_age
+            '--odataset', self.output_dataset, '--age-limit', self.max_age,
+            '--run_as', self.run_as_email
         ])
         self.assertEqual(mock_main.call_count, 1)
         self.assertEqual(mock_copy_ext_tables.call_count, 1)

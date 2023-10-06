@@ -73,8 +73,10 @@ class Press(ABC):
         self.odataset = args.get('odataset', '')
         self.tablepath = args.get('table')
         self.run_as_email = args.get('run_as_email', '')
-        self.credentials = auth.get_impersonation_credentials(
-            self.run_as_email, CDR_SCOPES)
+        self.credentials = None
+        if self.run_as_email:
+            self.credentials = auth.get_impersonation_credentials(
+                self.run_as_email, CDR_SCOPES)
         self.tablename = os.path.basename(
             self.tablepath).split('.json')[0].strip()
         self.project_id = app_identity.get_application_id()
