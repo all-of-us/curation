@@ -1277,3 +1277,24 @@ GROUP BY 1
             new_rdr=new_rdr,
             wear_codes=WEAR_SURVEY_CODES)
 execute(client, query)
+
+# # Check Wear Consent Mapping
+# This mapping is required to keep the observations being dropped in the rdr cleaning stage and also required to create the wear_study table.
+#
+# **If this check fails**, verify the query results before notifying the rdr team.
+
+query = JINJA_ENV.from_string("""
+SELECT
+  'Mandatory mapping to standard is missing' as issue,
+  COUNT(*) AS n 
+FROM `{{project_id}}.{{new_rdr}}.observation` o
+WHERE observation_source_value = 'resultsconsent_wear'
+AND (observation_source_concept_id != 2100000010 OR
+    value_source_concept_id NOT IN (2100000008, 2100000009, 903096) -- wear_no, wear_yes, pmi_skip --
+    )
+
+""").render(project_id=project_id,
+            new_rdr=new_rdr)
+execute(client, query)
+
+
