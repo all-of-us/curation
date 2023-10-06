@@ -21,6 +21,8 @@
 project_id = ""
 rt_dataset = ""
 ct_dataset = ""
+combined_sandbox_dataset = ""
+withdrawl_lookup_table = ""
 maximum_age = ""
 run_as = ""
 
@@ -690,8 +692,8 @@ for table in pid_table_list:
         query.render(project_id=project_id,
                      rt_dataset=rt_dataset,
                      table_name=table,
-                     combined_sandbox_dataset='combined_sandbox_dataset',
-                     lookup_table='withdrawals_list_table',
+                     combined_sandbox_dataset=combined_sandbox_dataset,
+                     lookup_table=withdrawl_lookup_table,
                      pipeline_tables=PIPELINE_TABLES,
                      pid_rid_mapping=PID_RID_MAPPING))
 
@@ -757,8 +759,8 @@ for table in pid_table_list:
         query.render(project_id=project_id,
                      ct_dataset=ct_dataset,
                      table_name=table,
-                     combined_sandbox_dataset='combined_sandbox_dataset',
-                     lookup_table='withdrawals_list_table',
+                     combined_sandbox_dataset=combined_sandbox_dataset,
+                     lookup_table=withdrawl_lookup_table,
                      pipeline_tables=PIPELINE_TABLES,
                      pid_rid_mapping=PID_RID_MAPPING))
 
