@@ -43,6 +43,7 @@ class ParticipantSummaryRequestsTest(TestCase):
         self.tablename = 'baz_table'
         self.fake_hpo = 'foo_hpo'
         self.destination_table = 'bar_dataset._deactivated_participants'
+        self.client = 'test_client'
 
         self.fake_token = 'fake_token'
         self.fake_url = 'www.fake_site.com'
@@ -225,31 +226,32 @@ class ParticipantSummaryRequestsTest(TestCase):
             'authored_time': '2021-02-01T12:01:01Z'
         }]
 
-    @patch('utils.participant_summary_requests.default')
     @patch('utils.participant_summary_requests.auth')
     @patch('utils.participant_summary_requests.req')
-    def test_get_access_token(self, mock_req, mock_auth, mock_default):
+    def test_get_access_token(self, mock_req, mock_auth):
         # pre conditions
         scopes = [
             'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
         ]
-        creds = MagicMock()
-        mock_default.return_value = (creds, None)
         req = MagicMock()
+        client = MagicMock()
         mock_req.Request.return_value = req
+        mock_email = 'test@test.com'
 
         # test
-        actual_token = psr.get_access_token()
+        client._credentials.service_account_email = mock_email
+        actual_token = psr.get_access_token(client)
 
         # post conditions
-        mock_default.assert_called_once_with()
-        mock_auth.delegated_credentials.assert_called_once_with(creds,
-                                                                scopes=scopes)
+        mock_auth.get_impersonation_credentials.assert_called_once_with(
+            mock_email, target_scopes=scopes)
         mock_req.Request.assert_called_once_with()
         # assert the credential refresh still happens
-        mock_auth.delegated_credentials().refresh.assert_called_once_with(req)
+        mock_auth.get_impersonation_credentials(
+        ).refresh.assert_called_once_with(req)
 
-        self.assertEqual(mock_auth.delegated_credentials().token, actual_token)
+        self.assertEqual(mock_auth.get_impersonation_credentials().token,
+                         actual_token)
 
     @patch('utils.participant_summary_requests.BASE_URL',
            'www.fake_site.appspot.com')
@@ -265,7 +267,8 @@ class ParticipantSummaryRequestsTest(TestCase):
         error_msg = 'Error: API request failed because <Response [{status_code}]>'
         mock_get.return_value = FakeHTTPResponse(status_code=status_code)
         with self.assertRaises(RuntimeError) as e:
-            _ = psr.get_participant_data(self.fake_url, self.fake_headers)
+            _ = psr.get_participant_data(self.client, self.fake_url,
+                                         self.fake_headers)
         self.assertEqual(str(e.exception),
                          error_msg.format(status_code=status_code))
         self.assertEqual(mock_get.call_count, 1)
@@ -273,7 +276,8 @@ class ParticipantSummaryRequestsTest(TestCase):
         status_code = 404
         mock_get.return_value = FakeHTTPResponse(status_code=status_code)
         with self.assertRaises(RuntimeError) as e:
-            _ = psr.get_participant_data(self.fake_url, self.fake_headers)
+            _ = psr.get_participant_data(self.client, self.fake_url,
+                                         self.fake_headers)
         self.assertEqual(str(e.exception),
                          error_msg.format(status_code=status_code))
         self.assertEqual(mock_get.call_count, 2)
@@ -287,7 +291,7 @@ class ParticipantSummaryRequestsTest(TestCase):
         mock_session.get.return_value.status_code = 200
         mock_session.get.return_value.json.return_value = self.json_response_entry
 
-        actual_response = psr.get_participant_data(self.fake_url,
+        actual_response = psr.get_participant_data(self.client, self.fake_url,
                                                    self.fake_headers)
 
         self.assertEqual(actual_response, self.participant_data)
@@ -320,7 +324,7 @@ class ParticipantSummaryRequestsTest(TestCase):
 
         # tests
         dataframe_response = psr.get_deactivated_participants(
-            self.project_id, self.columns)
+            self.client, self.project_id, self.columns)
 
         dataset_response = psr.store_participant_data(dataframe_response,
                                                       mock_bq_client,
@@ -482,10 +486,10 @@ class ParticipantSummaryRequestsTest(TestCase):
         Ensures error checking is working.
         """
         # Parameter check tests
-        self.assertRaises(RuntimeError, psr.get_deactivated_participants, None,
-                          self.columns)
         self.assertRaises(RuntimeError, psr.get_deactivated_participants,
-                          self.project_id, None)
+                          self.client, None, self.columns)
+        self.assertRaises(RuntimeError, psr.get_deactivated_participants,
+                          self.client, self.project_id, None)
 
     def test_process_digital_health_data_to_df(self):
         column_map = {'participant_id': 'person_id'}
