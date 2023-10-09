@@ -428,14 +428,14 @@ df1 = execute(client, q)
 if df1.eq(0).any().any():
     df = df.append(
         {
-            'query': 'Query3 Biological Sex Generalization Rule in observation',
+            'query': 'Query3.2 Biological Sex Generalization Rule in observation',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query3 Biological Sex Generalization Rule in observation',
+            'query': 'Query3.2 Biological Sex Generalization Rule in observation',
             'result': 'Failure'
         },
         ignore_index=True)
