@@ -61,7 +61,7 @@ BACKOFF_FACTOR = 0.5
 MAX_TIMEOUT = 62
 
 
-def get_access_token():
+def get_access_token(client):
     """
     Obtains GCP Bearer token
 
@@ -72,8 +72,13 @@ def get_access_token():
         'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
     ]
 
-    credentials, _ = default()
-    credentials = auth.delegated_credentials(credentials, scopes=scopes)
+    if client is None:
+        credentials, _ = default()
+        credentials = auth.delegated_credentials(credentials, scopes=scopes)
+
+    else:
+        credentials = auth.get_impersonation_credentials(
+            client._credentials.service_account_email, target_scopes=scopes)
 
     request = req.Request()
     credentials.refresh(request)
@@ -82,12 +87,14 @@ def get_access_token():
     return access_token
 
 
-def get_participant_data(api_project_id: str,
+def get_participant_data(client,
+                         api_project_id: str,
                          params: Dict,
                          expected_fields: List[str] = None) -> List[Dict]:
     """
     Fetches participant data via ParticipantSummary API
 
+    :param client: BigQuery client object
     :param api_project_id: RDR project id when PS API rests
     :param params: the fields and their values
     :param expected_fields: filter participants not containing any of the fields.
@@ -101,7 +108,7 @@ def get_participant_data(api_project_id: str,
     done = False
     participant_data = []
 
-    token = get_access_token()
+    token = get_access_token(client)
 
     headers = {
         'content-type': 'application/json',
@@ -172,7 +179,7 @@ def get_paginated_participant_data(api_project_id: str,
     else:
         url = BASE_URL.format(api_project_id=api_project_id)
 
-    token = get_access_token()
+    token = get_access_token(None)
 
     headers = {
         'content-type': 'application/json',
@@ -306,11 +313,12 @@ def process_digital_health_data_to_json(api_data: List[Dict],
     return participant_records
 
 
-def get_deactivated_participants(api_project_id: str,
+def get_deactivated_participants(client, api_project_id: str,
                                  columns: List[str]) -> pandas.DataFrame:
     """
     Fetches all deactivated participants via API if suspensionStatus = 'NO_CONTACT'
     and stores all the deactivated participants in a BigQuery dataset table
+    :param client: BigQuery client object
     :param api_project_id: The RDR project that contains participant summary data
     :param columns: columns to be pushed to a table in BigQuery in the form of a list of strings
     :return: returns dataframe of deactivated participants
@@ -328,7 +336,9 @@ def get_deactivated_participants(api_project_id: str,
     # See https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this api.
     params = {'_sort': 'lastModified', 'suspensionStatus': 'NO_CONTACT'}
 
-    participant_data = get_participant_data(api_project_id, params=params)
+    participant_data = get_participant_data(client,
+                                            api_project_id,
+                                            params=params)
 
     column_map = {
         'participant_id': 'person_id',
@@ -371,7 +381,7 @@ def get_site_participant_information(project_id: str, hpo_id: str):
         '_count': '1000'
     }
 
-    participant_data = get_participant_data(project_id, params=params)
+    participant_data = get_participant_data(None, project_id, params=params)
 
     column_map = {'participant_id': 'person_id'}
 
@@ -415,7 +425,7 @@ def get_org_participant_information(project_id: str,
         '_count': '1000'
     }
 
-    participant_data = get_participant_data(project_id, params=params)
+    participant_data = get_participant_data(None, project_id, params=params)
 
     column_map = {'participant_id': 'person_id'}
 
@@ -453,7 +463,7 @@ def get_all_participant_information(project_id: str) -> pandas.DataFrame:
         '_count': '10000'
     }
 
-    participant_data = get_participant_data(project_id, params=params)
+    participant_data = get_participant_data(None, project_id, params=params)
 
     column_map = {'participant_id': 'person_id'}
 
@@ -485,6 +495,7 @@ def get_digital_health_information(project_id: str) -> List[Dict]:
     }
 
     participant_data = get_participant_data(
+        None,
         project_id,
         params=params,
         expected_fields=FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH)
