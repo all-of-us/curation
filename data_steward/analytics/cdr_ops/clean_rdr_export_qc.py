@@ -1390,13 +1390,13 @@ Confirm that all expected surveys have records in survey_conduct. Check ignores 
 
 Generally the list of surveys should increase from one export to the next.
 
-Investigate any surveys that were available in the previous export but not in the current export. 
+Investigate any surveys that were available in the previous export but not in the current export.
 Also make sure that any new expected surveys are listed in the current rdr.
 # -
 
 # # Visual check survey_conduct record drop
 #
-# Review the results. Some surveys are expected to be dropped. 
+# Review the results. Some surveys are expected to be dropped.
 # Investigate any potential issues. Overly extensive cleaning, missing surveys, etc.
 
 tpl = JINJA_ENV.from_string('''
