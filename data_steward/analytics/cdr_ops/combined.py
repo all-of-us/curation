@@ -862,12 +862,20 @@ execute(client, results)
 # ## Verify no participant in the pdr_ehr_dup_report list has EHR data.
 
 unconsented_records_tpl = JINJA_ENV.from_string("""
-SELECT
-  person_id
+SELECT *
 FROM
-  `{{project_id}}.{{dataset_id}}.person`
-WHERE EXISTS (
-    SELECT person_id FROM `{{project_id}}.{{dataset_id}}_sandbox.{{unconsented}}`
+    `{{project}}.{{dataset}}.{{domain_table}}` d
+  JOIN
+    `{{project}}.{{dataset}}.{{mapping_domain_table}}` md
+  USING
+    ({{domain_table}}_id)
+  WHERE
+    person_id IN (
+    SELECT
+      person_id
+    FROM
+      `{{project}}.{{sandbox_dataset}}.{{unconsented_lookup}}`)
+    AND src_dataset_id LIKE '%ehr%'
   )
 """)
 query = unconsented_records_tpl.render(project_id=PROJECT_ID,
