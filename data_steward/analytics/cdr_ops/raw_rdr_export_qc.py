@@ -900,27 +900,7 @@ WHERE primary.research_id <> rdr.research_id
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
-# # Checks for basics survey module
-# Participants with data in other survey modules must also have data from the basics survey module.
-# This check identifies survey responses associated with participants that do not have any responses
-# associated with the basics survey module.
-# In ideal circumstances, this query will not return any results.
-
-tpl = JINJA_ENV.from_string('''
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.observation`
-JOIN `{{project_id}}.{{new_rdr}}.concept` on (observation_source_concept_id=concept_id)
-WHERE vocabulary_id = 'PPI' AND person_id NOT IN (
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.concept`
-JOIN `{{project_id}}.{{new_rdr}}.concept_ancestor` on (concept_id=ancestor_concept_id)
-JOIN `{{project_id}}.{{new_rdr}}.observation` on (descendant_concept_id=observation_concept_id)
-WHERE concept_class_id='Module'
-AND concept_name IN ('The Basics')
-AND questionnaire_response_id IS NOT NULL)
-''')
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
-
-# ## Participants must be 18 years of age or older to consent
+# # Participants must be 18 years of age or older to consent
 #
 # AOU participants are required to be 18+ years of age at the time of consent
 # ([DC-1724](https://precisionmedicineinitiative.atlassian.net/browse/DC-1724)),
