@@ -72,8 +72,13 @@ def get_access_token(client):
         'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
     ]
 
-    credentials = auth.get_impersonation_credentials(
-        client._credentials.service_account_email, target_scopes=scopes)
+    if client is None:
+        credentials, _ = default()
+        credentials = auth.delegated_credentials(credentials, scopes=scopes)
+
+    else:
+        credentials = auth.get_impersonation_credentials(
+            client._credentials.service_account_email, target_scopes=scopes)
 
     request = req.Request()
     credentials.refresh(request)
@@ -174,7 +179,7 @@ def get_paginated_participant_data(api_project_id: str,
     else:
         url = BASE_URL.format(api_project_id=api_project_id)
 
-    token = get_access_token()
+    token = get_access_token(None)
 
     headers = {
         'content-type': 'application/json',
@@ -376,7 +381,7 @@ def get_site_participant_information(project_id: str, hpo_id: str):
         '_count': '1000'
     }
 
-    participant_data = get_participant_data(project_id, params=params)
+    participant_data = get_participant_data(None, project_id, params=params)
 
     column_map = {'participant_id': 'person_id'}
 
@@ -420,7 +425,7 @@ def get_org_participant_information(project_id: str,
         '_count': '1000'
     }
 
-    participant_data = get_participant_data(project_id, params=params)
+    participant_data = get_participant_data(None, project_id, params=params)
 
     column_map = {'participant_id': 'person_id'}
 
@@ -458,7 +463,7 @@ def get_all_participant_information(project_id: str) -> pandas.DataFrame:
         '_count': '10000'
     }
 
-    participant_data = get_participant_data(project_id, params=params)
+    participant_data = get_participant_data(None, project_id, params=params)
 
     column_map = {'participant_id': 'person_id'}
 
@@ -490,6 +495,7 @@ def get_digital_health_information(project_id: str) -> List[Dict]:
     }
 
     participant_data = get_participant_data(
+        None,
         project_id,
         params=params,
         expected_fields=FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH)
