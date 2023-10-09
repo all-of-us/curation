@@ -611,7 +611,7 @@ q = query.render(project_id=project_id,
                  com_cdr=com_cdr,
                  deid_cdr=deid_cdr)
 df1 = execute(client, q)
-if df1.eq(0).any().any():
+if df1['n_row_not_pass'].sum() == 0:
     df = df.append(
         {
             'query':
