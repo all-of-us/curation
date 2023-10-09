@@ -367,7 +367,7 @@ if df1['n_row_not_pass'].sum() == 0:
     df = df.append(
         {
             'query':
-                'Query3 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation',
+                'Query3.1 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation',
             'result':
                 'PASS'
         },
@@ -376,7 +376,7 @@ else:
     df = df.append(
         {
             'query':
-                'Query3 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation',
+                'Query3.1 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation',
             'result':
                 'Failure'
         },
