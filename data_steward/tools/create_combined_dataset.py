@@ -76,15 +76,15 @@ def parse_combined_args(raw_args=None):
                         required=True,
                         help='The EHR snapshot dataset ID')
 
-    parser.add_argument('--duplicates_dataset_id',
+    parser.add_argument('--ehr_duplicates_dataset',
                         action='store',
-                        dest='duplicate_dataset_id',
+                        dest='duplicates_dataset',
                         required=True,
                         help='The dataset that includes duplicate records')
     parser.add_argument(
-        '--duplicates_table',
+        '--ehr_duplicates_table',
         action='store',
-        dest='duplicate_table',
+        dest='duplicates_table',
         required=True,
         help='The table (from the dataset) that includes duplicates PIDs')
 
@@ -139,7 +139,8 @@ def main(raw_args=None):
         args.cutoff_date, '--validation_dataset_id', args.validation_dataset_id,
         '--ehr_dataset_id', args.ehr_dataset_id, '--api_project_id',
         args.api_project_id, '--run_as', args.run_as_email, '-s',
-        args.duplicates_dataset, '--dups_dataset'
+        args.duplicates_dataset, '--ehr_duplicates_dataset',
+        args.duplicates_table, '--ehr_duplicates_table'
     ]
 
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
