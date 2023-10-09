@@ -182,6 +182,11 @@ def parse_args(raw_args=None):
                         dest='input_dataset',
                         help='Name of the input dataset',
                         required=True)
+    parser.add_argument('--run_as',
+                        action='store',
+                        dest='run_as_email',
+                        help='Service account email address to impersonate',
+                        required=True)
     parser.add_argument('-p',
                         '--private_key',
                         dest='private_key',
@@ -353,10 +358,11 @@ def main(raw_args=None):
 
         parameter_list = [
             '--rules',
-            os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
-            '--private_key', args.private_key, '--table', tablepath, '--action',
-            args.action, '--idataset', args.input_dataset, '--log', LOGS_PATH,
-            '--odataset', args.odataset, '--age-limit', args.age_limit
+            os.path.join(DEID_PATH, 'config', 'ids',
+                         'config.json'), '--private_key', args.private_key,
+            '--table', tablepath, '--action', args.action, '--idataset',
+            args.input_dataset, '--log', LOGS_PATH, '--odataset', args.odataset,
+            '--age-limit', args.age_limit, '--run_as', args.run_as_email
         ]
 
         if args.interactive_mode:

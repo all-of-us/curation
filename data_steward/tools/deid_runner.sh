@@ -13,6 +13,7 @@ Usage: deid_runner.sh
   --vocab_dataset <vocabulary dataset name>
   --dataset_release_tag <release tag for the CDR>
   --deid_max_age <integer maximum age for de-identified participants>
+  --clean_survey_dataset_id <clean_survey_dataset_id>
 "
 
 while true; do
@@ -68,12 +69,12 @@ echo "key_file --> ${key_file}"
 echo "cdr_id --> ${cdr_id}"
 echo "vocab_dataset --> ${vocab_dataset}"
 
-APP_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
+APP_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["quota_project_id"]);' < "${key_file}")
+export PROJECT_ID="${APP_ID}"
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${APP_ID}"
 
 #set application environment (ie dev, test, prod)
-gcloud auth activate-service-account --key-file="${key_file}"
 gcloud config set project "${APP_ID}"
 
 registered_cdr_deid="R${dataset_release_tag}_deid"
@@ -85,6 +86,7 @@ DEID_DIR="${DATA_STEWARD_DIR}/deid"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 HANDOFF_DATE="$(date -v +2d +'%Y-%m-%d')"
 data_stage="registered_tier_deid"
+combined_dataset="${dataset_release_tag}_combined"
 
 export BIGQUERY_DATASET_ID="${registered_cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
@@ -92,18 +94,24 @@ export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
 # Version is the most recent tag accessible from the current branch
 version=$(git describe --abbrev=0 --tags)
 
+# create empty dataset for reg_{combined dataaset}
+bq mk --dataset --description "Copy of ${combined_dataset}" --label "owner:curation" --label "phase:clean" --label "data_tier:registered" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" "${APP_ID}":"${cdr_id}"
+
 # create empty de-id dataset
 bq mk --dataset --description "${version} deidentified version of ${cdr_id}" --label "owner:curation" --label "phase:clean" --label "data_tier:registered" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid}"
 
 # create the clinical tables
 python "${DATA_STEWARD_DIR}/cdm.py" "${registered_cdr_deid}"
 
+#copy tables
+"${TOOLS_DIR}"/table_copy.sh --source_app_id ${APP_ID} --target_app_id ${APP_ID} --source_dataset ${combined_dataset} --target_dataset ${cdr_id} --sync false
+
 # copy OMOP vocabulary
 python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${registered_cdr_deid}"
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${registered_cdr_deid}"
 
 # apply de-identification on registered tier dataset
-python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" --private_key "${key_file}" --action submit --interactive --console-log --age_limit "${deid_max_age}" --odataset "${registered_cdr_deid}" 2>&1 | tee deid_run.txt
+python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" --private_key "${key_file}" --action submit --interactive --console-log --age_limit "${deid_max_age}" --odataset "${registered_cdr_deid}" --run_as "${run_as}" 2>&1 | tee deid_run.txt
 
 # create empty sandbox dataset for the deid
 bq mk --dataset --force --description "${version} sandbox dataset to apply cleaning rules on ${registered_cdr_deid}" --label "owner:curation" --label "phase:sandbox" --label "data_tier:registered" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid_sandbox}"
@@ -117,7 +125,6 @@ python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${re
 
 # Add GOOGLE_APPLICATION_CREDENTIALS environment variable
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
-gcloud auth activate-service-account --key-file="${key_file}"
 
 # Copy cdr_metadata table
 python "${TOOLS_DIR}/add_cdr_metadata.py" --component "copy" --project_id "${APP_ID}" --target_dataset "${registered_cdr_deid}" --source_dataset "${cdr_id}"
