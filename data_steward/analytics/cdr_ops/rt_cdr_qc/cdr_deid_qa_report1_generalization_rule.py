@@ -306,7 +306,7 @@ else:
         ignore_index=True)
 df1
 
-# # 3 GR_03 Gender Generalization Rule
+# # 3.1 GR_03 Gender Generalization Rule
 #
 # Verify that the field identified for de-identification action in OBSERVATION table follow the Gender Generalization Rule  for the de-id table.
 #
@@ -383,7 +383,7 @@ else:
         ignore_index=True)
 df1
 
-# # 3 Biological Sex Generalization Rule
+# # 3.2 Biological Sex Generalization Rule
 #
 # Verify that the field identified for de-identification action in OBSERVATION table follow the Biological Sex Generalization Rule for the de-id table.
 #

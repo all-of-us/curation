@@ -76,8 +76,8 @@ else:
 df1
 
 # # 2 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
-
-# ## error in new cdr
+#
+# If there are issues view them in more detail using query 2.1
 
 query = JINJA_ENV.from_string("""
 WITH df1 AS (
@@ -114,6 +114,8 @@ else:
                 ignore_index = True) 
 df1
 
+# ## 2.1 Detailed view of issues found in check 2
+
 # +
 query = JINJA_ENV.from_string("""
 WITH df1 AS (
@@ -143,8 +145,8 @@ df1
 # -
 
 # # 3 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
-
-# ## error in new cdr
+#
+# If there are issues view them in more detail using query 3.1
 
 query = JINJA_ENV.from_string("""
 WITH df1 AS (
@@ -173,6 +175,8 @@ else:
  df = df.append({'query' : 'Query3 observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
+
+# ## 3.1 Detailed view of issues found in check 3
 
 # +
 query = JINJA_ENV.from_string("""
@@ -231,8 +235,8 @@ else:
 df1
 
 # # 5 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
-
-# ## error in new cdr
+#
+# If there are issues view them in more detail using query 5.1
 
 query = JINJA_ENV.from_string("""
 WITH df1 AS (
@@ -262,15 +266,18 @@ else:
                 ignore_index = True) 
 df1
 
+# ## 5.1 Detailed view of issues found in check 5
+
 # +
 query = JINJA_ENV.from_string("""
-WITH df1 AS (
+WITH df1 AS ( 
 SELECT observation_id
 FROM `{{project_id}}.{{com_cdr}}.observation`
 WHERE observation_source_value LIKE '%Gender%' 
 OR observation_source_value LIKE '%Sexuality%' 
 OR observation_source_value LIKE '%SexAtBirthNoneOfThese_%' 
 )
+
 SELECT distinct observation_source_value,value_source_value, value_as_string
 FROM `{{project_id}}.{{deid_cdr}}.observation`
 WHERE observation_id IN (SELECT observation_id FROM df1) 
@@ -464,8 +471,8 @@ else:
 df1
 
 # # 12 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
-
-# ## error in new cdr
+#
+# If there are issues view them in more detail using query 12.1
 
 query = JINJA_ENV.from_string("""
 WITH df1 AS (
@@ -497,6 +504,8 @@ else:
  df = df.append({'query' : 'Query12 observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
+
+# ## 12.1 Detailed view of issues found in check 12
 
 # +
 query = JINJA_ENV.from_string("""
