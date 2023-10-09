@@ -617,54 +617,58 @@ ORDER BY 1, 3
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
-# ## Participants must have basics data
+# # Participants must have basics data
 # Identify any participants who have don't have any responses
-# to questions in the basics survey module (see [DC-706](https://precisionmedicineinitiative.atlassian.net/browse/DC-706)). These should be
-# reported to the RDR as they are supposed to be filtered out
-# from the RDR export.
-
-# +
-BASICS_MODULE_CONCEPT_ID = 1586134
+# to questions in the basics survey module. <br>
+#
+# This query follows the current logic used in the cleaning rule.
+#
+# **If the check fails** Investigate the results. The rdr cleaning rules should have removed data of participants without basics.<br>
 
 # Note: This assumes that concept_ancestor sufficiently
 # represents the hierarchy
 tpl = JINJA_ENV.from_string("""
-WITH
+WITH pids_with_basics AS ( -- pids with basics data in rdr --
+SELECT
+    person_id
+  FROM `{{project_id}}.{{raw_rdr}}.concept_ancestor`
+  INNER JOIN `{{project_id}}.{{raw_rdr}}.observation` o ON observation_concept_id = descendant_concept_id
+  INNER JOIN `{{project_id}}.{{raw_rdr}}.concept` d ON d.concept_id = descendant_concept_id
+  WHERE ancestor_concept_id = 1586134
 
- -- all PPI question concepts in the basics survey module --
- basics_concept AS
- (SELECT
-   c.concept_id
-  ,c.concept_name
-  ,c.concept_code
-  FROM `{{DATASET_ID}}.concept_ancestor` ca
-  JOIN `{{DATASET_ID}}.concept` c
-   ON ca.descendant_concept_id = c.concept_id
-  WHERE 1=1
-    AND ancestor_concept_id={{BASICS_MODULE_CONCEPT_ID}}
-    AND c.vocabulary_id='PPI'
-    AND c.concept_class_id='Question')
+  UNION DISTINCT
 
- -- maps pids to all their associated basics questions in the rdr --
-,pid_basics AS
- (SELECT
-   person_id
-  ,ARRAY_AGG(DISTINCT c.concept_code IGNORE NULLS) basics_codes
-  FROM `{{DATASET_ID}}.observation` o
-  JOIN basics_concept c
-   ON o.observation_concept_id = c.concept_id
-  WHERE 1=1
-  GROUP BY 1)
+  SELECT
+    person_id
+  FROM `{{project_id}}.{{raw_rdr}}.concept`
+  JOIN `{{project_id}}.{{raw_rdr}}.concept_ancestor`
+    ON (concept_id = ancestor_concept_id)
+  JOIN `{{project_id}}.{{raw_rdr}}.observation`
+    ON (descendant_concept_id = observation_concept_id)
+  WHERE concept_class_id = 'Module'
+    AND concept_name IN ('The Basics')
+    AND questionnaire_response_id IS NOT NULL
+)
 
- -- list all pids for whom no basics questions are found --
-SELECT *
-FROM `{{DATASET_ID}}.person`
-WHERE person_id not in (select person_id from pid_basics)
+SELECT 
+'persons_without_basics_person_table' as issue,
+COUNT(DISTINCT person_id) as n
+FROM `{{project_id}}.{{new_rdr}}.person` 
+WHERE person_id NOT IN (SELECT person_id FROM pids_with_basics)
+GROUP BY person_id
+
+UNION ALL
+
+SELECT 
+'persons_without_basics_observation_table' as issue,
+COUNT(DISTINCT person_id) as n
+FROM `{{project_id}}.{{new_rdr}}.observation` 
+WHERE person_id NOT IN (SELECT person_id FROM pids_with_basics)
+GROUP BY person_id
+
 """)
-query = tpl.render(DATASET_ID=new_rdr,
-                   BASICS_MODULE_CONCEPT_ID=BASICS_MODULE_CONCEPT_ID)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id, raw_rdr=raw_rdr)
 execute(client, query)
-# -
 
 # # Date conformance check
 # COPE surveys contain some concepts that must enforce dates in the observation.value_as_string field.
@@ -842,7 +846,7 @@ AND questionnaire_response_id IS NOT NULL)
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
-# ## Participants must be 18 years of age or older to consent
+# # Participants must be 18 years of age or older to consent
 #
 # AOU participants are required to be 18+ years of age at the time of consent
 # ([DC-1724](https://precisionmedicineinitiative.atlassian.net/browse/DC-1724)),
@@ -1133,7 +1137,7 @@ render_message(df,
                failure_msg_args={'code_count': len(df)})
 # -
 
-# ### RDR date cutoff check
+# # RDR date cutoff check
 
 # Check that survey dates are not beyond the RDR cutoff date, also check observation.
 query = JINJA_ENV.from_string("""
@@ -1331,4 +1335,3 @@ display(
     HTML(
         f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
     ))
-# -

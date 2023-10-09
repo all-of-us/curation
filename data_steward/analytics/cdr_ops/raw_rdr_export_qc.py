@@ -798,55 +798,6 @@ ORDER BY 1, 3
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
-# ## Participants must have basics data
-# Identify any participants who have don't have any responses
-# to questions in the basics survey module (see [DC-706](https://precisionmedicineinitiative.atlassian.net/browse/DC-706)). These should be
-# reported to the RDR as they are supposed to be filtered out
-# from the RDR export.
-
-# +
-BASICS_MODULE_CONCEPT_ID = 1586134
-
-# Note: This assumes that concept_ancestor sufficiently
-# represents the hierarchy
-tpl = JINJA_ENV.from_string("""
-WITH
-
- -- all PPI question concepts in the basics survey module --
- basics_concept AS
- (SELECT
-   c.concept_id
-  ,c.concept_name
-  ,c.concept_code
-  FROM `{{DATASET_ID}}.concept_ancestor` ca
-  JOIN `{{DATASET_ID}}.concept` c
-   ON ca.descendant_concept_id = c.concept_id
-  WHERE 1=1
-    AND ancestor_concept_id={{BASICS_MODULE_CONCEPT_ID}}
-    AND c.vocabulary_id='PPI'
-    AND c.concept_class_id='Question')
-
- -- maps pids to all their associated basics questions in the rdr --
-,pid_basics AS
- (SELECT
-   person_id
-  ,ARRAY_AGG(DISTINCT c.concept_code IGNORE NULLS) basics_codes
-  FROM `{{DATASET_ID}}.observation` o
-  JOIN basics_concept c
-   ON o.observation_concept_id = c.concept_id
-  WHERE 1=1
-  GROUP BY 1)
-
- -- list all pids for whom no basics questions are found --
-SELECT *
-FROM `{{DATASET_ID}}.person`
-WHERE person_id not in (select person_id from pid_basics)
-""")
-query = tpl.render(DATASET_ID=new_rdr,
-                   BASICS_MODULE_CONCEPT_ID=BASICS_MODULE_CONCEPT_ID)
-execute(client, query)
-# -
-
 # # Date conformance check
 # COPE surveys contain some concepts that must enforce dates in the observation.value_as_string field.
 # For the observation_source_concept_id = 715711, if the value in value_as_string does not meet a standard date format
@@ -1249,6 +1200,7 @@ for table in SRC_ID_TABLES:
     queries.append(query)
 all_queries = '\nUNION ALL\n'.join(queries)
 execute(client, f'{src_ids_table}\n{all_queries}')
+
 
 # # Check Wear Consent Counts
 #

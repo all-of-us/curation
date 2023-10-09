@@ -470,48 +470,120 @@ else:
         },
         ignore_index=True)
 
-# # query 7  All participants have basics,done
+# # query 7  All participants have basics data in the rdr dataset
+# According to the current vocabulary mapping
 
 # +
 query = JINJA_ENV.from_string("""
-WITH person_all as (
-SELECT person_id FROM `{{project_id}}.{{ct_dataset}}.person`),
-
-person_basics as (
-SELECT distinct person_id
-FROM
-`{{project_id}}.{{ct_dataset}}.concept`
-JOIN `{{project_id}}.{{ct_dataset}}.concept_ancestor` on (concept_id=ancestor_concept_id)
-JOIN `{{project_id}}.{{ct_dataset}}.observation` on (descendant_concept_id=observation_concept_id)
-JOIN `{{project_id}}.{{ct_dataset}}.observation_ext` USING(observation_id)
-WHERE observation_concept_id NOT IN (40766240,43528428,1585389)
-AND concept_class_id='Module'
-AND concept_name IN ('The Basics')
-AND NOT REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
-AND questionnaire_response_id is not null)
-
+WITH pids_with_basics AS ( -- pids with basics data in rdr --
 SELECT
-'observation' AS table_name,
-'person_id' AS column_name,
-COUNT(*) AS row_counts_failure,
-CASE WHEN
-  COUNT(*) > 0
-  THEN 1 ELSE 0
-END
- AS Failure_bascis
+    person_id
+  FROM `{{project_id}}.{{raw_rdr_dataset}}.concept_ancestor`
+  INNER JOIN `{{project_id}}.{{raw_rdr_dataset}}.observation` o ON observation_concept_id = descendant_concept_id
+  INNER JOIN `{{project_id}}.{{raw_rdr_dataset}}.concept` d ON d.concept_id = descendant_concept_id
+  WHERE ancestor_concept_id = 1586134
 
-FROM person_all
-WHERE person_id NOT IN (SELECT person_id FROM person_basics)
+  UNION DISTINCT
+
+  SELECT
+    person_id
+  FROM `{{project_id}}.{{raw_rdr_dataset}}.concept`
+  JOIN `{{project_id}}.{{raw_rdr_dataset}}.concept_ancestor`
+    ON (concept_id = ancestor_concept_id)
+  JOIN `{{project_id}}.{{raw_rdr_dataset}}.observation`
+    ON (descendant_concept_id = observation_concept_id)
+  WHERE concept_class_id = 'Module'
+    AND concept_name IN ('The Basics')
+    AND questionnaire_response_id IS NOT NULL
+),
+
+rids_with_basics AS ( -- rids with basics data in rdr --
+SELECT DISTINCT research_id
+FROM pids_with_basics
+JOIN `{{project_id}}.{{deid_sandbox}}._deid_map` as pid_rid
+ON pids_with_basics.person_id = pid_rid.person_id
+)
+
+
+SELECT 
+'persons_without_basics_in_rdr' as issue,
+COUNT(DISTINCT person_id) as n
+FROM `{{project_id}}.{{ct_dataset}}.person` 
+WHERE person_id NOT IN (SELECT research_id FROM rids_with_basics)
+GROUP BY person_id
 """)
 
-q = query.render(project_id=project_id, ct_dataset=ct_dataset)
+q = query.render(project_id=project_id, ct_dataset=ct_dataset, raw_rdr_dataset=raw_rdr_dataset, deid_sandbox=deid_sandbox)
 df1 = execute(client, q)
-df1.shape
+df1
 # -
 
-df1
+if df1.iloc[:, 1].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query7: All participants have basics',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Query7: All participants have basics',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 
-if df1.iloc[:, 3].sum() == 0:
+# # query 7  All participants have basics data in the rdr dataset
+# According to the survey_conduct table
+#
+# This will most likely fail. 
+
+# +
+query = JINJA_ENV.from_string("""
+WITH pids_with_basics AS ( -- pids with basics data in rdr --
+SELECT
+    person_id
+  FROM `{{project_id}}.{{raw_rdr_dataset}}.concept_ancestor`
+  INNER JOIN `{{project_id}}.{{raw_rdr_dataset}}.observation` o ON observation_concept_id = descendant_concept_id
+  INNER JOIN `{{project_id}}.{{raw_rdr_dataset}}.concept` d ON d.concept_id = descendant_concept_id
+  WHERE ancestor_concept_id = 1586134
+
+  UNION DISTINCT
+
+  SELECT
+    person_id
+  FROM `{{project_id}}.{{raw_rdr_dataset}}.concept`
+  JOIN `{{project_id}}.{{raw_rdr_dataset}}.concept_ancestor`
+    ON (concept_id = ancestor_concept_id)
+  JOIN `{{project_id}}.{{raw_rdr_dataset}}.observation`
+    ON (descendant_concept_id = observation_concept_id)
+  WHERE concept_class_id = 'Module'
+    AND concept_name IN ('The Basics')
+    AND questionnaire_response_id IS NOT NULL
+),
+
+rids_with_basics AS ( -- rids with basics data in rdr --
+SELECT DISTINCT research_id
+FROM pids_with_basics
+JOIN `{{project_id}}.{{deid_sandbox}}._deid_map` as pid_rid
+ON pids_with_basics.person_id = pid_rid.person_id
+)
+
+
+SELECT 
+'persons_without_basics_in_rdr' as issue,
+COUNT(DISTINCT person_id) as n
+FROM `{{project_id}}.{{ct_dataset}}.person` 
+WHERE person_id NOT IN (SELECT research_id FROM rids_with_basics)
+GROUP BY person_id
+""")
+
+q = query.render(project_id=project_id, ct_dataset=ct_dataset, raw_rdr_dataset=raw_rdr_dataset, deid_sandbox=deid_sandbox)
+df1 = execute(client, q)
+df1
+# -
+
+if df1.iloc[:, 1].sum() == 0:
     df = df.append(
         {
             'query': 'Query7: All participants have basics',
