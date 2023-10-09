@@ -22,16 +22,11 @@ MAP_TABLE_NAME = "person_src_hpos_lookup_ext"
 SCHEMA_MAP_TABLE = "person_src_hpos_ext"
 
 HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
-  SELECT
-  DISTINCT person_id, src_id
-  FROM
-    `{{project_id}}.{{dataset_id}}.{{table}}_ext`
-  JOIN
-    `{{project_id}}.{{dataset_id}}.{{table}}`
-  USING
-    ({{table}}_id)
-  WHERE
-    NOT REGEXP_CONTAINS(src_id, r'(?i)(Portal)')
+  SELECT DISTINCT person_id, src_id
+  FROM `{{project_id}}.{{dataset_id}}.{{table}}_ext`
+  JOIN `{{project_id}}.{{dataset_id}}.{{table}}`
+  USING ({{table}}_id)
+  WHERE NOT REGEXP_CONTAINS(src_id, r'(?i)(Portal)')
 """)
 
 LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
@@ -48,8 +43,7 @@ LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
 
 INSERT_TO_MAP_TABLE_NAME = JINJA_ENV.from_string("""
   INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{table_name}}`
-  (person_id,
-   src_id)
+  (person_id, src_id)
   {{select_query}}
 """)
 
