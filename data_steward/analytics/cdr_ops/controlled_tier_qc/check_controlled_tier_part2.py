@@ -195,7 +195,7 @@ def my_sql(table_name, column_name):
 FROM
   {{project_id}}.{{rt_dataset}}.person
 JOIN
-  {{project_id}}.{{rt_dataset}}._deid_map
+  {{project_id}}.{{deid_sandbox}}._deid_map
 USING
   (person_id)
   )
@@ -217,6 +217,7 @@ WHERE  DATE(c.{{column_name}})< r.birth_date
     q = query.render(project_id=project_id,
                      rt_dataset=rt_dataset,
                      ct_dataset=ct_dataset,
+                     deid_sandbox=deid_sandbox,
                      table_name=table_name,
                      column_name=column_name)
     df11 = execute(client, q)
@@ -667,6 +668,7 @@ WITH
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(location)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(source)')
       AND NOT REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
+      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(visit_detail)')
       AND NOT REGEXP_CONTAINS(column_name, r'(?i)(unique)')
       )
 
@@ -676,11 +678,23 @@ WITH
         DISTINCT table_name
       FROM
         table1))
-        AND REGEXP_CONTAINS(table_name, r'(?i)(visit)')
+        AND REGEXP_CONTAINS(table_name, r'(?i)(visit_occurrence)')
         AND REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
-
+    
     OR (
+    (table_name IN (
+      SELECT
+        DISTINCT table_name
+      FROM
+        table1))
+        AND REGEXP_CONTAINS(table_name, r'(?i)(visit_detail)')
+        AND REGEXP_CONTAINS(column_name, r'(?i)(visit_detail_id)')
+        AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
+   """)
+
+"""
+OR (
     (table_name IN (
       SELECT
         DISTINCT table_name
@@ -690,7 +704,7 @@ WITH
          AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person_ext)')
         AND REGEXP_CONTAINS(column_name, r'(?i)(person_id)')
      )
-   """)
+"""
 
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
 target_tables = execute(client, q)
@@ -807,6 +821,7 @@ WITH
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(location)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(source)')
       AND NOT REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
+      AND NOT REGEXP_CONTAINS(column_name, r'(?i)(visit_detail)')
       AND NOT REGEXP_CONTAINS(column_name, r'(?i)(unique)')
       )
 
@@ -816,11 +831,23 @@ WITH
         DISTINCT table_name
       FROM
         table1))
-        AND REGEXP_CONTAINS(table_name, r'(?i)(visit)')
+        AND REGEXP_CONTAINS(table_name, r'(?i)(visit_occurrence)')
         AND REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
-
+    
     OR (
+          (table_name IN (
+      SELECT
+        DISTINCT table_name
+      FROM
+        table1))
+        AND REGEXP_CONTAINS(table_name, r'(?i)(visit_detail)')
+        AND REGEXP_CONTAINS(column_name, r'(?i)(visit_detail_id)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
+ """)
+
+"""
+OR (
            (table_name IN (
       SELECT
         DISTINCT table_name
@@ -830,7 +857,7 @@ WITH
          AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person_ext)')
         AND REGEXP_CONTAINS(column_name, r'(?i)(person_id)')
      )
- """)
+"""
 
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
 target_tables = execute(client, q)
@@ -1293,9 +1320,9 @@ WHERE person_id not in (  -- aou consenting participants --
   FROM latest_primary_consent_records cte
     LEFT JOIN ( -- any positive primary consent --
       SELECT *
-      FROM `{{project_id}}.{{ct_dataset}}.observation` o
-      WHERE REGEXP_CONTAINS(o.observation_source_value, '(?i)extraconsent_agreetoconsent')
-      AND o.value_as_concept_id = 45877994
+      FROM `{{project_id}}.{{ct_dataset}}.observation`
+      WHERE REGEXP_CONTAINS(observation_source_value, '(?i)extraconsent_agreetoconsent')
+      AND value_as_concept_id = 45877994) o
     ON cte.person_id = o.person_id
     AND cte.latest_consent_date = o.observation_date
   WHERE o.person_id IS NOT NULL

@@ -57,7 +57,8 @@ class RemoveExtraTablesTest(unittest.TestCase):
                         include_vocabulary=True).keys()) | {'_cdr_metadata'} | {
                             f'{table}_ext' for table in cdm_schemas().keys()
                             if has_domain_table_id(table)
-                        } - {'person_ext'} | {'person_src_hpos_ext'}
+                        } - {'person_ext'} | {'person_src_hpos_ext'
+                                             } | {'aou_death'} | {'wear_study'}
         self.assertCountEqual(self.rule_instance.affected_tables, final_tables)
 
         expected_list = [{

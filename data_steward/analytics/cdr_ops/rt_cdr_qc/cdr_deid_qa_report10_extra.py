@@ -423,12 +423,12 @@ df1
 query = JINJA_ENV.from_string("""
 SELECT COUNT (*) AS n_row_not_pass
 FROM `{{project_id}}.{{pipeline}}.site_maskings` as c
-LEFT JOIN `{{project_id}}.{{deid_sand}}.site_maskings` as r
+LEFT JOIN `{{project_id}}.{{combine}}_sandbox.site_maskings` as r
 USING (hpo_id)
 WHERE c.src_id != r.src_id
 -- registered tier did use the stabilized maskings for cross pipeline compatibility --
 """)
-q = query.render(project_id=project_id, pipeline=pipeline, deid_sand=deid_sand)
+q = query.render(project_id=project_id, pipeline=pipeline, combine=combine)
 df1 = execute(client, q)
 if df1.loc[0].sum() == 0:
     df = df.append(
