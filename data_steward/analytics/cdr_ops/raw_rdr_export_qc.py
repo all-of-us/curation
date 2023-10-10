@@ -429,7 +429,7 @@ render_message(df,
 # -
 
 # # Check the ETL mapped `concept_id`s to question codes
-# If most concepts are mapped, this check passes. If only some concepts are not mapping properly these are most likely known vocabulary issues.
+# If most concepts are mapped, this check passes. If only some concepts are not mapping properly these are most likely known vocabulary issues or linked to new surveys not yet in Athena.
 #
 # **If the check fails.** Investigate. If none, or only a few, of the codes are being mapped notify rdr.
 #
@@ -444,8 +444,7 @@ SELECT
   ,COUNTIF(observation_source_concept_id IS NOT NULL AND observation_source_concept_id != 0 AND observation_concept_id IS NOT NULL AND observation_concept_id != 0) AS n_mapped_by_etl 
   FROM `{{project_id}}.{{new_rdr}}.observation`
 LEFT JOIN (SELECT concept_id_1 FROM `{{project_id}}.{{new_rdr}}.concept_relationship` WHERE relationship_id = 'Maps to') cr1
-ON observation_source_concept_id = cr1.concept_id_1
-WHERE cr1.concept_id_1 IS NOT NULL 
+ON observation_source_concept_id = cr1.concept_id_1 
 GROUP BY 2
 
 )
@@ -550,35 +549,6 @@ SELECT
  ,observation_datetime
 FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_date != EXTRACT(DATE FROM observation_datetime)
-""")
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
-
-# # Check for duplicates
-
-tpl = JINJA_ENV.from_string("""
-with duplicates AS (
-    SELECT
-      person_id
-     ,observation_datetime
-     ,observation_source_value
-     ,value_source_value
-     ,value_as_number
-     ,value_as_string
-   -- ,questionnaire_response_id --
-     ,COUNT(1) AS n_data
-    FROM `{{project_id}}.{{new_rdr}}.observation`
-    INNER JOIN `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map`
-        USING (questionnaire_response_id) -- For COPE only --
-    GROUP BY 1,2,3,4,5,6
-)
-SELECT
-  n_data   AS duplicates
- ,COUNT(1) AS n_duplicates
-FROM duplicates
-WHERE n_data > 1
-GROUP BY 1
-ORDER BY 2 DESC
 """)
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
@@ -964,89 +934,7 @@ group by value_source_concept_id, value_as_concept_id
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
-# # COPE survey mapping
-
-# There is a known issue that COPE survey questions all map to the module
-# 1333342 (COPE survey with no version specified). This check is to confirm
-# if this issue still exists in the vocabulary or not.
-# If this issue is fixed, each COPE survey questions will have mapping to
-# individual COPE survey modules and will no longer have mapping to 1333342.
-# cope_question_concept_ids are collected using the SQL listed in DC-2641:
-# [DC-2641](https://precisionmedicineinitiative.atlassian.net/browse/DC-2641).
-
-cope_question_concept_ids = [
-    596884, 596885, 596886, 596887, 596888, 702686, 713888, 715711, 715713,
-    715714, 715719, 715720, 715721, 715722, 715723, 715724, 715725, 715726,
-    903629, 903630, 903631, 903632, 903633, 903634, 903635, 903641, 903642,
-    1310051, 1310052, 1310053, 1310054, 1310056, 1310058, 1310060, 1310062,
-    1310065, 1310066, 1310067, 1310132, 1310133, 1310134, 1310135, 1310136,
-    1310137, 1310138, 1310139, 1310140, 1310141, 1310142, 1310144, 1310145,
-    1310146, 1310147, 1310148, 1332734, 1332735, 1332737, 1332738, 1332739,
-    1332741, 1332742, 1332744, 1332745, 1332746, 1332747, 1332748, 1332749,
-    1332750, 1332751, 1332752, 1332753, 1332754, 1332755, 1332756, 1332762,
-    1332763, 1332767, 1332769, 1332792, 1332793, 1332794, 1332795, 1332796,
-    1332797, 1332800, 1332801, 1332802, 1332803, 1332804, 1332805, 1332806,
-    1332807, 1332808, 1332819, 1332820, 1332822, 1332824, 1332826, 1332828,
-    1332829, 1332830, 1332831, 1332832, 1332833, 1332835, 1332843, 1332847,
-    1332848, 1332849, 1332853, 1332854, 1332861, 1332862, 1332863, 1332866,
-    1332867, 1332868, 1332869, 1332870, 1332871, 1332872, 1332874, 1332876,
-    1332878, 1332880, 1332935, 1332937, 1332944, 1332998, 1333004, 1333011,
-    1333012, 1333013, 1333014, 1333015, 1333016, 1333017, 1333018, 1333019,
-    1333020, 1333021, 1333022, 1333023, 1333024, 1333102, 1333104, 1333105,
-    1333118, 1333119, 1333120, 1333121, 1333156, 1333163, 1333164, 1333165,
-    1333166, 1333167, 1333168, 1333182, 1333183, 1333184, 1333185, 1333186,
-    1333187, 1333188, 1333189, 1333190, 1333191, 1333192, 1333193, 1333194,
-    1333195, 1333200, 1333216, 1333221, 1333234, 1333235, 1333274, 1333275,
-    1333276, 1333277, 1333278, 1333279, 1333280, 1333281, 1333285, 1333286,
-    1333287, 1333288, 1333289, 1333291, 1333292, 1333293, 1333294, 1333295,
-    1333296, 1333297, 1333298, 1333299, 1333300, 1333301, 1333303, 1333311,
-    1333312, 1333313, 1333314, 1333324, 1333325, 1333326, 1333327, 1333328
-]
-
-tpl = JINJA_ENV.from_string("""
-WITH question_topic_module AS (
-  SELECT
-      cr1.concept_id_1 AS question,
-      cr1.concept_id_2 AS topic,
-      cr2.concept_id_2 AS module
-  FROM `{{projcet_id}}.{{dataset}}.concept_relationship` cr1
-  JOIN `{{projcet_id}}.{{dataset}}.concept` c1 ON cr1.concept_id_2 = c1.concept_id
-  JOIN `{{projcet_id}}.{{dataset}}.concept_relationship` cr2 ON c1.concept_id = cr2.concept_id_1
-  JOIN `{{projcet_id}}.{{dataset}}.concept` c2 ON cr2.concept_id_2 = c2.concept_id
-  WHERE cr1.concept_id_1 IN ({{cope_question_concept_ids}})
-  AND c1.concept_class_id = 'Topic'
-  AND c2.concept_class_id = 'Module'
-)
-SELECT DISTINCT question FROM question_topic_module
-WHERE module = 1333342
-""")
-query = tpl.render(
-    new_rdr=new_rdr,
-    project_id=project_id,
-    dataset=new_rdr,
-    cope_question_concept_ids=", ".join(
-        str(concept_id) for concept_id in cope_question_concept_ids))
-df = execute(client, query)
-
-# +
-success_msg = '''
-    The mapping issue is resolved. Double-check each concept is mapped to individual COPE module.
-    Once we double-checked it, we can remove this QC from this notebook.
-'''
-failure_msg = '''
-    The mapping issue still exists. There are <b>{code_count}</b> concepts for COPE questions
-    that map to 1333342. Notify Odysseus that the issue still persists.
-    For pipeline, we can use cope_survey_semantic_version_map to diffrentiate COPE module versions,
-    so we can still move on. See DC-2641 for detail.
-'''
-
-render_message(df,
-               success_msg,
-               failure_msg,
-               failure_msg_args={'code_count': len(df)})
-# -
-
-# ### RDR date cutoff check
+# # RDR date cutoff check
 
 # Check that survey dates are not beyond the RDR cutoff date, also check observation.
 query = JINJA_ENV.from_string("""
@@ -1183,38 +1071,64 @@ execute(client, f'{src_ids_table}\n{all_queries}')
 
 
 # # Check Wear Consent Counts
+# This query checks the count of wear consent observations. If the number of observations is not decreasing this check will pass.
 #
-# `Wear_consent` and `wear_consent_ptsc` records should be seen in the export.
-#
-# Results expectations: The result should be roughly 16 rows. Differences here most likely aren't an issue.
-#
-# **Visual check:** <br>
-# * **PASS**   The result **includes** observation_source_value: `resultsconsent_wear` <br>
-# * **FAIL**   The result **does not include** observation_source_value: `resultsconsent_wear`.  If this row does not exist, confirm the finding, and report to RDR. These records are required for proper suppression of wear fitbit records.
+# **If this check fails** Investigate why the number of observations have decreased. These data are important for the creation of the wear_study table and therefore data suppression
 
+# +
 # Get counts of wear_consent records
 query = JINJA_ENV.from_string("""
+
 SELECT
-  observation_source_value,
-  COUNT(*) AS n
-FROM
-  `{{project_id}}.{{new_rdr}}.observation` o
-  LEFT JOIN   `{{project_id}}.{{new_rdr}}.survey_conduct` sc
-  ON sc.survey_conduct_id = o.questionnaire_response_id
-WHERE sc.survey_concept_id IN (2100000011,2100000012) -- captures questions asked in multiple surveys --
-OR LOWER(observation_source_value) IN UNNEST ({{wear_codes}}) -- captures those that might be missing from survey_conduct --
-GROUP BY 1
+  curr.observation_source_value AS concept
+ ,prev.row_count AS _{{old_rdr}}
+ ,curr.row_count AS _{{new_rdr}}
+ ,(curr.row_count - prev.row_count) row_diff
+FROM (SELECT DISTINCT observation_source_value, COUNT(*) as row_count
+    FROM `{{project_id}}.{{new_rdr}}.observation` o
+    WHERE observation_source_value = 'resultsconsent_wear'
+    GROUP BY 1) curr
+JOIN (SELECT DISTINCT observation_source_value, COUNT(*) row_count 
+    FROM `{{project_id}}.{{old_rdr}}.observation` o
+    WHERE observation_source_value = 'resultsconsent_wear'
+    GROUP BY 1) prev
+USING (observation_source_value)
+GROUP BY 1,2,3
 
 """).render(project_id=project_id,
             new_rdr=new_rdr,
-            wear_codes=WEAR_SURVEY_CODES)
-execute(client, query)
+            old_rdr=old_rdr)
+df = execute(client, query)
+
+if sum(df['row_diff']) < 0:
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:red">FAILURE</span>
+                </h3>
+                <p>
+                    Wear consent records have been lost since the last rdr. Investigate. See description.
+                </p>
+            '''))
+else:
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:green">PASS</span>
+                </h3>
+                <p>
+                    An increasing number of wear consents are expected.
+                </p>
+                
+            '''))
+# -
 
 # # Check Wear Consent Mapping
 # This mapping is required to keep the observations being dropped in the rdr cleaning stage and also required to create the wear_study table.
 #
 # **If this check fails**, verify the query results before notifying the rdr team.
 
+# +
 query = JINJA_ENV.from_string("""
 SELECT
   'Mandatory mapping to standard is missing' as issue,
@@ -1227,6 +1141,29 @@ AND (observation_source_concept_id != 2100000010 OR
 
 """).render(project_id=project_id,
             new_rdr=new_rdr)
-execute(client, query)
+df = execute(client, query)
+
+if sum(df['n']) != 0:
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:red">FAILURE</span>
+                </h3>
+                <p>
+                    These are mandatory mappings. Investigate. See description.
+                </p>
+            '''))
+else:
+    display(df,
+        HTML(f'''
+                <h3>
+                    Check Status: <span style="color:green">PASS</span>
+                </h3>
+                <p>
+                    All mandatory wear concent records are mapped as expected.
+                </p>
+                
+            '''))
+# -
 
 
