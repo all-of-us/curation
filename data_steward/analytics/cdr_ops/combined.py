@@ -878,12 +878,15 @@ FROM
     AND src_dataset_id LIKE '%ehr%'
   )
 """)
-query = unconsented_records_tpl.render(project=PROJECT_ID,
-                                       dataset=DATASET_ID,
-                                       domain_table='wip',
-                                       mapping_domain_table='wip',
-                                       sandbox_dataset='wip',
-                                       unconsented_lookup=UNCONSENTED)
+
+for table in MAPPED_CLINICAL_DATA_TABLES:
+    query = unconsented_records_tpl.render(
+        project=PROJECT_ID,
+        dataset=DATASET_ID,
+        domain_table=table,
+        mapping_domain_table=f'_mapping_{table}',
+        sandbox_dataset='wip',
+        unconsented_lookup=UNCONSENTED)
 result = execute(client, query)
 print(f"found {len(result)} PIDs'")
 result
