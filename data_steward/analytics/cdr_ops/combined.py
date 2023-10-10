@@ -888,13 +888,9 @@ for table in MAPPED_CLINICAL_DATA_TABLES:
         sandbox_dataset=f'{DATASET_ID}_sandbox',
         unconsented_lookup=UNCONSENTED)
 
-    count = execute(client, query)
-    row_counts.append(count)
-
-if any(row_counts):
-    print("PASS, all PIDs' are consenting")
-else:
-    print("FAIL, unconsenting PIDs' are PRESENT")
-    row_counts
+    result = execute(client, query)
+    if result.any():
+        break
+result
 
 
