@@ -53,7 +53,13 @@ INSERT_RAW_DATA_OBS = JINJA_ENV.from_string("""
     -- State info will be generalized for person_id 4 --
         (401, 4, 0, '2020-01-01', 1, 999, 1585249, 1585261, 'PIIState_AL'),
         (402, 4, 0, '2020-01-01', 1, 999, 1500000, 9999999, 'Dummy'),
-        (403, 4, 0, '2020-01-01', 1, 999, 1500000, 9999999, 'Dummy')
+        (403, 4, 0, '2020-01-01', 1, 999, 1500000, 9999999, 'Dummy'),
+    -- person_id 5 answered that she lives in Alabama. -- 
+    -- And she only has RDR records, no HPO records exists. --
+    -- Nothing happens to person_id 5 --
+        (501, 5, 0, '2020-01-01', 1, 999, 1585249, 1585261, 'PIIState_AL'),
+        (502, 5, 0, '2020-01-01', 1, 999, 1500000, 9999999, 'Dummy'),
+        (503, 5, 0, '2020-01-01', 1, 999, 1500000, 9999999, 'Dummy')
  """)
 
 INSERT_RAW_DATA_EXT = JINJA_ENV.from_string("""
@@ -63,7 +69,8 @@ INSERT_RAW_DATA_EXT = JINJA_ENV.from_string("""
         (101, 'Portal1'), (102, 'bar 001'), (103, 'bar 001'),
         (201, 'Portal2'), (202, 'bar 001'), (203, 'bar 002'),
         (301, 'Portal3'), (302, 'bar 003'), (303, 'bar 003'),
-        (401, 'Portal4'), (402, 'bar 001'), (403, 'bar 003')
+        (401, 'Portal4'), (402, 'bar 001'), (403, 'bar 003'),
+        (501, 'Portal5'), (502, 'Portal6'), (503, 'Portal7')
  """)
 
 INSERT_TEMP_MASK_TABLE = JINJA_ENV.from_string("""
@@ -150,25 +157,31 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.sandbox_id}.{MAP_TABLE_NAME}'
             ],
             'loaded_ids': [
-                101, 102, 103, 201, 202, 203, 301, 302, 303, 401, 402, 403
+                101, 102, 103, 201, 202, 203, 301, 302, 303, 401, 402, 403, 501,
+                502, 503
             ],
             'sandboxed_ids': [301, 401],
             'fields': [
                 'observation_id', 'person_id', 'value_as_concept_id',
                 'observation_source_concept_id', 'value_source_concept_id'
             ],
-            'cleaned_values': [(101, 1, 999, 1585249, 1585261),
-                               (102, 1, 999, 1500000, 9999999),
-                               (103, 1, 999, 1500000, 9999999),
-                               (201, 2, 999, 1585249, 1585261),
-                               (202, 2, 999, 1500000, 9999999),
-                               (203, 2, 999, 1500000, 9999999),
-                               (301, 3, 2000000011, 1585249, 2000000011),
-                               (302, 3, 999, 1500000, 9999999),
-                               (303, 3, 999, 1500000, 9999999),
-                               (401, 4, 2000000011, 1585249, 2000000011),
-                               (402, 4, 999, 1500000, 9999999),
-                               (403, 4, 999, 1500000, 9999999)]
+            'cleaned_values': [
+                (101, 1, 999, 1585249, 1585261),
+                (102, 1, 999, 1500000, 9999999),
+                (103, 1, 999, 1500000, 9999999),
+                (201, 2, 999, 1585249, 1585261),
+                (202, 2, 999, 1500000, 9999999),
+                (203, 2, 999, 1500000, 9999999),
+                (301, 3, 2000000011, 1585249, 2000000011),
+                (302, 3, 999, 1500000, 9999999),
+                (303, 3, 999, 1500000, 9999999),
+                (401, 4, 2000000011, 1585249, 2000000011),
+                (402, 4, 999, 1500000, 9999999),
+                (403, 4, 999, 1500000, 9999999),
+                (501, 5, 999, 1585249, 1585261),
+                (502, 5, 999, 1500000, 9999999),
+                (503, 5, 999, 1500000, 9999999),
+            ]
         }]
 
         # mock the PIPELINE_TABLES variable so tests on different branches
@@ -178,12 +191,12 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
                 self.dataset_id):
             self.default_test(tables_and_counts)
 
+        # Checking if the sandboxed records are also expected.
         self.assertTableValuesMatch(
             f'{self.project_id}.{self.sandbox_id}.{MAP_TABLE_NAME}',
             ['person_id', 'src_id'], [(1, 'bar 001'), (2, 'bar 001'),
                                       (2, 'bar 002'), (3, 'bar 003'),
                                       (4, 'bar 001'), (4, 'bar 003')])
-
         self.assertTableValuesMatch(
             f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(f"{OBSERVATION}_identifier")}',
             [
