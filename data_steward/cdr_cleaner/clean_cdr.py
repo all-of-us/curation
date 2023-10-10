@@ -393,7 +393,6 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (FitbitPIDtoRID,),
     (FitbitDeidSrcID,),
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
-    (DropViaSurveyConduct,),
 ]
 
 DATA_CONSISTENCY_CLEANING_CLASSES = [
