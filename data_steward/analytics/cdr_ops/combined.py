@@ -876,17 +876,25 @@ FROM
     FROM
       `{{project}}.{{sandbox_dataset}}.{{unconsented_lookup}}`)
     AND src_dataset_id LIKE '%ehr%'
-  )
 """)
 
+row_counts = []
 for table in MAPPED_CLINICAL_DATA_TABLES:
     query = unconsented_records_tpl.render(
         project=PROJECT_ID,
         dataset=DATASET_ID,
         domain_table=table,
         mapping_domain_table=f'_mapping_{table}',
-        sandbox_dataset='wip',
+        sandbox_dataset=f'{DATASET_ID}_sandbox',
         unconsented_lookup=UNCONSENTED)
-result = execute(client, query)
-print(f"found {len(result)} PIDs'")
-result
+
+    count = execute(client, query)
+    row_counts.append(count)
+
+if any(row_counts):
+    print("PASS, all PIDs' are consenting")
+else:
+    print("FAIL, unconsenting PIDs' are PRESENT")
+    row_counts
+
+
