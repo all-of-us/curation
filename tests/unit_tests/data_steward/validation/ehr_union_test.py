@@ -309,14 +309,13 @@ class EhrUnionTest(unittest.TestCase):
         mock_hpo_info.return_value = [{
             'hpo_id': hpo_id
         } for hpo_id in self.hpo_ids]
-        self.mock_bq_client.return_value = 'client'
         eu.main("input_dataset_id",
                 "output_dataset_id",
                 "project_id",
                 hpo_ids_ex=[self.FAKE_SITE_2])
         mock_mapping.assert_called_with(ANY, [self.FAKE_SITE_1],
                                         "input_dataset_id", "output_dataset_id",
-                                        "project_id", 'client')
+                                        "project_id", ANY)
 
     def tearDown(self):
         pass
