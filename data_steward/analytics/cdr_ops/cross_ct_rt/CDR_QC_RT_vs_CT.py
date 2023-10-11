@@ -668,21 +668,19 @@ pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
 
 query = JINJA_ENV.from_string("""
     SELECT
-        \{{table_name}}\ as table_name,
-        COUNT(*) as total_records
+        \{{table_name}}\ AS table_name,
+        COUNT(*) AS total_records
     FROM
         `{{project_id}}.{{dataset_id}}.{{table_name}}`
-    WHERE person_id in (
+    WHERE person_id IN (
         SELECT 
-            research_id
+            pr.research_id
         FROM
-           `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}`  
-        WHERE person_id in (
-            SELECT
-                person_id
-            FROM
-               `{{project_id}}.{{combined_sandbox_dataset}}.{{lookup_table}}`             
-        )
+           `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}` AS pr
+        JOIN 
+            `{{project_id}}.{{combined_sandbox_dataset}}.{{lookup_table}}` AS w
+        ON 
+            pr.person_id = w.person_id
     )
 """)
 
@@ -690,7 +688,7 @@ row_counts_queries_list = []
 for table in pid_table_list:
     row_counts_queries_list.append(
         query.render(project_id=project_id,
-                     rt_dataset=rt_dataset,
+                     dataset_id=rt_dataset,
                      table_name=table,
                      combined_sandbox_dataset=combined_sandbox_dataset,
                      lookup_table=withdrawn_lookup_table,
@@ -735,21 +733,19 @@ pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
 
 query = JINJA_ENV.from_string("""
     SELECT
-        \{{table_name}}\ as table_name,
-        COUNT(*) as total_records
+        \{{table_name}}\ AS table_name,
+        COUNT(*) AS total_records
     FROM
         `{{project_id}}.{{dataset_id}}.{{table_name}}`
-    WHERE person_id in (
+    WHERE person_id IN (
         SELECT 
-            research_id
+            pr.research_id
         FROM
-           `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}`  
-        WHERE person_id in (
-            SELECT
-                person_id
-            FROM
-               `{{project_id}}.{{combined_sandbox_dataset}}.{{lookup_table}}`             
-        )
+           `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}` AS pr
+        JOIN 
+            `{{project_id}}.{{combined_sandbox_dataset}}.{{lookup_table}}` AS w
+        ON 
+            pr.person_id = w.person_id
     )
 """)
 
@@ -757,7 +753,7 @@ row_counts_queries_list = []
 for table in pid_table_list:
     row_counts_queries_list.append(
         query.render(project_id=project_id,
-                     ct_dataset=ct_dataset,
+                     dataset_id=ct_dataset,
                      table_name=table,
                      combined_sandbox_dataset=combined_sandbox_dataset,
                      lookup_table=withdrawn_lookup_table,
