@@ -152,6 +152,8 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
+            ehr_duplicates_dataset=duplicates_dataset,
+            ehr_duplicates_table=duplicates_table,
         )
 
     def get_query_specs(self):
