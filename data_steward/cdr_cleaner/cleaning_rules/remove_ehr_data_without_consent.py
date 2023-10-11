@@ -121,8 +121,8 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
                  dataset_id,
                  sandbox_dataset_id,
                  table_namer=None,
-                 duplicates_dataset=None,
-                 duplicates_table=None):
+                 ehr_duplicates_dataset=None,
+                 ehr_duplicates_table=None):
         """
         Initialize the class with proper information.
 
@@ -138,11 +138,11 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
             'table will be sandboxed and dropped from the CDR.  This includes duplicate records'
         )
 
-        if not duplicates_table or not duplicates_table:
+        if not ehr_duplicates_table or not ehr_duplicates_table:
             raise RuntimeError('duplicate data is not present')
 
-        self.duplicates_dataset = duplicates_dataset
-        self.duplicates_table = duplicates_table
+        self.ehr_duplicates_dataset = ehr_duplicates_dataset
+        self.ehr_duplicates_table = ehr_duplicates_table
 
         super().__init__(
             issue_numbers=JIRA_ISSUE_NUMBERS,
@@ -152,8 +152,6 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            ehr_duplicates_dataset=duplicates_dataset,
-            ehr_duplicates_table=duplicates_table,
         )
 
     def get_query_specs(self):
@@ -174,8 +172,8 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
                     unconsented_lookup=EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE,
-                    duplicates_dataset=self.duplicates_dataset,
-                    duplicates_table=self.duplicates_table,
+                    duplicates_dataset=self.ehr_duplicates_dataset,
+                    duplicates_table=self.ehr_duplicates_table,
                 )
         }
         lookup_queries.append(unconsented_lookup_query)
