@@ -22,7 +22,7 @@ project_id = ""
 rt_dataset = ""
 ct_dataset = ""
 combined_sandbox_dataset = ""
-withdrawn_lookup_table = ""
+withdrawn_pids_table = ""
 maximum_age = ""
 run_as = ""
 
@@ -678,7 +678,7 @@ query = JINJA_ENV.from_string("""
         FROM
            `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}` AS pr
         JOIN 
-            `{{project_id}}.{{combined_sandbox_dataset}}.{{lookup_table}}` AS w
+            `{{project_id}}.{{combined_sandbox_dataset}}.{{withdrawn_pids_table}}` AS w
         ON 
             pr.person_id = w.person_id
     )
@@ -691,7 +691,7 @@ for table in pid_table_list:
                      dataset_id=rt_dataset,
                      table_name=table,
                      combined_sandbox_dataset=combined_sandbox_dataset,
-                     lookup_table=withdrawn_lookup_table,
+                     withdrawn_pids_table=withdrawn_pids_table,
                      pipeline_tables=PIPELINE_TABLES,
                      pid_rid_mapping=PID_RID_MAPPING))
 
@@ -743,7 +743,7 @@ query = JINJA_ENV.from_string("""
         FROM
            `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}` AS pr
         JOIN 
-            `{{project_id}}.{{combined_sandbox_dataset}}.{{lookup_table}}` AS w
+            `{{project_id}}.{{combined_sandbox_dataset}}.{{withdrawn_pids_table}}` AS w
         ON 
             pr.person_id = w.person_id
     )
@@ -756,7 +756,7 @@ for table in pid_table_list:
                      dataset_id=ct_dataset,
                      table_name=table,
                      combined_sandbox_dataset=combined_sandbox_dataset,
-                     lookup_table=withdrawn_lookup_table,
+                     withdrawn_pids_table=withdrawn_pids_table,
                      pipeline_tables=PIPELINE_TABLES,
                      pid_rid_mapping=PID_RID_MAPPING))
 
