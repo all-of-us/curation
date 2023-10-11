@@ -156,8 +156,8 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
             cls.dataset_id,
             cls.sandbox_id,
             table_namer=None,
-            duplicates_dataset=cls.duplicates_dataset,
-            duplicates_table=cls.duplicates_table,
+            ehr_duplicates_dataset=cls.duplicates_dataset,
+            ehr_duplicates_table=cls.duplicates_table,
         )
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
