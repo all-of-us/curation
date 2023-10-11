@@ -672,6 +672,30 @@ GROUP BY cope_month
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
+# # Check the expectations of survey_conduct - survey list
+#
+# Confirm that all expected surveys have records in survey_conduct. Check ignores snap surveys because these surveys are not expected in any release.
+#
+# Generally the list of surveys should increase from one export to the next.
+#
+# Investigate any surveys that were available in the previous export but not in the current export. 
+# Also make sure that any new expected surveys are listed in the current rdr.
+
+tpl = JINJA_ENV.from_string('''
+SELECT
+  prev.survey_source_value AS survey_in_previous_rdr,
+  curr.survey_source_value AS survey_in_current_rdr
+FROM (SELECT DISTINCT survey_source_value FROM `{{project_id}}.{{new_rdr}}.survey_conduct`) curr
+FULL OUTER JOIN (SELECT DISTINCT survey_source_value FROM `{{project_id}}.{{old_rdr}}.survey_conduct`) prev
+  USING (survey_source_value)
+WHERE prev.survey_source_value IS NULL OR curr.survey_source_value IS NULL
+AND NOT (REGEXP_CONTAINS(prev.survey_source_value,'(?i)SNAP')
+      OR REGEXP_CONTAINS(curr.survey_source_value,'(?i)SNAP')) 
+ORDER BY prev.survey_source_value
+''')
+query = tpl.render(new_rdr=new_rdr, old_rdr=old_rdr, project_id=project_id)
+execute(client, query)
+
 # # Class of PPI Concepts using vocabulary.py
 # Concept codes which appear in `observation.observation_source_value` should belong to concept class Question.
 # Concept codes which appear in `observation.value_source_value` should belong to concept class Answer.
