@@ -1301,19 +1301,25 @@ execute(client, query)
 #
 # The 'consent_validation' table is renamed from 'consent' in the rdr import script. This table is used to suppress data in `remove_ehr_data_without_consent.py`.
 #
-# Each participant should have only one consent status. If this check fails, verify the
-# results and the impact of multiple status records then communicate this finding to the rdr team. Priority is dependant upon the data.<br>
+# **"Have duplicate consent statuses"** These participants have multiple consent_validation records with the same status. 
+# **"Descrepancy btn consent_validation and obs"** Where a consent_validation record has no record in observation or vice versa.
+# **"Consent status is NULL"** Whereconsent_for_electronic_health_records(consent status) are NULL
+# **"Varying consent statuses per consent answer"** Where a single consent record in observation has more than one consent status in consent_validation.
 #
-# The existance of multiple status that are **duplicates** would most likely not affect participant data. <br>
-# The existance of multiple status that are **not duplicates** might affect participant data. See `remove_ehr_data_without_consent.py`
 
 # +
 # Count of participants with multiple validation status' for their ehr consent records.
 query = JINJA_ENV.from_string("""
 
-WITH cte AS (
+WITH obs_consents AS (SELECT 
+*
+FROM `{{project_id}}.{{new_rdr}}.observation`
+WHERE observation_source_value = 'EHRConsentPII_ConsentPermission' ),
+
+
+issue_queries AS (
 SELECT 
-"Have multiple status. These are not duplicates" AS issue,
+"Have duplicate consent statuses" AS issue,
 COUNT(*) AS n
 FROM (SELECT DISTINCT * EXCEPT (consent_for_electronic_health_records_authored) FROM `{{project_id}}.{{new_rdr}}.consent_validation` )
 GROUP BY person_id
@@ -1322,24 +1328,12 @@ HAVING n>1
 UNION ALL 
 
 SELECT 
-"Have multiple status. These are duplicates" AS issue,
-COUNT(*) AS n
-FROM `{{project_id}}.{{new_rdr}}.consent_validation`
-GROUP BY person_id
-HAVING n>1
-
-UNION ALL 
-
-SELECT 
-"Consent status does not map to obs" AS issue,
-COUNT(*) AS n
+"Descrepancy btn consent_validation and obs" AS issue,
+cv.person_id
 FROM `{{project_id}}.{{new_rdr}}.consent_validation` cv
-LEFT JOIN (SELECT * FROM `{{project_id}}.{{new_rdr}}.observation` WHERE value_source_value = 'ConsentPermission_Yes') o
+FULL OUTER JOIN obs_consents o
 ON cv.person_id = o.person_id AND cv.consent_for_electronic_health_records_authored = CAST(o.observation_datetime AS DATETIME)
-WHERE observation_id IS NULL
-AND (consent_for_electronic_health_records != 'SUBMITTED_NO' -- No consent, therefore no consent status. expected.
-OR consent_for_electronic_health_records IS NULL)
-GROUP BY cv.person_id
+WHERE cv.person_id IS NULL OR o.person_id IS NULL
 
 UNION ALL 
 
@@ -1353,16 +1347,18 @@ GROUP BY cv.person_id
 UNION ALL 
 
 SELECT 
-"Multiple responses where both are valid/ where only one is valid" AS issue,
-COUNT(*) AS n
-FROM `{{project_id}}.{{new_rdr}}.consent_validation` cv
-WHERE consent_for_electronic_health_records IS NULL
-GROUP BY cv.person_id
+"Varying consent statuses per consent answer" as issue
+,COUNT(DISTINCT(consent_for_electronic_health_records)) as n
+FROM obs_consents o
+FULL OUTER JOIN `{{project_id}}.{{new_rdr}}.consent_validation` cv
+ON cv.person_id = o.person_id AND cv.consent_for_electronic_health_records_authored = CAST(o.observation_datetime AS DATETIME)
+GROUP BY o.person_id, value_source_value
+HAVING n >1
 
 )
 SELECT DISTINCT issue,
 COUNT(*) AS n_person_ids
-FROM cte
+FROM issue_queries
 GROUP BY issue
 ORDER BY issue
 
@@ -1372,9 +1368,9 @@ df = execute(client, query)
 
 
 
-success_msg = 'consent_validation table contains only one row per participant.'
+success_msg = 'consent_validation passes these checks'
 failure_msg = '''
-    <b> Multiple records exist per participant in the consent_validation table. See description.
+    <b> consent_validation has issues. Investigate.
 '''
 
 render_message(df,
