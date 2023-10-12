@@ -11,13 +11,13 @@ FITBIT = 'fitbit'
 REGISTERED_TIER_DEID = 'registered_tier_deid'
 REGISTERED_TIER_DEID_BASE = 'registered_tier_deid_base'
 REGISTERED_TIER_DEID_CLEAN = 'registered_tier_deid_clean'
-REGISTERED_TIER_FITBIT = 'registered_tier_fitbit'
+REGISTERED_TIER_FITBIT = 'registered_tier_fitbit_deid'
 
 # post deid Controlled tier datasets
 CONTROLLED_TIER_DEID = 'controlled_tier_deid'
 CONTROLLED_TIER_DEID_BASE = 'controlled_tier_deid_base'
 CONTROLLED_TIER_DEID_CLEAN = 'controlled_tier_deid_clean'
-CONTROLLED_TIER_FITBIT = 'controlled_tier_fitbit'
+CONTROLLED_TIER_FITBIT = 'controlled_tier_fitbit_deid'
 
 DATA_CONSISTENCY = 'data_consistency'
 CRON_RETRACTION = 'cron_retraction'
