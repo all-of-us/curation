@@ -95,21 +95,21 @@ def assert_ehr_and_rdr_tables(client: BigQueryClient,
     assert_tables_in(client, rdr_dataset_id)
 
 
-def create_cdm_tables(client: BigQueryClient, combined_backup: str):
+def create_cdm_tables(client: BigQueryClient, dataset: str):
     """
     Create all CDM tables
     NOTE AOU_DEATH is not included.
 
     :param client: BigQueryClient
-    :param combined_backup: Combined backup dataset name
+    :param dataset: Combined backup dataset name
     :return: None
 
     Note: Recreates any existing tables
     """
     for table in CDM_TABLES:
-        LOGGER.info(f'Creating table {combined_backup}.{table}...')
+        LOGGER.info(f'Creating table {dataset}.{table}...')
         schema_list = client.get_table_schema(table_name=table)
-        dest_table = f'{client.project}.{combined_backup}.{table}'
+        dest_table = f'{client.project}.{dataset}.{table}'
         dest_table = bigquery.Table(dest_table, schema=schema_list)
         table = client.create_table(dest_table)  # Make an API request.
         LOGGER.info(f"Created table: `{table.table_id}`")
