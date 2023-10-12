@@ -878,7 +878,6 @@ FROM
     AND src_dataset_id LIKE '%ehr%'
 """)
 
-row_counts = []
 for table in MAPPED_CLINICAL_DATA_TABLES:
     query = unconsented_records_tpl.render(
         project=PROJECT_ID,
@@ -892,5 +891,3 @@ for table in MAPPED_CLINICAL_DATA_TABLES:
     if result.any():
         break
 result
-
-
