@@ -58,9 +58,9 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${run_as}" ]] || [[ -z "${pmi_email}" ]] || \
-   [[ -z "${deid_questionnaire_response_map_dataset}" ]] || [[ -z "${vocab_dataset}" ]] || \
-   [[ -z "${dataset_release_tag}" ]] || [[ -z "${deid_max_age}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${run_as}" ]] || [[ -z "${pmi_email}" ]] ||
+  [[ -z "${deid_questionnaire_response_map_dataset}" ]] || [[ -z "${vocab_dataset}" ]] ||
+  [[ -z "${dataset_release_tag}" ]] || [[ -z "${deid_max_age}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -69,7 +69,7 @@ echo "key_file --> ${key_file}"
 echo "cdr_id --> ${cdr_id}"
 echo "vocab_dataset --> ${vocab_dataset}"
 
-APP_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["quota_project_id"]);' < "${key_file}")
+APP_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
 export PROJECT_ID="${APP_ID}"
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${APP_ID}"
