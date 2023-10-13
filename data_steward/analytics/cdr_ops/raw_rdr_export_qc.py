@@ -682,20 +682,20 @@ execute(client, query)
 # Also make sure that any new expected surveys are listed in the current rdr.
 
 tpl = JINJA_ENV.from_string('''
-SELECT
-  prev.survey_source_value AS survey_in_previous_rdr,
-  prev.n as previous_count,
-  curr.survey_source_value AS survey_in_current_rdr,
-  curr.n as current_count
-FROM (SELECT survey_source_value, COUNT(survey_conduct_id) as n FROM `{{project_id}}.{{new_rdr}}.survey_conduct` GROUP BY survey_source_value) curr
-FULL OUTER JOIN (SELECT survey_source_value, COUNT(survey_conduct_id) as n FROM `{{project_id}}.{{old_rdr}}.survey_conduct` GROUP BY survey_source_value) prev
-  USING (survey_source_value)
-WHERE NOT (REGEXP_CONTAINS(prev.survey_source_value,'(?i)SNAP')
-      OR REGEXP_CONTAINS(curr.survey_source_value,'(?i)SNAP'))
-AND (prev.survey_source_value IS NULL 
-     OR curr.survey_source_value IS NULL
-     OR curr.n < prev.n)
-ORDER BY prev.survey_source_value
+WITH old_survey AS (SELECT survey_source_value as old_raw, survey_concept_id, COUNT(survey_conduct_id) as old_count
+  FROM `{{project_id}}.{{old_rdr}}.survey_conduct`
+  WHERE NOT (REGEXP_CONTAINS(survey_source_value,'(?i)SNAP|cope'))
+  GROUP BY 1, 2),
+new_survey AS (SELECT survey_source_value as new_raw, survey_concept_id, COUNT(survey_conduct_id) as new_count
+  FROM `{{project_id}}.{{new_rdr}}.survey_conduct` 
+  WHERE NOT (REGEXP_CONTAINS(survey_source_value,'(?i)SNAP|cope'))
+  GROUP BY 1, 2)
+SELECT *, new_count - old_count as diff
+FROM old_survey
+FULL OUTER JOIN new_survey
+USING (survey_concept_id)
+WHERE survey_concept_id != 0
+ORDER BY 3,5
 ''')
 query = tpl.render(new_rdr=new_rdr, old_rdr=old_rdr, project_id=project_id)
 execute(client, query)
@@ -1198,7 +1198,7 @@ else:
 #
 # The 'consent_validation' table is renamed from 'consent' in the rdr import script. This table is used to suppress data in `remove_ehr_data_without_consent.py`.
 #
-# **"Have duplicate consent statuses"** These participants have multiple consent_validation records with the same status. 
+# **"Have duplicate consent statuses"** These participants have multiple consent_validation records with the same status.
 # **"Descrepancy btn consent_validation and obs"** Where a consent_validation record has no record in observation or vice versa.
 # **"Consent status is NULL"** Whereconsent_for_electronic_health_records(consent status) are NULL
 # **"Varying consent statuses per consent answer"** Where a single consent record in observation has more than one consent status in consent_validation.
@@ -1274,5 +1274,4 @@ render_message(df,
                success_msg,
                failure_msg)
 # -
-
 
