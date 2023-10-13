@@ -428,15 +428,19 @@ df1 = execute(client, q)
 if df1.eq(0).any().any():
     df = df.append(
         {
-            'query': 'Query3.2 Biological Sex Generalization Rule in observation',
-            'result': 'PASS'
+            'query':
+                'Query3.2 Biological Sex Generalization Rule in observation',
+            'result':
+                'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query3.2 Biological Sex Generalization Rule in observation',
-            'result': 'Failure'
+            'query':
+                'Query3.2 Biological Sex Generalization Rule in observation',
+            'result':
+                'Failure'
         },
         ignore_index=True)
 df1
@@ -722,6 +726,39 @@ df1
 
 # -
 
+# # 7 PMI_Skip records
+# All the PMI_Skip records (value_source_concept_id = 903096) must have either
+# 903096 or 2000000010 as value_as_concept_id.
+#
+# See JIRA ticket DC-3494 for more context.
+
+# +
+query = JINJA_ENV.from_string("""
+SELECT COUNT(*) AS n_row_not_pass 
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE value_source_concept_id = 903096
+AND value_as_concept_id NOT IN (903096, 2000000010)
+""").render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, query)
+
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query7 PMI_Skip mapping post deid',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Query7 PMI_Skip mapping post deid',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+df1
+
+# -
+
 # # Summary_cdr_deid_Generalization_rule
 
 
@@ -733,5 +770,3 @@ def highlight_cells(val):
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
 # -
-
-
