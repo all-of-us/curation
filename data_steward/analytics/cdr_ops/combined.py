@@ -878,6 +878,10 @@ FROM
     AND src_dataset_id LIKE '%ehr%'
 """)
 
+# +
+success_msg_if_empty = "All PID's are consenting PID's"
+failure_msg_if_empty = "Unconsented PID's where FOUND"
+
 for table in MAPPED_CLINICAL_DATA_TABLES:
     query = unconsented_records_tpl.render(
         project=PROJECT_ID,
@@ -888,6 +892,8 @@ for table in MAPPED_CLINICAL_DATA_TABLES:
         unconsented_lookup=UNCONSENTED)
 
     result = execute(client, query)
-    if result.any():
+    if any(result):
         break
-result
+
+render_message(result, success_msg_if_empty, failure_msg_if_empty)
+# -
