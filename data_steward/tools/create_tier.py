@@ -20,7 +20,7 @@ from utils.parameter_validators import validate_release_tag_param
 LOGGER = logging.getLogger(__name__)
 
 TIER_LIST = ['controlled', 'registered']
-DEID_STAGE_LIST = ['deid', 'deid_base', 'deid_clean', 'fitbit']
+DEID_STAGE_LIST = ['deid', 'deid_base', 'deid_clean', 'fitbit_deid']
 
 
 def validate_tier_param(tier):

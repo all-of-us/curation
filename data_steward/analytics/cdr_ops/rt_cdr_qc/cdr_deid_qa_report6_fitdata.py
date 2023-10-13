@@ -149,20 +149,21 @@ result = execute(client, union_all_query)
 
 if sum(result['bad_rows']) == 0:
     summary = summary.append({
-        'query': 'Date Shift Query',
+        'query': 'Max Age Query',
         'result': 'PASS'
     },
                              ignore_index=True)
 else:
     summary = summary.append({
-        'query': 'Date Shift Query',
+        'query': 'Max Age Query',
         'result': 'Failure'
     },
                              ignore_index=True)
 result
 # -
 
-# # Verify that correct date shift is applied to the fitbit data
+
+# # Verify that correct date shift is applied to the RT fitbit data
 #
 # DC-1005
 #
@@ -173,6 +174,8 @@ result
 # **Note:  Should a failure occur during this (long) query, it is advisable to replace `FITBIT_TABLES` with the table in question**
 #
 # [DC-1786] date shifting should be checked against activity_summary, heart_rate_summary, heart_rate_intraday, and steps_intraday.
+#
+# Reminder: Date shifting only occurs in RT.
 
 # +
 query = JINJA_ENV.from_string("""
@@ -362,7 +365,7 @@ if sum(result['bad_rows']) == 0:
     summary = summary.append(
         {
             'query':
-                'Query7 device_id was deidentified properly for all records.',
+                'device_id Deidentification Query',
             'result':
                 'PASS'
         },
@@ -371,7 +374,7 @@ else:
     summary = summary.append(
         {
             'query':
-                'Query7 device_id was not deidentified properly. See query description for hints.',
+                'device_id Deidentification Query',
             'result':
                 'Failure'
         },
@@ -445,14 +448,14 @@ result = execute(client, union_all_query)
 if sum(result['bad_src_id_match_rows']) == 0:
     summary = summary.append(
         {
-            'query': 'Query8 Check de-identification of src_ids.',
+            'query': 'src_id Deidentification Query',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     summary = summary.append(
         {
-            'query': 'Query8 Check de-identification of src_ids.',
+            'query': 'src_id Deidentification Query',
             'result': 'Failure'
         },
         ignore_index=True)
