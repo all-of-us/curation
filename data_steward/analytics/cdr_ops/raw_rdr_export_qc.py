@@ -684,13 +684,17 @@ execute(client, query)
 tpl = JINJA_ENV.from_string('''
 SELECT
   prev.survey_source_value AS survey_in_previous_rdr,
-  curr.survey_source_value AS survey_in_current_rdr
-FROM (SELECT DISTINCT survey_source_value FROM `{{project_id}}.{{new_rdr}}.survey_conduct`) curr
-FULL OUTER JOIN (SELECT DISTINCT survey_source_value FROM `{{project_id}}.{{old_rdr}}.survey_conduct`) prev
+  prev.n as previous_count,
+  curr.survey_source_value AS survey_in_current_rdr,
+  curr.n as current_count
+FROM (SELECT survey_source_value, COUNT(survey_conduct_id) as n FROM `{{project_id}}.{{new_rdr}}.survey_conduct` GROUP BY survey_source_value) curr
+FULL OUTER JOIN (SELECT survey_source_value, COUNT(survey_conduct_id) as n FROM `{{project_id}}.{{old_rdr}}.survey_conduct` GROUP BY survey_source_value) prev
   USING (survey_source_value)
-WHERE prev.survey_source_value IS NULL OR curr.survey_source_value IS NULL
-AND NOT (REGEXP_CONTAINS(prev.survey_source_value,'(?i)SNAP')
-      OR REGEXP_CONTAINS(curr.survey_source_value,'(?i)SNAP')) 
+WHERE NOT (REGEXP_CONTAINS(prev.survey_source_value,'(?i)SNAP')
+      OR REGEXP_CONTAINS(curr.survey_source_value,'(?i)SNAP'))
+AND (prev.survey_source_value IS NULL 
+     OR curr.survey_source_value IS NULL
+     OR curr.n < prev.n)
 ORDER BY prev.survey_source_value
 ''')
 query = tpl.render(new_rdr=new_rdr, old_rdr=old_rdr, project_id=project_id)
