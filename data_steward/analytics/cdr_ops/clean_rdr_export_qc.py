@@ -444,6 +444,7 @@ ORDER BY 2 DESC
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
+# +
 # # Check numeric data in value_as_string
 # Some numeric data is expected in value_as_string.  For example, zip codes or other contact specific information.
 #
@@ -1381,4 +1382,39 @@ display(
     HTML(
         f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
     ))
+
+# +
+# Check the expectations of survey_conduct - survey list
+
+Confirm that all expected surveys have records in survey_conduct. Check ignores snap surveys because these surveys are not expected in any release.
+
+Generally the list of surveys should increase from one export to the next.
+
+Investigate any surveys that were available in the previous export but not in the current export. 
+Also make sure that any new expected surveys are listed in the current rdr.
 # -
+
+# # Visual check survey_conduct record drop
+#
+# Review the results. Some surveys are expected to be dropped. 
+# Investigate any potential issues. Overly extensive cleaning, missing surveys, etc.
+
+tpl = JINJA_ENV.from_string('''
+WITH raw_survey AS (SELECT survey_source_value as raw_survey, survey_concept_id, COUNT(survey_conduct_id) as raw_count
+  FROM `{{project_id}}.{{raw_rdr}}.survey_conduct`
+  WHERE NOT (REGEXP_CONTAINS(survey_source_value,'(?i)SNAP|cope'))
+  GROUP BY 1, 2),
+clean_survey AS (SELECT survey_source_value as clean_survey, survey_concept_id, COUNT(survey_conduct_id) as clean_count
+  FROM `{{project_id}}.{{new_rdr}}.survey_conduct` 
+  WHERE NOT (REGEXP_CONTAINS(survey_source_value,'(?i)SNAP|cope'))
+  GROUP BY 1, 2)
+SELECT *, clean_count - raw_count as cleaned_records
+FROM raw_survey
+FULL OUTER JOIN clean_survey
+USING (survey_concept_id)
+ORDER BY 6
+''')
+query = tpl.render(new_rdr=new_rdr, raw_rdr=raw_rdr, project_id=project_id)
+execute(client, query)
+
+
