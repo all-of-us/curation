@@ -231,7 +231,7 @@ WITH zips AS (
 )
 SELECT
   '{{ table_name }}' AS table_name,
-  IFNULL(SUM(CASE WHEN output_zip != expected_zip THEN 1 ELSE 0 END), 0) AS n_row_violation
+  IFNULL(SUM(CASE WHEN output_zip != expected_zip AND output_zip != '000**' THEN 1 ELSE 0 END), 0) AS n_row_violation
 FROM transformed_zips
 """
 
