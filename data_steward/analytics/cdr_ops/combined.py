@@ -879,8 +879,8 @@ FROM
 """)
 
 # +
-success_msg_if_empty = "All PID's are consenting PID's"
-failure_msg_if_empty = "Unconsented PID's where FOUND"
+success_msg_if_empty = "All PID's with EHR data are found consenting"
+failure_msg_if_empty = "EHR data is found for PIDs who have not consented to contribute EHR data."
 
 for table in MAPPED_CLINICAL_DATA_TABLES:
     query = unconsented_records_tpl.render(
