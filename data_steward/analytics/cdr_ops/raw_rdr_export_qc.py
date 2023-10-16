@@ -672,6 +672,34 @@ GROUP BY cope_month
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
+# # Check the expectations of survey_conduct - survey list
+#
+# Confirm that all expected surveys have records in survey_conduct. Check ignores snap surveys because these surveys are not expected in any release.
+#
+# Generally the list of surveys should increase from one export to the next.
+#
+# Investigate any surveys that were available in the previous export but not in the current export. 
+# Also make sure that any new expected surveys are listed in the current rdr.
+
+tpl = JINJA_ENV.from_string('''
+WITH old_survey AS (SELECT survey_source_value as old_raw, survey_concept_id, COUNT(survey_conduct_id) as old_count
+  FROM `{{project_id}}.{{old_rdr}}.survey_conduct`
+  WHERE NOT (REGEXP_CONTAINS(survey_source_value,'(?i)SNAP|cope'))
+  GROUP BY 1, 2),
+new_survey AS (SELECT survey_source_value as new_raw, survey_concept_id, COUNT(survey_conduct_id) as new_count
+  FROM `{{project_id}}.{{new_rdr}}.survey_conduct` 
+  WHERE NOT (REGEXP_CONTAINS(survey_source_value,'(?i)SNAP|cope'))
+  GROUP BY 1, 2)
+SELECT *, new_count - old_count as diff
+FROM old_survey
+FULL OUTER JOIN new_survey
+USING (survey_concept_id)
+WHERE survey_concept_id != 0
+ORDER BY 3,5
+''')
+query = tpl.render(new_rdr=new_rdr, old_rdr=old_rdr, project_id=project_id)
+execute(client, query)
+
 # # Class of PPI Concepts using vocabulary.py
 # Concept codes which appear in `observation.observation_source_value` should belong to concept class Question.
 # Concept codes which appear in `observation.value_source_value` should belong to concept class Answer.
@@ -1170,7 +1198,7 @@ else:
 #
 # The 'consent_validation' table is renamed from 'consent' in the rdr import script. This table is used to suppress data in `remove_ehr_data_without_consent.py`.
 #
-# **"Have duplicate consent statuses"** These participants have multiple consent_validation records with the same status. 
+# **"Have duplicate consent statuses"** These participants have multiple consent_validation records with the same status.
 # **"Descrepancy btn consent_validation and obs"** Where a consent_validation record has no record in observation or vice versa.
 # **"Consent status is NULL"** Whereconsent_for_electronic_health_records(consent status) are NULL
 # **"Varying consent statuses per consent answer"** Where a single consent record in observation has more than one consent status in consent_validation.
@@ -1246,5 +1274,4 @@ render_message(df,
                success_msg,
                failure_msg)
 # -
-
 
