@@ -862,7 +862,7 @@ execute(client, results)
 # ## Verify no participant in the pdr_ehr_dup_report list has EHR data.
 
 unconsented_records_tpl = JINJA_ENV.from_string("""
-SELECT person_id
+SELECT person_id AS {{domain_table}}
 FROM
     `{{project}}.{{dataset}}.{{domain_table}}` d
   JOIN
@@ -883,6 +883,7 @@ success_msg_if_empty = "All PID's with EHR data are found consenting"
 failure_msg_if_empty = "EHR data is found for PIDs who have not consented to contribute EHR data."
 
 totals = []
+
 for table in MAPPED_CLINICAL_DATA_TABLES:
     query = unconsented_records_tpl.render(
         project=PROJECT_ID,
