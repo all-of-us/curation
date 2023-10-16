@@ -252,7 +252,6 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id,
-            ARGS.duplicates_table,
             [(RemoveEhrDataWithoutConsent,)],
             duplicates_dataset=ARGS.duplicates_dataset,
             duplicates_table=ARGS.duplicates_table,
