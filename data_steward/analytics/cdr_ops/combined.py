@@ -862,7 +862,7 @@ execute(client, results)
 # ## Verify no participant in the pdr_ehr_dup_report list has EHR data.
 
 unconsented_records_tpl = JINJA_ENV.from_string("""
-SELECT person_id AS {{domain_table}}
+SELECT \'{{domain_table}}\' AS domain_table, person_id
 FROM
     `{{project}}.{{dataset}}.{{domain_table}}` d
   JOIN
