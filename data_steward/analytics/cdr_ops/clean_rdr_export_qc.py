@@ -1382,16 +1382,6 @@ display(
     HTML(
         f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
     ))
-
-# +
-# Check the expectations of survey_conduct - survey list
-
-Confirm that all expected surveys have records in survey_conduct. Check ignores snap surveys because these surveys are not expected in any release.
-
-Generally the list of surveys should increase from one export to the next.
-
-Investigate any surveys that were available in the previous export but not in the current export.
-Also make sure that any new expected surveys are listed in the current rdr.
 # -
 
 # # Visual check survey_conduct record drop
