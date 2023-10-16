@@ -1275,3 +1275,18 @@ render_message(df,
                failure_msg)
 # -
 
+# # Check to catch duplicate observation_ids
+
+tpl = JINJA_ENV.from_string('''
+SELECT
+  observation_id,
+  COUNT(observation_id) AS n
+FROM 
+    `{{project_id}}.{{new_rdr}}.observation`
+GROUP BY 
+    observation_id
+HAVING n>1
+''')
+query = tpl.render(project_id=project_id, new_rdr=new_rdr)
+execute(client, query)
+
