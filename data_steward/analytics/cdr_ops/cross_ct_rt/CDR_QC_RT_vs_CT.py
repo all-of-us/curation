@@ -21,14 +21,17 @@
 project_id = ""
 rt_dataset = ""
 ct_dataset = ""
+combined_sandbox_dataset = ""
+withdrawn_pids_table = ""
 maximum_age = ""
 run_as = ""
 
 # +
 import pandas as pd
+from IPython.display import display
 
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
-from common import JINJA_ENV, PIPELINE_TABLES
+from common import JINJA_ENV, PIPELINE_TABLES, PID_RID_MAPPING
 from gcloud.bq import BigQueryClient
 from utils import auth
 
@@ -602,10 +605,10 @@ df1[df1["Failure"] == 1]
 
 # # Query8: Verify the wear_study dateshift
 #
-# RT dates should have been shifted back by the number of days designated to each 
+# RT dates should have been shifted back by the number of days designated to each
 # participant via the primary_pid_rid_mapping table.
 #
-# The following query will find any rows in the wear_study tables where the RT date plus the date shift is not equal to the 
+# The following query will find any rows in the wear_study tables where the RT date plus the date shift is not equal to the
 # CT date. If there are resulting rows, make sure the pipeline dateshift ran properly.
 
 # +
@@ -636,10 +639,8 @@ df1 = execute(client, q)
 if df1['bad_rows'].sum() == 0:
     df = df.append(
         {
-            'query':
-                'Query8 Wear_study dates are as expected.',
-            'result':
-                'PASS'
+            'query': 'Query8 Wear_study dates are as expected.',
+            'result': 'PASS'
         },
         ignore_index=True)
 else:
@@ -650,9 +651,138 @@ else:
             'result':
                 'FAIL'
         },
-        ignore_index=True
-                  )
+        ignore_index=True)
     display(df1)
+# -
+
+# # Query9: Verify data for withdrawn pids is removed from all tables in rt dataset.
+
+# +
+person_id_tables_query = JINJA_ENV.from_string('''
+SELECT table_name
+FROM `{{project_id}}.{{dataset_id}}.INFORMATION_SCHEMA.COLUMNS`
+WHERE column_name = "person_id"
+''').render(project_id=project_id, dataset_id=rt_dataset)
+pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
+    'table_name').to_list()
+
+query = JINJA_ENV.from_string("""
+    SELECT
+        \{{table_name}}\ AS table_name,
+        COUNT(*) AS total_records
+    FROM
+        `{{project_id}}.{{dataset_id}}.{{table_name}}`
+    WHERE person_id IN (
+        SELECT 
+            pr.research_id
+        FROM
+           `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}` AS pr
+        JOIN 
+            `{{project_id}}.{{combined_sandbox_dataset}}.{{withdrawn_pids_table}}` AS w
+        ON 
+            pr.person_id = w.person_id
+    )
+""")
+
+row_counts_queries_list = []
+for table in pid_table_list:
+    row_counts_queries_list.append(
+        query.render(project_id=project_id,
+                     dataset_id=rt_dataset,
+                     table_name=table,
+                     combined_sandbox_dataset=combined_sandbox_dataset,
+                     withdrawn_pids_table=withdrawn_pids_table,
+                     pipeline_tables=PIPELINE_TABLES,
+                     pid_rid_mapping=PID_RID_MAPPING))
+
+row_counts_union_all_query = '\nUNION ALL\n'.join(row_counts_queries_list)
+
+df1 = execute(client, row_counts_union_all_query)
+
+if df1['total_records'].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query9:  Verify data for withdrawn pids is removed from all tables in rt dataset.',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                'Query9:  Verify data for withdrawn pids is removed from all tables in rt dataset.',
+            'result':
+                'FAIL'
+        },
+        ignore_index=True)
+display(df1)
+# -
+
+# # Query10: Verify data for withdrawn pids is removed from all tables in ct dataset.
+
+# +
+person_id_tables_query = JINJA_ENV.from_string('''
+SELECT table_name
+FROM `{{project_id}}.{{dataset_id}}.INFORMATION_SCHEMA.COLUMNS`
+WHERE column_name = "person_id"
+''').render(project_id=project_id, dataset_id=ct_dataset)
+pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
+    'table_name').to_list()
+
+query = JINJA_ENV.from_string("""
+    SELECT
+        \{{table_name}}\ AS table_name,
+        COUNT(*) AS total_records
+    FROM
+        `{{project_id}}.{{dataset_id}}.{{table_name}}`
+    WHERE person_id IN (
+        SELECT 
+            pr.research_id
+        FROM
+           `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}` AS pr
+        JOIN 
+            `{{project_id}}.{{combined_sandbox_dataset}}.{{withdrawn_pids_table}}` AS w
+        ON 
+            pr.person_id = w.person_id
+    )
+""")
+
+row_counts_queries_list = []
+for table in pid_table_list:
+    row_counts_queries_list.append(
+        query.render(project_id=project_id,
+                     dataset_id=ct_dataset,
+                     table_name=table,
+                     combined_sandbox_dataset=combined_sandbox_dataset,
+                     withdrawn_pids_table=withdrawn_pids_table,
+                     pipeline_tables=PIPELINE_TABLES,
+                     pid_rid_mapping=PID_RID_MAPPING))
+
+row_counts_union_all_query = '\nUNION ALL\n'.join(row_counts_queries_list)
+
+df1 = execute(client, row_counts_union_all_query)
+
+if df1['total_records'].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query10: Verify data for withdrawn pids is removed from all tables in ct dataset.',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                'Query10: Verify data for withdrawn pids is removed from all tables in ct dataset.',
+            'result':
+                'FAIL'
+        },
+        ignore_index=True)
+display(df1)
 # -
 
 # # Summary_CDR_QC_RT_vs_CT_comparison
