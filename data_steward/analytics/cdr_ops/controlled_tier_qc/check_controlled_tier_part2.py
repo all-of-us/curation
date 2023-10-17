@@ -59,8 +59,6 @@
 # + tags=["parameters"]
 # Parameters
 project_id = ""
-raw_rdr_dataset = ''
-deid_map_dataset = '' # dataset containing _deid_map. Most likely {release}_deid_sandbox
 rt_dataset = ""
 ct_dataset = ""
 earliest_ehr_date = ""
@@ -472,60 +470,54 @@ else:
         },
         ignore_index=True)
 
-# # query 7  All participants have basics data in the rdr dataset
-# There should not be any data in CT for participants who didn't have basics data in the raw rdr dataset.
+# # query 7  All participants have basics data
 #
-# **If this check fails** investigate. Ensure all participants lacking basics data are dropped.
+# There should not be any data in the CT datasets for participants who don't have basics data.
+#
+# If this check fails investigate. Ensure all participants lacking basics data have been dropped.
+#
+# Note: Since the CR `drop_participants_without_any_basics` occurs in the RDR cleaning stage it is possible that a small number of participants have their Basics data dropped between the rdr and CT pipeline stages. At this time(V8), participants without Basics data in the CT dataset are allowed in the CDR if they had Basics data in the rdr stage. 
 
 # +
 query = JINJA_ENV.from_string("""
-WITH pids_with_basics AS ( -- pids with basics data in rdr --
+WITH person_all as (
+SELECT person_id FROM `{{project_id}}.{{ct_dataset}}.person`),
+
+person_basics as (
+SELECT distinct person_id
+FROM
+`{{project_id}}.{{ct_dataset}}.concept`
+JOIN `{{project_id}}.{{ct_dataset}}.concept_ancestor` on (concept_id=ancestor_concept_id)
+JOIN `{{project_id}}.{{ct_dataset}}.observation` on (descendant_concept_id=observation_concept_id)
+JOIN `{{project_id}}.{{ct_dataset}}.observation_ext` USING(observation_id)
+WHERE observation_concept_id NOT IN (40766240,43528428,1585389)
+AND concept_class_id='Module'
+AND concept_name IN ('The Basics')
+AND NOT REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
+AND questionnaire_response_id is not null)
+
 SELECT
-    person_id
-  FROM `{{project_id}}.{{raw_rdr_dataset}}.concept_ancestor`
-  INNER JOIN `{{project_id}}.{{raw_rdr_dataset}}.observation` o ON observation_concept_id = descendant_concept_id
-  INNER JOIN `{{project_id}}.{{raw_rdr_dataset}}.concept` d ON d.concept_id = descendant_concept_id
-  WHERE ancestor_concept_id = 1586134
+'observation' AS table_name,
+'person_id' AS column_name,
+COUNT(*) AS row_counts_failure,
+CASE WHEN
+  COUNT(*) > 0
+  THEN 1 ELSE 0
+END
+ AS Failure_bascis
 
-  UNION DISTINCT
-
-  SELECT
-    person_id
-  FROM `{{project_id}}.{{raw_rdr_dataset}}.concept`
-  JOIN `{{project_id}}.{{raw_rdr_dataset}}.concept_ancestor`
-    ON (concept_id = ancestor_concept_id)
-  JOIN `{{project_id}}.{{raw_rdr_dataset}}.observation`
-    ON (descendant_concept_id = observation_concept_id)
-  WHERE concept_class_id = 'Module'
-    AND concept_name IN ('The Basics')
-    AND questionnaire_response_id IS NOT NULL
-),
-
-rids_with_basics AS ( -- rids with basics data in rdr --
-SELECT DISTINCT research_id
-FROM pids_with_basics
-JOIN `{{project_id}}.{{deid_map_dataset}}._deid_map` as pid_rid
-ON pids_with_basics.person_id = pid_rid.person_id
-)
-
-
-SELECT 
-'persons_without_basics_in_rdr' as issue,
-COUNT(DISTINCT person_id) as n
-FROM `{{project_id}}.{{ct_dataset}}.person` 
-WHERE person_id NOT IN (SELECT research_id FROM rids_with_basics)
-GROUP BY person_id
+FROM person_all
+WHERE person_id NOT IN (SELECT person_id FROM person_basics)
 """)
 
-q = query.render(project_id=project_id,
-                 ct_dataset=ct_dataset,
-                 deid_map_dataset=deid_map_dataset,
-                 raw_rdr_dataset=raw_rdr_dataset)
+q = query.render(project_id=project_id, ct_dataset=ct_dataset)
 df1 = execute(client, q)
-df1
+df1.shape
 # -
 
-if df1.iloc[:, 1].sum() == 0:
+df1
+
+if df1.iloc[:, 3].sum() == 0:
     df = df.append(
         {
             'query': 'Query7: All participants have basics',
@@ -1495,6 +1487,3 @@ def highlight_cells(val):
 
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
-# -
-
-
