@@ -883,7 +883,6 @@ success_msg_if_empty = "All PID's with EHR data are found consenting"
 failure_msg_if_empty = "EHR data is found for PIDs who have not consented to contribute EHR data."
 
 totals = []
-
 for table in MAPPED_CLINICAL_DATA_TABLES:
     query = unconsented_records_tpl.render(
         project=PROJECT_ID,
@@ -900,5 +899,3 @@ aggregated = pd.concat(totals)
 render_message(aggregated, success_msg_if_empty, failure_msg_if_empty)
 aggregated
 # -
-
-
