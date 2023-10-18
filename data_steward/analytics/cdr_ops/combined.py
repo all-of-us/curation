@@ -898,5 +898,4 @@ for table in MAPPED_CLINICAL_DATA_TABLES:
 full_query = '\nUNION ALL\n'.join(sub_queries)
 result = execute(client, full_query)
 render_message(result, success_msg_if_empty, failure_msg_if_empty)
-result
 # -
