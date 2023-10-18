@@ -26,10 +26,10 @@ INSERT_RAW_DATA = JINJA_ENV.from_string("""
   ) 
   VALUES
   -- records to sandbox --
-  (1,0,1799,0,0),
+  (1,0,1899,0,0),
   (4,0,2020,0,0),
   -- records to keep --
-  (2,0,1800,0,0),
+  (2,0,1900,0,0),
   (3,0,1975,0,0);
 
   INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (
@@ -126,7 +126,7 @@ class CleanByBirthYearTest(BaseTest.CleaningRulesTestBase):
                 'person_id', 'gender_concept_id', 'year_of_birth',
                 'race_concept_id', 'ethnicity_concept_id'
             ],
-            'cleaned_values': [(2, 0, 1800, 0, 0), (3, 0, 1975, 0, 0)]
+            'cleaned_values': [(2, 0, 1900, 0, 0), (3, 0, 1975, 0, 0)]
         }]
 
         self.default_test(tables_and_counts)
