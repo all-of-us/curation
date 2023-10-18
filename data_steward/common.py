@@ -84,6 +84,10 @@ METADATA = 'metadata'
 OBSERVATION_PERIOD = 'observation_period'
 NOTE_NLP = 'note_nlp'
 
+CDM_SOURCE = 'cdm_source'
+COHORT = 'cohort'
+COHORT_ATTRIBUTE = 'cohort_attribute'
+
 OTHER_CLINICAL_TABLES = [OBSERVATION_PERIOD, NOTE_NLP]
 
 OTHER_CDM_TABLES = [
@@ -253,6 +257,8 @@ MAX_DEID_DATE_SHIFT = 364
 COPE_SURVEY_MAP = 'cope_survey_semantic_version_map'
 EHR_CONSENT_VALIDATION = 'consent_validation'
 WEAR_CONSENT = 'wear_consent'
+PDR_WITHDRAWALS_LIST = 'pdr_withdrawals_list'
+PDR_EHR_LIST = 'pdr_ehr_list'
 
 # pipeline_tables dataset and contents
 PIPELINE_TABLES = 'pipeline_tables'
