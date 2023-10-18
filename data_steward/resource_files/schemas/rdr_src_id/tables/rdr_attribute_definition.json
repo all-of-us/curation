@@ -1,0 +1,38 @@
+[
+    {
+        "type": "integer",
+        "name": "attribute_definition_id",
+        "mode": "required",
+        "description": "A unique identifier for each Attribute."
+    },
+    {
+        "type": "string",
+        "name": "attribute_name",
+        "mode": "required",
+        "description": "A short description of the Attribute."
+    },
+    {
+        "type": "string",
+        "name": "attribute_description",
+        "mode": "nullable",
+        "description": "A complete description of the Attribute definition."
+    },
+    {
+        "type": "integer",
+        "name": "attribute_type_concept_id",
+        "mode": "required",
+        "description": "Type defining what kind of Attribute Definition the record represents and how the syntax may be executed."
+    },
+    {
+        "type": "string",
+        "name": "attribute_syntax",
+        "mode": "nullable",
+        "description": "Syntax or code to operationalize the Attribute definition."
+    },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "required",
+        "description": "The source of the record."
+    }
+]
