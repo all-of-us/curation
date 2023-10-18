@@ -470,7 +470,13 @@ else:
         },
         ignore_index=True)
 
-# # query 7  All participants have basics,done
+# # query 7  All participants have basics data
+#
+# There should not be any data in the CT datasets for participants who don't have basics data.
+#
+# If this check fails investigate. Ensure all participants lacking basics data have been dropped.
+#
+# Note: Since the CR `drop_participants_without_any_basics` occurs in the RDR cleaning stage it is possible that a small number of participants have their Basics data dropped between the rdr and CT pipeline stages. At this time(V8), participants without Basics data in the CT dataset are allowed in the CDR if they had Basics data in the rdr stage. 
 
 # +
 query = JINJA_ENV.from_string("""
@@ -1267,6 +1273,7 @@ res2
 # # final summary result
 # -
 
+
 # # Q17 Wear study table
 #
 # DC-3340
@@ -1470,6 +1477,8 @@ else:
         ignore_index=True)
 result
 
+
+# # Results Summary
 
 # +
 def highlight_cells(val):

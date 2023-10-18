@@ -668,54 +668,34 @@ ORDER BY 1, 3
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
-# ## Participants must have basics data
-# Identify any participants who have don't have any responses
-# to questions in the basics survey module (see [DC-706](https://precisionmedicineinitiative.atlassian.net/browse/DC-706)). These should be
-# reported to the RDR as they are supposed to be filtered out
-# from the RDR export.
-
-# +
-BASICS_MODULE_CONCEPT_ID = 1586134
+# # All participants have basics data in the rdr dataset
+#  There should not be any data in the clean rdr dataset for participants who don't have basics data. <br>
+#  Note: This check uses the same logic to determine 'basics data' as the rdr CR `drop_participants_without_any_basics`.
+#
+#  **If this check fails** investigate. Ensure all participants lacking basics data are dropped.
 
 # Note: This assumes that concept_ancestor sufficiently
 # represents the hierarchy
 tpl = JINJA_ENV.from_string("""
-WITH
+WITH pids_with_basics AS ( -- pids with basics data --
+SELECT
+person_id
+  FROM `{{project_id}}.{{new_rdr}}.concept_ancestor`
+  INNER JOIN `{{project_id}}.{{new_rdr}}.observation` o ON observation_concept_id = descendant_concept_id
+  INNER JOIN `{{project_id}}.{{new_rdr}}.concept` d ON d.concept_id = descendant_concept_id
+  WHERE ancestor_concept_id = 1586134
+)
 
- -- all PPI question concepts in the basics survey module --
- basics_concept AS
- (SELECT
-   c.concept_id
-  ,c.concept_name
-  ,c.concept_code
-  FROM `{{DATASET_ID}}.concept_ancestor` ca
-  JOIN `{{DATASET_ID}}.concept` c
-   ON ca.descendant_concept_id = c.concept_id
-  WHERE 1=1
-    AND ancestor_concept_id={{BASICS_MODULE_CONCEPT_ID}}
-    AND c.vocabulary_id='PPI'
-    AND c.concept_class_id='Question')
+SELECT 
+'persons_without_basics_in_rdr' as issue,
+COUNT(DISTINCT person_id) as n
+FROM `{{project_id}}.{{new_rdr}}.person` 
+WHERE person_id NOT IN (SELECT person_id FROM pids_with_basics)
+GROUP BY person_id
 
- -- maps pids to all their associated basics questions in the rdr --
-,pid_basics AS
- (SELECT
-   person_id
-  ,ARRAY_AGG(DISTINCT c.concept_code IGNORE NULLS) basics_codes
-  FROM `{{DATASET_ID}}.observation` o
-  JOIN basics_concept c
-   ON o.observation_concept_id = c.concept_id
-  WHERE 1=1
-  GROUP BY 1)
-
- -- list all pids for whom no basics questions are found --
-SELECT *
-FROM `{{DATASET_ID}}.person`
-WHERE person_id not in (select person_id from pid_basics)
 """)
-query = tpl.render(DATASET_ID=new_rdr,
-                   BASICS_MODULE_CONCEPT_ID=BASICS_MODULE_CONCEPT_ID)
+query = tpl.render(project_id=project_id, new_rdr=new_rdr)
 execute(client, query)
-# -
 
 # # Date conformance check
 # COPE surveys contain some concepts that must enforce dates in the observation.value_as_string field.
@@ -869,26 +849,6 @@ SELECT
 FROM issues
 GROUP BY issue_type
 
-''')
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
-
-# # Checks for basics survey module
-# Participants with data in other survey modules must also have data from the basics survey module.
-# This check identifies survey responses associated with participants that do not have any responses
-# associated with the basics survey module.
-# In ideal circumstances, this query will not return any results.
-
-tpl = JINJA_ENV.from_string('''
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.observation`
-JOIN `{{project_id}}.{{new_rdr}}.concept` on (observation_source_concept_id=concept_id)
-WHERE vocabulary_id = 'PPI' AND person_id NOT IN (
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.concept`
-JOIN `{{project_id}}.{{new_rdr}}.concept_ancestor` on (concept_id=ancestor_concept_id)
-JOIN `{{project_id}}.{{new_rdr}}.observation` on (descendant_concept_id=observation_concept_id)
-WHERE concept_class_id='Module'
-AND concept_name IN ('The Basics')
-AND questionnaire_response_id IS NOT NULL)
 ''')
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
@@ -1382,21 +1342,11 @@ display(
     HTML(
         f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
     ))
-
-# +
-# Check the expectations of survey_conduct - survey list
-
-Confirm that all expected surveys have records in survey_conduct. Check ignores snap surveys because these surveys are not expected in any release.
-
-Generally the list of surveys should increase from one export to the next.
-
-Investigate any surveys that were available in the previous export but not in the current export. 
-Also make sure that any new expected surveys are listed in the current rdr.
 # -
 
 # # Visual check survey_conduct record drop
 #
-# Review the results. Some surveys are expected to be dropped. 
+# Review the results. Some surveys are expected to be dropped.
 # Investigate any potential issues. Overly extensive cleaning, missing surveys, etc.
 
 tpl = JINJA_ENV.from_string('''
