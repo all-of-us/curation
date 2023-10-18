@@ -1,0 +1,32 @@
+[
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "nullable",
+    "description": "A unique identifier for each Person's visit or encounter at a healthcare provider."
+  },
+  {
+    "type": "integer",
+    "name": "research_id",
+    "mode": "nullable",
+    "description": "A foreign key identifier to the Person for whom the visit is recorded. The demographic details of that Person are stored in the PERSON table."
+  },
+  {
+    "type": "timestamp",
+    "name": "authored",
+    "mode": "nullable",
+    "description": "A foreign key that refers to a visit Concept identifier in the Standardized Vocabularies."
+  },
+  {
+    "type": "string",
+    "name": "consent_status",
+    "mode": "nullable",
+    "description": "The start date of the visit."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The date and time of the visit started."
+  }
+]

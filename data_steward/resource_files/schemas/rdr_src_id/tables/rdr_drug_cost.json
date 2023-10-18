@@ -1,0 +1,78 @@
+[
+  {
+    "type": "integer",
+    "name": "drug_cost_id",
+    "mode": "required"
+  },
+  {
+    "type": "integer",
+    "name": "drug_exposure_id",
+    "mode": "required"
+  },
+  {
+    "type": "integer",
+    "name": "currency_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "paid_copay",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "paid_coinsurance",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "paid_toward_deductible",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "paid_by_payer",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "paid_by_coordination_benefits",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "total_out_of_pocket",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "total_paid",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "ingredient_cost",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "dispensing_fee",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "average_wholesale_price",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "payer_plan_period_id",
+    "mode": "nullable"
+  },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "required",
+        "description": "The source of the record."
+    }
+]
