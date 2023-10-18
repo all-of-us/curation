@@ -1,7 +1,7 @@
 [
   {
     "type": "integer",
-    "name": "participant_id",
+    "name": "person_id",
     "mode": "nullable",
     "description": "A unique identifier for each Person's visit or encounter at a healthcare provider."
   },
