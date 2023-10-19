@@ -149,7 +149,7 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
         cls.duplicates_dataset = 'duplicates_dataset'
-        cls.duplicates_table = 'duplicates_table'  # TODO environ, RDRxxxyy, whatever
+        cls.duplicates_table = 'duplicates_table'
 
         cls.rule_instance = RemoveEhrDataWithoutConsent(
             cls.project_id,
@@ -176,8 +176,8 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
             f'{cls.project_id}.{cls.sandbox_id}.{EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE}'
         ])
 
-        cls.kwargs['duplicates_dataset'] = cls.duplicates_dataset
-        cls.kwargs['duplicates_table'] = cls.duplicates_table
+        cls.kwargs['ehr_duplicates_dataset'] = cls.duplicates_dataset
+        cls.kwargs['ehr_duplicates_table'] = cls.duplicates_table
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
