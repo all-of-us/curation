@@ -19,7 +19,7 @@ import nbclient
 from nbconvert import HTMLExporter
 
 # Project imports
-from utils import pipeline_logging 
+from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 IPYNB_SUFFIX = '.ipynb'
@@ -47,8 +47,8 @@ def create_ipynb_from_py(py_path) -> str:
 def create_html_from_ipynb(surrogate_output_path):
     """
     Create a html page from the output of the jupyter notebook
-    :param surrogate_output_path: 
-    :return: 
+    :param surrogate_output_path:
+    :return:
     """
     # Convert output ipynb to html
     output_path = PurePath(surrogate_output_path).with_suffix(HTML_SUFFIX)
@@ -68,12 +68,12 @@ def create_html_from_ipynb(surrogate_output_path):
 
 def infer_required(param_properties: OrderedDict) -> OrderedDict:
     """
-    This function infers whether the notebook parameter is required or not based on the following 
-    heuristics: if the default value is 'None' (notebook translates None to a string version of 
+    This function infers whether the notebook parameter is required or not based on the following
+    heuristics: if the default value is 'None' (notebook translates None to a string version of
     None) or '""' or '\'\'' (string consists of double quotes or single quotes only)
-    
-    :param param_properties: 
-    :return: 
+
+    :param param_properties:
+    :return:
     """
 
     def is_required(param_value):
@@ -91,10 +91,10 @@ def infer_required(param_properties: OrderedDict) -> OrderedDict:
 
 def infer_notebook_params(notebook_path) -> List[Tuple[str, OrderedDict]]:
     """
-    A helper function to infer the notebook params 
+    A helper function to infer the notebook params
 
-    :param notebook_path: 
-    :return: 
+    :param notebook_path:
+    :return:
     """
 
     return [(name, infer_required(properties))
@@ -103,10 +103,10 @@ def infer_notebook_params(notebook_path) -> List[Tuple[str, OrderedDict]]:
 
 def display_notebook_help(notebook_path):
     """
-    A helper function to display  
+    A helper function to display
 
-    :param notebook_path: 
-    :return: 
+    :param notebook_path:
+    :return:
     """
     print(f'Parameters inferred for notebook {PurePath(notebook_path).stem}:')
     for _, properties in infer_notebook_params(notebook_path):
@@ -133,7 +133,7 @@ def is_parameter_required(properties: OrderedDict):
     """
     This functions checks if the notebook parameter is required
     :param properties: the properties associated with the parameter
-    :return: 
+    :return:
     """
     for key, value in properties.items():
         if key == PARAMETER_REQUIRED:
@@ -143,11 +143,11 @@ def is_parameter_required(properties: OrderedDict):
 
 def validate_notebook_params(notebook_path, provided_params: Dict[str, str]):
     """
-    This function validates the provided parameters passed to the notebook 
-    
-    :param notebook_path: 
-    :param provided_params: provided parameters from the arg parser 
-    :return: 
+    This function validates the provided parameters passed to the notebook
+
+    :param notebook_path:
+    :param provided_params: provided parameters from the arg parser
+    :return:
     """
 
     notebook_param_dict = dict(infer_notebook_params(notebook_path))
@@ -197,12 +197,12 @@ def validate_notebook_params(notebook_path, provided_params: Dict[str, str]):
 
 def main(notebook_jupytext_path, params, output_path, help_notebook=False):
     """
-    
-    :param notebook_jupytext_path: 
-    :param params: 
-    :param output_path: 
-    :param help_notebook: 
-    :return: 
+
+    :param notebook_jupytext_path:
+    :param params:
+    :param output_path:
+    :param help_notebook:
+    :return:
     """
 
     # Output name defaults to ipynb_path if the output_path is an empty string
@@ -265,7 +265,7 @@ class NotebookFileParamType(object):
 
 
 if __name__ == '__main__':
-    pipeline_logging.configure(logging.INFO, add_console_handler=True) 
+    pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
     parser = argparse.ArgumentParser(
         description=
