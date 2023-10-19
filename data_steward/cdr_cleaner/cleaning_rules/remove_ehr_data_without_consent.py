@@ -253,18 +253,18 @@ if __name__ == '__main__':
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id,
             [(RemoveEhrDataWithoutConsent,)],
-            duplicates_dataset=ARGS.duplicates_dataset,
-            duplicates_table=ARGS.duplicates_table,
+            ehr_duplicates_dataset=ARGS.duplicates_dataset,
+            ehr_duplicates_table=ARGS.duplicates_table,
         )
 
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id,
-                                   ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id,
-                                   ARGS.cutoff_date,
-                                   [(RemoveEhrDataWithoutConsent,)],
-                                   duplicates_dataset=ARGS.duplicates_dataset,
-                                   duplicates_table=ARGS.duplicates_table)
+        clean_engine.clean_dataset(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id,
+            ARGS.cutoff_date, [(RemoveEhrDataWithoutConsent,)],
+            ehr_duplicates_dataset=ARGS.duplicates_dataset,
+            edr_duplicates_table=ARGS.duplicates_table)
