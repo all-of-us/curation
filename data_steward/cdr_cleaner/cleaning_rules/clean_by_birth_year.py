@@ -1,5 +1,5 @@
 """
-Year of birth should not be in the future, before 1800, or indicate
+Year of birth should not be in the future, before 1900, or indicate
 the participant is less than 18 years old.
 Using rule 18, 19 in Achilles Heel for reference.
 """
@@ -67,7 +67,7 @@ class CleanByBirthYear(BaseCleaningRule):
         """
         desc = (
             'Sandbox and remove records when the participant\'s year of birth '
-            'indicates he/she was born before 1800, in the last 17 years, or in '
+            'indicates he/she was born before 1900, in the last 17 years, or in '
             'the future.')
 
         person_id_tables = resources.get_person_id_tables(AOU_REQUIRED)
