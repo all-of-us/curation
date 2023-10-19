@@ -162,7 +162,6 @@ else:
 result
 # -
 
-
 # # Verify that correct date shift is applied to the RT fitbit data
 #
 # DC-1005
@@ -341,10 +340,10 @@ WHERE NOT REGEXP_CONTAINS(device_id, r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9
 OR device_id IS NULL
 ),
 check_uuid_unique AS (
-SELECT DISTINCT device_id
+SELECT device_id
 FROM `{{project_id}}.{{deid_cdr_fitbit}}.device`
-GROUP BY person_id, device_id
-HAVING COUNT(device_id) > 1
+GROUP BY device_id
+HAVING COUNT(DISTINCT person_id) > 1
 )
 SELECT 'not_research_device_ids' as issue, COUNT(*) as bad_rows
 FROM not_research_device_ids
@@ -364,19 +363,15 @@ result = execute(client, query)
 if sum(result['bad_rows']) == 0:
     summary = summary.append(
         {
-            'query':
-                'device_id Deidentification Query',
-            'result':
-                'PASS'
+            'query': 'device_id Deidentification Query',
+            'result': 'PASS'
         },
         ignore_index=True)
 else:
     summary = summary.append(
         {
-            'query':
-                'device_id Deidentification Query',
-            'result':
-                'Failure'
+            'query': 'device_id Deidentification Query',
+            'result': 'Failure'
         },
         ignore_index=True)
 result
