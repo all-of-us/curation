@@ -55,10 +55,10 @@ def create_html_from_ipynb(surrogate_output_path):
 
     html_exporter = HTMLExporter()
     html_exporter.template_name = 'classic'
-    with open(surrogate_output_path, 'r') as f:
+    with open(surrogate_output_path, 'r', encoding='utf-8') as f:
         written_nb = nbformat.reads(f.read(), as_version=4)
         (body, resources) = html_exporter.from_notebook_node(written_nb)
-    with open(output_path, 'w') as f:
+    with open(output_path, 'w', encoding='utf-8') as f:
         f.write(body)
 
     LOGGER.info(f'Notebook exported to {output_path}')
