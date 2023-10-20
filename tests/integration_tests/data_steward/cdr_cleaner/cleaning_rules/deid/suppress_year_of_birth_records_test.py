@@ -53,12 +53,13 @@ INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
     /* For this data, observation_id 2 and 5 should be dropped.*/
     /* observation_id 2 is within the same year as participant's year of birth.*/
     /* observation_id 5 is the last possible date that is less than participant's birth year + 2 (2005-01-01) */
+    /* The CR should capture records regardless of nulls in nullable concept_id fields. */
 VALUES
       (1, 1, '2020-06-01', '2020-06-01 00:00:00 UTC', 0, 0, 0, 0, 0, 0, 0),
       (2, 2, '2002-06-01', '2002-06-01 00:00:00 UTC', 0, 0, 0, 0, 0, 0, 0),
       (3, 3, '2020-03-01', '2020-03-01 00:00:00 UTC', 0, 0, 0, 0, 0, 0, 0),
-      (4, 4, '2020-01-05', '2020-01-05 00:00:00 UTC', 0, 0, 0, 0, 0, 0, 0),
-      (5, 3, '2004-12-31', '2004-12-31 00:00:00 UTC', 0, 0, 0, 0, 0, 0, 0)
+      (4, 4, '2020-01-05', '2020-01-05 00:00:00 UTC', 0, 0, 0, 0, 0, 0, NULL),
+      (5, 3, '2004-12-31', '2004-12-31 00:00:00 UTC', 0, 0, NULL, NULL, NULL, NULL, NULL)
 """)
 DEATH_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.death`
