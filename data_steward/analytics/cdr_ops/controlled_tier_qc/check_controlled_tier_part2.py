@@ -1477,6 +1477,33 @@ else:
         ignore_index=True)
 result
 
+# Query 20: verify free text responses for Race/ethnicity is suppressed
+# -
+
+query = JINJA_ENV.from_string("""
+SELECT * FROM `{{project_id}}.{{ct_dataset}}.observation`
+WHERE value_as_concept_id = 1586149
+""")
+q = query.render(project_id=project_id, ct_dataset=ct_dataset)
+result = execute(client, q)
+if result.empty:
+    df = df.append(
+        {
+            'query': 'No text found for "NoneOfTheseDescribeMe" free text.',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': '"NoneOfTheseDescribeMe" response have free text.',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+result
+
+# -
+
 
 # # Results Summary
 
