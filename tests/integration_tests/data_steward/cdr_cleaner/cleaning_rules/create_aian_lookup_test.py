@@ -62,8 +62,6 @@ class CreateAIANLookupTest(BaseTest.CleaningRulesTestBase):
         self.load_test_data(queries)
 
     def test_create_aian_list(self):
-        tables_and_counts = []
-
-        self.default_test(tables_and_counts)
+        self.default_test([])
         self.assertTableValuesMatch(self.fq_sandbox_table_names[0],
                                     ['person_id'], [(11,), (12,), (13,), (14,)])
