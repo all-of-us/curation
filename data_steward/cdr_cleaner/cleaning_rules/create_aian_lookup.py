@@ -17,11 +17,10 @@ import logging
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from common import JINJA_ENV
+from common import AIAN_LIST, JINJA_ENV
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
-AIAN_LIST = 'aian_list'
 
 CREATE_AIAN_LIST = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{storage_table_name}}` AS (
