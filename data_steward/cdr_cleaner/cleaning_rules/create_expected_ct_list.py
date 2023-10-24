@@ -97,7 +97,7 @@ class StoreExpectedCTList(BaseCleaningRule):
             f'update which service accounts can read the data in the table.')
 
         super().__init__(
-            issue_numbers=['DC2595'],
+            issue_numbers=['DC2595', 'DC3402',],
             description=desc,
             affected_datasets=[],  # has no side effects
             project_id=project_id,
