@@ -104,10 +104,11 @@ class StoreExpectedCTList(BaseCleaningRule):
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
             depends_on=[
-                CleanMappingExtTables
+                CleanMappingExtTables,
                 CreateAIANLookup,
             ],
-            table_namer=table_namer,)
+            table_namer=table_namer,
+        )
 
     def get_query_specs(self):
         """
@@ -122,7 +123,8 @@ class StoreExpectedCTList(BaseCleaningRule):
             mapping_table=PRIMARY_PID_RID_MAPPING,
             storage_table_name=self.sandbox_table_for(EXPECTED_CT_LIST),
             pipeline_lookup_tables=PIPELINE_TABLES,
-            aian_list=AIAN_LIST,)
+            aian_list=AIAN_LIST,
+        )
 
         create_sandbox_table_dict = {cdr_consts.QUERY: create_sandbox_table}
 
