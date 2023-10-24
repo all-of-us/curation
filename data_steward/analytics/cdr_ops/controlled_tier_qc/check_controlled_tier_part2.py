@@ -1119,17 +1119,19 @@ else:
 
 #
 # # Query 14 done all other observation concept ids WITH dates similar to birth dates other than the 3 above should be removed
+#
+# Related to CR year_of_birth_records_suppression
 
 # +
 query = JINJA_ENV.from_string("""
 
- WITH rows_having_brith_date as (
+WITH rows_having_brith_date as (
 
 SELECT observation_id
   FROM {{project_id}}.{{rt_dataset}}.observation ob
 JOIN  {{project_id}}.{{rt_dataset}}.person p USING (person_id)
- WHERE observation_concept_id NOT IN (4013886, 4135376, 4271761)
-  AND observation_date=DATE(p.birth_datetime)
+ WHERE (observation_concept_id NOT IN (4013886, 4135376, 4271761) OR observation_concept_id IS NULL)
+  AND ABS(EXTRACT(YEAR FROM observation_date) - EXTRACT(YEAR FROM p.birth_datetime)) < 2
   )
 
 SELECT
@@ -1149,10 +1151,9 @@ q = query.render(project_id=project_id,
                  rt_dataset=rt_dataset,
                  ct_dataset=ct_dataset)
 df1 = execute(client, q)
-df1.shape
-# -
 
 df1
+# -
 
 if df1.iloc[:, 3].sum() == 0:
     df = df.append(
