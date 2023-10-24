@@ -50,6 +50,7 @@ class CreateAIANLookupTest(BaseTest.CleaningRulesTestBase):
           (102, 12, 1586150, 0, 0, '2000-01-01', 0),
           (103, 13, 1585599, 0, 0, '2000-01-01', 0),
           (104, 14, 1586139, 0, 0, '2000-01-01', 0),
+          (105, 15, 1585604, 0, 0, '2000-01-01', 0),
           -- Not meet the AIAN criteria --
           (201, 21, 1586140, 0, 0, '2000-01-01', 0),
           (202, 22, 0, 1586141, 0, '2000-01-01', 0),
@@ -64,4 +65,5 @@ class CreateAIANLookupTest(BaseTest.CleaningRulesTestBase):
     def test_create_aian_list(self):
         self.default_test([])
         self.assertTableValuesMatch(self.fq_sandbox_table_names[0],
-                                    ['person_id'], [(11,), (12,), (13,), (14,)])
+                                    ['person_id'], [(11,), (12,), (13,), (14,),
+                                                    (15,)])

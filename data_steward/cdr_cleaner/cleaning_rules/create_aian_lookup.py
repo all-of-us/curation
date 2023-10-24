@@ -27,7 +27,7 @@ CREATE_AIAN_LIST = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{storage_table_name}}` AS (
     SELECT DISTINCT person_id FROM `{{project_id}}.{{dataset_id}}.observation`
     WHERE (observation_source_concept_id = 1586140 AND value_source_concept_id = 1586141)
-    OR observation_source_concept_id in (1586150, 1585599, 1586139)
+    OR observation_source_concept_id in (1586150, 1585599, 1586139, 1585604)
 )""")
 
 
