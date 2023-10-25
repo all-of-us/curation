@@ -41,7 +41,6 @@ class CreateAIANLookup(BaseCleaningRule):
                  sandbox_dataset_id,
                  table_namer=None):
         desc = ('Create a lookup table of AIAN participants. '
-                'This lookup table is not referenced in our pipeline. '
                 'We create it in case we need AIAN-specific ETL process '
                 '(retraction, etc).')
 
