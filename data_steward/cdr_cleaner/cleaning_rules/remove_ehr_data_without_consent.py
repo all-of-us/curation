@@ -244,8 +244,6 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ext_parser = parser.get_argument_parser()
-    ARGS = ext_parser.parse_args()
-
     ext_parser.add_argument('--ehr_duplicates_dataset',
                             action='store',
                             dest='ehr_duplicates_dataset',
@@ -257,6 +255,8 @@ if __name__ == '__main__':
         dest='ehr_duplicates_table',
         required=True,
         help='The table (from the dataset) that includes duplicates PIDs')
+
+    ARGS = ext_parser.parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
