@@ -246,6 +246,18 @@ if __name__ == '__main__':
     ext_parser = parser.get_argument_parser()
     ARGS = ext_parser.parse_args()
 
+    ext_parser.add_argument('--ehr_duplicates_dataset',
+                            action='store',
+                            dest='ehr_duplicates_dataset',
+                            required=True,
+                            help='The dataset that includes duplicate records')
+    ext_parser.add_argument(
+        '--ehr_duplicates_table',
+        action='store',
+        dest='ehr_duplicates_table',
+        required=True,
+        help='The table (from the dataset) that includes duplicates PIDs')
+
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
