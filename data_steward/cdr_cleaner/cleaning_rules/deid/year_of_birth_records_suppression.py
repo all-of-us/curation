@@ -21,7 +21,7 @@ from common import AOU_DEATH, AOU_REQUIRED, JINJA_ENV, DEATH, PERSON, FITBIT_TAB
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC1977', 'DC2205']
+ISSUE_NUMBERS = ['DC1977', 'DC2205', 'DC3545']
 BIRTH_DELIVERY_SUPPRESSION_CONCEPT_TABLE = '_birth_concepts'
 
 EXCLUDED_CONCEPTS = [4013886, 4135376, 4271761]
@@ -195,7 +195,8 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
                         {% if loop.index > 1 %}
                          AND
                         {% endif %}
-                        {{column}} not in ({{exceptions}})
+                        ({{column}} not in ({{exceptions}})
+                        OR {{column}} is null)
                     {% endfor %}
                     )
                 {% endif %}
