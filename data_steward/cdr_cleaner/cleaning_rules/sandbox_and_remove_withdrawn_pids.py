@@ -148,8 +148,8 @@ if __name__ == '__main__':
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id,
-                                   ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id,
-                                   [(SandboxAndRemoveWithdrawnPids,)],
-                                   withdrawn_dups_table=ARGS.withdrawn_dups_table)
+        clean_engine.clean_dataset(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(SandboxAndRemoveWithdrawnPids,)],
+            withdrawn_dups_table=ARGS.withdrawn_dups_table)
