@@ -6,7 +6,7 @@ from dateutil import parser
 
 from app_identity import get_application_id
 from common import (OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING,
-                    VOCABULARY_TABLES)
+                    VOCABULARY_TABLES, AIAN_LIST)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
 
@@ -41,8 +41,8 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         # mocked for this test
         cls.stable_map_name = f'{cls.project_id}.{cls.dataset_id}.{PRIMARY_PID_RID_MAPPING}'
         cls.fq_table_names = [
-            f'{cls.project_id}.{cls.dataset_id}.{table}'
-            for table in [OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING] +
+            f'{cls.project_id}.{cls.dataset_id}.{table}' for table in
+            [OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING, AIAN_LIST] +
             VOCABULARY_TABLES
         ]
 
@@ -124,13 +124,8 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
             (500, 50, 'yes'),
             -- is NOT aian --
             (800, 20, 'no')
-        """                                               )
-        queries = [
-            observation_tmpl,
-            person_tmpl,
-            primary_map_tmpl,
-            aian_tmpl
-        ]
+        """)
+        queries = [observation_tmpl, person_tmpl, primary_map_tmpl, aian_tmpl]
         self.load_test_data(queries)
 
     def test_store_expected_ct_list(self):
