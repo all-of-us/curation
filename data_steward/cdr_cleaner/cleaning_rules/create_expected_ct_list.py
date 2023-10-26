@@ -71,9 +71,9 @@ CASE
     a.person_id = m.person_id THEN 'yes' ELSE 'no'
   END AS is_aian
 FROM rdr_persons r
-JOIN `{{project_id}}.{{pipeline_lookup_tables}}.primary_pid_rid_mapping.` m
+JOIN `{{project_id}}.{{pipeline_lookup_tables}}.primary_pid_rid_mapping` m
   USING(person_id)
-JOIN `{{project_id}}.{{dataset_id}}_sandbox.{{aian_list}}` a
+JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{aian_list}}` a
   USING(person_id)
 WHERE person_id IN (SELECT person_id FROM has_the_basics)
 AND person_id NOT IN (SELECT person_id FROM bad_birthdate_records)
@@ -97,7 +97,10 @@ class StoreExpectedCTList(BaseCleaningRule):
             f'update which service accounts can read the data in the table.')
 
         super().__init__(
-            issue_numbers=['DC2595', 'DC3402',],
+            issue_numbers=[
+                'DC2595',
+                'DC3402',
+            ],
             description=desc,
             affected_datasets=[],  # has no side effects
             project_id=project_id,
@@ -107,6 +110,7 @@ class StoreExpectedCTList(BaseCleaningRule):
                 CleanMappingExtTables,
                 CreateAIANLookup,
             ],
+            aian_list=AIAN_LIST,
             table_namer=table_namer,
         )
 
