@@ -1193,16 +1193,15 @@ else:
                 
             '''))
 # -
-
 # # Check consent_validation for expected number of consent status
 #
 # The 'consent_validation' table is renamed from 'consent' in the rdr import script. This table is used to suppress data in `remove_ehr_data_without_consent.py`.
 #
-# **"Have duplicate consent statuses"** These participants have multiple consent_validation records with the same status.
-# **"Descrepancy btn consent_validation and obs"** Where a consent_validation record has no record in observation or vice versa.
-# **"Consent status is NULL"** Whereconsent_for_electronic_health_records(consent status) are NULL
-# **"Varying consent statuses per consent answer"** Where a single consent record in observation has more than one consent status in consent_validation.
-#
+# **"Have duplicate consent statuses"** These participants have multiple consent_validation records with the same status. <br>
+# **"Descrepancy btn consent_validation and obs"** Where a consent_validation record has no record in observation or vice versa. These participants will not be flagged as consenting.<br>
+# **"Consent status is NULL"** Whereconsent_for_electronic_health_records(consent status) are NULL and the observation consent was not skipped.<br>
+# **"Varying consent statuses per consent answer"** Where a single consent record in observation has conflicting consent statuses in consent_validation.
+# <br>
 
 # +
 # Count of participants with multiple validation status' for their ehr consent records.
@@ -1212,7 +1211,6 @@ WITH obs_consents AS (SELECT
 *
 FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_source_value = 'EHRConsentPII_ConsentPermission' ),
-
 
 issue_queries AS (
 SELECT 
@@ -1237,8 +1235,11 @@ UNION ALL
 SELECT 
 "Consent status is NULL" AS issue,
 COUNT(*) AS n
-FROM `{{project_id}}.{{new_rdr}}.consent_validation` cv
+FROM obs_consents o
+FULL OUTER JOIN `{{project_id}}.{{new_rdr}}.consent_validation` cv
+ON cv.person_id = o.person_id AND cv.consent_for_electronic_health_records_authored = CAST(o.observation_datetime AS DATETIME)
 WHERE consent_for_electronic_health_records IS NULL
+AND value_source_value != 'PMI_Skip'
 GROUP BY cv.person_id
 
 UNION ALL 
@@ -1247,7 +1248,11 @@ SELECT
 "Varying consent statuses per consent answer" as issue
 ,COUNT(DISTINCT(consent_for_electronic_health_records)) as n
 FROM obs_consents o
-FULL OUTER JOIN `{{project_id}}.{{new_rdr}}.consent_validation` cv
+FULL OUTER JOIN ( -- yes and no consent status only
+    SELECT *
+    FROM `{{project_id}}.{{new_rdr}}.consent_validation` cv
+    WHERE consent_for_electronic_health_records IN ('SUBMITTED', 'SUBMITTED_NO')
+    ) cv
 ON cv.person_id = o.person_id AND cv.consent_for_electronic_health_records_authored = CAST(o.observation_datetime AS DATETIME)
 GROUP BY o.person_id, value_source_value
 HAVING n >1
@@ -1274,7 +1279,6 @@ render_message(df,
                success_msg,
                failure_msg)
 # -
-
 # # Check to catch duplicate observation_ids
 
 tpl = JINJA_ENV.from_string('''
