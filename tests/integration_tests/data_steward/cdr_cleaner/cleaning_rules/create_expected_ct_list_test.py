@@ -102,8 +102,8 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
           observation_concept_id, observation_date, observation_type_concept_id)
         VALUES
           -- should be included in sandbox table.  ai/an regression check --
-          (10, 500, 1586140, 1586141, 1586140, '1900-01-01', 0),
-          (20, 500, 1586140, 1586147, 1586140, '1900-01-01', 0),
+          (10, 500, 1586140, 1586141, 1586140, '1900-01-01', 0), -- AIAN
+          (20, 500, 1586140, 1586147, 1586140, '1900-01-01', 0), -- HISPANIC
           -- include because not ai/an --
           (30, 600, 1586140, 1586145, 1586140, '1900-01-01', 0),
           -- should not be included in sandbox table.  does not have the basics --
@@ -115,10 +115,21 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         """).render(project=self.project_id,
                     dataset=self.dataset_id,
                     table=OBSERVATION)
+
+        aian_tmpl = self.jinja_env.from_string("""
+        INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{aian_list}}`
+          (person_id, research_id, is_aian)
+        VALUES
+            -- is aian --
+            (500, 50, 'yes'),
+            -- is NOT aian --
+            (800, 20, 'no')
+        """                                               )
         queries = [
             observation_tmpl,
             person_tmpl,
             primary_map_tmpl,
+            aian_tmpl
         ]
         self.load_test_data(queries)
 
