@@ -1,220 +1,323 @@
 [
-    {
-        "_id":"generalize",
-        "RACE": [
-            {
-                "comment": [
-                    "aggregate multi-race answers before generalizing ",
-                    "single race answers.  treat HLS as an ethnicity, ",
-                    "not a race."
-                ],
-                "apply": "SQL",
-                "statement": [
-                    "(SELECT COUNT(obs.person_id) ",
-                    "FROM :idataset.:table AS obs ",
-                    "WHERE obs.person_id = :table.person_id ",
-                    "AND obs.value_source_concept_id IN (1586141, 1586142, 1586143, 1586144, 1586145, 1586146) ",
-                    "GROUP BY obs.person_id ) "
-                ],
-                "qualifier": " > 1 AND value_source_concept_id != 1586147 ",
-                "into": 2000000008,
-                "drop_duplicates": "True"
-            },
-            {
-                "comment": "generalize single race values",
-                "values": [1586141, 1586144, 1586145],
-                "into": 2000000001,
-                "qualifier": "IN"
-            }
-        ],
-        "SEXUAL-ORIENTATION":[
-            {
-                "comment": [
-                    "multi sexual orientation generalization rule, the values the count is ",
-                    "limited to is provided by the 'on' key.  it is best to ",
-                    "perform aggregate functions before other generalizations"
-                ],
-                "apply": "COUNT",
-                "into": 2000000003,
-                "qualifier": "> 1",
-                "values": [903096, 903079, 1585901, 1585902, 1585903, 1585904, 1585900],
-                "drop_duplicates": "True"
-            },
-            {
-                "comment": "generalize single response that is not straight",
-                "qualifier": "IN",
-                "values": [903096, 903079, 1585901, 1585902, 1585903, 1585904],
-                "into": 2000000003,
-                "drop_duplicates": "True"
-            }
-        ],
-        "SEX-AT-BIRTH":[
-            {
-                "comment": "generalize any response that is not male and not female",
-                "qualifier": "IN",
-                "values": [903096, 903079, 1585848, 1585849],
-                "into": 2000000009
-            }
-        ],
-        "GENDER":[
-            {
-                "comment": [
-                    "multi gender generalization rule, the values the count is ",
-                    "limited to is provided by the 'on' key.  it is best to ",
-                    "perform aggregate functions before other generalizations"
-                ],
-                "apply": "COUNT",
-                "into": 2000000002,
-                "qualifier": "> 1",
-                "values": [1585839, 1585840, 1585841, 1585842, 1585843],
-                "drop_duplicates": "True"
-            },
-            {
-                "comment": [
-                    "transgender generalization rule.  if sex-at-birth does ",
-                    "not match the identified gender, generalize the gender.  ",
-                    "generalizes born female but gender is male, or born ",
-                    "male but gender is female.  all other gender choices are ",
-                    "already generalized"
-                ],
-                "apply": "SQL",
-                "statement": [
-                    ":table_id IN (",
-                    "SELECT gender.:table_id ",
-                    "FROM :idataset.:table AS gender ",
-                    "JOIN :idataset.:table AS sex_at_birth ",
-                    "USING (person_id) ",
-                    "WHERE gender.observation_source_concept_id = 1585838 ",
-                    "AND ((gender.:fields = 1585839 AND sex_at_birth.:fields = 1585847) ",
-                    "OR (gender.:fields = 1585840 AND sex_at_birth.:fields = 1585846)))"
-                ],
-                "into": 2000000002
-            },
-            {
-                "comment": "values that are not male or female will be generalized into other",
-                "qualifier": "IN",
-                "values": [903096, 903079, 1585843, 1585841,1585842],
-                "into": 2000000002
-            }
-        ],
-        "EDUCATION":[
-            {
-                "comment": "generalizing to no highschool degree",
-                "qualifier": "IN",
-                "values": [1585941, 1585942, 1585943, 1585944],
-                "into": 2000000007
-            },
-            {
-                "comment": "generalizing to above highschool degree",
-                "into": 2000000006,
-                "values": [1585947, 1585948],
-                "qualifier": "IN"
-            }
-        ],
-        "EMPLOYMENT":[
-            {
-                "comment":"this will generalize values to unemployed or not employed.  first row is basics survey answer values and the second row is cope survey answer values",
-                "qualifier":"IN",
-                "values":[1585955, 1585956, 1585957, 1585958, 1585959, 1585960,
-                          1333224, 1333132, 1332926, 1332757, 1332716, 1333197],
-                "into":2000000005,
-                "drop_duplicates": "True"
-            },
-            {
-                "comment":"generalizing to currently employed. first row is basics survey answer values and the second row is cope survey answer values.",
-                "qualifier":"IN",
-                "values":[1585953, 1585954,
-                          1333341, 1333321],
-                "into":2000000004,
-                "drop_duplicates": "True"
-            }
-        ]
-
-    },
-    {
-    "_id":"suppress",
-        "DEMOGRAPHICS-COLUMNS":[
-            {
-                "comment":"list of columns to be suppressed regardless of the table",
-                "values": [
-                    "year_of_birth","month_of_birth","day_of_birth",
-                    "race_concept_id","ethnicity_concept_id","location_id",
-                    "provider_id","care_site_id","person_source_value",
-                    "gender_concept_id","gender_source_value","gender_source_concept_id",
-                    "race_source_value","race_source_concept_id",
-                    "ethnicity_source_value","ethnicity_source_concept_id",
-                    "cause_concept_id","cause_source_value","cause_source_concept_id",
-                    "value_source_value","value_as_string"
-                ]
-            }
-        ],
-        "FILTERS":[
-            {"filter":"person_id IN (SELECT DISTINCT person_id FROM :idataset._deid_map)"}
-        ],
-        "ICD-9":[
-            {"apply":"REGEXP", "values":["^E8[0-4"],"description":"rare accidents"},
-            {"apply":"REGEXP", "values":["^E8[0-4]"],"description":"rare accidents"},
-            {
-                "apply":"REGEXP",
-                "values":[
-                    "^E8[0-4].*","^E91[0,3].*","^E9([9,7,6,5]|28.0).*",
-                    "^79[8,9].*","^V3.*","^(76[4-9]|77[0-9])\\\\.([0-9]){0,2}.*",
-                    "^P[0-9]{2}\\\\.[0-9]{1}.*","^Z38.*","^R99.*",
-                    "^Y3[5,6,7,8].*","^x52.*","^(W6[5-9]|W7[0-4][0-9]).*",
-                    "^(X92[0-9]|Y0[1-9]).*","^V[0-9]{2}.*"
-                ]
-            }
-        ]
-    },
-    {
-        "_id": "shift",
-        "day": "SELECT date_shift from :table where :key_field=:key_value ",
-        "date": "DATE_SUB( CAST(:FIELD AS DATE), INTERVAL (:SHIFT) DAY) AS :FIELD",
-        "datetime": "TIMESTAMP_SUB( CAST(:FIELD AS TIMESTAMP), INTERVAL (:SHIFT) DAY) AS :FIELD"
-    },
-    {
-         "_id": "compute",
-         "id": ["(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = :value_field) as :FIELD"],
-         "month": ["EXTRACT (MONTH FROM :value_field) AS :FIELD"],
-         "day": ["EXTRACT (DAY FROM :value_field) AS :FIELD"],
-         "year": ["EXTRACT (YEAR FROM :value_field) AS :FIELD"]
-    },
-    {
-        "_id": "dml_statements",
+  {
+    "_id": "generalize",
+    "RACE": [
+      {
         "comment": [
-            "A place to define Data Manipulation Statments to execute after creating ",
-            "a de-identified table.  The statements are defined as a list of dictionaries ",
-            "containing a comment about the intent of each statement and an SQL DML statement."
+          "aggregate multi-race answers before generalizing ",
+          "single race answers.  treat HLS as an ethnicity, ",
+          "not a race."
         ],
-        "observation": [
-            {
-                "comment": [
-                    "SQL to delete extra rows created by generalization rules. ",
-                    "This can happen when questions with multiple possible answers are ",
-                    "generalized.  The exact delete statement to use will depend on the ",
-                    "table receiving the generalization and its available fields."
-                ],
-                "name": "drop_generalized_duplicates",
-                "label": "cleaning_query",
-                "statement": [
-                    "DELETE FROM",
-                    ":odataset.observation AS o ",
-                    "WHERE observation_id in (",
-                      "SELECT observation_id FROM (",
-                         "SELECT DENSE_RANK() OVER(PARTITION BY person_id, observation_source_concept_id, value_source_concept_id ",
-                          "ORDER BY observation_datetime DESC, observation_id DESC) AS rank_order, ",
-                          "observation_id ",
-                          "FROM :odataset.observation ",
-                          "JOIN :idataset._mapping_observation AS map ",
-                          "USING (observation_id) ",
-                          "WHERE observation_source_concept_id IN (:key_values) ",
-                          "AND value_source_concept_id IN (:generalized_values) ",
-                          "AND map.src_hpo_id like \"rdr\"",
-                      ") o ",
-                      "WHERE o.rank_order <> 1 ",
-                    ")"
-                ]
-            }
+        "apply": "SQL",
+        "statement": [
+          "(SELECT COUNT(obs.person_id) ",
+          "FROM :idataset.:table AS obs ",
+          "WHERE obs.person_id = :table.person_id ",
+          "AND obs.value_source_concept_id IN (1586141, 1586142, 1586143, 1586144, 1586145, 1586146) ",
+          "GROUP BY obs.person_id ) "
+        ],
+        "qualifier": " > 1 AND value_source_concept_id != 1586147 ",
+        "into": 2000000008,
+        "drop_duplicates": "True"
+      },
+      {
+        "comment": "generalize single race values",
+        "values": [
+          1586141,
+          1586144,
+          1586145
+        ],
+        "into": 2000000001,
+        "qualifier": "IN"
+      }
+    ],
+    "SEXUAL-ORIENTATION": [
+      {
+        "comment": [
+          "multi sexual orientation generalization rule, the values the count is ",
+          "limited to is provided by the 'on' key.  it is best to ",
+          "perform aggregate functions before other generalizations"
+        ],
+        "apply": "COUNT",
+        "into": 2000000003,
+        "qualifier": "> 1",
+        "values": [
+          903096,
+          903079,
+          1585901,
+          1585902,
+          1585903,
+          1585904,
+          1585900
+        ],
+        "drop_duplicates": "True"
+      },
+      {
+        "comment": "generalize single response that is not straight",
+        "qualifier": "IN",
+        "values": [
+          903096,
+          903079,
+          1585901,
+          1585902,
+          1585903,
+          1585904
+        ],
+        "into": 2000000003,
+        "drop_duplicates": "True"
+      }
+    ],
+    "SEX-AT-BIRTH": [
+      {
+        "comment": "generalize any response that is not male and not female",
+        "qualifier": "IN",
+        "values": [
+          903096,
+          903079,
+          1585848,
+          1585849
+        ],
+        "into": 2000000009
+      }
+    ],
+    "GENDER": [
+      {
+        "comment": [
+          "multi gender generalization rule, the values the count is ",
+          "limited to is provided by the 'on' key.  it is best to ",
+          "perform aggregate functions before other generalizations"
+        ],
+        "apply": "COUNT",
+        "into": 2000000002,
+        "qualifier": "> 1",
+        "values": [
+          1585839,
+          1585840,
+          1585841,
+          1585842,
+          1585843
+        ],
+        "drop_duplicates": "True"
+      },
+      {
+        "comment": [
+          "transgender generalization rule.  if sex-at-birth does ",
+          "not match the identified gender, generalize the gender.  ",
+          "generalizes born female but gender is male, or born ",
+          "male but gender is female.  all other gender choices are ",
+          "already generalized"
+        ],
+        "apply": "SQL",
+        "statement": [
+          ":table_id IN (",
+          "SELECT gender.:table_id ",
+          "FROM :idataset.:table AS gender ",
+          "JOIN :idataset.:table AS sex_at_birth ",
+          "USING (person_id) ",
+          "WHERE gender.observation_source_concept_id = 1585838 ",
+          "AND ((gender.:fields = 1585839 AND sex_at_birth.:fields = 1585847) ",
+          "OR (gender.:fields = 1585840 AND sex_at_birth.:fields = 1585846)))"
+        ],
+        "into": 2000000002
+      },
+      {
+        "comment": "values that are not male or female will be generalized into other",
+        "qualifier": "IN",
+        "values": [
+          903096,
+          903079,
+          1585843,
+          1585841,
+          1585842
+        ],
+        "into": 2000000002
+      }
+    ],
+    "EDUCATION": [
+      {
+        "comment": "generalizing to no highschool degree",
+        "qualifier": "IN",
+        "values": [
+          1585941,
+          1585942,
+          1585943,
+          1585944
+        ],
+        "into": 2000000007
+      },
+      {
+        "comment": "generalizing to above highschool degree",
+        "into": 2000000006,
+        "values": [
+          1585947,
+          1585948
+        ],
+        "qualifier": "IN"
+      }
+    ],
+    "EMPLOYMENT": [
+      {
+        "comment": "this will generalize values to unemployed or not employed.  first row is basics survey answer values and the second row is cope survey answer values",
+        "qualifier": "IN",
+        "values": [
+          1585955,
+          1585956,
+          1585957,
+          1585958,
+          1585959,
+          1585960,
+          1333224,
+          1333132,
+          1332926,
+          1332757,
+          1332716,
+          1333197
+        ],
+        "into": 2000000005,
+        "drop_duplicates": "True"
+      },
+      {
+        "comment": "generalizing to currently employed. first row is basics survey answer values and the second row is cope survey answer values.",
+        "qualifier": "IN",
+        "values": [
+          1585953,
+          1585954,
+          1333341,
+          1333321
+        ],
+        "into": 2000000004,
+        "drop_duplicates": "True"
+      }
+    ]
+  },
+  {
+    "_id": "suppress",
+    "DEMOGRAPHICS-COLUMNS": [
+      {
+        "comment": "list of columns to be suppressed regardless of the table",
+        "values": [
+          "year_of_birth",
+          "month_of_birth",
+          "day_of_birth",
+          "race_concept_id",
+          "ethnicity_concept_id",
+          "location_id",
+          "provider_id",
+          "care_site_id",
+          "person_source_value",
+          "gender_concept_id",
+          "gender_source_value",
+          "gender_source_concept_id",
+          "race_source_value",
+          "race_source_concept_id",
+          "ethnicity_source_value",
+          "ethnicity_source_concept_id",
+          "cause_concept_id",
+          "cause_source_value",
+          "cause_source_concept_id",
+          "value_source_value",
+          "value_as_string"
         ]
-    }
+      }
+    ],
+    "FILTERS": [
+      {
+        "filter": "person_id IN (SELECT DISTINCT person_id FROM :idataset._deid_map)"
+      }
+    ],
+    "ICD-9": [
+      {
+        "apply": "REGEXP",
+        "values": [
+          "^E8[0-4"
+        ],
+        "description": "rare accidents"
+      },
+      {
+        "apply": "REGEXP",
+        "values": [
+          "^E8[0-4]"
+        ],
+        "description": "rare accidents"
+      },
+      {
+        "apply": "REGEXP",
+        "values": [
+          "^E8[0-4].*",
+          "^E91[0,3].*",
+          "^E9([9,7,6,5]|28.0).*",
+          "^79[8,9].*",
+          "^V3.*",
+          "^(76[4-9]|77[0-9])\\\\.([0-9]){0,2}.*",
+          "^P[0-9]{2}\\\\.[0-9]{1}.*",
+          "^Z38.*",
+          "^R99.*",
+          "^Y3[5,6,7,8].*",
+          "^x52.*",
+          "^(W6[5-9]|W7[0-4][0-9]).*",
+          "^(X92[0-9]|Y0[1-9]).*",
+          "^V[0-9]{2}.*"
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "shift",
+    "day": "SELECT date_shift from :table where :key_field=:key_value ",
+    "date": "DATE_SUB( CAST(:FIELD AS DATE), INTERVAL (:SHIFT) DAY) AS :FIELD",
+    "datetime": "TIMESTAMP_SUB( CAST(:FIELD AS TIMESTAMP), INTERVAL (:SHIFT) DAY) AS :FIELD"
+  },
+  {
+    "_id": "compute",
+    "id": [
+      "(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = :value_field) as :FIELD"
+    ],
+    "month": [
+      "EXTRACT (MONTH FROM :value_field) AS :FIELD"
+    ],
+    "day": [
+      "EXTRACT (DAY FROM :value_field) AS :FIELD"
+    ],
+    "year": [
+      "EXTRACT (YEAR FROM :value_field) AS :FIELD"
+    ]
+  },
+  {
+    "_id": "dml_statements",
+    "comment": [
+      "A place to define Data Manipulation Statments to execute after creating ",
+      "a de-identified table.  The statements are defined as a list of dictionaries ",
+      "containing a comment about the intent of each statement and an SQL DML statement."
+    ],
+    "observation": [
+      {
+        "comment": [
+          "SQL to delete extra rows created by generalization rules. ",
+          "This can happen when questions with multiple possible answers are ",
+          "generalized.  The exact delete statement to use will depend on the ",
+          "table receiving the generalization and its available fields."
+        ],
+        "name": "drop_generalized_duplicates",
+        "label": "cleaning_query",
+        "statement": [
+          "DELETE FROM",
+          ":odataset.observation AS o ",
+          "WHERE observation_id in (",
+          "SELECT observation_id FROM (",
+          "SELECT DENSE_RANK() OVER(PARTITION BY person_id, observation_source_concept_id, value_source_concept_id ",
+          "ORDER BY observation_datetime DESC, observation_id DESC) AS rank_order, ",
+          "observation_id ",
+          "FROM :odataset.observation ",
+          "JOIN :idataset._mapping_observation AS map ",
+          "USING (observation_id) ",
+          "WHERE observation_source_concept_id IN (:key_values) ",
+          "AND value_source_concept_id IN (:generalized_values) ",
+          "AND map.src_hpo_id in (\"ce\", \"healthpro\", \"vibrent\")",
+          ") o ",
+          "WHERE o.rank_order <> 1 ",
+          ")"
+        ]
+      }
+    ]
+  }
 ]

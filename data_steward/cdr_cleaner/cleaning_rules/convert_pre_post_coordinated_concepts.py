@@ -8,6 +8,9 @@ between survey data and EHR data.
 This cleaning rule converts the observation records with pre-coordinated mapping to
 post-coordinated mapping.
 
+This cleaning rule must run after CreateAIANLookup because CreateAIANLookup references
+PRE-coordinated concepts for making the AIAN lookup table.
+
 Original Issues: DC-2617
 
 """
@@ -17,6 +20,7 @@ import logging
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
 from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
     SetConceptIdsForSurveyQuestionsAnswers)
 from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import (
@@ -197,7 +201,7 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          depends_on=[
                              SetConceptIdsForSurveyQuestionsAnswers,
-                             UpdateFamilyHistoryCodes
+                             UpdateFamilyHistoryCodes, CreateAIANLookup
                          ],
                          table_namer=table_namer)
 
