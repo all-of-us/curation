@@ -8,7 +8,7 @@ from datetime import datetime
 from google.cloud.bigquery import Table
 
 from cdr_cleaner import clean_cdr, args_parser
-from common import FITBIT_TABLES, JINJA_ENV
+from common import FITBIT_TABLES, JINJA_ENV, DEVICE
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants.cdr_cleaner import clean_cdr as consts
@@ -97,7 +97,8 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
     :param table_prefix: prefix added to table_ids
     :return:
     """
-    for table in FITBIT_TABLES:
+    for table in [DEVICE]:
+        # for table in FITBIT_TABLES:
         schema_list = client.get_table_schema(table)
         fq_dest_table = f'{client.project}.{to_dataset}.{table}'
         dest_table = Table(fq_dest_table, schema=schema_list)
@@ -232,7 +233,7 @@ def main(raw_args=None):
     copy_fitbit_tables_from_views(bq_client,
                                   args.fitbit_dataset,
                                   fitbit_datasets[consts.BACKUP],
-                                  table_prefix='v_')
+                                  table_prefix='v7OC_fitbit_')
     bq_client.copy_dataset(
         f'{args.project_id}.{fitbit_datasets[consts.BACKUP]}',
         f'{args.project_id}.{fitbit_datasets[consts.STAGING]}')

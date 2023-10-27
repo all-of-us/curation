@@ -16,7 +16,7 @@ import logging
 from pandas import DataFrame
 
 # Project imports
-from common import AOU_DEATH, FITBIT_TABLES, JINJA_ENV
+from common import AOU_DEATH, FITBIT_TABLES, JINJA_ENV, DEVICE
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import utils.participant_summary_requests as psr
 from constants.bq_utils import WRITE_TRUNCATE
@@ -139,15 +139,16 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         if not api_project_id:
             raise TypeError("`api_project_id` cannot be empty")
 
-        super().__init__(issue_numbers=ISSUE_NUMBERS,
-                         description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=CDM_TABLES + FITBIT_TABLES +
-                         [AOU_DEATH],
-                         table_namer=table_namer)
+        super().__init__(
+            issue_numbers=ISSUE_NUMBERS,
+            description=desc,
+            affected_datasets=[cdr_consts.COMBINED],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            #  affected_tables=CDM_TABLES + FITBIT_TABLES + [AOU_DEATH],
+            affected_tables=[DEVICE],
+            table_namer=table_namer)
         self.api_project_id = api_project_id
         self.destination_table = (f'{self.project_id}.{self.sandbox_dataset_id}'
                                   f'.{DEACTIVATED_PARTICIPANTS}')

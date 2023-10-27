@@ -12,7 +12,7 @@ import logging
 from datetime import datetime
 
 # Project Imports
-from common import JINJA_ENV, FITBIT_TABLES
+from common import JINJA_ENV, FITBIT_TABLES, DEVICE
 from resources import validate_date_string, fields_for
 from constants.cdr_cleaner.clean_cdr import FITBIT, DESTINATION_TABLE, DESTINATION_DATASET, QUERY, DISPOSITION
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
@@ -65,13 +65,15 @@ class TruncateFitbitData(BaseCleaningRule):
         desc = (
             f'All rows of data in the Fitbit dataset {dataset_id} with dates after '
             f'{self.truncation_date} will be sandboxed and dropped.')
-        super().__init__(issue_numbers=['DC1046', 'DC3163'],
-                         description=desc,
-                         affected_datasets=[FITBIT],
-                         affected_tables=FITBIT_TABLES,
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+        super().__init__(
+            issue_numbers=['DC1046', 'DC3163'],
+            description=desc,
+            affected_datasets=[FITBIT],
+            #  affected_tables=FITBIT_TABLES,
+            affected_tables=[DEVICE],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id)
 
     def get_query_specs(self):
         """

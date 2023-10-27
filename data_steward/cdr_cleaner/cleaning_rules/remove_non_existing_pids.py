@@ -4,7 +4,7 @@ Dataset (currently limited to fitbit dataset) should only contain pids that exis
 import logging
 
 # Project imports
-from common import JINJA_ENV, FITBIT_TABLES
+from common import JINJA_ENV, FITBIT_TABLES, DEVICE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
@@ -54,14 +54,16 @@ class RemoveNonExistingPids(BaseCleaningRule):
 
         self.reference_dataset_id = reference_dataset_id
 
-        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
-                         description=desc,
-                         affected_datasets=[cdr_consts.FITBIT],
-                         affected_tables=FITBIT_TABLES,
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+        super().__init__(
+            issue_numbers=JIRA_ISSUE_NUMBERS,
+            description=desc,
+            affected_datasets=[cdr_consts.FITBIT],
+            #  affected_tables=FITBIT_TABLES,
+            affected_tables=[DEVICE],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
 

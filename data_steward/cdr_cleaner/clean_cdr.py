@@ -268,9 +268,10 @@ FITBIT_CLEANING_CLASSES = [
     (TruncateFitbitData,),
     (RemoveParticipantDataPastDeactivationDate,),
     # (CleanDigitalHealthStatus,),
+    # (DropInvalidSleepLevelRecords,), # NOT NEEDED
     (
-        DropInvalidSleepLevelRecords,),
-    (RemoveNonExistingPids,),  # assumes combined dataset is ready for reference
+        RemoveNonExistingPids,
+    ),  # assumes combined dataset is ready for reference
     (GenerateResearchDeviceIds,),
 ]
 
