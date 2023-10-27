@@ -173,6 +173,7 @@ RDR_CLEANING_CLASSES = [
     (CreateAIANLookup,),
     (TruncateRdrData,),
     (RemoveParticipantsUnder18Years,),
+    (SandboxAndRemoveWithdrawnPids,),
     # execute SetConceptIdsForSurveyQuestionAnswers before PpiBranching gets executed
     # since PpiBranching relies on fully mapped concepts
     (
@@ -234,7 +235,6 @@ COMBINED_CLEANING_CLASSES = [
     # wiping out the needed consent related data for cleaning.
     (
         ValidDeathDates,),
-    (SandboxAndRemoveWithdrawnPids,),
     (RemoveEhrDataWithoutConsent,),
     (StoreNewDuplicateMeasurementConceptIds,),
     (DedupMeasurementValueAsConceptId,),
