@@ -9,6 +9,7 @@ from common import (OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING,
                     VOCABULARY_TABLES, AIAN_LIST)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
+from cdr_cleaner.cleaning_rules.create_expected_ct_list import EXPECTED_CT_LIST
 
 
 class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
@@ -102,8 +103,8 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
           observation_concept_id, observation_date, observation_type_concept_id)
         VALUES
           -- should be included in sandbox table.  ai/an regression check --
-          (10, 500, 1586140, 1586141, 1586140, '1900-01-01', 0), -- AIAN
-          (20, 500, 1586140, 1586147, 1586140, '1900-01-01', 0), -- HISPANIC
+          (10, 500, 1586140, 1586141, 1586140, '1900-01-01', 0),
+          (20, 500, 1586140, 1586147, 1586140, '1900-01-01', 0),
           -- include because not ai/an --
           (30, 600, 1586140, 1586145, 1586140, '1900-01-01', 0),
           -- should not be included in sandbox table.  does not have the basics --
@@ -116,16 +117,34 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                     dataset=self.dataset_id,
                     table=OBSERVATION)
 
+        create_aian_table_tmpl = self.jinja_env.from_string("""
+        CREATE TABLE `{{project_id}}.{{dataset_id}}.{{table}}` AS (
+            SELECT person_id AS participant_id , research_id
+            FROM `{{project_id}}.{{dataset_id}}.{{map}}`
+        )
+        """).render(project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    table=AIAN_LIST,
+                    map=PRIMARY_PID_RID_MAPPING)
+
         aian_tmpl = self.jinja_env.from_string("""
-        INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{aian_list}}`
-          (person_id, research_id, is_aian)
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{table}}`
+          (participant_id, research_id, is_aian)
         VALUES
             -- is aian --
             (500, 50, 'yes'),
             -- is NOT aian --
             (800, 20, 'no')
-        """)
-        queries = [observation_tmpl, person_tmpl, primary_map_tmpl, aian_tmpl]
+        """).render(
+            project_id=self.project_id,
+            dataset_id=self.sandbox_id,
+            table=AIAN_LIST,
+        )
+
+        queries = [
+            observation_tmpl, person_tmpl, primary_map_tmpl,
+            create_aian_table_tmpl, aian_tmpl
+        ]
         self.load_test_data(queries)
 
     def test_store_expected_ct_list(self):
