@@ -117,16 +117,6 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                     dataset=self.dataset_id,
                     table=OBSERVATION)
 
-        create_aian_table_tmpl = self.jinja_env.from_string("""
-        CREATE TABLE `{{project_id}}.{{dataset_id}}.{{table}}` AS (
-            SELECT person_id AS participant_id , research_id
-            FROM `{{project_id}}.{{dataset_id}}.{{map}}`
-        )
-        """).render(project_id=self.project_id,
-                    dataset_id=self.dataset_id,
-                    table=AIAN_LIST,
-                    map=PRIMARY_PID_RID_MAPPING)
-
         aian_tmpl = self.jinja_env.from_string("""
         INSERT INTO `{{project_id}}.{{dataset_id}}.{{table}}`
           (participant_id, research_id, is_aian)
@@ -142,8 +132,11 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         )
 
         queries = [
-            observation_tmpl, person_tmpl, primary_map_tmpl,
-            create_aian_table_tmpl, aian_tmpl
+            observation_tmpl,
+            person_tmpl,
+            primary_map_tmpl,
+            # create_aian_table_tmpl,
+            aian_tmpl
         ]
         self.load_test_data(queries)
 
