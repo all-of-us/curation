@@ -18,6 +18,7 @@ from common import (JINJA_ENV, PIPELINE_TABLES, PRIMARY_PID_RID_MAPPING,
                     AIAN_LIST)
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
+from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
 
 LOGGER = logging.getLogger(__name__)
 EXPECTED_CT_LIST = 'expected_ct_list'
@@ -110,7 +111,6 @@ class StoreExpectedCTList(BaseCleaningRule):
                 CleanMappingExtTables,
                 CreateAIANLookup,
             ],
-            aian_list=AIAN_LIST,
             table_namer=table_namer,
         )
 
