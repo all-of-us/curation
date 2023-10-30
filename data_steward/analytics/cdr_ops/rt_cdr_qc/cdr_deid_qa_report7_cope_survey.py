@@ -59,7 +59,7 @@ df = pd.DataFrame(columns = ['query', 'result'])
 # these concept_ids should be suppressed
 query = JINJA_ENV.from_string("""
 select OMOP_conceptID,New_Requirement
-from  `{{project_id}}.{{sandbox}}.temp_cope_privacy_rules` 
+from  `{{project_id}}.curation_sandbox.temp_cope_privacy_rules` 
 where New_Requirement like 'suppress%' or New_Requirement like 'row suppression'
 """)
 q = query.render(project_id=project_id,sandbox=sandbox)
@@ -77,10 +77,10 @@ FROM `{{project_id}}.{{deid_cdr}}.observation` ob
 JOIN `{{project_id}}.{{deid_cdr}}.concept` c
 ON ob.observation_source_concept_id=c.concept_id
 WHERE observation_source_concept_id IN
-(select OMOP_conceptID from `{{project_id}}.{{sandbox}}.temp_cope_privacy_rules`  
+(select OMOP_conceptID from `{{project_id}}.curation_sandbox.temp_cope_privacy_rules`  
 where New_Requirement like 'suppress%' or New_Requirement like 'row suppression')
 OR observation_concept_id IN
-(select OMOP_conceptID from `{{project_id}}.{{sandbox}}.temp_cope_privacy_rules`  
+(select OMOP_conceptID from `{{project_id}}.curation_sandbox.temp_cope_privacy_rules`  
 where New_Requirement like 'suppress%' or New_Requirement like 'row suppression')
 GROUP BY 1,2,3,4,5
 ORDER BY n_row_not_pass DESC
@@ -381,6 +381,7 @@ JOIN  `{{project_id}}.{{deid_cdr}}.concept` on concept_id={{column_name}}
 # use a loop to get table name AND column name AND run sql function
 result = [my_sql (table_name, column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
 result
+# if Row_count is '0' in "Combined" dataset as well, '0' showing up in this check is not a problem
 
 # +
 # AND then get the result back FROM loop result list

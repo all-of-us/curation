@@ -878,11 +878,11 @@ WHERE person_id not in (  -- aou consenting participants --
   FROM latest_primary_consent_records cte
     LEFT JOIN ( -- any positive primary consent --
       SELECT *
-      FROM `{{project_id}}.{{rt_cdr_deid}}.observation` o
-      WHERE REGEXP_CONTAINS(o.observation_source_value, '(?i)extraconsent_agreetoconsent')
-      AND o.value_as_concept_id = 45877994
+      FROM `{{project_id}}.{{rt_cdr_deid}}.observation`
+      WHERE REGEXP_CONTAINS(observation_source_value, '(?i)extraconsent_agreetoconsent')
+      AND value_as_concept_id = 45877994) o
     ON cte.person_id = o.person_id
-    AND cte.latest_consent_date = o.observation_date
+    AND cte.latest_date = o.observation_date
   WHERE o.person_id IS NOT NULL
   )
 
@@ -905,6 +905,7 @@ else:
             'result': 'Failure'
         },
         ignore_index=True)
+df1
 
 # +
 # Query 14:  Check that wear_consent records are suppressed in the 'observation' and 'survey_conduct' tables
