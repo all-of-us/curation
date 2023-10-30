@@ -42,10 +42,13 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         # mocked for this test
         cls.stable_map_name = f'{cls.project_id}.{cls.dataset_id}.{PRIMARY_PID_RID_MAPPING}'
         cls.fq_table_names = [
-            f'{cls.project_id}.{cls.dataset_id}.{table}' for table in
-            [OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING, AIAN_LIST] +
+            f'{cls.project_id}.{cls.dataset_id}.{table}'
+            for table in [OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING] +
             VOCABULARY_TABLES
         ]
+
+        cls.fq_table_names.extend(
+            [f'{cls.project_id}.{cls.dataset_id}_sandbox.{AIAN_LIST}'])
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -117,27 +120,20 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                     dataset=self.dataset_id,
                     table=OBSERVATION)
 
+        # a list of PID's that are aian
         aian_tmpl = self.jinja_env.from_string("""
-        INSERT INTO `{{project_id}}.{{dataset_id}}.{{table}}`
-          (participant_id, research_id, is_aian)
+        INSERT INTO `{{project}}.{{dataset}}.{{table}}`
+          (person_id)
         VALUES
-            -- is aian --
-            (500, 50, 'yes'),
-            -- is NOT aian --
-            (800, 20, 'no')
+          (500)
         """).render(
-            project_id=self.project_id,
-            dataset_id=self.sandbox_id,
+            project=self.project_id,
+            dataset=self.sandbox_id,
+            #dataset=self.dataset_id,
             table=AIAN_LIST,
         )
 
-        queries = [
-            observation_tmpl,
-            person_tmpl,
-            primary_map_tmpl,
-            # create_aian_table_tmpl,
-            aian_tmpl
-        ]
+        queries = [observation_tmpl, person_tmpl, primary_map_tmpl, aian_tmpl]
         self.load_test_data(queries)
 
     def test_store_expected_ct_list(self):
@@ -163,6 +159,15 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                     (700, 1985, 5, 5, 5),
                     (800, 1985, 5, 5, 5),
                 ]
+            },
+            {
+                'fq_table_name':
+                    f'{self.project_id}.{self.sandbox_id}.{AIAN_LIST}',
+                'fields': ['person_id'],
+                'loaded_ids': [500,],
+                'cleaned_values': [(500,),],
+                #'sandbox_fields': ['research_id'],
+                #'sandboxed_ids': [80, 60, 50, 40, 20]
             },
             {
                 'fq_table_name':
