@@ -20,7 +20,7 @@ from gcloud.bq import BigQueryClient
 from common import CDR_SCOPES, AOU_DEATH, DEATH
 from resources import (replace_special_characters_for_labels,
                        validate_date_string, rdr_src_id_schemas, cdm_schemas,
-                       fields_for)
+                       fields_for, rdr_specific_schemas)
 from tools.snapshot_by_query import BIGQUERY_DATA_TYPES
 from tools.import_rdr_omop import copy_vocab_tables
 
@@ -82,6 +82,7 @@ def get_destination_schemas() -> Dict[str, List[Dict[str, str]]]:
         (3) rdr_xyz schema is used where possible.
     """
     schema_dict = cdm_schemas()
+    schema_dict.update(rdr_specific_schemas())
     schema_dict.update(rdr_src_id_schemas())
 
     # Use aou_death instead of death for destination

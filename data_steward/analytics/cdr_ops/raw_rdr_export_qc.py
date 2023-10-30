@@ -19,13 +19,16 @@ old_rdr = ""
 new_rdr = ""
 run_as = ""
 rdr_cutoff_date = ""
+vocabulary = ""
 # -
 
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
 import pandas as pd
-from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID, SRC_ID_TABLES
+from common import (CATI_TABLES, DEATH, FACT_RELATIONSHIP, PROCEDURE_OCCURRENCE,
+                    JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID, SRC_ID_TABLES,
+                    AOU_DEATH)
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
@@ -312,7 +315,7 @@ execute(client, query)
 # Rows that are greater than 999,999,999,999,999 the will be listed out here.
 
 domain_table_list = [
-    table for table in CATI_TABLES if table not in [DEATH, FACT_RELATIONSHIP]
+    table for table in CATI_TABLES if table not in [DEATH, FACT_RELATIONSHIP, PROCEDURE_OCCURRENCE]
 ]
 queries = []
 for table in domain_table_list:
@@ -568,7 +571,7 @@ FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE SAFE_CAST(value_as_string AS INT64) IS NOT NULL
 AND value_source_concept_id = 0
 AND LOWER(observation_source_value) NOT IN UNNEST ({{expected_strings}}) 
-AND NOT REGEXP_CONTAINS(LOWER(observation_source_value), '(?i)snap|signature|address|email|number|cohortgroup')
+AND NOT REGEXP_CONTAINS(LOWER(observation_source_value), r'(?i)snap|signature|address|email|number|cohortgroup')
 GROUP BY 1
 ORDER BY 2 DESC
 """)
@@ -678,7 +681,7 @@ execute(client, query)
 #
 # Generally the list of surveys should increase from one export to the next.
 #
-# Investigate any surveys that were available in the previous export but not in the current export. 
+# Investigate any surveys that were available in the previous export but not in the current export.
 # Also make sure that any new expected surveys are listed in the current rdr.
 
 tpl = JINJA_ENV.from_string('''
@@ -732,14 +735,14 @@ SELECT
  ,concept_class_id
  ,n
 FROM ppi_concept_code
-JOIN `{{project_id}}.{{new_rdr}}.concept`
+JOIN `{{project_id}}.{{vocabulary}}.concept`
  ON LOWER(concept_code)=LOWER(code)
 WHERE LOWER(concept_class_id)<>LOWER(expected_concept_class_id)
 AND CASE WHEN expected_concept_class_id = 'Question' THEN concept_class_id NOT IN('Topic','PPI Modifier') END
 AND concept_class_id != 'Qualifier Value'
 ORDER BY 1, 2, 3
 ''')
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id, vocabulary=vocabulary)
 execute(client, query)
 
 # # Identify Questions That Dont Exist in the RDR Export
@@ -748,12 +751,12 @@ execute(client, query)
 
 tpl = JINJA_ENV.from_string("""
 with question_codes as (select c.concept_id, c.concept_name, c.concept_class_id
-from `{{project_id}}.{{new_rdr}}.concept` as c
+from `{{project_id}}.{{vocabulary}}.concept` as c
 where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)'))
 , used_q_codes as (
     select distinct o.observation_source_concept_id, o.observation_source_value
     from `{{project_id}}.{{new_rdr}}.observation` as o
-    join `{{project_id}}.{{new_rdr}}.concept` as c
+    join `{{project_id}}.{{vocabulary}}.concept` as c
     on o.observation_source_concept_id = c.concept_id
     where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)')
 )
@@ -761,7 +764,7 @@ where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.conce
     from question_codes
     where concept_id not in (select observation_source_concept_id from used_q_codes)
     """)
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id, vocabulary=vocabulary)
 execute(client, query)
 
 # # Make sure previously corrected missing data still exists
@@ -1077,7 +1080,7 @@ with ids as (
 src_ids_table = ids_template.render(project_id=project_id,
                                     pipeline=PIPELINE_TABLES,
                                     site_maskings=SITE_MASKING_TABLE_ID)
-for table in SRC_ID_TABLES:
+for table in set(SRC_ID_TABLES) - {AOU_DEATH} | {DEATH}:
     tpl = JINJA_ENV.from_string("""
     SELECT
       \'{{table_name}}\' AS table_name,
@@ -1150,6 +1153,22 @@ else:
                 
             '''))
 # -
+
+query = JINJA_ENV.from_string("""
+SELECT
+  'Mandatory mapping to standard is missing' as issue,
+  COUNT(*) AS n 
+FROM `{{project_id}}.{{new_rdr}}.observation` o
+WHERE observation_source_value = 'resultsconsent_wear'
+AND (observation_source_concept_id != 2100000010 OR
+    value_source_concept_id NOT IN (2100000008, 2100000009, 903096) -- wear_no, wear_yes, pmi_skip --
+    )
+
+""").render(project_id=project_id,
+            new_rdr=new_rdr)
+execute(client, query)
+
+
 
 # # Check Wear Consent Mapping
 # This mapping is required to keep the observations being dropped in the rdr cleaning stage and also required to create the wear_study table.
