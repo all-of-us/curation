@@ -2,105 +2,17 @@
 import logging
 from argparse import ArgumentParser
 
-# Third party imports
-from google.cloud.exceptions import Conflict
 from google.cloud import bigquery
 
-from common import CDR_SCOPES, MAPPING_PREFIX
-from resources import (get_git_tag, CDM_TABLES)
+from common import CDR_SCOPES, MAPPING_PREFIX, AOU_DEATH
+from resources import CDM_TABLES
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
+from pipeline_utils import create_datasets, create_cdm_tables
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
-from tools.create_combined_backup_dataset import create_cdm_tables
 
 LOGGER = logging.getLogger(__name__)
-
-
-def create_dataset(client, release_tag, dataset_type) -> str:
-    """
-    Create a dataset for the specified dataset type in the unioned_ehr stage. 
-
-    :param client: a BigQueryClient
-    :param release_tag: the release tag for this CDR
-    :param dataset_type: the type of the dataset this function creates.
-        It has to be clean, backup, staging, sandbox, or release.
-    :returns: The name of the dataset.
-    """
-    version = get_git_tag()
-
-    dataset_definition = {
-        'clean': {
-            'name':
-                f'{release_tag}_unioned_ehr',
-            'desc':
-                f'{version} Clean version of {release_tag}_unioned_ehr_backup',
-            'labels': {
-                "owner": "curation",
-                "phase": "clean",
-                "release_tag": release_tag,
-                "de_identified": "false"
-            }
-        },
-        'backup': {
-            'name':
-                f'{release_tag}_unioned_ehr_backup',
-            'desc':
-                f'Combined raw version of {release_tag}_rdr + {release_tag}_unioned_ehr',
-            'labels': {
-                "owner": "curation",
-                "phase": "backup",
-                "release_tag": release_tag,
-                "de_identified": "false"
-            }
-        },
-        'staging': {
-            'name':
-                f'{release_tag}_unioned_ehr_staging',
-            'desc':
-                f'Intermediary dataset to apply cleaning rules on {release_tag}_unioned_ehr_backup',
-            'labels': {
-                "owner": "curation",
-                "phase": "staging",
-                "release_tag": release_tag,
-                "de_identified": "false"
-            }
-        },
-        'sandbox': {
-            'name': f'{release_tag}_unioned_ehr_sandbox',
-            'desc':
-                (f'Sandbox created for storing records affected by the '
-                 f'cleaning rules applied to {release_tag}_unioned_ehr_staging'
-                ),
-            'labels': {
-                "owner": "curation",
-                "phase": "sandbox",
-                "release_tag": release_tag,
-                "de_identified": "false"
-            }
-        }
-    }
-
-    LOGGER.info(
-        f"Creating unioned_ehr {dataset_type} dataset if not exists: `{dataset_definition[dataset_type]['name']}`"
-    )
-
-    dataset_object = client.define_dataset(
-        dataset_definition[dataset_type]['name'],
-        dataset_definition[dataset_type]['desc'],
-        dataset_definition[dataset_type]['labels'])
-
-    try:
-        client.create_dataset(dataset_object, exists_ok=False)
-        LOGGER.info(
-            f"Created dataset `{client.project}.{dataset_definition[dataset_type]['name']}`"
-        )
-    except Conflict:
-        LOGGER.info(
-            f"The dataset `{client.project}.{dataset_definition[dataset_type]['name']}` already exists. "
-        )
-
-    return dataset_definition[dataset_type]['name']
 
 
 def parse_unioned_ehr_args(raw_args=None):
@@ -178,11 +90,7 @@ def copy_mapping_tables(client, source_dataset, destination_dataset):
         source_table = f'{source_dataset}.{table}'
         destination_table = f'{destination_dataset}.{table}'
         if client.table_exists(source_table, source_dataset):
-            job = client.copy_table(source_table,
-                                    destination_table,
-                                    job_config=bigquery.job.CopyJobConfig(
-                                        write_disposition=bigquery.job.
-                                        WriteDisposition.WRITE_EMPTY))
+            job = client.copy_table(source_table, destination_table)
             job.result()
             LOGGER.info(
                 f'Copied {source_table} to {destination_table} successfully')
@@ -199,8 +107,8 @@ def copy_unioned_ehr_tables(client, source_dataset, destination_dataset):
     :param destination_dataset: the destination dataset to copy to
     
     """
-    for table in CDM_TABLES:
-        source_table_id = f'{source_dataset}.unioned_ehr_{table}'
+    for table in CDM_TABLES + [AOU_DEATH]:
+        source_table_id = f'unioned_ehr_{table}'
         source_table = f'{source_dataset}.{source_table_id}'
         destination_table = f'{destination_dataset}.{table}'
         if client.table_exists(source_table_id, source_dataset):
@@ -221,12 +129,17 @@ def main(raw_args=None):
     pipeline_logging.configure(level=logging.INFO,
                                add_console_handler=args.console_log)
 
+    # validate we've got all required data before continuing
+    cleaning_classes = clean_cdr.DATA_STAGE_RULES_MAPPING.get('unioned')
+    clean_cdr.validate_custom_params(cleaning_classes, **kwargs)
+
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, CDR_SCOPES)
 
     client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
-    unioned_ehr_backup = create_dataset(client, args.release_tag, 'backup')
+    unioned_ehr_backup = create_datasets(client, args.release_tag, 'unioned',
+                                         'backup')
 
     LOGGER.info('Creating destination CDM tables...')
     create_cdm_tables(client, unioned_ehr_backup)
@@ -250,9 +163,11 @@ def main(raw_args=None):
     copy_mapping_tables(client, args.ehr_snapshot, unioned_ehr_backup)
 
     # Creating staging, sandbox and clean datasets for unioned_ehr cleaning process
-    unioned_ehr_staging = create_dataset(client, args.release_tag, 'staging')
-    unioned_ehr_sandbox = create_dataset(client, args.release_tag, 'sandbox')
-    unioned_ehr = create_dataset(client, args.release_tag, 'clean')
+    unioned_ehr_staging = create_datasets(client, args.release_tag, 'unioned',
+                                          'staging')
+    unioned_ehr_sandbox = create_datasets(client, args.release_tag, 'unioned',
+                                          'sandbox')
+    unioned_ehr = create_datasets(client, args.release_tag, 'unioned', 'clean')
 
     LOGGER.info(
         f' Copying unioned_ehr raw tables from `{unioned_ehr_backup}` to `{unioned_ehr_staging}`...'

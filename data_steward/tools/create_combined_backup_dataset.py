@@ -57,7 +57,7 @@ from gcloud.bq import BigQueryClient
 from constants.bq_utils import WRITE_APPEND, WRITE_TRUNCATE
 from constants.tools import create_combined_backup_dataset as combine_consts
 from tools import add_cdr_metadata
-from tools.create_combined_dataset import create_dataset
+from tools.pipeline_utils import create_datasets, create_cdm_tables
 
 LOGGER = logging.getLogger(__name__)
 
@@ -93,26 +93,6 @@ def assert_ehr_and_rdr_tables(client: BigQueryClient,
     """
     assert_tables_in(client, unioned_ehr_dataset_id)
     assert_tables_in(client, rdr_dataset_id)
-
-
-def create_cdm_tables(client: BigQueryClient, dataset: str):
-    """
-    Create all CDM tables
-    NOTE AOU_DEATH is not included.
-
-    :param client: BigQueryClient
-    :param dataset: Combined backup dataset name
-    :return: None
-
-    Note: Recreates any existing tables
-    """
-    for table in CDM_TABLES:
-        LOGGER.info(f'Creating table {dataset}.{table}...')
-        schema_list = client.get_table_schema(table_name=table)
-        dest_table = f'{client.project}.{dataset}.{table}'
-        dest_table = bigquery.Table(dest_table, schema=schema_list)
-        table = client.create_table(dest_table)  # Make an API request.
-        LOGGER.info(f"Created table: `{table.table_id}`")
 
 
 def query(client: BigQueryClient,
@@ -491,7 +471,8 @@ def main(raw_args=None):
 
     client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
-    combined_backup = create_dataset(client, args.release_tag, 'backup')
+    combined_backup = create_datasets(client, args.release_tag, 'combined',
+                                      'backup')
 
     LOGGER.info('Creating destination CDM tables...')
     create_cdm_tables(client, combined_backup)
@@ -509,7 +490,8 @@ def main(raw_args=None):
     assert_ehr_and_rdr_tables(client, args.unioned_ehr_dataset,
                               args.rdr_dataset)
 
-    combined_sandbox = create_dataset(client, args.release_tag, 'sandbox')
+    combined_sandbox = create_datasets(client, args.release_tag, 'combined',
+                                       'sandbox')
     ehr_consent(client, args.rdr_dataset, combined_sandbox)
 
     for table in combine_consts.RDR_TABLES_TO_COPY:
