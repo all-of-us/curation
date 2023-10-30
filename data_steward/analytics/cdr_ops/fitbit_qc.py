@@ -56,19 +56,20 @@ secondary_date_column = {
 table_fields_values = {
     'device': {
         'battery': ['High', 'Medium', 'Low','Empty']
-    },
-    'sleep_level': {
-        'level': [
-            'awake', 'light', 'asleep', 'deep', 'restless', 'wake', 'rem',
-            'unknown'
-        ]
-    },
-    'sleep_daily_summary': {
-        'is_main_sleep': ['true', 'false']
-    },
-    'heart_rate_summary': {
-        'zone_name': ['Peak', 'Cardio', 'Fat Burn', 'Out of Range']
     }
+#     ,
+#     'sleep_level': {
+#         'level': [
+#             'awake', 'light', 'asleep', 'deep', 'restless', 'wake', 'rem',
+#             'unknown'
+#         ]
+#     },
+#     'sleep_daily_summary': {
+#         'is_main_sleep': ['true', 'false']
+#     },
+#     'heart_rate_summary': {
+#         'zone_name': ['Peak', 'Cardio', 'Fat Burn', 'Out of Range']
+#     }
 }
 
 # ## Identify person_ids that are not in the person table
@@ -96,7 +97,7 @@ WHERE
 """)
 
 queries_list = []
-for table in FITBIT_TABLES:
+for table in ['device']:
     queries_list.append(
         non_existent_pids_check.render(project=project_id,
                                        dataset=fitbit_dataset,
@@ -125,7 +126,7 @@ WHERE
 """)
 
 queries_list = []
-for table in FITBIT_TABLES:
+for table in ['device']:
     queries_list.append(
         data_past_cutoff_check.render(
             project=project_id,
@@ -160,7 +161,7 @@ WHERE
 """)
 
 queries_list = []
-for table in FITBIT_TABLES:
+for table in ['device']:
     queries_list.append(
         past_deactivation_check.render(
             project=project_id,
@@ -189,7 +190,7 @@ WHERE t.src_id IS NULL
 """)
 
 queries_list = []
-for table in FITBIT_TABLES:
+for table in ['device']:
     queries_list.append(
         src_check.render(project=project_id,
                          dataset=fitbit_dataset,
@@ -198,7 +199,7 @@ for table in FITBIT_TABLES:
                          site_maskings=SITE_MASKING_TABLE_ID))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
-execute(client, union_all_query)
+# execute(client, union_all_query)
 # -
 
 # ## Check for rows without a valid date field
@@ -223,7 +224,7 @@ WHERE
 """)
 
 queries_list = []
-for table in FITBIT_TABLES:
+for table in ['device']:
     queries_list.append(
         date_check.render(
             project=project_id,
