@@ -48,7 +48,7 @@ from common import (AOU_DEATH, CDR_SCOPES, FACT_RELATIONSHIP,
                     MEASUREMENT_DOMAIN_CONCEPT_ID,
                     OBSERVATION_DOMAIN_CONCEPT_ID, PERSON, PIPELINE_TABLES,
                     RDR_ID_CONSTANT, SITE_MASKING_TABLE_ID, SURVEY_CONDUCT,
-                    VISIT_DETAIL)
+                    VISIT_DETAIL, EHR_CONSENT_VALIDATION)
 from resources import (fields_for, get_git_tag, has_person_id,
                        mapping_table_for, CDM_TABLES)
 from utils import auth, pipeline_logging
@@ -72,6 +72,8 @@ def assert_tables_in(client: BigQueryClient, dataset_id: str):
     table_ids = set([table.table_id for table in tables])
     LOGGER.info(f'Confirming dataset, {dataset_id}, has tables: {table_ids}')
     for table in combine_consts.TABLES_TO_PROCESS:
+        if 'unioned' in dataset_id and table == EHR_CONSENT_VALIDATION:
+            continue
         if table not in table_ids:
             raise RuntimeError(
                 f'Dataset {dataset_id} is missing table {table}. Aborting.')

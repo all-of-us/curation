@@ -25,6 +25,7 @@ import pandas as pd
 
 from common import JINJA_ENV, MAPPED_CLINICAL_DATA_TABLES
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
+from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE as UNCONSENTED
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
@@ -50,7 +51,7 @@ pd.options.display.width = None
 
 # ## Check for duplicates across all unique identifier fields.
 # This query gathers any duplicates of the {table}_id from each OMOP table listed.
-# The OMOP tables `death` and `fact_relationship` are excluded from the check because they do not have primary key fields.
+# The OMOP tables `death` and `fact_relationship` are excluded from the check because they do not have primary key fields. `aou_death` is also excluded since it uses 'uuid'.
 # The output of this query should be empty. If any duplicates are found there may be a bug in the pipeline.
 #
 # Specific to duplicates in observation:<br>
@@ -60,6 +61,7 @@ pd.options.display.width = None
 # If any duplicates are found there may be a bug in the pipeline-
 # particularly in `ehr_union.move_ehr_person_to_observation`.
 
+
 query = f"""
 DECLARE i INT64 DEFAULT 0;
 DECLARE tables ARRAY<STRING>;
@@ -68,7 +70,7 @@ SET tables = ["observation", "observation_period", "condition_occurrence",
 "care_site", "condition_era", "device_cost", "device_exposure", "dose_era",
 "drug_exposure", "location", "measurement", "note", "note_nlp", "person",
 "procedure_cost", "procedure_occurrence", "provider", "specimen",
-"survey_conduct", "visit_cost", "visit_detail", "visit_occurrence", "aou_death"];
+"survey_conduct", "visit_cost", "visit_detail", "visit_occurrence"];
 
 CREATE TEMPORARY TABLE non_unique_primary_keys(table_name STRING, key_column int64);
 
@@ -131,14 +133,18 @@ WHERE
  t.{{date_field}} < DATE(p.birth_datetime)
 
  -- age >= 150y --
- OR {{PIPELINE_TABLES}}.calculate_age(t.{{date_field}}, EXTRACT(DATE FROM p.birth_datetime)) >= 150
+ OR pipeline_tables.calculate_age(t.{{date_field}}, EXTRACT(DATE FROM p.birth_datetime)) >= 150
 )
+AND
+p.birth_datetime IS NOT NULL
+AND
+t.{{date_field}} IS NOT NULL
 {% if not loop.last -%}
    UNION ALL
 {% endif %}
 {% endfor %}
 ''')
-query = tpl.render(dataset_id=DATASET_ID, date_fields=date_fields)
+query = tpl.render(dataset_id=DATASET_ID, date_fields=date_fields, PIPELINE_TABLES="pipeline_tables")
 execute(client, query)
 
 # ## PPI records should never follow death date
@@ -146,7 +152,6 @@ execute(client, query)
 
 # +
 query = JINJA_ENV.from_string("""
-query = f'''
 WITH
 
  ppi_concept AS
@@ -307,7 +312,7 @@ DECLARE query DEFAULT (
      (SELECT
        d.table_schema AS table_schema
       ,d.table_name   AS table_name
-      ,pk.column_name AS key_field
+      ,CASE WHEN pk.column_name = 'aou_death_id' THEN '0' ELSE pk.column_name END AS key_field
       ,d.column_name  AS date_field
       ,ts.column_name AS timestamp_field
       FROM `{DATASET_ID}.INFORMATION_SCHEMA.COLUMNS` d
@@ -456,7 +461,7 @@ total_plots = len(overlaps)
 cols = 3
 rows = math.ceil(total_plots / cols)
 
-fig, axes = plt.subplots(rows, cols, figsize=(5, 5), squeeze=False)
+fig, axes = plt.subplots(rows, cols, figsize=(10, 10), squeeze=False)
 
 k = 0
 while k < total_plots:
@@ -767,21 +772,21 @@ render_message(df_orphaned_check,
 # +
 query = JINJA_ENV.from_string("""
 WITH qc_aou_death AS (
-    SELECT 
-        aou_death_id, 
+    SELECT
+        aou_death_id,
         CASE WHEN aou_death_id IN (
-            SELECT aou_death_id FROM `{{project_id}}.{{dataset_id}}.aou_death`
+            SELECT aou_death_id FROM `{{project_id}}.{{dataset}}.aou_death`
             WHERE death_date IS NOT NULL -- NULL death_date records must not become primary --
             QUALIFY RANK() OVER (
-                PARTITION BY person_id 
+                PARTITION BY person_id
                 ORDER BY
                     LOWER(src_id) NOT LIKE '%healthpro%' DESC, -- EHR records are chosen over HealthPro ones --
                     death_date ASC, -- Earliest death_date records are chosen over later ones --
                     death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
                     src_id ASC -- EHR site that alphabetically comes first is chosen --
-            ) = 1   
+            ) = 1
         ) THEN TRUE ELSE FALSE END AS primary_death_record
-    FROM `{{project}}.{{dataset}}.aou_death`    
+    FROM `{{project}}.{{dataset}}.aou_death`
 )
 SELECT ad.aou_death_id
 FROM `{{project_id}}.{{dataset}}.aou_death` ad
@@ -793,7 +798,7 @@ df = execute(client, query)
 
 success_msg = 'All death records have the correct `primary_death_record` values.'
 failure_msg = '''
-    <b>{code_count}</b> records do not have the correct `primary_death_record` values. 
+    <b>{code_count}</b> records do not have the correct `primary_death_record` values.
     Investigate and confirm if (a) any logic is incorrect, (b) the requirement has changed, or (c) something else.
 '''
 render_message(df,
@@ -828,9 +833,9 @@ render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 ext_template = JINJA_ENV.from_string("""
     SELECT
       table_id
-    FROM 
+    FROM
         `{{project_id}}.{{dataset}}.__TABLES__`
-    WHERE 
+    WHERE
         table_id LIKE '%_ext%'
 """)
 ext_tables_query = ext_template.render(project_id=PROJECT_ID,
@@ -847,7 +852,7 @@ for _, row in ext_tables.iterrows():
         `{{project_id}}.{{dataset}}.{{table_name}}`
       WHERE NOT
           REGEXP_CONTAINS(src_id, r'(?i)(Portal)|(EHR site)')
-      OR 
+      OR
         src_id IS NULL
       GROUP BY 1,2
   """)
@@ -857,3 +862,51 @@ for _, row in ext_tables.iterrows():
     result.append(query)
 results = '\nUNION ALL\n'.join(result)
 execute(client, results)
+
+
+
+
+
+
+
+# ## Verify no participant in the pdr_ehr_dup_report list has EHR data.
+#
+# Curation will receive a table of unconsented PID's stored in the table `...combined_sandbox._ehr_unconsented_pids` from the PDR.  This check will verify that every mapped EHR table will not contain these PID's.  If any of these PID's are found, a failue is raised, otherwise this check ends with a pass.  See [DC-3435](https://precisionmedicineinitiative.atlassian.net/browse/DC-3435)
+
+unconsented_records_tpl = JINJA_ENV.from_string("""
+SELECT \'{{domain_table}}\' AS domain_table, person_id
+FROM
+    `{{project}}.{{dataset}}.{{domain_table}}` d
+  JOIN
+    `{{project}}.{{dataset}}.{{mapping_domain_table}}` md
+  USING
+    ({{domain_table}}_id)
+  WHERE
+    person_id IN (
+    SELECT
+      person_id
+    FROM
+      `{{project}}.{{sandbox_dataset}}.{{unconsented_lookup}}`)
+    AND src_dataset_id LIKE '%ehr%'
+
+""")
+
+# +
+success_msg_if_empty = "All PID's with EHR data are found consenting"
+failure_msg_if_empty = "EHR data is found for PIDs who have not consented to contribute EHR data."
+
+sub_queries = []
+for table in MAPPED_CLINICAL_DATA_TABLES:
+    query = unconsented_records_tpl.render(
+        project=PROJECT_ID,
+        dataset=DATASET_ID,
+        domain_table=table,
+        mapping_domain_table=f'_mapping_{table}',
+        sandbox_dataset=f'{DATASET_ID}_sandbox',
+        unconsented_lookup=UNCONSENTED)
+
+    sub_queries.append(query)
+
+full_query = '\nUNION ALL\n'.join(sub_queries)
+result = execute(client, full_query)
+render_message(result, success_msg_if_empty, failure_msg_if_empty)
