@@ -70,7 +70,7 @@ OR
 )
   OR
     person_id IN ( -- dup accounts --
-  SELECT DISTINCT participant_id FROM
+  SELECT DISTINCT person_id FROM
     `{{project}}.{{duplicates_dataset}}.{{duplicates_table}}`
 )
 )
