@@ -105,7 +105,8 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
              WHERE
                 (lower(data_type) in ("date", "datetime", "time", "timestamp") and not REGEXP_CONTAINS(column_name, r'(?i)(partitiontime)'))
                 -- tables we are not interested in cleaning --
-               and not REGEXP_CONTAINS(table_name, '(?i)(_ext)|(person)|(activity_summary)|(steps_intraday)|(heart_rate)')
+               and not REGEXP_CONTAINS(table_name, '(?i)(_ext)|(person)|(consent)')
+               and lower(table_name) NOT IN ({{fitbit_tables_str}})
 
                -- make sure table has a person_id column --
                 and table_name in (
