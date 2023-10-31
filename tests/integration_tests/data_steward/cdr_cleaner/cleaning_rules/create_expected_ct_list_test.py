@@ -48,7 +48,7 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_table_names.extend(
-            [f'{cls.project_id}.{cls.dataset_id}_sandbox.{AIAN_LIST}'])
+            [f'{cls.project_id}.{cls.sandbox_id}.{AIAN_LIST}'])
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -129,7 +129,6 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         """).render(
             project=self.project_id,
             dataset=self.sandbox_id,
-            #dataset=self.dataset_id,
             table=AIAN_LIST,
         )
 
@@ -164,10 +163,21 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                 'fq_table_name':
                     f'{self.project_id}.{self.sandbox_id}.{AIAN_LIST}',
                 'fields': ['person_id'],
-                'loaded_ids': [500,],
-                'cleaned_values': [(500,),],
-                #'sandbox_fields': ['research_id'],
-                #'sandboxed_ids': [80, 60, 50, 40, 20]
+                'loaded_ids': [(500, 'yes'),],
+                'cleaned_values': [
+                    (100, 'no'),
+                    (200, 'no'),
+                    (300, 'no'),
+                    (400, 'no'),
+                    (500, 'yes'),
+                    (600, 'no'),
+                    (700, 'no'),
+                    (800, 'no'),
+                ],
+                'sandbox_fields': ['person_id', 'is_aian'],
+                'sandboxed_ids': [(500, 'yes')],
+                'fq_sandbox_table_name':
+                    f'{self.project_id}.{self.sandbox_id}.{AIAN_LIST}',
             },
             {
                 'fq_table_name':
