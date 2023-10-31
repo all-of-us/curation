@@ -8,7 +8,7 @@ from common import CDR_SCOPES, MAPPING_PREFIX, AOU_DEATH
 from resources import CDM_TABLES
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
-from pipeline_utils import create_datasets, create_cdm_tables
+from tools.pipeline_utils import create_datasets, create_cdm_tables
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 
@@ -19,11 +19,6 @@ def parse_unioned_ehr_args(raw_args=None):
     parser = ArgumentParser(
         description='Arguments pertaining to an Unioned EHR dataset generation')
 
-    parser.add_argument('--key_file',
-                        action='store',
-                        dest='key_file',
-                        help='Path to key file for service account',
-                        required=True)
     parser.add_argument('--run_as',
                         action='store',
                         dest='run_as_email',
@@ -56,7 +51,7 @@ def parse_unioned_ehr_args(raw_args=None):
         '--ehr_snapshot',
         action='store',
         dest='ehr_snapshot',
-        help='unioned_ehr dataset dataset used to generate unioned_ehr dataset',
+        help='ehr dataset dataset used to generate unioned_ehr dataset',
         required=True)
     parser.add_argument('--ehr_cutoff_date',
                         action='store',
@@ -190,17 +185,6 @@ def main(raw_args=None):
 
     client.build_and_copy_contents(unioned_ehr_staging, unioned_ehr)
 
-    # update sandbox description and labels
-    sandbox_dataset = client.get_dataset(unioned_ehr_sandbox)
-    sandbox_dataset.description = (
-        f'Sandbox created for storing records affected by the cleaning '
-        f'rules applied to {unioned_ehr}')
-    sandbox_dataset.labels['phase'] = 'sandbox'
-    sandbox_dataset = client.update_dataset(sandbox_dataset, ["description"])
-
-    LOGGER.info(
-        f'Updated dataset `{sandbox_dataset.full_dataset_id}` with description `{sandbox_dataset.description}`'
-    )
     LOGGER.info(f'Cleaning `{client.project}.{unioned_ehr}` is complete.')
 
 

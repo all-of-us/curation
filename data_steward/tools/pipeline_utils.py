@@ -3,14 +3,14 @@ from google.cloud.exceptions import Conflict
 from google.cloud import bigquery
 
 from gcloud.bq import BigQueryClient
-from resources import get_git_tag, CDM_TABLES
+from resources import get_git_tag, CDM_TABLES, AOU_DEATH
 
 LOGGER = logging.getLogger(__name__)
 
 
 def create_datasets(client, release_tag, data_stage, dataset_type) -> str:
     """
-    Create a dataset for the specified dataset type in the unioned_ehr stage.
+    Create a dataset for the specified dataset type in the unioned_ehr and combined stage.
 
     :param client: a BigQueryClient
     :param release_tag: the release tag for this CDR
@@ -47,7 +47,8 @@ def create_datasets(client, release_tag, data_stage, dataset_type) -> str:
             'name':
                 f'{release_tag}_{dataset_tag}_backup',
             'desc':
-                f'Raw version of {release_tag}_rdr + {release_tag}_{dataset_tag}',
+                f"{'Raw version of {release_tag}_rdr + {release_tag}_unioned_ehr' if data_stage == 'combined' \
+                    else 'Raw version of {dataset_tag} dataset'}",
             'labels': {
                 "owner": "curation",
                 "phase": "backup",
@@ -93,7 +94,7 @@ def create_datasets(client, release_tag, data_stage, dataset_type) -> str:
     }
 
     LOGGER.info(
-        f"Creating unioned_ehr {dataset_type} dataset if not exists: `{dataset_definition[dataset_type]['name']}`"
+        f"Creating {dataset_tag} {dataset_type} dataset if not exists: `{dataset_definition[dataset_type]['name']}`"
     )
 
     dataset_object = client.define_dataset(
@@ -116,16 +117,15 @@ def create_datasets(client, release_tag, data_stage, dataset_type) -> str:
 
 def create_cdm_tables(client: BigQueryClient, dataset: str):
     """
-    Create all CDM tables
-    NOTE AOU_DEATH is not included.
+    Create all CDM tables in the specified dataset.
 
     :param client: BigQueryClient
-    :param dataset: Combined backup dataset name
+    :param dataset: Target dataset name
     :return: None
 
     Note: Recreates any existing tables
     """
-    for table in CDM_TABLES:
+    for table in CDM_TABLES + [AOU_DEATH]:
         LOGGER.info(f'Creating table {dataset}.{table}...')
         schema_list = client.get_table_schema(table_name=table)
         dest_table = f'{client.project}.{dataset}.{table}'
