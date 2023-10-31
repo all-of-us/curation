@@ -863,12 +863,6 @@ for _, row in ext_tables.iterrows():
 results = '\nUNION ALL\n'.join(result)
 execute(client, results)
 
-
-
-
-
-
-
 # ## Verify no participant in the pdr_ehr_dup_report list has EHR data.
 #
 # Curation will receive a table of unconsented PID's stored in the table `...combined_sandbox._ehr_unconsented_pids` from the PDR.  This check will verify that every mapped EHR table will not contain these PID's.  If any of these PID's are found, a failue is raised, otherwise this check ends with a pass.  See [DC-3435](https://precisionmedicineinitiative.atlassian.net/browse/DC-3435)

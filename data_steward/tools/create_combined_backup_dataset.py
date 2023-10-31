@@ -49,6 +49,7 @@ from common import (AOU_DEATH, CDR_SCOPES, FACT_RELATIONSHIP,
                     OBSERVATION_DOMAIN_CONCEPT_ID, PERSON, PIPELINE_TABLES,
                     RDR_ID_CONSTANT, SITE_MASKING_TABLE_ID, SURVEY_CONDUCT,
                     VISIT_DETAIL, EHR_CONSENT_VALIDATION)
+
 from resources import (fields_for, get_git_tag, has_person_id,
                        mapping_table_for, CDM_TABLES)
 from utils import auth, pipeline_logging

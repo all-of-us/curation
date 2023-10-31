@@ -10,7 +10,7 @@ from google.cloud.bigquery import Table
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, COMBINED_DATASET_ID, RDR_DATASET_ID, OBSERVATION, PERSON, AOU_DEATH
+from common import JINJA_ENV, RDR_DATASET_ID, OBSERVATION, PERSON, AOU_DEATH
 from cdr_cleaner.cleaning_rules.sandbox_and_remove_withdrawn_pids import SandboxAndRemoveWithdrawnPids
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -99,8 +99,8 @@ AOU_DEATH_TEMPLATE = JINJA_ENV.from_string("""
 """)
 
 LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
-    INSERT INTO `{{project_id}}.{{rdr_dataset_id}}.{{lookup_table}}` 
-        (participant_id)
+    INSERT INTO `{{project_id}}.{{dataset_id}}.{{lookup_table}}` 
+        (person_id)
     VALUES
         (104),
         (202),
@@ -112,7 +112,7 @@ LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
 
 LOOKUP_TABLE_SCHEMA = [{
     "type": "integer",
-    "name": "participant_id",
+    "name": "person_id",
     "mode": "nullable"
 }, {
     "type": "integer",
@@ -147,23 +147,18 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = os.environ.get(PROJECT_ID)
 
         # Set the expected test datasets
-        cls.dataset_id = COMBINED_DATASET_ID
-        cls.rdr_dataset_id = RDR_DATASET_ID
-        cls.lookup_table = 'lookup_table'
+        cls.dataset_id = RDR_DATASET_ID
+        cls.withdrawn_dups_table = 'pdr_withdrawals_list'
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
-        cls.kwargs = {
-            'rdr_dataset_id': cls.rdr_dataset_id,
-            'lookup_table': cls.lookup_table
-        }
+        cls.kwargs = {'withdrawn_dups_table': cls.withdrawn_dups_table}
 
         # Instantiate class
         cls.rule_instance = SandboxAndRemoveWithdrawnPids(
             project_id=cls.project_id,
             dataset_id=cls.dataset_id,
             sandbox_dataset_id=cls.sandbox_id,
-            rdr_dataset_id=RDR_DATASET_ID,
-            lookup_table=cls.lookup_table)
+            withdrawn_dups_table=cls.withdrawn_dups_table)
 
         # Generates list of fully qualified table names
         affected_table_names = ['observation', 'person', 'aou_death']
@@ -187,15 +182,15 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         super().setUp()
 
         # Create a temp lookup_table in rdr dataset for testing
-        lookup_table_name = f'{self.project_id}.{self.rdr_dataset_id}.{self.lookup_table}'
+        lookup_table_name = f'{self.project_id}.{self.dataset_id}.{self.withdrawn_dups_table}'
         self.client.create_table(Table(lookup_table_name, LOOKUP_TABLE_SCHEMA))
         self.fq_table_names.append(lookup_table_name)
 
         # Build temp records lookup table query
         lookup_table_query = LOOKUP_TABLE_TEMPLATE.render(
             project_id=self.project_id,
-            rdr_dataset_id=self.rdr_dataset_id,
-            lookup_table=self.lookup_table)
+            dataset_id=self.dataset_id,
+            lookup_table=self.withdrawn_dups_table)
 
         # Build test data queries
         observation_records_query = OBSERVATION_TABLE_TEMPLATE.render(

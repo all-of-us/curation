@@ -17,6 +17,7 @@ from cdr_cleaner.cleaning_rules.calculate_bmi import CalculateBmi
 from cdr_cleaner.cleaning_rules.calculate_primary_death_record import CalculatePrimaryDeathRecord
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
+from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
 from cdr_cleaner.cleaning_rules.domain_alignment import DomainAlignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
@@ -169,8 +170,10 @@ UNIONED_EHR_CLEANING_CLASSES = [
 RDR_CLEANING_CLASSES = [
     (StoreNewPidRidMappings,),
     (CreateDeidQuestionnaireResponseMap,),
+    (CreateAIANLookup,),
     (TruncateRdrData,),
     (RemoveParticipantsUnder18Years,),
+    (SandboxAndRemoveWithdrawnPids,),
     # execute SetConceptIdsForSurveyQuestionAnswers before PpiBranching gets executed
     # since PpiBranching relies on fully mapped concepts
     (
@@ -232,7 +235,6 @@ COMBINED_CLEANING_CLASSES = [
     # wiping out the needed consent related data for cleaning.
     (
         ValidDeathDates,),
-    (SandboxAndRemoveWithdrawnPids,),
     (RemoveEhrDataWithoutConsent,),
     (StoreNewDuplicateMeasurementConceptIds,),
     (DedupMeasurementValueAsConceptId,),

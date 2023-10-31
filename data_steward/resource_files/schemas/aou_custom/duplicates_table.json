@@ -1,0 +1,32 @@
+[
+    {
+        "type": "integer",
+        "name": "participant_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "name": "hpo_id",
+        "type": "integer",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "name": "src_id",
+        "type": "string",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "name": "consent_for_study_enrollment_authored",
+        "type": "date",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "name": "withdrawal_status",
+        "type": "string",
+        "mode": "nullable",
+        "description": ""
+    }
+]

@@ -84,6 +84,10 @@ METADATA = 'metadata'
 OBSERVATION_PERIOD = 'observation_period'
 NOTE_NLP = 'note_nlp'
 
+CDM_SOURCE = 'cdm_source'
+COHORT = 'cohort'
+COHORT_ATTRIBUTE = 'cohort_attribute'
+
 OTHER_CLINICAL_TABLES = [OBSERVATION_PERIOD, NOTE_NLP]
 
 OTHER_CDM_TABLES = [
@@ -253,6 +257,8 @@ MAX_DEID_DATE_SHIFT = 364
 COPE_SURVEY_MAP = 'cope_survey_semantic_version_map'
 EHR_CONSENT_VALIDATION = 'consent_validation'
 WEAR_CONSENT = 'wear_consent'
+PDR_WITHDRAWALS_LIST = 'pdr_withdrawals_list'
+PDR_EHR_LIST = 'pdr_ehr_list'
 
 # pipeline_tables dataset and contents
 PIPELINE_TABLES = 'pipeline_tables'
@@ -269,6 +275,8 @@ WEARABLES_DEVICE_ID_MASKING = 'wearables_device_id_masking'
 ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
 DEID_QUESTIONNAIRE_RESPONSE_MAP = '_deid_questionnaire_response_map'
 
+AIAN_LIST = 'aian_list'
+
 # Participant Summary
 EHR_OPS = 'ehr_ops'
 DRC_OPS = 'drc_ops'
@@ -280,7 +288,7 @@ DE_IDENTIFIED = 'de_identified'
 # src_id tables from RDR
 SRC_ID_TABLES = [
     CARE_SITE, CONDITION_ERA, CONDITION_OCCURRENCE, COPE_SURVEY_MAP, COST,
-    DEATH, DEVICE_EXPOSURE, DOSE_ERA, DRUG_ERA, DRUG_EXPOSURE,
+    AOU_DEATH, DEVICE_EXPOSURE, DOSE_ERA, DRUG_ERA, DRUG_EXPOSURE,
     FACT_RELATIONSHIP, LOCATION, MEASUREMENT, METADATA, NOTE_NLP, OBSERVATION,
     OBSERVATION_PERIOD, PAYER_PLAN_PERIOD, PERSON, PID_RID_MAPPING,
     PROCEDURE_OCCURRENCE, PROVIDER, QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
