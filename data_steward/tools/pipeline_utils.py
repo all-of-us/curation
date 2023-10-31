@@ -47,8 +47,7 @@ def create_datasets(client, release_tag, data_stage, dataset_type) -> str:
             'name':
                 f'{release_tag}_{dataset_tag}_backup',
             'desc':
-                f"{'Raw version of {release_tag}_rdr + {release_tag}_unioned_ehr' if data_stage == 'combined' \
-                    else 'Raw version of {dataset_tag} dataset'}",
+                f"{'Raw version of {release_tag}_rdr + {release_tag}_unioned_ehr' if data_stage == 'combined' else 'Raw version of {dataset_tag} dataset'}",
             'labels': {
                 "owner": "curation",
                 "phase": "backup",
