@@ -61,6 +61,7 @@
 project_id = ""
 rt_dataset = ""
 ct_dataset = ""
+combined_dataset = ""
 deid_sandbox = ""
 earliest_ehr_date = ""
 cut_off_date = ""
@@ -1060,7 +1061,7 @@ else:
 
 # # Query 13 observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date
 #
-# Note: CT person table does not contain exact birth dates, therefore, use RT to check for exact dates.
+# Note: CT person table does not contain exact birth dates, and some observations with exact date matches might not exist in RT, therefore, the combined dataset is used in this check.
 
 # +
 
@@ -1068,10 +1069,10 @@ query = JINJA_ENV.from_string("""
 
  WITH rows_having_brith_date as (
 
- SELECT distinct observation_id
- FROM
-`{{project_id}}.{{rt_dataset}}.observation` ob
-JOIN `{{project_id}}.{{rt_dataset}}.person` p USING (person_id)
+SELECT distinct observation_id
+FROM
+`{{project_id}}.{{combined_dataset}}.observation` ob
+JOIN `{{project_id}}.{{combined_dataset}}.person` p USING (person_id)
 WHERE  observation_concept_id in (4013886, 4135376, 4271761)
 AND observation_date=DATE(p.birth_datetime)
  )
@@ -1091,8 +1092,8 @@ AND observation_date != '{{cut_off_date}}'
  """)
 
 q = query.render(project_id=project_id,
-                 rt_dataset=rt_dataset,
                  ct_dataset=ct_dataset,
+                 combined_dataset=combined_dataset,
                  cut_off_date=cut_off_date)
 df1 = execute(client, q)
 df1
