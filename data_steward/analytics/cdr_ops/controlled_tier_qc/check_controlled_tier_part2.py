@@ -1059,6 +1059,8 @@ else:
         ignore_index=True)
 
 # # Query 13 observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date
+#
+# Note: CT person table does not contain exact birth dates, therefore, use RT to check for exact dates.
 
 # +
 
@@ -1069,7 +1071,7 @@ query = JINJA_ENV.from_string("""
  SELECT distinct observation_id
  FROM
 `{{project_id}}.{{rt_dataset}}.observation` ob
-JOIN {{project_id}}.{{rt_dataset}}.person p USING (person_id)
+JOIN `{{project_id}}.{{rt_dataset}}.person` p USING (person_id)
 WHERE  observation_concept_id in (4013886, 4135376, 4271761)
 AND observation_date=DATE(p.birth_datetime)
  )
@@ -1093,10 +1095,8 @@ q = query.render(project_id=project_id,
                  ct_dataset=ct_dataset,
                  cut_off_date=cut_off_date)
 df1 = execute(client, q)
-df1.shape
-# -
-
 df1
+# -
 
 if df1.iloc[:, 3].sum() == 0:
     df = df.append(
