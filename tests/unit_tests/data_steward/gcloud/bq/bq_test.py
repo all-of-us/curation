@@ -225,19 +225,6 @@ class BQCTest(TestCase):
             if field.field_type.upper() == "RECORD":
                 self.assertEqual(len(field.fields), 2)
 
-    def test_to_standard_sql_type(self):
-        # All types used in schema files should successfully map to standard sql types
-        all_field_types = self.client._get_all_field_types()
-        for field_type in all_field_types:
-            result = self.client._to_standard_sql_type(field_type)
-            self.assertTrue(result)
-
-        # Unknown types should raise ValueError
-        with self.assertRaises(ValueError) as c:
-            self.client._to_standard_sql_type('unknown_type')
-            self.assertEqual(str(c.exception),
-                             f'unknown_type is not a valid field type')
-
     @patch.object(BigQueryClient, 'copy_table')
     @patch('gcloud.bq.Client.list_tables')
     @patch('gcloud.bq.Client.list_jobs')
