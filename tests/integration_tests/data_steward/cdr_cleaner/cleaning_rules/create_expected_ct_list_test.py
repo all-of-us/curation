@@ -48,7 +48,7 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_table_names.extend(
-            [f'{cls.project_id}.{cls.sandbox_id}.{AIAN_LIST}'])
+            [f'{cls.project_id}.{cls.sandbox_id}.{AIAN_LIST}'])  #? maybe
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -161,26 +161,6 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
             },
             {
                 'fq_table_name':
-                    f'{self.project_id}.{self.sandbox_id}.{AIAN_LIST}',
-                'fields': ['person_id'],
-                'loaded_ids': [(500, 'yes'),],
-                'cleaned_values': [
-                    (100, 'no'),
-                    (200, 'no'),
-                    (300, 'no'),
-                    (400, 'no'),
-                    (500, 'yes'),
-                    (600, 'no'),
-                    (700, 'no'),
-                    (800, 'no'),
-                ],
-                'sandbox_fields': ['person_id', 'is_aian'],
-                'sandboxed_ids': [(500, 'yes')],
-                'fq_sandbox_table_name':
-                    f'{self.project_id}.{self.sandbox_id}.{AIAN_LIST}',
-            },
-            {
-                'fq_table_name':
                     f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
                 'fields': [
                     'observation_id', 'person_id',
@@ -201,8 +181,15 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                 ],  # verifying the correct fields and data are sandboxed here
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[0],
-                'sandbox_fields': ['research_id'],
-                'sandboxed_ids': [80, 60, 50, 40, 20]
+                'sandbox_fields': ['research_id', 'participant_id', 'is_aian'],
+                'sandboxed_ids': [80, 60, 50, 40, 20],
+                'sandboxed_values': [
+                    (80, 800, 'no'),
+                    (60, 600, 'no'),
+                    (50, 500, 'yes'),
+                    (40, 400, 'no'),
+                    (20, 200, 'no'),
+                ]
             }
         ]
 
