@@ -1128,10 +1128,10 @@ query = JINJA_ENV.from_string("""
 WITH rows_having_brith_date as (
 
 SELECT observation_id
-  FROM {{project_id}}.{{rt_dataset}}.observation ob
-JOIN  {{project_id}}.{{rt_dataset}}.person p USING (person_id)
+  FROM {{project_id}}.{{ct_dataset}}.observation ob
+JOIN  {{project_id}}.{{ct_dataset}}.person p USING (person_id)
  WHERE (observation_concept_id NOT IN (4013886, 4135376, 4271761) OR observation_concept_id IS NULL)
-  AND ABS(EXTRACT(YEAR FROM observation_date) - EXTRACT(YEAR FROM p.birth_datetime)) < 2
+  AND ABS(EXTRACT(YEAR FROM observation_date)- p.year_of_birth) < 2
   )
 
 SELECT
@@ -1148,7 +1148,6 @@ WHERE  observation_id IN (SELECT observation_id FROM rows_having_brith_date)
 """)
 
 q = query.render(project_id=project_id,
-                 rt_dataset=rt_dataset,
                  ct_dataset=ct_dataset)
 df1 = execute(client, q)
 
