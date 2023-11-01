@@ -51,7 +51,7 @@ class RetractDataGcsTest(TestCase):
 
     @patch('retraction.retract_data_gcs.extract_pids_from_table')
     def test_integration_five_person_data_retraction_skip(
-        self, mock_extract_pids):
+            self, mock_extract_pids):
         """
         Test for GCS bucket retraction.
         When PIDs to retract are not in the CSV file, no records will be deleted

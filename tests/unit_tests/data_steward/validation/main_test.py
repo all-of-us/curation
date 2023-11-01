@@ -332,11 +332,11 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.is_valid_rdr')
     def test_process_hpo_ignore_dirs(
-        self, mock_valid_rdr, mock_first_validation,
-        mock_has_all_required_files, mock_folder_items, mock_validation,
-        mock_get_hpo_name, mock_get_duplicate_counts_query, mock_query_rows,
-        mock_all_required_files_loaded, mock_run_achilles, mock_export,
-        mock_valid_folder_name, mock_query):
+            self, mock_valid_rdr, mock_first_validation,
+            mock_has_all_required_files, mock_folder_items, mock_validation,
+            mock_get_hpo_name, mock_get_duplicate_counts_query, mock_query_rows,
+            mock_all_required_files_loaded, mock_run_achilles, mock_export,
+            mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
