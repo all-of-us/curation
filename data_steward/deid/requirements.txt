@@ -20,7 +20,7 @@ idna==3.4
 numpy==1.26.1
 oauthlib==3.2.2
 packaging==23.2
-pandas==2.1.2
+pandas==1.5.3
 pandas-gbq==0.19.2
 proto-plus==1.22.3
 protobuf==4.24.4
