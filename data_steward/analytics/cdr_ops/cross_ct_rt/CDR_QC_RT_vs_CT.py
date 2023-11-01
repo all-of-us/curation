@@ -562,8 +562,8 @@ WHERE person_id NOT IN (SELECT DISTINCT person_id FROM ct_person_id)
 END LOOP;
 
 SELECT DISTINCT person_id,
-{{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, DATE(year_of_birth,6,15)) AS age,
-CASE WHEN {{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, DATE(year_of_birth,6,15)) < {{maximum_age}}
+{{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, birth_datetime) AS age,
+CASE WHEN {{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, birth_datetime) < {{maximum_age}}
 THEN 1 ELSE 0 END AS Failure
 FROM ct_person_id
 JOIN `{{project_id}}.{{ct_dataset}}.person`
