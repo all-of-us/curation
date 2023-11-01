@@ -61,7 +61,7 @@ if [[ -z "${key_file}" ]] || [[ -z "${run_as}" ]] || [[ -z "${pmi_email}" ]] || 
   exit 1
 fi
 
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["quota_project_id"]);' < "${key_file}")
 
 tag=$(git describe --abbrev=0 --tags)
 version=${tag}
@@ -82,7 +82,6 @@ export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
 
 #set application environment (ie dev, test, prod)
-gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
 source "${TOOLS_DIR}/set_path.sh"
@@ -149,7 +148,6 @@ gcloud config set account "${pmi_email}"
 python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --run_as "${run_as}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_sandbox}" --data_stage "${data_stage}" -s --cutoff_date "${ehr_cutoff_date}" 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
-gcloud auth activate-service-account --key-file=${key_file}
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --snapshot_dataset_id "${unioned_ehr_dataset}"
