@@ -67,17 +67,17 @@ WITH
 
 -- store the research_id, person_id, and their AIAN status of all participants --
 SELECT m.research_id, m.person_id AS participant_id,
-CASE
-  WHEN
-    a.person_id = m.person_id THEN 'yes' ELSE 'no'
-  END AS is_aian
-FROM rdr_persons r
-JOIN `{{project_id}}.{{pipeline_lookup_tables}}.primary_pid_rid_mapping` m
-  USING(person_id)
-JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{aian_list}}` a
-  USING(person_id)
-WHERE person_id IN (SELECT person_id FROM has_the_basics)
-AND person_id NOT IN (SELECT person_id FROM bad_birthdate_records)
+  CASE
+    WHEN
+      a.person_id = m.person_id THEN 'yes' ELSE 'no'
+    END AS is_aian
+  FROM rdr_persons r
+  JOIN `aou-res-curation-test.mike_schmidt_rdr.primary_pid_rid_mapping` m
+    USING(person_id)
+  FULL OUTER JOIN `aou-res-curation-test.mike_schmidt_rdr_sandbox.aian_list` a
+    USING(person_id)
+  WHERE person_id IN (SELECT person_id FROM has_the_basics)
+  AND person_id NOT IN (SELECT person_id FROM bad_birthdate_records)
 );""")
 
 
