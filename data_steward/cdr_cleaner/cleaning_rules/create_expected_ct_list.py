@@ -100,7 +100,7 @@ class StoreExpectedCTList(BaseCleaningRule):
         super().__init__(
             issue_numbers=[
                 'DC2595',
-                'DC3402',
+                'DC3404',
             ],
             description=desc,
             affected_datasets=[],  # has no side effects
