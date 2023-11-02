@@ -46,7 +46,7 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_table_names.extend(
-            [f'{cls.project_id}.{cls.sandbox_id}.{AIAN_LIST}'])  #? maybe
+            [f'{cls.project_id}.{cls.sandbox_id}.{AIAN_LIST}'])
 
         # call super to set up the client, create datasets, and create
         # empty test tables
