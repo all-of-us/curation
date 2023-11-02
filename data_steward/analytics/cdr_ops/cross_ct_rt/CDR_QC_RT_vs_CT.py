@@ -122,14 +122,14 @@ SET person_tables = Array(
     SELECT table_name
     FROM `{{project_id}}.{{rt_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where lower(column_name) = 'person_id'
-    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)')
+    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)|(wear)')
 
     UNION DISTINCT 
 
     SELECT table_name
     FROM `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where lower(column_name) = 'person_id'
-    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)')
+    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)|(wear)')
 
 );
 
@@ -564,7 +564,7 @@ END LOOP;
 SELECT DISTINCT person_id,
 {{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, birth_datetime) AS age,
 CASE WHEN {{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, birth_datetime) < {{maximum_age}}
-    THEN 1 ELSE 0 END AS Failure
+THEN 1 ELSE 0 END AS Failure
 FROM ct_person_id
 JOIN `{{project_id}}.{{ct_dataset}}.person`
 USING (person_id)

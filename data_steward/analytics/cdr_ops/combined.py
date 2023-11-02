@@ -51,7 +51,7 @@ pd.options.display.width = None
 
 # ## Check for duplicates across all unique identifier fields.
 # This query gathers any duplicates of the {table}_id from each OMOP table listed.
-# The OMOP tables `death` and `fact_relationship` are excluded from the check because they do not have primary key fields.
+# The OMOP tables `death` and `fact_relationship` are excluded from the check because they do not have primary key fields. `aou_death` is also excluded since it uses 'uuid'.
 # The output of this query should be empty. If any duplicates are found there may be a bug in the pipeline.
 #
 # Specific to duplicates in observation:<br>
@@ -61,6 +61,7 @@ pd.options.display.width = None
 # If any duplicates are found there may be a bug in the pipeline-
 # particularly in `ehr_union.move_ehr_person_to_observation`.
 
+
 query = f"""
 DECLARE i INT64 DEFAULT 0;
 DECLARE tables ARRAY<STRING>;
@@ -69,7 +70,7 @@ SET tables = ["observation", "observation_period", "condition_occurrence",
 "care_site", "condition_era", "device_cost", "device_exposure", "dose_era",
 "drug_exposure", "location", "measurement", "note", "note_nlp", "person",
 "procedure_cost", "procedure_occurrence", "provider", "specimen",
-"survey_conduct", "visit_cost", "visit_detail", "visit_occurrence", "aou_death"];
+"survey_conduct", "visit_cost", "visit_detail", "visit_occurrence"];
 
 CREATE TEMPORARY TABLE non_unique_primary_keys(table_name STRING, key_column int64);
 
@@ -132,14 +133,18 @@ WHERE
  t.{{date_field}} < DATE(p.birth_datetime)
 
  -- age >= 150y --
- OR {{PIPELINE_TABLES}}.calculate_age(t.{{date_field}}, EXTRACT(DATE FROM p.birth_datetime)) >= 150
+ OR pipeline_tables.calculate_age(t.{{date_field}}, EXTRACT(DATE FROM p.birth_datetime)) >= 150
 )
+AND
+p.birth_datetime IS NOT NULL
+AND
+t.{{date_field}} IS NOT NULL
 {% if not loop.last -%}
    UNION ALL
 {% endif %}
 {% endfor %}
 ''')
-query = tpl.render(dataset_id=DATASET_ID, date_fields=date_fields)
+query = tpl.render(dataset_id=DATASET_ID, date_fields=date_fields, PIPELINE_TABLES="pipeline_tables")
 execute(client, query)
 
 # ## PPI records should never follow death date
@@ -147,7 +152,6 @@ execute(client, query)
 
 # +
 query = JINJA_ENV.from_string("""
-query = f'''
 WITH
 
  ppi_concept AS
@@ -308,7 +312,7 @@ DECLARE query DEFAULT (
      (SELECT
        d.table_schema AS table_schema
       ,d.table_name   AS table_name
-      ,pk.column_name AS key_field
+      ,CASE WHEN pk.column_name = 'aou_death_id' THEN '0' ELSE pk.column_name END AS key_field
       ,d.column_name  AS date_field
       ,ts.column_name AS timestamp_field
       FROM `{DATASET_ID}.INFORMATION_SCHEMA.COLUMNS` d
@@ -457,7 +461,7 @@ total_plots = len(overlaps)
 cols = 3
 rows = math.ceil(total_plots / cols)
 
-fig, axes = plt.subplots(rows, cols, figsize=(5, 5), squeeze=False)
+fig, axes = plt.subplots(rows, cols, figsize=(10, 10), squeeze=False)
 
 k = 0
 while k < total_plots:
@@ -771,7 +775,7 @@ WITH qc_aou_death AS (
     SELECT
         aou_death_id,
         CASE WHEN aou_death_id IN (
-            SELECT aou_death_id FROM `{{project_id}}.{{dataset_id}}.aou_death`
+            SELECT aou_death_id FROM `{{project_id}}.{{dataset}}.aou_death`
             WHERE death_date IS NOT NULL -- NULL death_date records must not become primary --
             QUALIFY RANK() OVER (
                 PARTITION BY person_id
@@ -900,4 +904,3 @@ for table in MAPPED_CLINICAL_DATA_TABLES:
 full_query = '\nUNION ALL\n'.join(sub_queries)
 result = execute(client, full_query)
 render_message(result, success_msg_if_empty, failure_msg_if_empty)
-# -

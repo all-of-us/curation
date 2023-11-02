@@ -27,6 +27,7 @@ combine=""
 pipeline=""
 rt_cdr_deid = ""
 deid_sand=""
+reg_combined=""
 rdr_dataset=""
 rdr_sandbox=""
 run_as=""
@@ -58,14 +59,14 @@ AND person_id IN
 
 (SELECT DISTINCT research_id 
 FROM  `{{project_id}}.{{combine}}.observation` com
-JOIN `{{project_id}}.{{deid_sand}}._deid_map` m ON com.person_id = m.person_id
+JOIN `{{project_id}}.{{reg_combined}}._deid_map` m ON com.person_id = m.person_id
 WHERE observation_source_concept_id = 1586140
 AND value_source_concept_id = 1586141
 )
 
 AND value_source_concept_id NOT IN (2000000008, 2000000001,1586147)
 """)
-q = query.render(project_id=project_id,rt_cdr_deid=rt_cdr_deid,combine=combine,deid_sand=deid_sand)
+q = query.render(project_id=project_id,rt_cdr_deid=rt_cdr_deid,combine=combine,deid_sand=deid_sand, reg_combined=reg_combined)
 df1=execute(client, q)
 df1
 
@@ -168,7 +169,7 @@ SELECT 'check5.1' check , 'survey_conduct_language_english' check_name,
  COUNT (DISTINCT m.person_id) AS row_counts_failure
     FROM  `{{project_id}}.{{rt_cdr_deid}}.survey_conduct` deid
    JOIN `{{project_id}}.{{rt_cdr_deid}}.survey_conduct_ext` using (survey_conduct_id)
-   JOIN `{{project_id}}.{{deid_sand}}._deid_map` m ON deid.person_id = m.research_id
+   JOIN `{{project_id}}.{{reg_combined}}._deid_map` m ON deid.person_id = m.research_id
    WHERE language ='en'
    AND m.person_id NOT IN (SELECT DISTINCT person_id
     FROM  `{{project_id}}.{{rdr_dataset}}.observation`
@@ -182,7 +183,7 @@ SELECT 'check5.2' check , 'survey_conduct_language_spanish' check_name,
 COUNT (DISTINCT m.person_id) AS row_counts_failure
     FROM  `{{project_id}}.{{rt_cdr_deid}}.survey_conduct` deid
    JOIN `{{project_id}}.{{rt_cdr_deid}}.survey_conduct_ext` using (survey_conduct_id)
-   JOIN `{{project_id}}.{{deid_sand}}._deid_map` m ON deid.person_id = m.research_id
+   JOIN `{{project_id}}.{{reg_combined}}._deid_map` m ON deid.person_id = m.research_id
    WHERE language ='es'
    AND m.person_id NOT IN (SELECT DISTINCT person_id
     FROM  `{{project_id}}.{{rdr_dataset}}.observation`
@@ -197,7 +198,7 @@ SELECT 'check6' check , 'survey_conduct_CATI' check_name,
 COUNT (DISTINCT m.person_id) AS row_counts_failure
     FROM  `{{project_id}}.{{rt_cdr_deid}}.survey_conduct` deid
    JOIN `{{project_id}}.{{rt_cdr_deid}}.survey_conduct_ext` using (survey_conduct_id)
-   JOIN `{{project_id}}.{{deid_sand}}._deid_map` m ON deid.person_id = m.research_id
+   JOIN `{{project_id}}.{{reg_combined}}._deid_map` m ON deid.person_id = m.research_id
    WHERE ( assisted_source_value ='Telephone' or assisted_concept_id=42530794)
    AND m.person_id NOT IN (SELECT DISTINCT person_id
     FROM  `{{project_id}}.{{rdr_dataset}}.observation`
@@ -251,7 +252,7 @@ SELECT 'check9' check , 'person_ids are remapped' check_name,
 COUNT (DISTINCT person_id) AS row_counts_failure
     FROM  `{{project_id}}.{{rt_cdr_deid}}.survey_conduct` d
    WHERE person_id NOT IN (SELECT research_id  
-   FROM  `{{project_id}}.{{deid_sand}}._deid_map` ))
+   FROM  `{{project_id}}.{{reg_combined}}._deid_map` ))
    
 SELECT * FROM  df1
 UNION DISTINCT 
@@ -275,7 +276,7 @@ SELECT * FROM  df9
 ORDER BY check
 
 """)
-q = query.render(project_id=project_id,rt_cdr_deid=rt_cdr_deid,combine=combine,deid_sand=deid_sand,rdr_dataset=rdr_dataset,rdr_sandbox=rdr_sandbox,pipeline=pipeline)
+q = query.render(project_id=project_id,rt_cdr_deid=rt_cdr_deid,combine=combine,deid_sand=deid_sand,rdr_dataset=rdr_dataset,rdr_sandbox=rdr_sandbox,pipeline=pipeline, reg_combined=reg_combined)
 df1=execute(client, q)
 df1.shape
 

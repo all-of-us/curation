@@ -61,6 +61,7 @@
 project_id = ""
 rt_dataset = ""
 ct_dataset = ""
+deid_sandbox = ""
 earliest_ehr_date = ""
 cut_off_date = ""
 
@@ -665,6 +666,7 @@ WITH
         table1))
     AND REGEXP_CONTAINS(column_name, r'(?i)(_id)')
     AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person)')
+    AND NOT REGEXP_CONTAINS(table_name, r'(?i)(aou_death)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(person_)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_concept)')
@@ -818,6 +820,7 @@ WITH
         table1))
     AND REGEXP_CONTAINS(column_name, r'(?i)(_id)')
     AND NOT REGEXP_CONTAINS(table_name, r'(?i)(person)')
+    AND NOT REGEXP_CONTAINS(table_name, r'(?i)(aou_death)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(person_)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_concept)')
@@ -850,6 +853,16 @@ WITH
         AND REGEXP_CONTAINS(table_name, r'(?i)(visit_detail)')
         AND REGEXP_CONTAINS(column_name, r'(?i)(visit_detail_id)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
+    
+    OR (
+          (table_name IN (
+      SELECT
+        DISTINCT table_name
+      FROM
+        table1))
+        AND REGEXP_CONTAINS(table_name, r'(?i)(aou_death)')
+        AND REGEXP_CONTAINS(column_name, r'(?i)(aou_death_id)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src)') )
  """)
 
 """
@@ -1331,7 +1344,7 @@ WHERE person_id not in (  -- aou consenting participants --
       WHERE REGEXP_CONTAINS(observation_source_value, '(?i)extraconsent_agreetoconsent')
       AND value_as_concept_id = 45877994) o
     ON cte.person_id = o.person_id
-    AND cte.latest_consent_date = o.observation_date
+    AND cte.latest_date = o.observation_date
   WHERE o.person_id IS NOT NULL
   )
 
@@ -1355,6 +1368,9 @@ else:
                 'Failure'
         },
         ignore_index=True)
+# -
+
+df1
 
 # +
 # Query 18:  Check that wear_consent records are suppressed in the 'observation' and 'survey_conduct' tables

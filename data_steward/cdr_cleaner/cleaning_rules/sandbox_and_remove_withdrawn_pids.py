@@ -14,19 +14,19 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3442']
 
-# Query template to copy lookup_table from rdr dataset to combined sandbox dataset
-COPY_LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
+# Query template to copy withdrawn_dups_table from rdr dataset to combined sandbox dataset
+COPY_WITHDRAWN_DUPS_TABLE_TEMPLATE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE 
-    `{{project_id}}.{{sandbox_dataset_id}}.{{combined_lookup_table}}` AS 
+    `{{project_id}}.{{sandbox_dataset_id}}.{{withdrawn_dups_table}}` AS 
     (
         SELECT
-            participant_id AS person_id,
+            person_id,
             hpo_id
             src_id,
             consent_for_study_enrollment_authored,
             withdrawal_status
         FROM
-            `{{project_id}}.{{rdr_dataset_id}}.{{rdr_lookup_table}}`                                       
+            `{{project_id}}.{{dataset_id}}.{{withdrawn_dups_table}}`                                       
     )
 """)
 
@@ -37,7 +37,7 @@ class SandboxAndRemoveWithdrawnPids(SandboxAndRemovePids):
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 rdr_dataset_id, lookup_table):
+                 withdrawn_dups_table):
         """
         Initialize the class with proper information.
 
@@ -46,15 +46,13 @@ class SandboxAndRemoveWithdrawnPids(SandboxAndRemovePids):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
 
-        self.rdr_dataset_id = rdr_dataset_id
-        self.rdr_lookup_table = lookup_table
-        self.combined_lookup_table = f'_{"_".join(ISSUE_NUMBERS).lower()}_{self.rdr_lookup_table}'
+        self.withdrawn_dups_table = withdrawn_dups_table
 
         desc = 'Sandbox and remove participant data from a list of participants.'
 
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_datasets=[cdr_consts.RDR],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -77,21 +75,20 @@ class SandboxAndRemoveWithdrawnPids(SandboxAndRemovePids):
             if table.get('table_name') in CDM_TABLES + [AOU_DEATH]
         ]
 
-        # Copy lookup_table from rdr dataset to combined sandbox dataset
-        copy_lookup_table_query = COPY_LOOKUP_TABLE_TEMPLATE.render(
+        # Copy withdrawn_dups_table from rdr dataset to combined sandbox dataset
+        copy_withdrawn_dups_table_query = COPY_WITHDRAWN_DUPS_TABLE_TEMPLATE.render(
             project_id=self.project_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
-            rdr_dataset_id=self.rdr_dataset_id,
-            rdr_lookup_table=self.rdr_lookup_table,
-            combined_lookup_table=self.combined_lookup_table)
+            dataset_id=self.dataset_id,
+            withdrawn_dups_table=self.withdrawn_dups_table)
 
-        client.query(copy_lookup_table_query).result()
+        client.query(copy_withdrawn_dups_table_query).result()
 
     def get_query_specs(self) -> list:
         sandbox_records_queries = self.get_sandbox_queries(
-            lookup_table=self.combined_lookup_table)
+            lookup_table=self.withdrawn_dups_table)
         remove_pids_queries = self.get_remove_pids_queries(
-            lookup_table=self.combined_lookup_table)
+            lookup_table=self.withdrawn_dups_table)
 
         return sandbox_records_queries + remove_pids_queries
 
@@ -123,18 +120,11 @@ def parse_args():
     import cdr_cleaner.args_parser as parser
 
     additional_arguments = [{
-        parser.SHORT_ARGUMENT: '-r',
-        parser.LONG_ARGUMENT: '--rdr_dataset',
-        parser.ACTION: 'store',
-        parser.DEST: 'rdr_dataset',
-        parser.HELP: 'rdr_dataset',
-        parser.REQUIRED: True
-    }, {
         parser.SHORT_ARGUMENT: '-l',
-        parser.LONG_ARGUMENT: '--lookup_table',
+        parser.LONG_ARGUMENT: '--withdrawn_dups_table',
         parser.ACTION: 'store',
-        parser.DEST: 'lookup_table',
-        parser.HELP: 'lookup_table',
+        parser.DEST: 'withdrawn_dups_table',
+        parser.HELP: 'withdrawn_dups_table',
         parser.REQUIRED: True
     }]
     args = parser.default_parse_args(additional_arguments)
@@ -153,15 +143,13 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(SandboxAndRemoveWithdrawnPids,)],
-            rdr_dataset_id=ARGS.rdr_dataset,
-            lookup_table=ARGS.lookup_table)
+            withdrawn_dups_table=ARGS.withdrawn_dups_table)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id,
-                                   ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id,
-                                   [(SandboxAndRemoveWithdrawnPids,)],
-                                   rdr_dataset_id=ARGS.rdr_dataset,
-                                   lookup_table=ARGS.lookup_table)
+        clean_engine.clean_dataset(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(SandboxAndRemoveWithdrawnPids,)],
+            withdrawn_dups_table=ARGS.withdrawn_dups_table)

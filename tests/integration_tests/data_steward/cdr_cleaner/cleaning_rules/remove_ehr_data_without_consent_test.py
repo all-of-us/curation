@@ -97,7 +97,7 @@ VALUES (1, 'rdr2021'),
 
 DUPLICATE_DATASET_CREATION = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{duplicates_dataset}}.{{duplicates_table}}` (
-    participant_id INT,
+    person_id INT,
     hpo_id INT,
     src_id STRING,
     consent_for_study_enrollment_authored DATE,
@@ -107,7 +107,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{duplicates_dataset}}.{{duplicates_tabl
 
 DUPLICATE_RECORDS_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{duplicates_dataset}}.{{duplicates_table}}`
-(participant_id, hpo_id, src_id, consent_for_study_enrollment_authored, withdrawal_status)
+(person_id, hpo_id, src_id, consent_for_study_enrollment_authored, withdrawal_status)
 VALUES (
     5, 0, '42', (DATE '2023-09-27'), 'UNKNOWN'
 )
