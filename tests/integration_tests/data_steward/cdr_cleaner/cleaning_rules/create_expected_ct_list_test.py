@@ -1,4 +1,3 @@
-from datetime import datetime
 import os
 
 import mock
@@ -9,7 +8,6 @@ from common import (OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING,
                     VOCABULARY_TABLES, AIAN_LIST)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
-from cdr_cleaner.cleaning_rules.create_expected_ct_list import EXPECTED_CT_LIST
 
 
 class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
