@@ -37,8 +37,8 @@ import resources
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, BIGQUERY_DATASET_ID, UNIONED_DATASET_ID
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
-from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
-    initialize_logging
+# from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
+#     initialize_logging
 from retraction import retract_data_bq, retract_data_gcs
 from validation import achilles, achilles_heel, ehr_union, export, hpo_report
 from validation import email_notification as en
@@ -1149,10 +1149,9 @@ def ps_api_cron():
     return consts.PS_API_SUCCESS
 
 
-@app.before_first_request
-def set_up_logging():
-    initialize_logging()
-
+# @app.before_first_request
+# def set_up_logging():
+#     initialize_logging()
 
 app.add_url_rule(consts.PREFIX + 'ValidateAllHpoFiles',
                  endpoint='validate_all_hpos',
@@ -1196,9 +1195,9 @@ app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION +
                  view_func=ps_api_cron,
                  methods=['GET'])
 
-app.before_request(
-    begin_request_logging)  # Must be first before_request() call.
+# app.before_request(
+#     begin_request_logging)  # Must be first before_request() call.
 
-app.teardown_request(
-    end_request_logging
-)  # teardown_request to be called regardless if there is an exception thrown
+# app.teardown_request(
+#     end_request_logging
+# )  # teardown_request to be called regardless if there is an exception thrown
