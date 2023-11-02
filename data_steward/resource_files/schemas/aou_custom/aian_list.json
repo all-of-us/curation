@@ -1,0 +1,8 @@
+[
+    {
+        "name": "person_id",
+        "type": "integer",
+        "mode": "required",
+        "description": ""
+    }
+]
