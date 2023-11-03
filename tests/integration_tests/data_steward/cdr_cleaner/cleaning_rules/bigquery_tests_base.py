@@ -317,8 +317,9 @@ class BaseTest:
                 # validate records are dropped
                 fq_table_name = table_info.get('fq_table_name', 'UNSET')
                 values = table_info.get('cleaned_values', [])
+                sandboxed_values = table_info.get('sandboxed_values', [])
                 fields = table_info.get('fields', [])
-                self.assertTableValuesMatch(fq_table_name, fields, values)
+                self.assertTableValuesMatch(fq_table_name, fields, values, sandboxed_values)
 
                 # validate records are sandboxed
                 fq_sandbox_name = table_info.get('fq_sandbox_table_name')
