@@ -8,7 +8,7 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
 from cdr_cleaner.cleaning_rules.deid.fitbit_device_id import DeidFitbitDeviceId
-from common import FITBIT_TABLES
+from common import FITBIT_TABLES, DEVICE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,14 +35,16 @@ class FitbitPIDtoRID(PIDtoRID):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        super().__init__(project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         mapping_dataset_id=mapping_dataset_id,
-                         mapping_table_id=mapping_table_id,
-                         affected_tables=FITBIT_TABLES,
-                         issue_numbers=ISSUE_NUMBERS,
-                         table_namer=table_namer)
+        super().__init__(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            mapping_dataset_id=mapping_dataset_id,
+            mapping_table_id=mapping_table_id,
+            #  affected_tables=FITBIT_TABLES,
+            affected_tables=[DEVICE],
+            issue_numbers=ISSUE_NUMBERS,
+            table_namer=table_namer)
 
 
 if __name__ == '__main__':

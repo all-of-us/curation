@@ -18,7 +18,7 @@ import google.cloud.bigquery as gbq
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import FITBIT_TABLES, JINJA_ENV, PIPELINE_TABLES
+from common import FITBIT_TABLES, JINJA_ENV, PIPELINE_TABLES, DEVICE
 from constants.bq_utils import WRITE_TRUNCATE
 
 LOGGER = logging.getLogger(__name__)
@@ -71,7 +71,8 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
             issue_numbers=['DC1001', 'DC1037', 'DC2429', 'DC2135', 'DC3165'],
             description=desc,
             affected_datasets=[cdr_consts.FITBIT],
-            affected_tables=FITBIT_TABLES,
+            # affected_tables=FITBIT_TABLES,
+            affected_tables=[DEVICE],
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
@@ -91,7 +92,8 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
 
         sandbox_queries_list = []
         drop_queries_list = []
-        for table in FITBIT_TABLES:
+        # for table in FITBIT_TABLES:
+        for table in self.affected_tables:
             sandbox_queries_list.append({
                 cdr_consts.QUERY:
                     SAVE_ROWS_TO_BE_DROPPED_QUERY.render(

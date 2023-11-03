@@ -13,7 +13,7 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.dateshift import DateShiftRule
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
-from common import FITBIT_TABLES
+from common import FITBIT_TABLES, DEVICE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from resources import fields_for
 
@@ -40,7 +40,8 @@ class FitbitDateShiftRule(DateShiftRule):
                 f'calculated in the static mapping table.  This specifically '
                 f'applies to fitbit tables.')
 
-        self.tables = FITBIT_TABLES
+        # self.tables = FITBIT_TABLES
+        self.tables = [DEVICE]
 
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
