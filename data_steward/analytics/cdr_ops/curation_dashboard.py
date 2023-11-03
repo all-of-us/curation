@@ -20,7 +20,6 @@ import warnings
 import seaborn as sns
 
 from common import PIPELINE_TABLES
-from notebooks.defaults import DEFAULT_DATASETS
 from utils import bq
 
 warnings.filterwarnings('ignore')
