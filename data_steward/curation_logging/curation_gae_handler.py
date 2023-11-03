@@ -22,9 +22,6 @@ from google.cloud import logging_v2 as gcp_logging_v2
 from google.logging.type import http_request_pb2 as gcp_http_request_pb2
 from google.protobuf import json_format as gcp_json_format, any_pb2 as gcp_any_pb2
 
-# Do not remove this import.
-#import curation_logging.gcp_request_log_pb2  # pylint: disable=unused-import
-
 # https://pypi.org/project/google-cloud-logging/
 # https://cloud.google.com/logging/docs/reference/v2/rpc/google.logging.v2
 # https://developers.google.com/resources/api-libraries/documentation/logging/v2/python/latest/logging_v2.entries.html

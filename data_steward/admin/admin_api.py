@@ -14,9 +14,9 @@ from flask import Flask
 import api_util
 import app_identity
 from admin import key_rotation, prod_pid_detection
-# from curation_logging.curation_gae_handler import (begin_request_logging,
-#                                                    end_request_logging,
-#                                                    initialize_logging)
+from curation_logging.curation_gae_handler import (begin_request_logging,
+                                                   end_request_logging,
+                                                   initialize_logging)
 
 PREFIX = '/admin/v1/'
 REMOVE_EXPIRED_KEYS_RULE = f'{PREFIX}RemoveExpiredServiceAccountKeys'
@@ -93,9 +93,10 @@ def detect_pid_violation():
     return 'detect-pid-violation-complete'
 
 
-# @app.before_first_request
-# def set_up_logging():
-#     initialize_logging()
+@app.before_first_request
+def set_up_logging():
+    initialize_logging()
+
 
 app.add_url_rule(REMOVE_EXPIRED_KEYS_RULE,
                  endpoint='remove_expired_keys',
@@ -107,7 +108,7 @@ app.add_url_rule(DETECT_PID_VIOLATION_RULE,
                  view_func=detect_pid_violation,
                  methods=['GET'])
 
-# app.before_request(
-#     begin_request_logging)  # Must be first before_request() call.
+app.before_request(
+    begin_request_logging)  # Must be first before_request() call.
 
-# app.teardown_request(end_request_logging)
+app.teardown_request(end_request_logging)
