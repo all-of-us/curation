@@ -132,6 +132,7 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
 
         queries = [observation_tmpl, person_tmpl, primary_map_tmpl, aian_tmpl]
         self.load_test_data(queries)
+
     def test_store_expected_ct_list(self):
 
         self.maxDiff = None
