@@ -36,10 +36,15 @@ class TruncateFitbitDataTest(unittest.TestCase):
         self.truncation_date = '2019-11-26'
 
         self.date_fields = ['device_date', 'last_sync_time']
-        self.updated_date_fields = [
-            f'COALESCE({field}, DATE("1900-01-01"))'
-            for field in self.date_fields
-        ]
+
+        self.updated_date_fields = []
+        for field in self.date_fields:
+            if field == 'device_date':
+                self.updated_date_fields.append(
+                    f'COALESCE({field}, DATE("1900-01-01"))')
+            else:
+                self.updated_date_fields.append(
+                    f'COALESCE(DATE({field}), DATE("1900-01-01"))')
 
         self.rule_instance = truncate_fitbit.TruncateFitbitData(
             self.project_id, self.dataset_id, self.sandbox_id, self.table_namer,
