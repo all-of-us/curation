@@ -317,23 +317,24 @@ class BaseTest:
                 # validate records are dropped
                 fq_table_name = table_info.get('fq_table_name', 'UNSET')
                 values = table_info.get('cleaned_values', [])
-                sandboxed_values = table_info.get('sandboxed_values', [])
                 fields = table_info.get('fields', [])
-                self.assertTableValuesMatch(fq_table_name, fields, values, sandboxed_values)
+                self.assertTableValuesMatch(fq_table_name, fields, values)
 
                 # validate records are sandboxed
                 fq_sandbox_name = table_info.get('fq_sandbox_table_name')
                 if fq_sandbox_name:
-                    values = table_info.get('sandboxed_ids', [])
+                    values = table_info.get('sandbox_values', [])
                     # this is assuming the uniquely identifiable field name is specified
                     # first in the fields list.  this check verifies by id field
                     # that the table data loaded correctly.
                     sandbox_fields = table_info.get('sandbox_fields', [])
                     cdm_fields = table_info.get('fields', [])
                     fields = [
-                        sandbox_fields[0] if sandbox_fields else cdm_fields[0]
+                        sandbox_fields if sandbox_fields else cdm_fields[0]
                     ]
-                    self.assertRowIDsMatch(fq_sandbox_name, fields, values)
+
+                    self.assertTableValuesMatch(fq_sandbox_name, fields[0],
+                                                values)
 
         def copy_vocab_tables(self, vocabulary_id):
             """

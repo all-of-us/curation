@@ -132,8 +132,8 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
 
         queries = [observation_tmpl, person_tmpl, primary_map_tmpl, aian_tmpl]
         self.load_test_data(queries)
-
     def test_store_expected_ct_list(self):
+
         self.maxDiff = None
         obs_date = parser.parse('1900-01-01').date()
         tables_and_counts = [
@@ -180,13 +180,13 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[0],
                 'sandbox_fields': ['research_id', 'participant_id', 'is_aian'],
-                'sandboxed_ids': [80, 60, 50, 40, 20],
-                'sandboxed_values': [
-                    (80, 800, 'no'),
-                    (60, 600, 'no'),
+                'sandboxed_ids': [800, 600, 500, 400, 200],
+                'sandbox_values': [
+                    (80, 200, 'no'),
+                    (60, 400, 'no'),
                     (50, 500, 'yes'),
-                    (40, 400, 'no'),
-                    (20, 200, 'no'),
+                    (40, 600, 'no'),
+                    (20, 800, 'no'),
                 ]
             }
         ]
