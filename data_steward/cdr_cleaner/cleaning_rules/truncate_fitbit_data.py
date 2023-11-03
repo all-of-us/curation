@@ -93,9 +93,12 @@ class TruncateFitbitData(BaseCleaningRule):
 
             for field in fields:
                 # appends date and datetime columns to the date_fields list
-                if field['type'].lower() in ['date', 'datetime']:
+                if field['type'].lower() == 'date':
                     date_fields.append(
                         f'COALESCE({field["name"]}, DATE("1900-01-01"))')
+                elif field['type'].lower() == 'datetime':
+                    date_fields.append(
+                        f'COALESCE(DATE({field["name"]}), DATE("1900-01-01"))')
 
             # will render the queries only if a table contains a date or datetime field
             # will ignore the tables that do not have a date or datetime field
