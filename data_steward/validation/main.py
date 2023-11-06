@@ -19,6 +19,7 @@ from flask import Flask
 from google.cloud import bigquery
 from google.cloud.storage.bucket import Blob
 from google.cloud.exceptions import GoogleCloudError
+import google.cloud.logging
 from googleapiclient.errors import HttpError
 
 # Project imports
@@ -37,8 +38,6 @@ import resources
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, BIGQUERY_DATASET_ID, UNIONED_DATASET_ID
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
-# from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
-#     initialize_logging
 from retraction import retract_data_bq, retract_data_gcs
 from validation import achilles, achilles_heel, ehr_union, export, hpo_report
 from validation import email_notification as en
@@ -50,6 +49,10 @@ from validation.participants.store_participant_summary_results import fetch_and_
 from validation.participants.validate import setup_and_validate_participants, get_participant_validation_summary_query
 
 app = Flask(__name__)
+
+# Set up logging client so the logs will be grouped with "Correlate by"
+logging_client = google.cloud.logging.Client()
+logging_client.setup_logging()
 
 # register application error handlers
 app.register_blueprint(errors_blueprint)
