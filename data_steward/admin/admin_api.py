@@ -15,7 +15,7 @@ import api_util
 import app_identity
 from admin import key_rotation, prod_pid_detection
 
-import google.cloud.logging
+import google.cloud.logging as gc_logging
 
 PREFIX = '/admin/v1/'
 REMOVE_EXPIRED_KEYS_RULE = f'{PREFIX}RemoveExpiredServiceAccountKeys'
@@ -31,7 +31,7 @@ BODY_TEMPLATE = ('service_account_email={service_account_email}\n'
 DETECT_PID_VIOLATION_RULE = f'{PREFIX}DetectPersonIdViolation'
 
 # Set up logging client so the logs will be grouped with "Correlate by"
-logging_client = google.cloud.logging.Client()
+logging_client = gc_logging.Client()
 logging_client.setup_logging()
 
 app = Flask(__name__)

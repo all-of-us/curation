@@ -19,7 +19,7 @@ from flask import Flask
 from google.cloud import bigquery
 from google.cloud.storage.bucket import Blob
 from google.cloud.exceptions import GoogleCloudError
-import google.cloud.logging
+import google.cloud.logging as gc_logging
 from googleapiclient.errors import HttpError
 
 # Project imports
@@ -51,7 +51,7 @@ from validation.participants.validate import setup_and_validate_participants, ge
 app = Flask(__name__)
 
 # Set up logging client so the logs will be grouped with "Correlate by"
-logging_client = google.cloud.logging.Client()
+logging_client = gc_logging.Client()
 logging_client.setup_logging()
 
 # register application error handlers
