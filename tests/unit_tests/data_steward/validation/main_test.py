@@ -15,8 +15,14 @@ import resources
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
-from validation import main
 from tests.test_util import mock_google_http_error, mock_google_cloud_error, mock_google_service_unavailable_error
+
+with mock.patch('validation.main.gc_logging.Client') as mock_gc_logging_client:
+    # mocking the client at the time of import so the script will not check the credential.
+    mock_client = mock.MagicMock()
+    mock_gc_logging_client.return_value = mock_client
+
+    from validation import main
 
 
 class ValidationMainTest(TestCase):
