@@ -177,7 +177,7 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                     self.fq_sandbox_table_names[0],
                 'tables_created_on_setup': [self.fq_sandbox_table_names[1]],
                 'sandbox_fields': ['research_id', 'participant_id', 'is_aian'],
-                'sandboxed_ids': [20, 40, 50, 80],
+                'sandboxed_ids': [20, 40, 50, 60, 80],
                 'sandbox_values': [
                     (80, 200, 'no'),
                     (60, 400, 'no'),
