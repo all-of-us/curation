@@ -118,7 +118,7 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         # a list of PID's that are aian
         aian_tmpl = self.jinja_env.from_string("""
         CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.{{table}}` AS (
-          SELECT 500 AS person_id
+          SELECT 500 AS person_id)
         """).render(
             project=self.project_id,
             dataset=self.sandbox_id,
