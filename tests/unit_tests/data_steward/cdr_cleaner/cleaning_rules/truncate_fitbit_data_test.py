@@ -32,7 +32,6 @@ class TruncateFitbitDataTest(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
         self.client = None
-        self.table_namer = None
         self.truncation_date = '2019-11-26'
 
         self.updated_date_fields = [
@@ -41,7 +40,7 @@ class TruncateFitbitDataTest(unittest.TestCase):
         ]
 
         self.rule_instance = truncate_fitbit.TruncateFitbitData(
-            self.project_id, self.dataset_id, self.sandbox_id, self.table_namer,
+            self.project_id, self.dataset_id, self.sandbox_id,
             self.truncation_date)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
@@ -53,17 +52,15 @@ class TruncateFitbitDataTest(unittest.TestCase):
         # Pre conditions
         mock_affected_tables.return_value = [DEVICE]
 
-        table = DEVICE
-
         sandbox_query = {
             cdr_consts.QUERY:
                 truncate_fitbit.SANDBOX_QUERY.render(
                     project_id=self.project_id,
                     sandbox_id=self.sandbox_id,
                     intermediary_table=self.rule_instance.sandbox_table_for(
-                        table),
+                        DEVICE),
                     dataset_id=self.dataset_id,
-                    fitbit_table=table,
+                    fitbit_table=DEVICE,
                     date_fields=(", ".join(self.updated_date_fields)),
                     truncation_date=self.truncation_date),
         }
@@ -73,12 +70,12 @@ class TruncateFitbitDataTest(unittest.TestCase):
                 truncate_fitbit.TRUNCATE_FITBIT_DATA_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
-                    fitbit_table=table,
+                    fitbit_table=DEVICE,
                     sandbox_id=self.sandbox_id,
                     intermediary_table=self.rule_instance.sandbox_table_for(
-                        table)),
+                        DEVICE)),
             cdr_consts.DESTINATION_TABLE:
-                table,
+                DEVICE,
             cdr_consts.DESTINATION_DATASET:
                 self.dataset_id,
             cdr_consts.DISPOSITION:
