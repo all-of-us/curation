@@ -122,7 +122,7 @@ tpl = JINJA_ENV.from_string('''
 SELECT
  "{{table_name}}"     AS table_name
 ,"{{date_field}}"     AS date_field
-,t.{{date_field}}     AS date_value
+,DATE(t.{{date_field}})     AS date_value
 ,p.birth_datetime     AS birth_datetime
 FROM `{{dataset_id}}.{{table_name}}` t
  JOIN `{{dataset_id}}.person` p
@@ -130,10 +130,10 @@ FROM `{{dataset_id}}.{{table_name}}` t
 WHERE
 (
  -- age <= 0y --
- t.{{date_field}} < DATE(p.birth_datetime)
+ DATE(t.{{date_field}}) < DATE(p.birth_datetime)
 
  -- age >= 150y --
- OR pipeline_tables.calculate_age(t.{{date_field}}, EXTRACT(DATE FROM p.birth_datetime)) >= 150
+ OR pipeline_tables.calculate_age(DATE(t.{{date_field}}), EXTRACT(DATE FROM p.birth_datetime)) >= 150
 )
 AND
 p.birth_datetime IS NOT NULL
@@ -256,7 +256,7 @@ SET query = (
       || 'USING (' || table_name ||'_id) '
       || 'LEFT JOIN consented c '
       || ' USING (person_id)'
-      || 'WHERE m.src_hpo_id <> "rdr" AND c.person_id IS NULL)'
+      || 'WHERE m.src_hpo_id NOT IN (\\"ce\\", \\"vibrent\\", \\"healthpro\\") AND c.person_id IS NULL)'
    , ' UNION ALL ')
  FROM `{{DATASET_ID}}.INFORMATION_SCHEMA.COLUMNS` c
  JOIN `{{DATASET_ID}}.__TABLES__` t

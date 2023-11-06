@@ -20,7 +20,6 @@ import warnings
 import seaborn as sns
 
 from common import PIPELINE_TABLES
-# from notebooks.defaults import DEFAULT_DATASETS
 from utils import bq
 
 warnings.filterwarnings('ignore')
@@ -87,7 +86,7 @@ combined_df = combined_df.pivot(index='table_id',
 combined_df.to_csv('%s.csv' % 'combined_diff')
 
 ct_df = row_counts(ALL_CT_DATASET + [CT_DATASET])
-ct_df = combined_df.pivot(index='table_id',
+ct_df = ct_df.pivot(index='table_id',
                                 columns='dataset_id',
                                 values='row_count')
 ct_df.to_csv('%s.csv' % 'ct_diff')
@@ -207,7 +206,7 @@ def gender_by_race(dataset_id):
     ''')
     df['race'] = df['race'].astype('category')
     df['gender'] = df['gender'].astype('category')
-    g = sns.FacetGrid(df, col='race', hue='gender', col_wrap=5)
+    g = sns.FacetGrid(df, col='race', sharey=False, hue='gender', col_wrap=5)
     g.map(sns.barplot, 'gender', 'count', ci=None)
     g.set_xticklabels([])
     g.set_axis_labels('', '')
