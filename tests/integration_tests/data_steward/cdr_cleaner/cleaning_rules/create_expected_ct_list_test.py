@@ -32,7 +32,7 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                                                 cls.sandbox_id)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
-        for table_name in sb_table_names:
+        for table_name in sb_table_names + [AIAN_LIST]:
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
@@ -44,9 +44,6 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
             for table in [OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING] +
             VOCABULARY_TABLES
         ]
-
-        cls.fq_table_names.extend(
-            [f'{cls.project_id}.{cls.sandbox_id}.{AIAN_LIST}'])
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -120,10 +117,8 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
 
         # a list of PID's that are aian
         aian_tmpl = self.jinja_env.from_string("""
-        INSERT INTO `{{project}}.{{dataset}}.{{table}}`
-          (person_id)
-        VALUES
-          (500)
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.{{table}}` AS (
+          SELECT 500 AS person_id
         """).render(
             project=self.project_id,
             dataset=self.sandbox_id,
@@ -180,8 +175,9 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                 ],  # verifying the correct fields and data are sandboxed here
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[0],
+                'tables_created_on_setup': [self.fq_sandbox_table_names[1]],
                 'sandbox_fields': ['research_id', 'participant_id', 'is_aian'],
-                'sandboxed_ids': [800, 600, 500, 400, 200],
+                'sandboxed_ids': [20, 40, 50, 80],
                 'sandbox_values': [
                     (80, 200, 'no'),
                     (60, 400, 'no'),

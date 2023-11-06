@@ -320,21 +320,25 @@ class BaseTest:
                 fields = table_info.get('fields', [])
                 self.assertTableValuesMatch(fq_table_name, fields, values)
 
-                # validate records are sandboxed
+                # validate records are sandboxed for the specified sandbox table name
                 fq_sandbox_name = table_info.get('fq_sandbox_table_name')
                 if fq_sandbox_name:
-                    values = table_info.get('sandbox_values', [])
+                    id_values = table_info.get('sandboxed_ids', [])
                     # this is assuming the uniquely identifiable field name is specified
                     # first in the fields list.  this check verifies by id field
                     # that the table data loaded correctly.
                     sandbox_fields = table_info.get('sandbox_fields', [])
                     cdm_fields = table_info.get('fields', [])
                     fields = [
-                        sandbox_fields if sandbox_fields else cdm_fields[0]
+                        sandbox_fields[0] if sandbox_fields else cdm_fields[0]
                     ]
 
-                    self.assertTableValuesMatch(fq_sandbox_name, fields[0],
-                                                values)
+                    self.assertRowIDsMatch(fq_sandbox_name, fields, id_values)
+                    sandboxed_values = table_info.get('sandbox_values', [])
+                    if sandboxed_values:
+                        self.assertTableValuesMatch(fq_sandbox_name,
+                                                    sandbox_fields,
+                                                    sandboxed_values)
 
         def copy_vocab_tables(self, vocabulary_id):
             """
