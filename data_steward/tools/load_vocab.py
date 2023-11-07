@@ -138,9 +138,11 @@ def safe_schema_for(bq_client: BigQueryClient, table: str) -> List[SchemaField]:
     :return: a list of SchemaField objects
     """
     return [
-        SchemaField(
-            f.name, 'string' if f.field_type.lower() in DATE_TIME_TYPES else
-            f.field_type, f.mode, f.description)
+        SchemaField(name=f.name,
+                    field_type='string' if f.field_type.lower()
+                    in DATE_TIME_TYPES else f.field_type,
+                    mode=f.mode,
+                    description=f.description)
         for f in bq_client.get_table_schema(table)
     ]
 
