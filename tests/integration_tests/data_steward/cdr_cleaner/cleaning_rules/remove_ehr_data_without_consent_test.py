@@ -28,7 +28,7 @@ insert into `{{project_id}}.{{dataset_id}}.person` (person_id, gender_concept_id
 """)
 
 VISIT_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
-insert into `{{project_id}}.{{dataset_id}}.visit_occurrence` 
+insert into `{{project_id}}.{{dataset_id}}.visit_occurrence`
 (visit_occurrence_id,
  person_id,
  visit_concept_id,
@@ -59,7 +59,7 @@ insert into `{{project_id}}.{{dataset_id}}._mapping_visit_occurrence`
 """)
 
 OBSERVATION_DATA_TEMPLATE = JINJA_ENV.from_string("""
-insert into `{{project_id}}.{{dataset_id}}.observation`
+INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
 (observation_id,
  person_id,
  observation_concept_id,
@@ -67,7 +67,7 @@ insert into `{{project_id}}.{{dataset_id}}.observation`
  observation_datetime,
  observation_type_concept_id,
  value_source_concept_id,
- observation_source_value )
+ observation_source_value)
 VALUES (1, 1, 0, '2020-01-01', '2020-01-01 00:00:00 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission'),
        (2, 1, 0, '2021-01-02', '2021-01-02 00:00:00 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission'),
        (3, 1, 0, '2020-05-01', '2020-05-01 00:00:00 UTC', 0, 123, 'test_value_0'),
@@ -75,11 +75,13 @@ VALUES (1, 1, 0, '2020-01-01', '2020-01-01 00:00:00 UTC', 0, 1586100, 'EHRConsen
        (5, 2, 0, '2020-01-05', '2020-01-05 00:00:00 UTC', 0, 345, 'test_value_2'),
        (6, 2, 0, '2020-05-05', '2020-05-05 00:00:00 UTC', 0, 456, 'test_value_3'),
        (7, 3, 0, '2020-01-01', '2020-01-01 00:00:00 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission'),
-       (8, 4, 0, '2021-01-02', '2021-01-02 00:00:00 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission')
+       (8, 4, 0, '2021-01-02', '2021-01-02 00:00:00 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission'),
+       (9, 5, 0, '2023-09-29', '2023-09-29 09:34:13 UTC', 0, 123, 'test_value_3'),
+       (10, 5, 0, '2023-09-29', '2023-09-29 09:34:13 UTC', 0, 1586100, 'EHRConsentPII_ConsentPermission')
 """)
 
 MAPPING_OBSERVATION_TEMPLATE = JINJA_ENV.from_string("""
-insert into `{{project_id}}.{{dataset_id}}._mapping_observation`
+INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_observation`
 (observation_id, src_dataset_id)
 VALUES (1, 'rdr2021'),
        (2, 'rdr2021'),
@@ -88,13 +90,33 @@ VALUES (1, 'rdr2021'),
        (5, 'unioned_ehr'),
        (6, 'rdr2021'),
        (7, 'unioned_ehr'),
-       (8, 'unioned_ehr')
+       (8, 'unioned_ehr'),
+       (9, 'unioned_ehr'),
+       (10, 'rdr2023')
+""")
+
+DUPLICATE_DATASET_CREATION = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{duplicates_dataset}}.{{duplicates_table}}` (
+    person_id INT,
+    hpo_id INT,
+    src_id STRING,
+    consent_for_study_enrollment_authored DATE,
+    withdrawal_status STRING
+)
+""")
+
+DUPLICATE_RECORDS_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{duplicates_dataset}}.{{duplicates_table}}`
+(person_id, hpo_id, src_id, consent_for_study_enrollment_authored, withdrawal_status)
+VALUES (
+    5, 0, '42', (DATE '2023-09-27'), 'UNKNOWN'
+)
 """)
 
 CONSENT_VALIDATION_TEMPLATE = JINJA_ENV.from_string("""
-insert into `{{project_id}}.{{dataset_id}}.consent_validation`
+INSERT INTO `{{project_id}}.{{dataset_id}}.consent_validation`
 (person_id, research_id, consent_for_electronic_health_records, consent_for_electronic_health_records_authored, src_id)
-VALUES 
+VALUES
      -- validated consent with varying casing, not cleaned --
        (1, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
      -- validated consent but no consent record in observation, cleaned --
@@ -103,7 +125,10 @@ VALUES
        (3, 0, 'Submitted_No', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
        (3, 0, 'Submitted', (DATETIME '2018-11-26 00:00:00'), 'rdr'),
      -- null status. invalid consent, cleaned --
-       (4, 0, NULL, (DATETIME '2018-11-26 00:00:00'), 'rdr')
+       (4, 0, NULL, (DATETIME '2018-11-26 00:00:00'), 'rdr'),
+     -- duplicate records --
+       (5, 0, NULL, (DATETIME '2023-07-30 09:41:24'), 'rdr'),
+       (5, 0, NULL, (DATETIME '2023-07-30 09:41:24'), 'rdr')
 """)
 
 
@@ -123,10 +148,17 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
         # Set the expected test datasets
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.duplicates_dataset = 'duplicates_dataset'
+        cls.duplicates_table = 'duplicates_table'
 
-        cls.rule_instance = RemoveEhrDataWithoutConsent(cls.project_id,
-                                                        cls.dataset_id,
-                                                        cls.sandbox_id)
+        cls.rule_instance = RemoveEhrDataWithoutConsent(
+            cls.project_id,
+            cls.dataset_id,
+            cls.sandbox_id,
+            table_namer=None,
+            ehr_duplicates_dataset=cls.duplicates_dataset,
+            ehr_duplicates_table=cls.duplicates_table,
+        )
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
         cls.fq_table_names.extend([
@@ -136,12 +168,16 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
             f'{cls.project_id}.{cls.dataset_id}._mapping_{OBSERVATION}',
             f'{cls.project_id}.{cls.dataset_id}._mapping_{VISIT_OCCURRENCE}',
             f'{cls.project_id}.{cls.dataset_id}.{EHR_CONSENT_VALIDATION}',
+            f'{cls.project_id}.{cls.duplicates_dataset}.{cls.duplicates_table}'
         ])
         cls.fq_sandbox_table_names.extend([
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.issue_numbers[0].lower()}_{OBSERVATION}',
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.issue_numbers[0].lower()}_{VISIT_OCCURRENCE}',
             f'{cls.project_id}.{cls.sandbox_id}.{EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE}'
         ])
+
+        cls.kwargs['ehr_duplicates_dataset'] = cls.duplicates_dataset
+        cls.kwargs['ehr_duplicates_table'] = cls.duplicates_table
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
@@ -167,11 +203,25 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
         consent_validation_query = CONSENT_VALIDATION_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
+        duplicates_creation_query = DUPLICATE_DATASET_CREATION.render(
+            project_id=self.project_id,
+            duplicates_dataset=self.duplicates_dataset,
+            duplicates_table=self.duplicates_table)
+        duplicates_data_query = DUPLICATE_RECORDS_TEMPLATE.render(
+            project_id=self.project_id,
+            duplicates_dataset=self.duplicates_dataset,
+            duplicates_table=self.duplicates_table)
+
         # Load test data
         self.load_test_data([
-            person_data_query, visit_occurrence_data_query,
-            observation_data_query, mapping_observation_query,
-            mapping_visit_query, consent_validation_query
+            person_data_query,
+            visit_occurrence_data_query,
+            observation_data_query,
+            mapping_observation_query,
+            mapping_visit_query,
+            consent_validation_query,
+            duplicates_creation_query,  # create before insert
+            duplicates_data_query,
         ])
 
     def test_remove_ehr_data_without_consent(self):
@@ -183,6 +233,8 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
         3. person_id=3. has a invalid, affirmative consent record.
 
         4. person_id=4. has a invalid(null status), affirmative consent record.
+
+        5. person_id=5. has a duplicated record of person_id=6
         """
 
         # Expected results list
@@ -200,7 +252,7 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(OBSERVATION)}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             'sandboxed_ids': [4, 5, 7, 8],
             'fields': [
                 'observation_id', 'person_id', 'value_source_concept_id',
@@ -209,7 +261,9 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [
                 (1, 1, 1586100, 'EHRConsentPII_ConsentPermission'),
                 (2, 1, 1586100, 'EHRConsentPII_ConsentPermission'),
-                (3, 1, 123, 'test_value_0'), (6, 2, 456, 'test_value_3')
+                (3, 1, 123, 'test_value_0'), (6, 2, 456, 'test_value_3'),
+                (9, 5, 123, 'test_value_3'),
+                (10, 5, 1586100, 'EHRConsentPII_ConsentPermission')
             ]
         }]
 

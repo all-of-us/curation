@@ -113,28 +113,40 @@ df1
 # - Verify that if the value_source_concept_id in OBSERVATION table populates: 903079,
 # the value_as_concept_id field in de-id table populates 1177221
 #
-# - Verify that if the value_source_concept_id field in OBSERVATION table populates: 903096 ,
-# the value_as_concept_id field in de-id table populates: 903096
 #
 
 query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
-SELECT distinct value_source_concept_id,value_as_concept_id
+SELECT value_source_concept_id,value_as_concept_id
  FROM `{{project_id}}.{{deid_cdr}}.observation`
- WHERE value_source_concept_id in (2000000001,2000000008,1586142,1586143,1586146,1586147,1586148,903079,903096)
+ WHERE value_source_concept_id in (2000000001,2000000008,1586142,1586143,1586146,1586147,1586148,903079)
  )
 
-SELECT COUNT (*) AS n_row_not_pass FROM df1
+SELECT '2000000001' as issue, COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000001 AND value_as_concept_id !=2000000001)
- OR (value_source_concept_id=2000000008 AND value_as_concept_id !=2000000008)
- OR (value_source_concept_id=1586142 AND value_as_concept_id !=45879439)
- OR (value_source_concept_id=1586143 AND value_as_concept_id !=1586143)
- OR (value_source_concept_id=1586146 AND value_as_concept_id !=45877987)
- OR (value_source_concept_id=1586147 AND value_as_concept_id !=1586147)
- OR (value_source_concept_id=1586148 AND value_as_concept_id !=45882607)
- OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
- OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
+UNION ALL
+SELECT '2000000008' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE (value_source_concept_id=2000000008 AND value_as_concept_id !=2000000008)
+UNION ALL
+SELECT '1586142' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE  (value_source_concept_id=1586142 AND value_as_concept_id !=45879439)
+UNION ALL
+SELECT '1586143' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE  (value_source_concept_id=1586143 AND value_as_concept_id !=1586143)
+UNION ALL
+SELECT '1586146' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE (value_source_concept_id=1586146 AND value_as_concept_id !=45877987)
+UNION ALL
+SELECT '1586147' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE (value_source_concept_id=1586147 AND value_as_concept_id !=1586147)
+UNION ALL
+SELECT '1586148' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE  (value_source_concept_id=1586148 AND value_as_concept_id !=45882607)
+UNION ALL
+SELECT '903079' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE  (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
+ 
  
 """)
 q = query.render(project_id=project_id,
@@ -232,14 +244,14 @@ else:
         ignore_index=True)
 df1
 
-# # 2.3 	Account for multiple SELECTions for sexual orientation (DC-859)
+# # 2.3 	Account for multiple selections for sexual orientation (DC-859)
 #
 #
-# Verify that if a person hAS multiple SELECTion for TheBasics_SexualOrientation in pre-deid_com_cdr dataset, then the the value_source_concept_id field in OBSERVATION table populates: 2000000003, for those person_id in deid dataset
+# Verify that if a person hAS multiple selection for TheBasics_SexualOrientation in pre-deid_com_cdr dataset, then the the value_source_concept_id field in OBSERVATION table populates: 2000000003, for those person_id in deid dataset
 #
-# Account for multiple SELECTions for sexual orientation (DC-859)
+# Account for multiple selections for sexual orientation (DC-859)
 #
-# 1. Find person_ids that have more than 1 sexual_orientation SELECTions in the non-deid datasets (494038847, 326626269,353533275, 697092658,887791634,895181663)
+# 1. Find person_ids that have more than 1 sexual_orientation selections in the non-deid datasets (494038847, 326626269,353533275, 697092658,887791634,895181663)
 #
 #
 # 2 Find the person_id of those in the map tables (1872508, 1303111, 2051219, 1488177, 1278442, 1159723)
@@ -263,9 +275,10 @@ FROM `{{project_id}}.{{deid_cdr}}.observation`
 WHERE value_as_concept_id =2000000003
 )
 
-SELECT COUNT (distinct person_id) AS n_PERSON_ID_not_pass FROM df1
-WHERE countp >1
-AND person_id NOT IN (SELECT distinct person_id FROM df2 )
+SELECT COUNT(DISTINCT person_id) AS n_person_id_not_pass
+FROM `{{project_id}}.{{deid_cdr}}.person`
+WHERE person_id IN (SELECT person_id FROM df1 WHERE countp >1)
+AND person_id NOT IN (SELECT person_id FROM df2)
 
 """)
 q = query.render(project_id=project_id,
@@ -293,7 +306,7 @@ else:
         ignore_index=True)
 df1
 
-# # 3 GR_03 Gender Generalization Rule
+# # 3.1 GR_03 Gender Generalization Rule
 #
 # Verify that the field identified for de-identification action in OBSERVATION table follow the Gender Generalization Rule  for the de-id table.
 #
@@ -354,7 +367,7 @@ if df1['n_row_not_pass'].sum() == 0:
     df = df.append(
         {
             'query':
-                'Query3 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation',
+                'Query3.1 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation',
             'result':
                 'PASS'
         },
@@ -363,14 +376,14 @@ else:
     df = df.append(
         {
             'query':
-                'Query3 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation',
+                'Query3.1 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation',
             'result':
                 'Failure'
         },
         ignore_index=True)
 df1
 
-# # 3 Biological Sex Generalization Rule
+# # 3.2 Biological Sex Generalization Rule
 #
 # Verify that the field identified for de-identification action in OBSERVATION table follow the Biological Sex Generalization Rule for the de-id table.
 #
@@ -415,15 +428,19 @@ df1 = execute(client, q)
 if df1.eq(0).any().any():
     df = df.append(
         {
-            'query': 'Query3 Biological Sex Generalization Rule in observation',
-            'result': 'PASS'
+            'query':
+                'Query3.2 Biological Sex Generalization Rule in observation',
+            'result':
+                'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query3 Biological Sex Generalization Rule in observation',
-            'result': 'Failure'
+            'query':
+                'Query3.2 Biological Sex Generalization Rule in observation',
+            'result':
+                'Failure'
         },
         ignore_index=True)
 df1
@@ -560,24 +577,29 @@ df1
 # - Verify that if the value_source_concept_id in OBSERVATION table populates: 903079,
 # the value_as_concept_id field in de-id table populates 1177221
 #
-# - Verify that if the value_source_concept_id in OBSERVATION table populates: 903096,
-# the value_as_concept_id field in de-id table populates 903096
 
 query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
-SELECT distinct value_source_concept_id,value_as_concept_id
+SELECT value_source_concept_id,value_as_concept_id
 FROM `{{project_id}}.{{deid_cdr}}.observation`
-WHERE value_source_concept_id IN (2000000007, 2000000006,1585945,1585946,903079,903096)
+WHERE value_source_concept_id IN (2000000007, 2000000006,1585945,1585946,903079)
  )
   
-SELECT COUNT (*) AS n_row_not_pass FROM df1
+SELECT '2000000007' as issue, COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000007 AND value_as_concept_id !=2000000007)
-OR (value_source_concept_id=2000000006 AND value_as_concept_id !=2000000006)
-OR (value_source_concept_id=1585945 AND value_as_concept_id !=43021808)
-OR (value_source_concept_id=1585946 AND value_as_concept_id !=4260980)
-OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
-OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
+UNION ALL
+SELECT '2000000006' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE(value_source_concept_id=2000000006 AND value_as_concept_id !=2000000006)
+UNION ALL
+SELECT '1585945' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE(value_source_concept_id=1585945 AND value_as_concept_id !=43021808)
+UNION ALL
+SELECT '1585946' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE(value_source_concept_id=1585946 AND value_as_concept_id !=4260980)
+UNION ALL
+SELECT '903079' as issue,COUNT (*) AS n_row_not_pass FROM df1
+WHERE (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
 
 """)
 q = query.render(project_id=project_id,
@@ -618,24 +640,25 @@ df1
 # the value_as_concept_id field in de-id table populates 2000000004 "
 # - Verify that if the value_source_concept_id in OBSERVATION table populates: 903079,
 # the value_as_concept_id field in de-id table populates 1177221
-# - Verify that if the value_source_concept_id in OBSERVATION table populates: 903096,
-# the value_as_concept_id field in de-id table populates 903096
+#
 #
 
 query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
-SELECT distinct value_source_concept_id,value_as_concept_id
+SELECT value_source_concept_id,value_as_concept_id
 FROM `{{project_id}}.{{deid_cdr}}.observation`
-WHERE value_source_concept_id IN (2000000005, 2000000004,903079,903096)
+WHERE value_source_concept_id IN (2000000005, 2000000004,903079)
  )
  
-SELECT COUNT (*) AS n_row_not_pass FROM df1
+SELECT '2000000005' as issue, COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000005 AND value_as_concept_id !=2000000005)
-OR (value_source_concept_id=2000000004 AND value_as_concept_id !=2000000004)
-OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
-OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
-
+UNION ALL
+SELECT '2000000004' as issue, COUNT (*) AS n_row_not_pass FROM df1
+WHERE (value_source_concept_id=2000000004 AND value_as_concept_id !=2000000004)
+UNION ALL
+SELECT '903079' as issue, COUNT (*) AS n_row_not_pass FROM df1
+WHERE (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
 
 """)
 q = query.render(project_id=project_id,
@@ -703,6 +726,39 @@ df1
 
 # -
 
+# # 7 PMI_Skip records
+# All the PMI_Skip records (value_source_concept_id = 903096) must have either
+# 903096 or 2000000010 as value_as_concept_id.
+#
+# See JIRA ticket DC-3494 for more context.
+
+# +
+query = JINJA_ENV.from_string("""
+SELECT COUNT(*) AS n_row_not_pass 
+FROM `{{project_id}}.{{deid_cdr}}.observation`
+WHERE value_source_concept_id = 903096
+AND value_as_concept_id NOT IN (903096, 2000000010)
+""").render(project_id=project_id, deid_cdr=deid_cdr)
+df1 = execute(client, query)
+
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query7 PMI_Skip mapping post deid',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Query7 PMI_Skip mapping post deid',
+            'result': 'Failure'
+        },
+        ignore_index=True)
+df1
+
+# -
+
 # # Summary_cdr_deid_Generalization_rule
 
 
@@ -713,3 +769,4 @@ def highlight_cells(val):
 
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
+# -

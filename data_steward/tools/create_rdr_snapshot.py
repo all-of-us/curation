@@ -12,16 +12,14 @@ from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from gcloud.bq import BigQueryClient
-from utils import auth, pipeline_logging
 import app_identity
 from resources import mapping_table_for
 from utils import auth, pipeline_logging
 from common import (AOU_DEATH, CDR_SCOPES, DEATH, METADATA, PID_RID_MAPPING,
                     QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO, FACT_RELATIONSHIP,
-                    COPE_SURVEY_MAP, BIGQUERY_DATASET_ID)
-from utils import auth
-from utils import pipeline_logging
-from common import CDR_SCOPES, FACT_RELATIONSHIP, METADATA, DEATH
+                    COPE_SURVEY_MAP, VOCABULARY_TABLES, BIGQUERY_DATASET_ID,
+                    EHR_CONSENT_VALIDATION, WEAR_CONSENT, CDM_SOURCE, COHORT,
+                    COHORT_ATTRIBUTE, PDR_WITHDRAWALS_LIST, PDR_EHR_LIST)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -124,14 +122,16 @@ def main(raw_args=None):
             f'{bq_client.project}.{datasets.get("staging")}')
     ]
     skip_tables = [
-        AOU_DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING,
-        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO
-    ]
+        AOU_DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING, WEAR_CONSENT,
+        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO, EHR_CONSENT_VALIDATION,
+        CDM_SOURCE, COHORT, COHORT_ATTRIBUTE, PDR_WITHDRAWALS_LIST, PDR_EHR_LIST
+    ] + VOCABULARY_TABLES
+
     for domain_table in domain_tables:
         if domain_table in skip_tables:
             continue
         else:
-            if domain_table not in [METADATA, FACT_RELATIONSHIP]:
+            if domain_table != METADATA:
                 logging.info(f'Mapping {domain_table}...')
                 mapping(bq_client, datasets.get("staging"), domain_table)
             drop_src_id(bq_client, datasets.get("staging"), domain_table)
@@ -145,15 +145,15 @@ def main(raw_args=None):
         args.export_date, '--run_as', args.run_as_email
     ]
 
+    # Create an empty DEATH for clean RDR. Actual data is in AOU_DEATH.
+    _ = bq_client.create_tables(
+        [f"{bq_client.project}.{datasets.get('staging', 'UNSET')}.{DEATH}"])
+
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
     clean_cdr.main(args=all_cleaning_args)
 
     bq_client.build_and_copy_contents(datasets.get('staging', 'UNSET'),
                                       datasets.get('clean', 'UNSET'))
-
-    # Create an empty DEATH for clean RDR. Actual data is in AOU_DEATH.
-    _ = bq_client.create_tables(
-        [f"{bq_client.project}.{datasets.get('clean', 'UNSET')}.{DEATH}"])
 
     # update sandbox description and labels
     sandbox_dataset = bq_client.get_dataset(datasets.get(
@@ -257,14 +257,24 @@ def mapping_query(table_name, dataset_id=None, project_id=None):
         project_id = app_identity.get_application_id()
 
     domain_id = f'{table_name}_id'
-    return f'''
-        CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.{mapping_table_for(table_name)}` AS (
-        SELECT
-            dt.{domain_id}, dt.src_id
-        FROM
-            `{project_id}.{dataset_id}.{table_name}` as dt 
-        )
-    '''
+    if table_name == FACT_RELATIONSHIP:
+        query = f'''
+            CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.{mapping_table_for(table_name)}` (
+                {domain_id} INTEGER,
+                src_id INTEGER
+            ) 
+        '''
+
+    else:
+        query = f'''
+            CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.{mapping_table_for(table_name)}` AS (
+            SELECT
+                dt.{domain_id}, dt.src_id
+            FROM
+                `{project_id}.{dataset_id}.{table_name}` as dt 
+            )
+        '''
+    return query
 
 
 if __name__ == '__main__':

@@ -291,12 +291,6 @@ observation,observation_source_value,,tsu_ds5_13_xx42_cope_a_226,YES,DC-1496
 observation,observation_source_value,,cu_covid_cope_a_204,YES,DC-1496
 observation,observation_source_value,,dmfs_29a,YES,DC-1496
 observation,observation_source_value,,msds_17_c,YES,DC-1496
-observation,value_source_concept_id,1585807,,YES,DC-1527
-observation,value_source_concept_id,1585808,,YES,DC-1527
-observation,value_as_concept_id,1585807,,YES,DC-1527
-observation,value_as_concept_id,1585808,,YES,DC-1527
-observation,value_source_value,,OrganTransplantDescription_OtherOrgan,YES,DC-1527
-observation,value_source_value,,OrganTransplantDescription_OtherTissue,YES,DC-1527
 observation,observation_source_concept_id,766006,,YES,DC-2112
 observation,observation_source_concept_id,765982,,YES,DC-2112
 observation,observation_source_concept_id,766032,,YES,DC-2112

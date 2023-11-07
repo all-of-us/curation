@@ -21,7 +21,7 @@ from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC1644', 'DC3355']
+JIRA_ISSUE_NUMBERS = ['DC1644', 'DC3355', 'DC3434']
 
 EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE = '_ehr_unconsented_pids'
 
@@ -65,8 +65,13 @@ OR
     `{{project}}.{{dataset}}.consent_validation`
   WHERE
     consent_for_electronic_health_records IS NULL
-  OR 
+  OR
     UPPER(consent_for_electronic_health_records) != 'SUBMITTED'
+)
+  OR
+    person_id IN ( -- dup accounts --
+  SELECT DISTINCT person_id FROM
+    `{{project}}.{{duplicates_dataset}}.{{duplicates_table}}`
 )
 )
 """)
@@ -88,7 +93,7 @@ CREATE OR REPLACE TABLE
       person_id
     FROM
       `{{project}}.{{sandbox_dataset}}.{{unconsented_lookup}}`)
-    AND src_dataset_id LIKE '%ehr%' 
+    AND src_dataset_id LIKE '%ehr%'
   )
 """)
 
@@ -101,7 +106,7 @@ WHERE
   SELECT
     {{domain_table}}_id
   FROM
-    `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)  
+    `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)
 """)
 
 
@@ -111,7 +116,13 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
     sandboxed and dropped from the CDR.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None,
+                 ehr_duplicates_dataset=None,
+                 ehr_duplicates_table=None):
         """
         Initialize the class with proper information.
 
@@ -124,15 +135,24 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
         """
         desc = (
             'All EHR data associated with a participant if their EHR consent is not present in the observation '
-            'table will be sandboxed and dropped from the CDR.')
+            'table will be sandboxed and dropped from the CDR.  This includes duplicate records'
+        )
 
-        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
-                         description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
-                         affected_tables=AFFECTED_TABLES,
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+        if not ehr_duplicates_table or not ehr_duplicates_table:
+            raise RuntimeError('duplicate data is not present')
+
+        self.ehr_duplicates_dataset = ehr_duplicates_dataset
+        self.ehr_duplicates_table = ehr_duplicates_table
+
+        super().__init__(
+            issue_numbers=JIRA_ISSUE_NUMBERS,
+            description=desc,
+            affected_datasets=[cdr_consts.COMBINED],
+            affected_tables=AFFECTED_TABLES,
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+        )
 
     def get_query_specs(self):
         """
@@ -151,7 +171,9 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    unconsented_lookup=EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE
+                    unconsented_lookup=EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE,
+                    duplicates_dataset=self.ehr_duplicates_dataset,
+                    duplicates_table=self.ehr_duplicates_table,
                 )
         }
         lookup_queries.append(unconsented_lookup_query)
@@ -222,17 +244,39 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ext_parser = parser.get_argument_parser()
+    ext_parser.add_argument('--ehr_duplicates_dataset',
+                            action='store',
+                            dest='ehr_duplicates_dataset',
+                            required=True,
+                            help='The dataset that includes duplicate records')
+    ext_parser.add_argument(
+        '--ehr_duplicates_table',
+        action='store',
+        dest='ehr_duplicates_table',
+        required=True,
+        help='The table (from the dataset) that includes duplicates PIDs')
+
     ARGS = ext_parser.parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(RemoveEhrDataWithoutConsent,)])
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id,
+            [(RemoveEhrDataWithoutConsent,)],
+            ehr_duplicates_dataset=ARGS.duplicates_dataset,
+            ehr_duplicates_table=ARGS.duplicates_table,
+        )
+
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id, ARGS.cutoff_date,
-                                   [(RemoveEhrDataWithoutConsent,)])
+        clean_engine.clean_dataset(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id,
+            ARGS.cutoff_date, [(RemoveEhrDataWithoutConsent,)],
+            ehr_duplicates_dataset=ARGS.duplicates_dataset,
+            edr_duplicates_table=ARGS.duplicates_table)

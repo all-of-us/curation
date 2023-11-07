@@ -36,13 +36,15 @@ class ParserTest(unittest.TestCase):
         self.rules = os.path.join(DEID_PATH, 'config', 'ids', 'config.json')
         self.pipeline = ['generalize', 'suppress', 'shift', 'compute']
         self.interactive = 'BATCH'
+        self.run_as_email = 'test@test.com'
 
         self.correct_parameter_list = [
             '--rules', self.rules, '--private_key', self.private_key, '--table',
             self.tablename, '--action', self.action, '--idataset',
             self.input_dataset, '--odataset', self.output_dataset, '--log',
             self.log_path, '--pipeline', self.pipeline, '--interactive',
-            self.interactive, '--interactive', self.interactive
+            self.interactive, '--interactive', self.interactive, '--run_as',
+            self.run_as_email
         ]
         self.incorrect_parameter_list = [
             '--rules', self.rules, '--private_key', self.private_key, '--table',
@@ -65,6 +67,8 @@ class ParserTest(unittest.TestCase):
         # setting correct_parameter_dict values not set in setUp function
         correct_parameter_dict['cluster'] = False
         correct_parameter_dict['age_limit'] = MAX_AGE
+        correct_parameter_dict['run_as_email'] = correct_parameter_dict.pop(
+            'run_as')
 
         # Test if correct parameters are given
         results_dict = parse_args(self.correct_parameter_list)

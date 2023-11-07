@@ -10,7 +10,7 @@ from dateutil import parser
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.backfill_overall_health import BackfillOverallHealth
-from common import JINJA_ENV, OBSERVATION, PERSON
+from common import JINJA_ENV, OBSERVATION, PERSON, MAPPING_PREFIX
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 OBSERVATION_TMPL = JINJA_ENV.from_string("""
@@ -60,6 +60,37 @@ VALUES
     (4, 8507, 2001, 999, 99999)
 """)
 
+MAPPING_TMPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{dataset}}._mapping_observation`
+    (observation_id INT64, src_id STRING)
+    ;
+INSERT INTO `{{project}}.{{dataset}}._mapping_observation`
+(observation_id, src_id)
+VALUES
+    (101, 'src_1'),
+    (102, 'src_1'),
+    (103, 'src_1'),
+    (104, 'src_1'),
+    (105, 'src_1'),
+    (106, 'src_1'),
+    (107, 'src_1'),
+    (108, 'src_1'),
+    (109, 'src_1'),
+    (110, 'src_1'),
+    (111, 'src_1'),
+    (112, 'src_1'),
+    (113, 'src_1'),
+    (114, 'src_1'),
+    (115, 'src_1'),
+    (116, 'src_1'),
+    (301, 'src_2'),
+    (302, 'src_2'),
+    (303, 'src_2'),
+    (401, 'src_2'),
+    (402, 'src_2'),
+    (403, 'src_2')
+""")
+
 
 class BackfillOverallHealthTest(BaseTest.CleaningRulesTestBase):
 
@@ -81,6 +112,16 @@ class BackfillOverallHealthTest(BaseTest.CleaningRulesTestBase):
 
         cls.fq_sandbox_table_names = []
 
+        # NOTE _mapping_observation is not in cls.fq_table_names because its columns are different from the ones
+        # defined in the resource_files folder. It has the columns defined in `create_rdr_snapshot.py` instead.
+        cls.fq_mapping_table_name = f'{cls.project_id}.{cls.dataset_id}.{MAPPING_PREFIX}{OBSERVATION}'
+
+        # Generate sandbox table names
+        sandbox_table_names = cls.rule_instance.get_sandbox_tablenames()
+        for table_name in sandbox_table_names:
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
+
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{OBSERVATION}',
             f'{cls.project_id}.{cls.dataset_id}.{PERSON}',
@@ -99,8 +140,10 @@ class BackfillOverallHealthTest(BaseTest.CleaningRulesTestBase):
                                                      dataset=self.dataset_id)
         insert_person = PERSON_TMPL.render(project=self.project_id,
                                            dataset=self.dataset_id)
+        insert_mapping = MAPPING_TMPL.render(project=self.project_id,
+                                             dataset=self.dataset_id)
 
-        queries = [insert_observation, insert_person]
+        queries = [insert_observation, insert_person, insert_mapping]
         self.load_test_data(queries)
 
     def test_backfill_overall_health(self):
@@ -123,14 +166,17 @@ class BackfillOverallHealthTest(BaseTest.CleaningRulesTestBase):
         """
         tables_and_counts = [{
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
+                self.fq_table_names[0],
             'fq_sandbox_table_name':
-                None,
+                self.fq_sandbox_table_names[0],
             'loaded_ids': [
                 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,
                 114, 115, 116, 201, 301, 302, 303, 401, 402, 403
             ],
-            'sandboxed_ids': [],
+            'sandboxed_ids': [
+                404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416,
+                417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428
+            ],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id',
@@ -186,6 +232,34 @@ class BackfillOverallHealthTest(BaseTest.CleaningRulesTestBase):
                 (427, 4, 1585803, self.date_2021, 45905771, 1585803, None),
                 (428, 4, 1585815, self.date_2021, 45905771, 1585815, None)
             ]
+        }, {
+            'fq_table_name':
+                self.fq_mapping_table_name,
+            'loaded_ids': [
+                101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,
+                114, 115, 116, 301, 302, 303, 401, 402, 403
+            ],
+            'fields': ['observation_id', 'src_id'],
+            'cleaned_values': [(101, 'src_1'), (102, 'src_1'), (103, 'src_1'),
+                               (104, 'src_1'), (105, 'src_1'), (106, 'src_1'),
+                               (107, 'src_1'), (108, 'src_1'), (109, 'src_1'),
+                               (110, 'src_1'), (111, 'src_1'), (112, 'src_1'),
+                               (113, 'src_1'), (114, 'src_1'), (115, 'src_1'),
+                               (116, 'src_1'), (301, 'src_2'), (302, 'src_2'),
+                               (303, 'src_2'), (401, 'src_2'), (402, 'src_2'),
+                               (403, 'src_2'), (404, 'src_2'), (405, 'src_2'),
+                               (406, 'src_2'), (407, 'src_2'), (408, 'src_2'),
+                               (409, 'src_2'), (410, 'src_2'), (411, 'src_2'),
+                               (412, 'src_2'), (413, 'src_2'), (414, 'src_2'),
+                               (415, 'src_2'), (416, 'src_2'), (417, 'src_2'),
+                               (418, 'src_2'), (419, 'src_2'), (420, 'src_2'),
+                               (421, 'src_2'), (422, 'src_2'), (423, 'src_2'),
+                               (424, 'src_2'), (425, 'src_2'), (426, 'src_2'),
+                               (427, 'src_2'), (428, 'src_2')]
         }]
 
         self.default_test(tables_and_counts)
+
+    def tearDown(self):
+        self.client.delete_table(self.fq_mapping_table_name, not_found_ok=True)
+        super().tearDown()

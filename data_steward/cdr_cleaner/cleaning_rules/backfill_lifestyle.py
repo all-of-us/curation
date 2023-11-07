@@ -33,7 +33,7 @@ class BackfillLifestyle(AbstractBackfillSurveyRecords):
             'This rule extends the abstract class AbstractBackfillSurveyRecords for the skip record creation.'
         )
 
-        super().__init__(issue_numbers=['DC3099'],
+        super().__init__(issue_numbers=['DC3099', 'DC3458'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          affected_tables=[OBSERVATION],

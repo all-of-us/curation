@@ -27,7 +27,7 @@
     "type": "float",
     "name": "elevation",
     "mode": "nullable",
-    "description": "The elevation traveled for the day displayed in the units defined by the data source. When src_id is 'vibrent', the unit is feet. When src_id is 'ce', the unit is meters."
+    "description": "The elevation traveled for the day displayed in the units defined by the data source. When src_id is 'PTSC', the unit is feet. When src_id is 'TPC', the unit is meters."
   },
   {
     "type": "float",

@@ -37,7 +37,7 @@ run_as = ""  # # using impersonation, run all these queries as this service acco
 date_columns = {
     'activity_summary': 'date',
     'heart_rate_summary': 'date',
-    'heart_rate_minute_level': 'datetime',
+    'heart_rate_intraday': 'datetime',
     'steps_intraday': 'datetime',
     'sleep_level': 'sleep_date',
     'sleep_daily_summary': 'sleep_date',
@@ -149,20 +149,20 @@ result = execute(client, union_all_query)
 
 if sum(result['bad_rows']) == 0:
     summary = summary.append({
-        'query': 'Date Shift Query',
+        'query': 'Max Age Query',
         'result': 'PASS'
     },
                              ignore_index=True)
 else:
     summary = summary.append({
-        'query': 'Date Shift Query',
+        'query': 'Max Age Query',
         'result': 'Failure'
     },
                              ignore_index=True)
 result
 # -
 
-# # Verify that correct date shift is applied to the fitbit data
+# # Verify that correct date shift is applied to the RT fitbit data
 #
 # DC-1005
 #
@@ -172,7 +172,9 @@ result
 #
 # **Note:  Should a failure occur during this (long) query, it is advisable to replace `FITBIT_TABLES` with the table in question**
 #
-# [DC-1786] date shifting should be checked against activity_summary, heart_rate_summary, heart_rate_minute_level, and steps_intraday.
+# [DC-1786] date shifting should be checked against activity_summary, heart_rate_summary, heart_rate_intraday, and steps_intraday.
+#
+# Reminder: Date shifting only occurs in RT.
 
 # +
 query = JINJA_ENV.from_string("""
@@ -272,7 +274,7 @@ result
 #
 # [DC-1788] Add additional person existence check to Fitbit notebook
 #
-# This check should fail if a person_id in the activity_summary, heart_rate_summary, heart_rate_minute_level, or steps_intra_day tables does not exist in a corresponding RT de-identified dataset.
+# This check should fail if a person_id in the activity_summary, heart_rate_summary, heart_rate_intraday, or steps_intra_day tables does not exist in a corresponding RT de-identified dataset.
 
 # +
 query = JINJA_ENV.from_string("""
@@ -338,10 +340,10 @@ WHERE NOT REGEXP_CONTAINS(device_id, r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9
 OR device_id IS NULL
 ),
 check_uuid_unique AS (
-SELECT DISTINCT device_id
+SELECT device_id
 FROM `{{project_id}}.{{deid_cdr_fitbit}}.device`
-GROUP BY person_id, device_id
-HAVING COUNT(device_id) > 1
+GROUP BY device_id
+HAVING COUNT(DISTINCT person_id) > 1
 )
 SELECT 'not_research_device_ids' as issue, COUNT(*) as bad_rows
 FROM not_research_device_ids
@@ -361,19 +363,15 @@ result = execute(client, query)
 if sum(result['bad_rows']) == 0:
     summary = summary.append(
         {
-            'query':
-                'Query7 device_id was deidentified properly for all records.',
-            'result':
-                'PASS'
+            'query': 'device_id Deidentification Query',
+            'result': 'PASS'
         },
         ignore_index=True)
 else:
     summary = summary.append(
         {
-            'query':
-                'Query7 device_id was not deidentified properly. See query description for hints.',
-            'result':
-                'Failure'
+            'query': 'device_id Deidentification Query',
+            'result': 'Failure'
         },
         ignore_index=True)
 result
@@ -445,14 +443,14 @@ result = execute(client, union_all_query)
 if sum(result['bad_src_id_match_rows']) == 0:
     summary = summary.append(
         {
-            'query': 'Query8 Check de-identification of src_ids.',
+            'query': 'src_id Deidentification Query',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     summary = summary.append(
         {
-            'query': 'Query8 Check de-identification of src_ids.',
+            'query': 'src_id Deidentification Query',
             'result': 'Failure'
         },
         ignore_index=True)

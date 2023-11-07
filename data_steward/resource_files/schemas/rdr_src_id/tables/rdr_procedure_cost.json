@@ -1,0 +1,73 @@
+[
+  {
+    "type": "integer",
+    "name": "procedure_cost_id",
+    "mode": "required"
+  },
+  {
+    "type": "integer",
+    "name": "procedure_occurrence_id",
+    "mode": "required"
+  },
+  {
+    "type": "integer",
+    "name": "currency_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "paid_copay",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "paid_coinsurance",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "paid_toward_deductible",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "paid_by_payer",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "paid_by_coordination_benefits",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "total_out_of_pocket",
+    "mode": "nullable"
+  },
+  {
+    "type": "float",
+    "name": "total_paid",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "revenue_code_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "payer_plan_period_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "revenue_code_source_value",
+    "mode": "nullable"
+  },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "required",
+        "description": "The source of the record."
+    }
+]

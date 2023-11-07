@@ -7,7 +7,7 @@ import os
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, OBSERVATION, VOCABULARY_TABLES
+from common import JINJA_ENV, MAPPING_PREFIX, OBSERVATION, VOCABULARY_TABLES
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -32,6 +32,22 @@ LOAD_QUERY = JINJA_ENV.from_string("""
         (7, 17, 43528355, 1740608, 141095, date('2000-01-01'), 0, 'OtherConditions_Acne')
 """)
 
+LOAD_MAPPING_QUERY = JINJA_ENV.from_string("""
+    CREATE OR REPLACE TABLE `{{project}}.{{dataset_id}}._mapping_observation`
+    (observation_id INT64, src_id STRING)
+    ;
+    INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_observation` 
+        (observation_id, src_id)
+    VALUES
+        (1, 'src_1'),
+        (2, 'src_2'),
+        (3, 'src_3'),
+        (4, 'src_4'),
+        (5, 'src_5'),
+        (6, 'src_6'),
+        (7, 'src_7')
+""")
+
 
 class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
 
@@ -45,7 +61,7 @@ class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
 
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('RDR_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
         cls.rule_instance = ConvertPrePostCoordinatedConcepts(
             cls.project_id, cls.dataset_id, cls.sandbox_id)
@@ -54,6 +70,10 @@ class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
             f'{cls.project_id}.{cls.dataset_id}.{table}'
             for table in [OBSERVATION] + VOCABULARY_TABLES
         ]
+
+        # NOTE _mapping_observation is not in cls.fq_table_names because its columns are different from the ones
+        # defined in the resource_files folder. It has the columns defined in `create_rdr_snapshot.py` instead.
+        cls.fq_mapping_table_name = f'{cls.project_id}.{cls.dataset_id}.{MAPPING_PREFIX}{OBSERVATION}'
 
         cls.fq_sandbox_table_names = [
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}'
@@ -69,7 +89,9 @@ class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
 
         self.load_test_data([
             LOAD_QUERY.render(project_id=self.project_id,
-                              dataset_id=self.dataset_id)
+                              dataset_id=self.dataset_id),
+            LOAD_MAPPING_QUERY.render(project_id=self.project_id,
+                                      dataset_id=self.dataset_id),
         ])
         self.copy_vocab_tables(self.vocabulary_id)
 
@@ -114,6 +136,28 @@ class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
                 (400000000006, 43528574, 43528630, 45883358),
                 (7, 43528355, 1740608, 141095),
             ]
+        }, {
+            'fq_table_name':
+                self.fq_mapping_table_name,
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7],
+            'fields': ['observation_id', 'src_id'],
+            'cleaned_values': [
+                (1, 'src_1'),
+                (2, 'src_2'),
+                (100000000003, 'src_3'),
+                (100000000004, 'src_4'),
+                (200000000004, 'src_4'),
+                (100000000005, 'src_5'),
+                (200000000005, 'src_5'),
+                (100000000006, 'src_6'),
+                (200000000006, 'src_6'),
+                (300000000006, 'src_6'),
+                (400000000006, 'src_6'),
+                (7, 'src_7'),
+            ]
         }]
-
         self.default_test(tables_and_counts)
+
+    def tearDown(self):
+        self.client.delete_table(self.fq_mapping_table_name, not_found_ok=True)
+        super().tearDown()

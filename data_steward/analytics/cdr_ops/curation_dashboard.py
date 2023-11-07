@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.7.1
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -20,12 +20,23 @@ import warnings
 import seaborn as sns
 
 from common import PIPELINE_TABLES
-from notebooks.defaults import DEFAULT_DATASETS
 from utils import bq
 
 warnings.filterwarnings('ignore')
 sns.set()
 
+RDR = ''
+UNIONED = ''
+VOCABULARY = ''
+COMBINED = ''
+RT_DATASET = ''
+CT_DATASET = ''
+
+ALL_RDR = []
+ALL_UNIONED = []
+ALL_COMBINED = []
+ALL_RT_DATASET = []
+ALL_CT_DATASET = []
 # -
 
 
@@ -52,7 +63,7 @@ def row_counts(dataset_ids):
 
 # # RDR data volume over time
 
-rdr_df = row_counts(DEFAULT_DATASETS.trend.rdr)
+rdr_df = row_counts(ALL_RDR + [RDR])
 rdr_df = rdr_df.pivot(index='table_id',
                       columns='dataset_id',
                       values='row_count')
@@ -60,7 +71,7 @@ rdr_df.to_csv('%s.csv' % 'rdr_diff')
 
 # # EHR data volume over time
 
-unioned_df = row_counts(DEFAULT_DATASETS.trend.unioned)
+unioned_df = row_counts(ALL_UNIONED + [UNIONED])
 unioned_df = unioned_df.pivot(index='table_id',
                               columns='dataset_id',
                               values='row_count')
@@ -68,32 +79,38 @@ unioned_df.to_csv('%s.csv' % 'unioned_diff')
 
 # ## Combined data volume over time
 
-combined_df = row_counts(DEFAULT_DATASETS.trend.combined)
+combined_df = row_counts(ALL_COMBINED + [COMBINED])
 combined_df = combined_df.pivot(index='table_id',
                                 columns='dataset_id',
                                 values='row_count')
 combined_df.to_csv('%s.csv' % 'combined_diff')
 
+ct_df = row_counts(ALL_CT_DATASET + [CT_DATASET])
+ct_df = ct_df.pivot(index='table_id',
+                                columns='dataset_id',
+                                values='row_count')
+ct_df.to_csv('%s.csv' % 'ct_diff')
+
 # # Characterization of EHR data
 
-q = """
+q = f"""
 SELECT 
   (2018 - r.year_of_birth) AS age,
   gc.concept_name AS gender,
   rc.concept_name AS race,
   ec.concept_name AS ethnicity,
   CASE WHEN e.person_id IS NULL THEN 'no' ELSE 'yes' END AS has_ehr_data
-FROM {latest.rdr}.person r
-  LEFT JOIN `{latest.unioned}.person` e 
+FROM `{RDR}.person` r
+  LEFT JOIN `{UNIONED}.person` e 
     ON r.person_id = e.person_id
-JOIN `{latest.vocabulary}.concept` gc 
+JOIN `{VOCABULARY}.concept` gc 
   ON r.gender_concept_id = gc.concept_id
-JOIN `{latest.vocabulary}.concept` rc
+JOIN `{VOCABULARY}.concept` rc
   ON r.race_concept_id = rc.concept_id
-JOIN `{latest.vocabulary}.concept` ec
+JOIN `{VOCABULARY}.concept` ec
   ON r.ethnicity_concept_id = ec.concept_id
 ORDER BY age, gender, race
-""".format(latest=DEFAULT_DATASETS.latest)
+"""
 df = bq.query(q)
 
 # ## Presence of EHR data by race
@@ -132,13 +149,14 @@ SELECT
   gc.concept_name AS gender,
   rc.concept_name AS race,
   ec.concept_name AS ethnicity
-FROM `{DEFAULT_DATASETS.latest.unioned}.person` p
-JOIN `{DEFAULT_DATASETS.latest.vocabulary}.concept` gc 
+FROM `{UNIONED}.person` p
+JOIN `{VOCABULARY}.concept` gc 
   ON p.gender_concept_id = gc.concept_id
-JOIN `{DEFAULT_DATASETS.latest.vocabulary}.concept` rc
+JOIN `{VOCABULARY}.concept` rc
   ON p.race_concept_id = rc.concept_id
-JOIN `{DEFAULT_DATASETS.latest.vocabulary}.concept` ec
+JOIN `{VOCABULARY}.concept` ec
   ON p.ethnicity_concept_id = ec.concept_id
+WHERE p.birth_datetime IS NOT NULL
 ORDER BY age, gender, race
 ''')
 
@@ -174,21 +192,21 @@ g.set_xticklabels(rotation=45, ha='right')
 
 
 def gender_by_race(dataset_id):
-    df = bq.query('''
+    df = bq.query(f'''
     SELECT 
      c1.concept_name AS gender,
      c2.concept_name AS race,
      COUNT(1) AS `count`
     FROM `{dataset_id}.person` p
-    JOIN `{latest.vocabulary}.concept` c1 
+    JOIN `{VOCABULARY}.concept` c1 
       ON p.gender_concept_id = c1.concept_id
-    JOIN `{latest.vocabulary}.concept` c2
+    JOIN `{VOCABULARY}.concept` c2
       ON p.race_concept_id = c2.concept_id
     GROUP BY c2.concept_name, c1.concept_name
-    '''.format(dataset_id=dataset_id, latest=DEFAULT_DATASETS.latest))
+    ''')
     df['race'] = df['race'].astype('category')
     df['gender'] = df['gender'].astype('category')
-    g = sns.FacetGrid(df, col='race', hue='gender', col_wrap=5)
+    g = sns.FacetGrid(df, col='race', sharey=False, hue='gender', col_wrap=5)
     g.map(sns.barplot, 'gender', 'count', ci=None)
     g.set_xticklabels([])
     g.set_axis_labels('', '')
@@ -197,12 +215,13 @@ def gender_by_race(dataset_id):
 
 # ## RDR
 
-gender_by_race(DEFAULT_DATASETS.latest.rdr)
+gender_by_race(RDR)
 
 # ## EHR
 
-gender_by_race(DEFAULT_DATASETS.latest.unioned)
+gender_by_race(UNIONED)
 
 # ## CDR
 
-gender_by_race(DEFAULT_DATASETS.latest.combined)
+gender_by_race(COMBINED)
+

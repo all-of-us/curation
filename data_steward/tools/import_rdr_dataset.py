@@ -19,7 +19,7 @@ from gcloud.bq import BigQueryClient
 from common import CDR_SCOPES, AOU_DEATH, DEATH
 from resources import (replace_special_characters_for_labels,
                        validate_date_string, rdr_src_id_schemas, cdm_schemas,
-                       fields_for)
+                       fields_for, rdr_specific_schemas)
 from tools.snapshot_by_query import BIGQUERY_DATA_TYPES
 from tools.import_rdr_omop import copy_vocab_tables
 
@@ -91,6 +91,7 @@ def get_destination_schemas() -> Dict[str, List[Dict[str, str]]]:
         (3) rdr_xyz schema is used where possible.
     """
     schema_dict = cdm_schemas()
+    schema_dict.update(rdr_specific_schemas())
     schema_dict.update(rdr_src_id_schemas())
 
     # Use aou_death instead of death for destination
@@ -107,11 +108,11 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
 
     Uses the client to load data directly from the dataset into
     a table.
-    
+
     NOTE: Death records are loaded to AOU_DEATH table. We do not
     create DEATH table here because RDR's death records contain
     NULL death_date records, which violates CDM's DEATH definition.
-    We assign `aou_death_id` using UUID on the fly. 
+    We assign `aou_death_id` using UUID on the fly.
     `primary_death_record` is set to FALSE here. The CR CalculatePrimaryDeathRecord
     will update it to the right values later in the RDR data stage.
 
@@ -146,20 +147,22 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
                 destination_table.time_partitioning = bigquery.table.TimePartitioning(
                     type_='DAY')
 
+        LOGGER.info(f'Creating empty CDM table, `{destination_table_id}`')
+        dest_table_ref = client.create_table(destination_table)
+
         LOGGER.info(
             f'Loading `{source_table_id}` into `{destination_table_id}`')
 
         try:
             LOGGER.info(f'Get table `{source_table_id}` in RDR')
-            client.get_table(source_table_id)
-
-            LOGGER.info(f'Creating empty CDM table, `{table}`')
-            destination_table = client.create_table(
-                destination_table)  # Make an API request.
+            table_ref = client.get_table(source_table_id)
 
             LOGGER.info(
                 f'Copying source table `{source_table_id}` to destination table `{destination_table_id}`'
             )
+
+            if table_ref.num_rows == 0:
+                raise NotFound(f'`{source_table_id}` has No data To copy from')
 
             sc_list = []
             for item in schema_list:
@@ -174,14 +177,17 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
             fields_name_str = ',\n'.join(sc_list)
 
             # copy contents from source dataset to destination dataset
-            sql = tpl.render(schema_list=schema_list,
-                             BIGQUERY_DATA_TYPES=BIGQUERY_DATA_TYPES,
-                             source_table_id=source_table_id)
+            if table == 'cope_survey_semantic_version_map':
+                sql = (f'SELECT {fields_name_str} '
+                       f'FROM `{source_table_id}` '
+                       f'WHERE participant_id IS NOT Null')
+            else:
+                sql = (f'SELECT {fields_name_str} ' f'FROM `{source_table_id}`')
 
             job_config = bigquery.job.QueryJobConfig(
                 write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
                 priority=bigquery.job.QueryPriority.BATCH,
-                destination=destination_table,
+                destination=dest_table_ref,
                 labels={
                     'table_name':
                         table.lower(),
@@ -195,19 +201,16 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
                       f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
             job = client.query(sql, job_config=job_config, job_id=job_id)
             job.result()  # Wait for the job to complete.
+
         except NotFound:
             LOGGER.info(
-                f'{table} not provided by RDR team.  Creating empty table '
-                f'in dataset: `{destination_dataset}`')
+                f'`{destination_table_id}` is left empty because either '
+                f'`{source_table_id}` does not exist or has no records.')
 
-            LOGGER.info(f'Creating empty CDM table, `{table}`')
-            destination_table = client.create_table(destination_table)
-            LOGGER.info(f'Created empty table `{destination_table.table_id}`')
         else:
-            destination_table = client.get_table(
-                destination_table_id)  # Make an API request.
-        LOGGER.info(f'Loaded {destination_table.num_rows} rows into '
-                    f'`{destination_table.table_id}`.')
+            dest_table_ref = client.get_table(destination_table_id)
+            LOGGER.info(f'Loaded {dest_table_ref.num_rows} rows into '
+                        f'`{dest_table_ref.table_id}`.')
 
     LOGGER.info(
         f"Finished RDR table LOAD from dataset {rdr_project}.{rdr_source_dataset}"

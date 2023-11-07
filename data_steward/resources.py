@@ -648,6 +648,16 @@ def get_primary_key(table: str) -> List[str]:
     return f'{table}_id' if has_primary_key(table) else None
 
 
+def is_rdr_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a rdr dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is an ehr dataset
+    NOTE It returns True for rdr_xyz datasets too (e.g. rdr_sandbox)
+    """
+    return 'rdr' in dataset_id
+
+
 def get_git_tag():
     """
     gets latest git tag.

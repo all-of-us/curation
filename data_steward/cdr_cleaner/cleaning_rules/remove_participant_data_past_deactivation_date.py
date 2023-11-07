@@ -67,7 +67,7 @@ WHERE (death_datetime IS NOT NULL AND death_datetime >= d.deactivated_datetime)
 OR (death_datetime IS NULL AND death_date >= DATE(d.deactivated_datetime))
 {% elif table_ref.table_id in ['activity_summary', 'heart_rate_summary'] %}
 WHERE date >= DATE(d.deactivated_datetime)
-{% elif table_ref.table_id in ['heart_rate_minute_level', 'steps_intraday']  %}
+{% elif table_ref.table_id in ['heart_rate_intraday', 'steps_intraday']  %}
 WHERE datetime >= DATETIME(d.deactivated_datetime)
 {% elif table_ref.table_id in ['payer_plan_period', 'observation_period']  %}
 WHERE COALESCE({{table_ref.table_id + '_end_date'}},
@@ -302,7 +302,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
 
         # gets the deactivated participant dataset to ensure it's up-to-date
-        df = psr.get_deactivated_participants(self.api_project_id,
+        df = psr.get_deactivated_participants(client, self.api_project_id,
                                               DEACTIVATED_PARTICIPANTS_COLUMNS)
 
         LOGGER.info(f"Found '{len(df)}' deactivated participants via RDR API")

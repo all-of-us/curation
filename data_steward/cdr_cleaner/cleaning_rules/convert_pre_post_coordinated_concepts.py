@@ -8,6 +8,9 @@ between survey data and EHR data.
 This cleaning rule converts the observation records with pre-coordinated mapping to
 post-coordinated mapping.
 
+This cleaning rule must run after CreateAIANLookup because CreateAIANLookup references
+PRE-coordinated concepts for making the AIAN lookup table.
+
 Original Issues: DC-2617
 
 """
@@ -17,6 +20,7 @@ import logging
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
 from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
     SetConceptIdsForSurveyQuestionsAnswers)
 from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import (
@@ -26,7 +30,7 @@ from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC2617']
+JIRA_ISSUE_NUMBERS = ['DC2617', 'DC3457']
 
 MAPPING_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_mapping` AS
@@ -139,6 +143,36 @@ JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_mapping` m
 ON c.concept_id = m.concept_id
 """)
 
+INSERT_MAPPING_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}._mapping_observation`
+(observation_id, src_id)
+SELECT 
+    -- New observation_ids are assigned in the same way as INSERT_QUERY --
+    -- so IDs align between observation and its mapping table --
+    ROW_NUMBER() OVER(
+        PARTITION BY o.observation_id
+        ORDER BY
+            m.new_observation_concept_id, 
+            m.new_value_as_concept_id
+        ) * 100000000000 + o.observation_id AS observation_id,
+    om.src_id
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` o
+JOIN `{{project}}.{{dataset}}.concept` c
+ON o.value_source_value = c.concept_code
+JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_mapping` m
+ON c.concept_id = m.concept_id
+JOIN `{{project}}.{{dataset}}._mapping_observation` om
+ON o.observation_id = om.observation_id
+""")
+
+DELETE_MAPPING_QUERY = JINJA_ENV.from_string("""
+DELETE FROM `{{project}}.{{dataset}}._mapping_observation`
+WHERE observation_id IN (
+    SELECT observation_id 
+    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+)
+""")
+
 
 class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
 
@@ -167,7 +201,7 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          depends_on=[
                              SetConceptIdsForSurveyQuestionsAnswers,
-                             UpdateFamilyHistoryCodes
+                             UpdateFamilyHistoryCodes, CreateAIANLookup
                          ],
                          table_namer=table_namer)
 
@@ -217,7 +251,28 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
                         field['name'] for field in fields_for(OBSERVATION)))
         }
 
-        return [sandbox_query_dict, delete_query_dict, insert_query_dict]
+        insert_mapping_query_dict = {
+            cdr_consts.QUERY:
+                INSERT_MAPPING_QUERY.render(
+                    project=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
+                    dataset=self.dataset_id)
+        }
+
+        delete_mapping_query_dict = {
+            cdr_consts.QUERY:
+                DELETE_MAPPING_QUERY.render(
+                    project=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
+                    dataset=self.dataset_id)
+        }
+
+        return [
+            sandbox_query_dict, insert_query_dict, insert_mapping_query_dict,
+            delete_query_dict, delete_mapping_query_dict
+        ]
 
     def setup_rule(self, client, *args, **keyword_args):
         """

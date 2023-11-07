@@ -16,7 +16,7 @@ from google.cloud import bigquery
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV
+from common import JINJA_ENV, AOU_CUSTOM_TABLES, WEAR_STUDY
 from resources import cdm_schemas, has_domain_table_id
 from utils import pipeline_logging
 from utils.bq import list_tables
@@ -67,7 +67,9 @@ class RemoveExtraTables(BaseCleaningRule):
             f'{table}_ext' for table in cdm_schemas().keys()
             if has_domain_table_id(table)
         } - {'person_ext'}) + ['person_src_hpos_ext']
-        affected_tables = cdm_achilles_vocab_tables + extension_tables
+        # To Keep AOU_DEATH table
+        custom_tables = AOU_CUSTOM_TABLES + [WEAR_STUDY]
+        affected_tables = cdm_achilles_vocab_tables + extension_tables + custom_tables
         super().__init__(issue_numbers=['DC1441'],
                          description=desc,
                          affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],

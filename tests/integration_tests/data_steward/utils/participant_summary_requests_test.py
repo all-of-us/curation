@@ -160,7 +160,8 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         mock_resp.json.return_value = self.json_response_entry
 
         # test
-        expected_response = psr.get_participant_data(self.url, self.headers)
+        expected_response = psr.get_participant_data(self.client, self.url,
+                                                     self.headers)
 
         # post conditions
         self.assertEqual(expected_response, self.participant_data)
@@ -178,7 +179,8 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         mock_resp.json.return_value = self.json_response_entry
 
         # Tests
-        df = psr.get_deactivated_participants(self.project_id, self.columns)
+        df = psr.get_deactivated_participants(self.client, self.project_id,
+                                              self.columns)
 
         # Parameter check test
         self.assertRaises(RuntimeError, psr.store_participant_data,

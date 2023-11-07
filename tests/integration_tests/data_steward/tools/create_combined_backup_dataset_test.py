@@ -9,7 +9,8 @@ import mock
 import bq_utils
 import resources
 from app_identity import get_application_id, PROJECT_ID
-from common import AOU_DEATH, SITE_MASKING_TABLE_ID, BIGQUERY_DATASET_ID, RDR_DATASET_ID
+from common import (AOU_DEATH, SITE_MASKING_TABLE_ID, BIGQUERY_DATASET_ID,
+                    RDR_DATASET_ID, COMBINED_DATASET_ID, EHR_CONSENT_VALIDATION)
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
@@ -60,7 +61,7 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
         hpo_bucket = cls.storage_client.get_hpo_bucket(test_util.FAKE_HPO_ID)
         cls.storage_client.empty_bucket(hpo_bucket)
         job_ids: list = []
-        for table in resources.CDM_TABLES:
+        for table in resources.CDM_TABLES + [EHR_CONSENT_VALIDATION]:
             job_ids.append(
                 cls._upload_file_to_bucket(hpo_bucket, dataset_id, path, table))
             if mappings and table in DOMAIN_TABLES:
@@ -96,7 +97,7 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
         return job_id
 
     def setUp(self):
-        self.combined_dataset_id = bq_utils.get_combined_dataset_id()
+        self.combined_dataset_id = COMBINED_DATASET_ID
         test_util.delete_all_tables(self.bq_client, self.combined_dataset_id)
 
     def test_consented_person_id(self):
@@ -262,7 +263,7 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
                 '  WHERE t.{domain_table}_id = m.{domain_table}_id)').format(
                     domain_table=domain_table,
                     rdr_dataset_id=self.rdr_dataset_id,
-                    combined_dataset_id=bq_utils.get_combined_dataset_id(),
+                    combined_dataset_id=self.combined_dataset_id,
                     mapping_table=mapping_table)
             response = bq_utils.query(query)
             rows = bq_utils.response2rows(response)
@@ -315,7 +316,7 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
         super().initialize_class_vars()
 
         cls.project_id = os.environ.get(PROJECT_ID)
-        cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.dataset_id = COMBINED_DATASET_ID
         cls.sandbox_id = BIGQUERY_DATASET_ID
         cls.rdr_id = RDR_DATASET_ID
         cls.unioned_id = os.environ.get('UNIONED_DATASET_ID')

@@ -81,13 +81,17 @@ class TestNotebookRunner(unittest.TestCase):
         runner.create_html_from_ipynb(self.notebook_ipynb_path)
 
         # Assertions in reading the notebook
-        mock_open.assert_any_call(self.notebook_ipynb_path, 'r')
+        mock_open.assert_any_call(self.notebook_ipynb_path,
+                                  'r',
+                                  encoding='utf-8')
         mock_nbformat_reads.assert_any_call('fake_data', as_version=4)
         mock_html_exporter.return_value.from_notebook_node.assert_any_call(
             mock_nbformat_reads.return_value)
 
         # Assertions in writing the notebook to a html page
-        mock_open.assert_any_call(with_suffix_returned_value, 'w')
+        mock_open.assert_any_call(with_suffix_returned_value,
+                                  'w',
+                                  encoding='utf-8')
         mock_open.return_value.write.assert_any_call('return fake_data')
 
     def test_infer_required(self):

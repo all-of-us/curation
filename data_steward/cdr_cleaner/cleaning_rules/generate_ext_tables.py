@@ -49,7 +49,7 @@ SELECT
           , null as {{field}}
         {% endif %}
     {% endfor %}
-FROM `{{project_id}}.{{mapping_dataset_id}}.{{mapping_table_id}}` m
+FROM `{{project_id}}.{{dataset_id}}.{{mapping_table_id}}` m
 JOIN `{{project_id}}.{{shared_sandbox_id}}.{{site_maskings_table_id}}` s
 ON m.src_hpo_id = s.hpo_id
 )
@@ -65,7 +65,6 @@ class GenerateExtTables(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 mapping_dataset_id,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -79,15 +78,14 @@ class GenerateExtTables(BaseCleaningRule):
             in this dataset
         :param sandbox_dataset_id:  dataset identifier.  this dataset will hold
             helper/logging/lookup tables
-        :param mapping_dataset_id: dataset identifier.  identifies a dataset that
+        :param dataset_id: dataset identifier.  identifies a dataset that
             contains mapping tables to convert to extension tables.
         """
         desc = 'Generate extension tables and populate with masking data from the site_maskings table'
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[
-                             cdr_consts.REGISTERED_TIER_DEID,
-                             cdr_consts.CONTROLLED_TIER_DEID
+                             cdr_consts.COMBINED,
                          ],
                          affected_tables=[],
                          project_id=project_id,
@@ -95,7 +93,6 @@ class GenerateExtTables(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
 
-        self._mapping_dataset_id = mapping_dataset_id
         self.mapping_table_ids = []
 
     def get_table_fields_str(self, table, ext_table_id):
@@ -134,11 +131,10 @@ class GenerateExtTables(BaseCleaningRule):
         """
         returns all the mapping table ids found in the dataset
         :param project_id: project_id containing the dataset
-        :param mapping_dataset_id: dataset_id containing mapping tables
+        :param dataset_id: dataset_id containing mapping tables
         :return: returns mapping table ids
         """
-        dataset_ref = DatasetReference(self.project_id,
-                                       self._mapping_dataset_id)
+        dataset_ref = DatasetReference(self.project_id, self.dataset_id)
         table_objs = client.list_tables(dataset_ref)
         mapping_table_ids = [
             table_obj.table_id
@@ -184,7 +180,6 @@ class GenerateExtTables(BaseCleaningRule):
                 ext_table_fields=ext_table_fields_str,
                 additional_fields=additional_field_names,
                 cdm_table_id=cdm_table_id,
-                mapping_dataset_id=self._mapping_dataset_id,
                 mapping_table_id=mapping_table_id,
                 shared_sandbox_id=self.sandbox_dataset_id,
                 site_maskings_table_id=SITE_MASKING_TABLE_ID)
@@ -234,31 +229,19 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    mapping_dataset_arg = {
-        parser.SHORT_ARGUMENT: '-m',
-        parser.LONG_ARGUMENT: '--mapping_dataset_id',
-        parser.ACTION: 'store',
-        parser.DEST: 'mapping_dataset_id',
-        parser.HELP: 'Identifies the dataset containing the mapping tables',
-        parser.REQUIRED: True
-    }
-
-    ARGS = parser.default_parse_args([mapping_dataset_arg])
+    ARGS = parser.default_parse_args()
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(
-            ARGS.project_id,
-            ARGS.dataset_id,
-            ARGS.sandbox_dataset_id, [(GenerateExtTables,)],
-            mapping_dataset_id=ARGS.mapping_dataset_id)
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(GenerateExtTables,)])
         for query_info in query_list:
             LOGGER.info(query_info)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id,
-                                   ARGS.dataset_id,
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(GenerateExtTables,)],
-                                   mapping_dataset_id=ARGS.mapping_dataset_id)
+                                   [(GenerateExtTables,)])

@@ -37,7 +37,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 date_columns = {
     'activity_summary': 'date',
     'heart_rate_summary': 'date',
-    'heart_rate_minute_level': 'datetime',
+    'heart_rate_intraday': 'datetime',
     'steps_intraday': 'datetime',
     'sleep_level': 'sleep_date',
     'sleep_daily_summary': 'sleep_date',
@@ -54,7 +54,7 @@ secondary_date_column = {
 # Used in the 'Validate fitbit fields' query.
 table_fields_values = {
     'device': {
-        'battery': ['high', 'medium', 'low']
+        'battery': ['High', 'Medium', 'Low','Empty']
     },
     'sleep_level': {
         'level': [
@@ -63,45 +63,12 @@ table_fields_values = {
         ]
     },
     'sleep_daily_summary': {
-        'is_main_sleep': ['Peak', 'Cardio', 'Fat Burn', 'Out of Range']
+        'is_main_sleep': ['true', 'false']
     },
     'heart_rate_summary': {
-        'zone_name': ['true', 'false']
+        'zone_name': ['Peak', 'Cardio', 'Fat Burn', 'Out of Range']
     }
 }
-
-# ## Verify all participants have digital health sharing consent
-
-# +
-health_sharing_consent_check = JINJA_ENV.from_string("""
-SELECT
-  '{{table_name}}' as table,
-  COUNT(1) bad_rows
-FROM
-  `{{project}}.{{dataset}}.{{table_name}}`
-WHERE
-  person_id NOT IN (
-  SELECT
-    person_id
-  FROM
-    `{{project}}.{{sandbox_dataset}}.digital_health_sharing_status` d
-  WHERE
-    status = 'YES'
-    AND d.wearable = 'fitbit')
-""")
-
-queries_list = []
-for table in FITBIT_TABLES:
-    queries_list.append(
-        health_sharing_consent_check.render(project=project_id,
-                                            dataset=fitbit_dataset,
-                                            table_name=table,
-                                            sandbox_dataset=sandbox_dataset))
-
-union_all_query = '\nUNION ALL\n'.join(queries_list)
-
-execute(client, union_all_query)
-# -
 
 # ## Identify person_ids that are not in the person table
 # This check verifies that person_ids are valid. That they exist in the CDM person table and are not null. There should be no bad rows.
@@ -215,15 +182,8 @@ SELECT
   COUNT(1) bad_rows
 FROM
   `{{project}}.{{dataset}}.{{table_name}}` t
-WHERE t.src_id NOT IN (
-    SELECT 
-        hpo_id
-    FROM
-        `{{project_id}}.{{pipeline_tables}}.{{site_maskings}}`
-    WHERE 
-        REGEXP_CONTAINS(src_id, r'(?i)Participant Portal')                            
-)
-OR t.src_id IS NULL
+WHERE t.src_id IS NULL                          
+
 """)
 
 queries_list = []
@@ -302,3 +262,5 @@ for table_name, field_info in table_fields_values.items():
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 execute(client, union_all_query)
+# -
+

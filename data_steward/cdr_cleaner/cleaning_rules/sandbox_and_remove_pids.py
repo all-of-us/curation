@@ -11,7 +11,7 @@ CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
 SELECT t.* FROM `{{project}}.{{dataset}}.{{table}}` t
 {% if ehr_only and table not in ['death', 'aou_death'] %}
 JOIN `{{project}}.{{dataset}}._mapping_{{table}}` m
-ON t.{{table}}_id = m.{{table}}_id AND LOWER(m.src_hpo_id) != 'rdr'
+ON t.{{table}}_id = m.{{table}}_id AND LOWER(m.src_hpo_id) NOT IN ('ce', 'vibrent', 'healthpro')
 {% endif %}
 WHERE person_id IN (
     SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`

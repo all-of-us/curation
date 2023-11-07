@@ -9,7 +9,7 @@
     "type": "integer",
     "name": "heart_rate_value",
     "mode": "nullable",
-    "description": "Heart rate value on a minute level."
+    "description": "Heart rate value. The value is at minute level for PTSC records and at second level for TPC records."
   },
   {
     "type": "integer",

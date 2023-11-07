@@ -423,12 +423,12 @@ df1
 query = JINJA_ENV.from_string("""
 SELECT COUNT (*) AS n_row_not_pass
 FROM `{{project_id}}.{{pipeline}}.site_maskings` as c
-LEFT JOIN `{{project_id}}.{{deid_sand}}.site_maskings` as r
+LEFT JOIN `{{project_id}}.{{combine}}_sandbox.site_maskings` as r
 USING (hpo_id)
 WHERE c.src_id != r.src_id
 -- registered tier did use the stabilized maskings for cross pipeline compatibility --
 """)
-q = query.render(project_id=project_id, pipeline=pipeline, deid_sand=deid_sand)
+q = query.render(project_id=project_id, pipeline=pipeline, combine=combine)
 df1 = execute(client, q)
 if df1.loc[0].sum() == 0:
     df = df.append(
@@ -878,11 +878,11 @@ WHERE person_id not in (  -- aou consenting participants --
   FROM latest_primary_consent_records cte
     LEFT JOIN ( -- any positive primary consent --
       SELECT *
-      FROM `{{project_id}}.{{rt_cdr_deid}}.observation` o
-      WHERE REGEXP_CONTAINS(o.observation_source_value, '(?i)extraconsent_agreetoconsent')
-      AND o.value_as_concept_id = 45877994
+      FROM `{{project_id}}.{{rt_cdr_deid}}.observation`
+      WHERE REGEXP_CONTAINS(observation_source_value, '(?i)extraconsent_agreetoconsent')
+      AND value_as_concept_id = 45877994) o
     ON cte.person_id = o.person_id
-    AND cte.latest_consent_date = o.observation_date
+    AND cte.latest_date = o.observation_date
   WHERE o.person_id IS NOT NULL
   )
 
@@ -905,6 +905,7 @@ else:
             'result': 'Failure'
         },
         ignore_index=True)
+df1
 
 # +
 # Query 14:  Check that wear_consent records are suppressed in the 'observation' and 'survey_conduct' tables

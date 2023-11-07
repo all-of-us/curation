@@ -36,7 +36,7 @@ if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${dataset_relea
   exit 1
 fi
 
-app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
+app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["quota_project_id"]);' < "${key_file}")
 
 echo "ehr_dataset --> ${ehr_dataset}"
 echo "app_id --> ${app_id}"
@@ -51,7 +51,6 @@ export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
 
 #set application environment (ie dev, test, prod)
-gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
 # shellcheck source=src/set_path.sh

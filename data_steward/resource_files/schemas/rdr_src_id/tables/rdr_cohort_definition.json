@@ -1,0 +1,50 @@
+[
+  {
+    "type": "integer",
+    "name": "cohort_definition_id",
+    "mode": "required",
+    "description": "A unique identifier for each Cohort."
+  },
+  {
+    "type": "string",
+    "name": "cohort_definition_name",
+    "mode": "required",
+    "description": "A short description of the Cohort."
+  },
+  {
+    "type": "string",
+    "name": "cohort_definition_description",
+    "mode": "nullable",
+    "description": "A complete description of the Cohort definition"
+  },
+  {
+    "type": "integer",
+    "name": "definition_type_concept_id",
+    "mode": "required",
+    "description": "Type defining what kind of Cohort Definition the record represents and how the syntax may be executed"
+  },
+  {
+    "type": "string",
+    "name": "cohort_definition_syntax",
+    "mode": "nullable",
+    "description": "Syntax or code to operationalize the Cohort definition"
+  },
+  {
+    "type": "integer",
+    "name": "subject_concept_id",
+    "mode": "required",
+    "description": "A foreign key to the Concept to which defines the domain of subjects that are members of the cohort (e.g., Person, Provider, Visit)."
+  },
+  {
+    "type": "date",
+    "name": "cohort_initiation_date",
+    "mode": "nullable",
+    "description": "A date to indicate when the Cohort was initiated in the COHORT table."
+  },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "required",
+        "description": "The source of the record."
+    }
+]
