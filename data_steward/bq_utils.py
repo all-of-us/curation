@@ -133,6 +133,7 @@ def get_combined_deid_dataset_id():
     return os.environ.get('COMBINED_DEID_DATASET_ID')
 
 
+@deprecated(reason='get_validation_results_dataset_id is deprecated')
 def get_validation_results_dataset_id():
     """
     Get the Validation dataset id.
