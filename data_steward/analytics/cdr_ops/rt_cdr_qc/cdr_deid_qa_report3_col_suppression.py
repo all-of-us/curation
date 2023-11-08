@@ -195,9 +195,9 @@ else:
         ignore_index=True)
 df1
 
-# # 6 Verify the following columns in the DEVICE_EXPOSURE table have been set to null:
+# # 6 Verify the provider_id in the DEVICE_EXPOSURE table is null and visit_detail_id is not all null:
 #
-# <font color='red'> Uncomment below when visit_detail_id is available
+# <font color='red'> DST-1423,updates, only provide_id is null.
 
 # +
 # query6 has error
@@ -213,28 +213,26 @@ FROM `{{project_id}}.{{deid_cdr}}.device_exposure`
 q = query.render(project_id=project_id, deid_cdr=deid_cdr)
 df1 = execute(client, q)
 
-if df1.loc[0].sum() == 0:
+if df1.loc[0].sum()==0 or df1.iat[0,0] !=0:
     df = df.append({
         'query': 'Query6 provider_id in Device',
-        'result': 'PASS'
+        'result': 'Failure'
     },
                    ignore_index=True)
 else:
     df = df.append(
         {
             'query': 'Query6 provider_id in Device',
-            'result': 'Failure'
+            'result': 'Pass'
         },
         ignore_index=True)
 df1
 # -
 
-# # 7 Verify the following columns in the DRUG_EXPOSURE table have been set to null:
-# provider_id
+# # 7 Verify the provider_id in the DRUG_EXPOSURE table is null and visit_detail_id is not all null:
 #
-# <font color='red'> no visit_detail_id in old CDR?
 #
-#  Uncomment below when visit_detail_id is available in 2022 CDR
+# <font color='red'> DST-1423,updates, only provide_id is null.
 
 query = JINJA_ENV.from_string("""
 SELECT
@@ -244,16 +242,16 @@ FROM `{{project_id}}.{{deid_cdr}}.drug_exposure`
 """)
 q = query.render(project_id=project_id, deid_cdr=deid_cdr)
 df1 = execute(client, q)
-if df1.loc[0].sum() == 0:
+if df1.loc[0].sum()==0 or df1.iat[0,0] !=0:
     df = df.append({
         'query': 'Query7 provider_id in Drug',
-        'result': 'PASS'
+        'result': 'Failure'
     },
                    ignore_index=True)
 else:
     df = df.append({
         'query': 'Query7 provider_id in Drug',
-        'result': 'Failure'
+        'result': 'Pass'
     },
                    ignore_index=True)
 df1
