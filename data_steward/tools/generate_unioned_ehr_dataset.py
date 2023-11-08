@@ -47,12 +47,11 @@ def parse_unioned_ehr_args(raw_args=None):
         dest='release_tag',
         help='Release tag for naming and labeling the cleaned dataset with.',
         required=True)
-    parser.add_argument(
-        '--ehr_snapshot',
-        action='store',
-        dest='ehr_snapshot',
-        help='ehr dataset dataset used to generate unioned_ehr dataset',
-        required=True)
+    parser.add_argument('--ehr_snapshot',
+                        action='store',
+                        dest='ehr_snapshot',
+                        help='ehr dataset used to generate unioned_ehr dataset',
+                        required=True)
     parser.add_argument('--ehr_cutoff_date',
                         action='store',
                         dest='ehr_cutoff_date',

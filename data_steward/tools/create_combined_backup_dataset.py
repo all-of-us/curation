@@ -360,8 +360,8 @@ def load_mapped_person(client: BigQueryClient, combined_backup: str):
     query(client, q, combined_backup, PERSON, write_disposition=WRITE_TRUNCATE)
 
 
-def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
-                          rdr_dataset, unioned_ehr_dataset) -> None:
+def load_aou_death(client, project_id, combined_backup, combined_sandbox,
+                   rdr_dataset, unioned_ehr_dataset) -> None:
     """Create and load AOU_DEATH table.
     NOTE: `primary_death_record` is all `False` at this point. The CR
         `CalculatePrimaryDeathRecord` updates the table at the end of the
@@ -385,9 +385,6 @@ def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
         job.result()
         LOGGER.info(f'Copied {PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID} to '
                     f'{combined_sandbox}.{SITE_MASKING_TABLE_ID}')
-
-    _ = client.create_tables(
-        [f'{client.project}.{combined_backup}.{AOU_DEATH}'])
 
     query = combine_consts.LOAD_AOU_DEATH.render(
         project=project_id,
@@ -519,9 +516,8 @@ def main(raw_args=None):
     load_mapped_person(client, combined_backup)
 
     logging.info(f'Creating and loading {AOU_DEATH}...')
-    create_load_aou_death(client, args.project_id, combined_backup,
-                          combined_sandbox, args.rdr_dataset,
-                          args.unioned_ehr_dataset)
+    load_aou_death(client, args.project_id, combined_backup, combined_sandbox,
+                   args.rdr_dataset, args.unioned_ehr_dataset)
     logging.info(f'Completed {AOU_DEATH} load.')
 
     LOGGER.info(f'Adding _cdr_metadata table to {combined_backup}')
