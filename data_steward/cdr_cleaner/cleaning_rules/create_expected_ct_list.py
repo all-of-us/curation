@@ -14,40 +14,33 @@ import logging
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from common import (JINJA_ENV, PIPELINE_TABLES, PRIMARY_PID_RID_MAPPING)
+from common import (JINJA_ENV, PIPELINE_TABLES, PRIMARY_PID_RID_MAPPING,
+                    AIAN_LIST)
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
+from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
 
 LOGGER = logging.getLogger(__name__)
 EXPECTED_CT_LIST = 'expected_ct_list'
 
 CREATE_EXPECTED_CT_LIST = JINJA_ENV.from_string("""
-create or replace table `{{project_id}}.{{sandbox_dataset_id}}.{{storage_table_name}}` as (
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{storage_table_name}}` AS (
 -- get the list of all participants at the end of the RDR cleaning stage --
-with rdr_persons as (
-  SELECT distinct person_id
-  from `{{project_id}}.{{dataset_id}}.person` rdr)
-
--- get list of all participants identifying as AI/AN --
--- may be removed once the program finalizes the inclusion of AI/AN participants --
-, aian_persons as (
-  select distinct person_id
-  from `{{project_id}}.{{dataset_id}}.observation`
-  where observation_source_concept_id IN (1586140) AND value_source_concept_id IN (1586141)
-)
+WITH
+  rdr_persons AS (SELECT DISTINCT person_id
+  FROM `{{project_id}}.{{dataset_id}}.person`)
 
 -- get list of all participants who have completed The Basics survey --
-, has_the_basics as (
-     SELECT
-    distinct person_id
+, has_the_basics AS (
+    SELECT DISTINCT person_id
   FROM `{{project_id}}.{{dataset_id}}.concept_ancestor`
   INNER JOIN `{{project_id}}.{{dataset_id}}.observation` o ON observation_concept_id = descendant_concept_id
   INNER JOIN `{{project_id}}.{{dataset_id}}.concept` d ON d.concept_id = descendant_concept_id
   WHERE ancestor_concept_id = 1586134
 
   UNION DISTINCT
-  SELECT
-   distinct person_id
+
+  SELECT DISTINCT person_id
   FROM `{{project_id}}.{{dataset_id}}.concept`
   JOIN `{{project_id}}.{{dataset_id}}.concept_ancestor`
     ON (concept_id = ancestor_concept_id)
@@ -57,29 +50,34 @@ with rdr_persons as (
     AND concept_name IN ('The Basics')
     AND questionnaire_response_id IS NOT NULL
 )
-
 -- get list of all participants who have not completed The Basics survey --
 -- can be used during debugging to determine who doesn't have the basics --
-, missing_the_basics as (
-  SELECT distinct person_id
+, missing_the_basics AS (
+  SELECT DISTINCT person_id
   FROM rdr_persons
-  WHERE person_id not in (SELECT distinct person_id FROM has_the_basics)
+  WHERE person_id NOT IN (SELECT DISTINCT person_id FROM has_the_basics)
 )
  -- get list of all participants that could be dropped due to bad birth date records --
-, bad_birthdate_records as (
-    SELECT person_id 
-    FROM `{{project_id}}.{{dataset_id}}.person` p 
-    WHERE p.year_of_birth < 1800 
+, bad_birthdate_records AS (
+    SELECT person_id
+    FROM `{{project_id}}.{{dataset_id}}.person` p
+    WHERE p.year_of_birth < 1800
     OR p.year_of_birth > (EXTRACT(YEAR FROM CURRENT_DATE()) - 17)
 )
 
--- store the research_id of all participants --
-select m.research_id
-from rdr_persons p
-left join `{{project_id}}.{{pipeline_lookup_tables}}.{{mapping_table}}` m
-using(person_id)
-where person_id in (select person_id from has_the_basics)
-AND person_id not in (select person_id from bad_birthdate_records)
+-- store the research_id, person_id, and their AIAN status of all participants --
+SELECT m.research_id, m.person_id AS participant_id,
+  CASE
+    WHEN
+      a.person_id = m.person_id THEN 'yes' ELSE 'no'
+    END AS is_aian
+  FROM rdr_persons r
+  LEFT JOIN `{{project_id}}.{{pipeline_lookup_tables}}.primary_pid_rid_mapping` m
+    USING(person_id)
+  LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.aian_list` a
+    USING(person_id)
+  WHERE person_id IN (SELECT person_id FROM has_the_basics)
+  AND person_id NOT IN (SELECT person_id FROM bad_birthdate_records)
 );""")
 
 
@@ -100,14 +98,21 @@ class StoreExpectedCTList(BaseCleaningRule):
             f'update which service accounts can read the data in the table.')
 
         super().__init__(
-            issue_numbers=['DC2595'],
+            issue_numbers=[
+                'DC2595',
+                'DC3404',
+            ],
             description=desc,
             affected_datasets=[],  # has no side effects
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            depends_on=[CleanMappingExtTables],
-            table_namer=table_namer)
+            depends_on=[
+                CleanMappingExtTables,
+                CreateAIANLookup,
+            ],
+            table_namer=table_namer,
+        )
 
     def get_query_specs(self):
         """
@@ -121,7 +126,9 @@ class StoreExpectedCTList(BaseCleaningRule):
             sandbox_dataset_id=self.sandbox_dataset_id,
             mapping_table=PRIMARY_PID_RID_MAPPING,
             storage_table_name=self.sandbox_table_for(EXPECTED_CT_LIST),
-            pipeline_lookup_tables=PIPELINE_TABLES)
+            pipeline_lookup_tables=PIPELINE_TABLES,
+            aian_list=AIAN_LIST,
+        )
 
         create_sandbox_table_dict = {cdr_consts.QUERY: create_sandbox_table}
 
