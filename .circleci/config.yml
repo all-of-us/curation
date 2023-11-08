@@ -15,7 +15,7 @@ job_defaults: &job_defaults
   environment:
     - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
     - GSDK_VERSION: 454.0.0
-    - GSDK_CHECKSUM: db6be52cc0ad5bdbc0c08ac0f5b796b8e0873eec35d781c1278d3cf51875a611
+    - GSDK_CHECKSUM: 58fd3e6d34e6a6e4a4afbfd3a1470ea23ef7ed6e69841c4eb89829ef833dac2c
     - CIRCLECI_CLI_VERSION: "0.1.22924"
     - CIRCLECI_CLI_CHECKSUM: "4187a5245f06dd8e1d51d5a99ad40ed9e8963397cecf006fd2d6a04ac374bef6"
 
