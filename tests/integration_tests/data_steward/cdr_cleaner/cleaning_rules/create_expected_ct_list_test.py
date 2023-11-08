@@ -1,4 +1,3 @@
-from datetime import datetime
 import os
 
 import mock
@@ -6,7 +5,7 @@ from dateutil import parser
 
 from app_identity import get_application_id
 from common import (OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING,
-                    VOCABULARY_TABLES)
+                    VOCABULARY_TABLES, AIAN_LIST)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
 
@@ -33,7 +32,7 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                                                 cls.sandbox_id)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
-        for table_name in sb_table_names:
+        for table_name in sb_table_names + [AIAN_LIST]:
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
@@ -115,14 +114,22 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         """).render(project=self.project_id,
                     dataset=self.dataset_id,
                     table=OBSERVATION)
-        queries = [
-            observation_tmpl,
-            person_tmpl,
-            primary_map_tmpl,
-        ]
+
+        # a list of PID's that are aian
+        aian_tmpl = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.{{table}}` AS (
+          SELECT 500 AS person_id)
+        """).render(
+            project=self.project_id,
+            dataset=self.sandbox_id,
+            table=AIAN_LIST,
+        )
+
+        queries = [observation_tmpl, person_tmpl, primary_map_tmpl, aian_tmpl]
         self.load_test_data(queries)
 
     def test_store_expected_ct_list(self):
+
         self.maxDiff = None
         obs_date = parser.parse('1900-01-01').date()
         tables_and_counts = [
@@ -168,8 +175,16 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                 ],  # verifying the correct fields and data are sandboxed here
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[0],
-                'sandbox_fields': ['research_id'],
-                'sandboxed_ids': [80, 60, 50, 40, 20]
+                'tables_created_on_setup': [self.fq_sandbox_table_names[1]],
+                'sandbox_fields': ['research_id', 'participant_id', 'is_aian'],
+                'sandboxed_ids': [20, 40, 50, 60, 80],
+                'sandbox_values': [
+                    (80, 200, 'no'),
+                    (60, 400, 'no'),
+                    (50, 500, 'yes'),
+                    (40, 600, 'no'),
+                    (20, 800, 'no'),
+                ]
             }
         ]
 
