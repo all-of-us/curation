@@ -386,6 +386,9 @@ def load_aou_death(client, project_id, combined_backup, combined_sandbox,
         LOGGER.info(f'Copied {PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID} to '
                     f'{combined_sandbox}.{SITE_MASKING_TABLE_ID}')
 
+    _ = client.create_tables(
+        [f'{client.project}.{combined_backup}.{AOU_DEATH}'], exists_ok=True)
+
     query = combine_consts.LOAD_AOU_DEATH.render(
         project=project_id,
         combined_backup=combined_backup,
