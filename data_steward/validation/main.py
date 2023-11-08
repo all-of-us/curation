@@ -1152,10 +1152,6 @@ def ps_api_cron():
     return consts.PS_API_SUCCESS
 
 
-# @app.before_first_request
-# def set_up_logging():
-#     initialize_logging()
-
 app.add_url_rule(consts.PREFIX + 'ValidateAllHpoFiles',
                  endpoint='validate_all_hpos',
                  view_func=validate_all_hpos,
@@ -1197,10 +1193,3 @@ app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION +
                  endpoint='ps_api_cron',
                  view_func=ps_api_cron,
                  methods=['GET'])
-
-# app.before_request(
-#     begin_request_logging)  # Must be first before_request() call.
-
-# app.teardown_request(
-#     end_request_logging
-# )  # teardown_request to be called regardless if there is an exception thrown
