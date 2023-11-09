@@ -159,14 +159,14 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
 
             fields_name_str = JINJA_ENV.from_string("""
             {% for item in schema_list %}
-                {% set name = item.name %}
-                {% set field_type = item.field_type %}
+            {% set name = item.name %}
+            {% set field_type = item.field_type %}
                 {% if name == 'aou_death_id' %}
                     GENERATE_UUID() AS aou_death_id,
                 {% elif name == 'primary_death_record' %}
                     FALSE AS primary_death_record,
                 {% else %}
-                    CAST({{ name }} AS {{ BIGQUERY_DATA_TYPES[field_type.lower()]}}){{", " if not loop.last else "" }}
+                    CAST({{ name }} AS {{BIGQUERY_DATA_TYPES[field_type.lower()]}}) AS {{ name }}{{", " if not loop.last else "" }}
                 {% endif %}
             {% endfor %}""").render(schema_list=schema_list, BIGQUERY_DATA_TYPES=BIGQUERY_DATA_TYPES)
 
