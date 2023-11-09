@@ -27,7 +27,6 @@ from tools.import_rdr_omop import copy_vocab_tables
 LOGGER = logging.getLogger(__name__)
 
 
-
 def parse_rdr_args(raw_args=None):
     parser = ArgumentParser(
         description='Arguments pertaining to an RDR raw load')
@@ -156,7 +155,6 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
             if table_ref.num_rows == 0:
                 raise NotFound(f'`{source_table_id}` has No data To copy from')
 
-
             fields_name_str = JINJA_ENV.from_string("""
             {% for item in schema_list %}
             {% set name = item.name %}
@@ -168,7 +166,8 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
                 {% else %}
                     CAST({{ name }} AS {{BIGQUERY_DATA_TYPES[field_type.lower()]}}) AS {{ name }}{{", " if not loop.last else "" }}
                 {% endif %}
-            {% endfor %}""").render(schema_list=schema_list, BIGQUERY_DATA_TYPES=BIGQUERY_DATA_TYPES)
+            {% endfor %}""").render(schema_list=schema_list,
+                                    BIGQUERY_DATA_TYPES=BIGQUERY_DATA_TYPES)
 
             # copy contents from source dataset to destination dataset
             if table == 'cope_survey_semantic_version_map':
