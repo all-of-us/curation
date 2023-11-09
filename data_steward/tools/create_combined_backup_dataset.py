@@ -57,7 +57,7 @@ from gcloud.bq import BigQueryClient
 from constants.bq_utils import WRITE_APPEND, WRITE_TRUNCATE
 from constants.tools import create_combined_backup_dataset as combine_consts
 from tools import add_cdr_metadata
-from tools.create_combined_dataset import create_dataset
+from tools.pipeline_utils import create_datasets, create_cdm_tables
 
 LOGGER = logging.getLogger(__name__)
 
@@ -93,26 +93,6 @@ def assert_ehr_and_rdr_tables(client: BigQueryClient,
     """
     assert_tables_in(client, unioned_ehr_dataset_id)
     assert_tables_in(client, rdr_dataset_id)
-
-
-def create_cdm_tables(client: BigQueryClient, combined_backup: str):
-    """
-    Create all CDM tables
-    NOTE AOU_DEATH is not included.
-
-    :param client: BigQueryClient
-    :param combined_backup: Combined backup dataset name
-    :return: None
-
-    Note: Recreates any existing tables
-    """
-    for table in CDM_TABLES:
-        LOGGER.info(f'Creating table {combined_backup}.{table}...')
-        schema_list = client.get_table_schema(table_name=table)
-        dest_table = f'{client.project}.{combined_backup}.{table}'
-        dest_table = bigquery.Table(dest_table, schema=schema_list)
-        table = client.create_table(dest_table)  # Make an API request.
-        LOGGER.info(f"Created table: `{table.table_id}`")
 
 
 def query(client: BigQueryClient,
@@ -380,8 +360,8 @@ def load_mapped_person(client: BigQueryClient, combined_backup: str):
     query(client, q, combined_backup, PERSON, write_disposition=WRITE_TRUNCATE)
 
 
-def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
-                          rdr_dataset, unioned_ehr_dataset) -> None:
+def load_aou_death(client, project_id, combined_backup, combined_sandbox,
+                   rdr_dataset, unioned_ehr_dataset) -> None:
     """Create and load AOU_DEATH table.
     NOTE: `primary_death_record` is all `False` at this point. The CR
         `CalculatePrimaryDeathRecord` updates the table at the end of the
@@ -407,7 +387,7 @@ def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
                     f'{combined_sandbox}.{SITE_MASKING_TABLE_ID}')
 
     _ = client.create_tables(
-        [f'{client.project}.{combined_backup}.{AOU_DEATH}'])
+        [f'{client.project}.{combined_backup}.{AOU_DEATH}'], exists_ok=True)
 
     query = combine_consts.LOAD_AOU_DEATH.render(
         project=project_id,
@@ -491,7 +471,8 @@ def main(raw_args=None):
 
     client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
-    combined_backup = create_dataset(client, args.release_tag, 'backup')
+    combined_backup = create_datasets(client, args.release_tag, 'combined',
+                                      'backup')
 
     LOGGER.info('Creating destination CDM tables...')
     create_cdm_tables(client, combined_backup)
@@ -509,7 +490,8 @@ def main(raw_args=None):
     assert_ehr_and_rdr_tables(client, args.unioned_ehr_dataset,
                               args.rdr_dataset)
 
-    combined_sandbox = create_dataset(client, args.release_tag, 'sandbox')
+    combined_sandbox = create_datasets(client, args.release_tag, 'combined',
+                                       'sandbox')
     ehr_consent(client, args.rdr_dataset, combined_sandbox)
 
     for table in combine_consts.RDR_TABLES_TO_COPY:
@@ -537,9 +519,8 @@ def main(raw_args=None):
     load_mapped_person(client, combined_backup)
 
     logging.info(f'Creating and loading {AOU_DEATH}...')
-    create_load_aou_death(client, args.project_id, combined_backup,
-                          combined_sandbox, args.rdr_dataset,
-                          args.unioned_ehr_dataset)
+    load_aou_death(client, args.project_id, combined_backup, combined_sandbox,
+                   args.rdr_dataset, args.unioned_ehr_dataset)
     logging.info(f'Completed {AOU_DEATH} load.')
 
     LOGGER.info(f'Adding _cdr_metadata table to {combined_backup}')

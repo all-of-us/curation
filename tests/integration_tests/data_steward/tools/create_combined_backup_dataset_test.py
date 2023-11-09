@@ -19,7 +19,7 @@ from constants.tools.create_combined_backup_dataset import (
     EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES)
 from tools.create_combined_backup_dataset import (ehr_consent,
                                                   create_cdm_tables,
-                                                  create_load_aou_death)
+                                                  load_aou_death)
 from resources import mapping_table_for
 
 UNCONSENTED_EHR_COUNTS_QUERY = (
@@ -334,7 +334,6 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
         super().setUpClass()
 
     def setUp(self):
-
         super().setUp()
 
         insert_rdr = self.jinja_env.from_string("""
@@ -409,8 +408,8 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
         # don't overwrite each other.
         with mock.patch('tools.create_combined_backup_dataset.PIPELINE_TABLES',
                         self.dataset_id):
-            create_load_aou_death(self.client, self.project_id, self.dataset_id,
-                                  self.sandbox_id, self.rdr_id, self.unioned_id)
+            load_aou_death(self.client, self.project_id, self.dataset_id,
+                           self.sandbox_id, self.rdr_id, self.unioned_id)
 
         self.assertTableValuesMatch(
             f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',

@@ -6,16 +6,13 @@ This Script automates the process of generating the combined_staging and apply c
 import logging
 from argparse import ArgumentParser
 
-# Third party imports
-from google.cloud.exceptions import Conflict
-
 # Project imports
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
-import resources
 from common import CDR_SCOPES
 from gcloud.bq import BigQueryClient
 from tools.populate_death import populate_death
+from tools.pipeline_utils import create_datasets
 from utils import auth
 from utils import pipeline_logging
 
@@ -117,12 +114,16 @@ def main(raw_args=None):
                                credentials=impersonation_creds)
 
     # create clean, staging, and release datasets with descriptions and labels.
-    combined_clean = create_dataset(bq_client, args.release_tag, 'clean')
-    combined_staging = create_dataset(bq_client, args.release_tag, 'staging')
-    combined_release = create_dataset(bq_client, args.release_tag, 'release')
+    combined_clean = create_datasets(bq_client, args.release_tag, 'combined',
+                                     'clean')
+    combined_staging = create_datasets(bq_client, args.release_tag, 'combined',
+                                       'staging')
+    combined_release = create_datasets(bq_client, args.release_tag, 'combined',
+                                       'release')
     # sandbox is already created by create_combined_backup_dataset.py.
     # create_dataset is called here to get the dataset name.
-    combined_sandbox = create_dataset(bq_client, args.release_tag, 'sandbox')
+    combined_sandbox = create_datasets(bq_client, args.release_tag, 'combined',
+                                       'sandbox')
 
     # copy raw data into staging dataset
     bq_client.copy_dataset(
@@ -185,99 +186,6 @@ def main(raw_args=None):
     LOGGER.info(
         f' Populating death table using aou_death table for {combined_release} is completed.'
     )
-
-
-def create_dataset(client, release_tag, dataset_type) -> str:
-    """
-    Create a dataset for the specified dataset type in the combined stage.
-
-    :param client: a BigQueryClient
-    :param release_tag: the release tag for this CDR
-    :param dataset_type: the type of the dataset this function creates.
-        It has to be clean, backup, staging, sandbox, or release.
-    :returns: The name of the dataset.
-    """
-    version = resources.get_git_tag()
-
-    dataset_definition = {
-        'clean': {
-            'name': f'{release_tag}_combined',
-            'desc': f'{version} Clean version of {release_tag}_combined_backup',
-            'labels': {
-                "owner": "curation",
-                "phase": "clean",
-                "release_tag": release_tag,
-                "de_identified": "false"
-            }
-        },
-        'backup': {
-            'name':
-                f'{release_tag}_combined_backup',
-            'desc':
-                f'Combined raw version of {release_tag}_rdr + {release_tag}_unioned_ehr',
-            'labels': {
-                "owner": "curation",
-                "phase": "backup",
-                "release_tag": release_tag,
-                "de_identified": "false"
-            }
-        },
-        'staging': {
-            'name':
-                f'{release_tag}_combined_staging',
-            'desc':
-                f'Intermediary dataset to apply cleaning rules on {release_tag}_combined_backup',
-            'labels': {
-                "owner": "curation",
-                "phase": "staging",
-                "release_tag": release_tag,
-                "de_identified": "false"
-            }
-        },
-        'sandbox': {
-            'name': f'{release_tag}_combined_sandbox',
-            'desc':
-                (f'Sandbox created for storing records affected by the '
-                 f'cleaning rules applied to {release_tag}_combined_staging'),
-            'labels': {
-                "owner": "curation",
-                "phase": "sandbox",
-                "release_tag": release_tag,
-                "de_identified": "false"
-            }
-        },
-        'release': {
-            'name': f'{release_tag}_combined_release',
-            'desc': f'{version} Release version of {release_tag}_combined',
-            'labels': {
-                "owner": "curation",
-                "phase": "release",
-                "release_tag": release_tag,
-                "de_identified": "false"
-            }
-        }
-    }
-
-    LOGGER.info(
-        f"Creating Combined {dataset_type} dataset if not exists: `{dataset_definition[dataset_type]['name']}`"
-    )
-
-    dataset_object = client.define_dataset(
-        dataset_definition[dataset_type]['name'],
-        dataset_definition[dataset_type]['desc'],
-        dataset_definition[dataset_type]['labels'])
-
-    try:
-        client.create_dataset(dataset_object, exists_ok=False)
-        LOGGER.info(
-            f"Created dataset `{client.project}.{dataset_definition[dataset_type]['name']}`"
-        )
-    except Conflict:
-        LOGGER.info(
-            f"The dataset `{client.project}.{dataset_definition[dataset_type]['name']}` already exists. "
-        )
-
-    return dataset_definition[dataset_type]['name']
 
 
 if __name__ == '__main__':

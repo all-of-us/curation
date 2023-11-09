@@ -61,6 +61,7 @@
 project_id = ""
 rt_dataset = ""
 ct_dataset = ""
+combined_dataset = ""
 deid_sandbox = ""
 earliest_ehr_date = ""
 cut_off_date = ""
@@ -1059,6 +1060,8 @@ else:
         ignore_index=True)
 
 # # Query 13 observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date
+#
+# Note: CT person table does not contain exact birth dates, and some observations with exact date matches might not exist in RT, therefore, the combined dataset is used in this check.
 
 # +
 
@@ -1066,10 +1069,10 @@ query = JINJA_ENV.from_string("""
 
  WITH rows_having_brith_date as (
 
- SELECT distinct observation_id
- FROM
-`{{project_id}}.{{rt_dataset}}.observation` ob
-JOIN {{project_id}}.{{rt_dataset}}.person p USING (person_id)
+SELECT distinct observation_id
+FROM
+`{{project_id}}.{{combined_dataset}}.observation` ob
+JOIN `{{project_id}}.{{combined_dataset}}.person` p USING (person_id)
 WHERE  observation_concept_id in (4013886, 4135376, 4271761)
 AND observation_date=DATE(p.birth_datetime)
  )
@@ -1089,14 +1092,12 @@ AND observation_date != '{{cut_off_date}}'
  """)
 
 q = query.render(project_id=project_id,
-                 rt_dataset=rt_dataset,
                  ct_dataset=ct_dataset,
+                 combined_dataset=combined_dataset,
                  cut_off_date=cut_off_date)
 df1 = execute(client, q)
-df1.shape
-# -
-
 df1
+# -
 
 if df1.iloc[:, 3].sum() == 0:
     df = df.append(
@@ -1119,17 +1120,19 @@ else:
 
 #
 # # Query 14 done all other observation concept ids WITH dates similar to birth dates other than the 3 above should be removed
+#
+# Related to CR year_of_birth_records_suppression
 
 # +
 query = JINJA_ENV.from_string("""
 
- WITH rows_having_brith_date as (
+WITH rows_having_brith_date as (
 
 SELECT observation_id
-  FROM {{project_id}}.{{rt_dataset}}.observation ob
-JOIN  {{project_id}}.{{rt_dataset}}.person p USING (person_id)
- WHERE observation_concept_id NOT IN (4013886, 4135376, 4271761)
-  AND observation_date=DATE(p.birth_datetime)
+  FROM {{project_id}}.{{ct_dataset}}.observation ob
+JOIN  {{project_id}}.{{ct_dataset}}.person p USING (person_id)
+ WHERE (observation_concept_id NOT IN (4013886, 4135376, 4271761) OR observation_concept_id IS NULL)
+  AND ABS(EXTRACT(YEAR FROM observation_date)- p.year_of_birth) < 2
   )
 
 SELECT
@@ -1146,13 +1149,11 @@ WHERE  observation_id IN (SELECT observation_id FROM rows_having_brith_date)
 """)
 
 q = query.render(project_id=project_id,
-                 rt_dataset=rt_dataset,
                  ct_dataset=ct_dataset)
 df1 = execute(client, q)
-df1.shape
-# -
 
 df1
+# -
 
 if df1.iloc[:, 3].sum() == 0:
     df = df.append(
