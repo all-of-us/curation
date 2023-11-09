@@ -119,12 +119,12 @@ client.copy_dataset(f'{client.project}.{old_dataset_id}',
 # ## Applying cleaning rule to retract records from the dataset
 
 cleaning_args = [
-    '-p', client.project, '-d', f"{dataset_definition['clean']['name']}",
-    '-b', f"{dataset_definition['sandbox']['name']}", '--data_stage',
-    {data_stage}, '--run_as', run_as, '-s'
+    '-p', client.project, '-d', f"{dataset_definition['clean']['name']}", '-b',
+    f"{dataset_definition['sandbox']['name']}", '--data_stage', data_tier,
+    '--run_as', run_as, '-s'
 ]
 
-all_cleaning_args = add_kwargs_to_args(cleaning_args)
+all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs=None)
 clean_cdr.main(args=all_cleaning_args)
 
 # ## Running validation check on new dataset
