@@ -53,7 +53,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=AOU_REQUIRED + [AOU_DEATH],
+                         affected_tables=['observation'],
                          table_namer=table_namer)
 
         self.tables_and_columns = {}

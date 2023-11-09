@@ -343,36 +343,38 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
 ]
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
-    (RtCtPIDtoRID,),
-    (QRIDtoRID,),  # Should run before any row suppression rules
-    (TruncateEraTables,),
-    (NullPersonBirthdate,),
-    (TableSuppression,),
-    (ControlledTierReplacedConceptSuppression,),
-    (GeneralizeZipCodes,),  # Should run after any data remapping rules
-    # (RaceEthnicityRecordSuppression,),  # Should run after any data remapping rules
+    # (RtCtPIDtoRID,),
+    # (QRIDtoRID,),  # Should run before any row suppression rules
+    # (TruncateEraTables,),
+    # (NullPersonBirthdate,),
+    # (TableSuppression,),
+    # (ControlledTierReplacedConceptSuppression,),
+    # (GeneralizeZipCodes,),  # Should run after any data remapping rules
+    # # (RaceEthnicityRecordSuppression,),  # Should run after any data remapping rules
+    # (
+    #     MotorVehicleAccidentSuppression,),
+    # (VehicularAccidentConceptSuppression,),
+    # (ExplicitIdentifierSuppression,),
+    # (GeoLocationConceptSuppression,),
+    # (BirthInformationSuppression,),
     (
-        MotorVehicleAccidentSuppression,),
-    (VehicularAccidentConceptSuppression,),
-    (ExplicitIdentifierSuppression,),
-    (GeoLocationConceptSuppression,),
-    (BirthInformationSuppression,),
-    (YearOfBirthRecordsSuppression,),
-    (ControlledCopeSurveySuppression,),
-    (IDFieldSuppression,),  # Should run after any data remapping
-    (CancerConceptSuppression,),  # Should run after any data remapping rules
-    (SectionParticipationConceptSuppression,),
-    (StringFieldsSuppression,),
-    (AggregateZipCodes,),
-    (DeidentifyAIANZip3Values,),
-    (FreeTextSurveyResponseSuppression,),
-    (DropOrphanedSurveyConductIds,),
-    (DropOrphanedPIDS,),
-    (GenerateWearStudyTable,),
-    (DropViaSurveyConduct,),  # should run after wear study table creation
-    (RemoveExtraTables,),  # Should be last cleaning rule to be run
-    (CalculatePrimaryDeathRecord,),
-    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+        YearOfBirthRecordsSuppression,),
+    # (ControlledCopeSurveySuppression,),
+    # (IDFieldSuppression,),  # Should run after any data remapping
+    # (CancerConceptSuppression,),  # Should run after any data remapping rules
+    # (SectionParticipationConceptSuppression,),
+    # (StringFieldsSuppression,),
+    # (AggregateZipCodes,),
+    # (DeidentifyAIANZip3Values,),
+    # (FreeTextSurveyResponseSuppression,),
+    # (DropOrphanedSurveyConductIds,),
+    # (DropOrphanedPIDS,),
+    # (GenerateWearStudyTable,),
+    # (DropViaSurveyConduct,),  # should run after wear study table creation
+    # (RemoveExtraTables,),  # Should be last cleaning rule to be run
+    # (CalculatePrimaryDeathRecord,),
+    (
+        CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
