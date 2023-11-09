@@ -84,7 +84,7 @@ dataset_definition = {
             "data_tier": "controlled",
             "release_tag": release_tag,
             "de_identified": "true",
-            "issue_number": "DC3563"
+            "issue_number": "dc3563"
         }
     },
     'sandbox': {
@@ -98,7 +98,7 @@ dataset_definition = {
             "data_tier": "controlled",
             "release_tag": release_tag,
             "de_identified": "true",
-            "issue_number": "DC3563"
+            "issue_number": "dc3563"
         }
     }
 }
