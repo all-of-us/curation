@@ -20,6 +20,7 @@ project_id = ""
 old_dataset_id = ""
 release_tag = ""
 data_stage = ""
+data_tier = ""
 
 import logging
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
