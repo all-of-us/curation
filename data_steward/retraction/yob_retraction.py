@@ -74,7 +74,7 @@ dataset_definition = {
     'clean': {
         'name': f'C{release_tag}_{data_stage}',
         'desc':
-            f"Hot fix applied to {old_dataset_id}. DC-3563"
+            f"Hot fix applied to {old_dataset_id}."
             f"--"
             f"{old_dataset_id}'s description for reference -> Certain records removed from {old_dataset_id} based on the retraction rule",
         'labels': {
@@ -82,20 +82,22 @@ dataset_definition = {
             "phase": "clean",
             "data_tier": "controlled",
             "release_tag": release_tag,
-            "de_identified": "true"
+            "de_identified": "true",
+            "issue_number": "DC3563"
         }
     },
     'sandbox': {
         'name': f'{release_tag}_{data_stage}_sandbox',
         'desc': (
             f'Sandbox created for storing records affected by the retraction applied to C{release_tag}_{data_stage}.'
-            f'DC-3563'),
+        ),
         'labels': {
             "owner": "curation",
             "phase": "sandbox",
             "data_tier": "controlled",
             "release_tag": release_tag,
-            "de_identified": "true"
+            "de_identified": "true",
+            "issue_number": "DC3563"
         }
     }
 }
