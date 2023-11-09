@@ -39,7 +39,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 LOGGER = logging.getLogger(__name__)
 pipeline_logging.configure(level=logging.INFO, add_console_handler=True)
 
-# ## Identify non-confirming records
+# ## Identify and remove non-confirming records
 # ### All observation concept ids other than 4013886, 4135376, 4271761 with dates similar to birth dates should be removed
 
 query = JINJA_ENV.from_string("""
@@ -108,11 +108,16 @@ for dataset_type in ['clean', 'sandbox']:
 
     client.create_dataset(dataset_object, exists_ok=False)
 
+# ## Copy tables from existing dataset to hotfix dataset
+
+client.copy_dataset(f'{client.project}.{dataset_id}',
+                    f"{client.project}.{dataset_definition['clean']['name']}")
+
 # ## Applying cleaning rule to retract records from the dataset
 
 cleaning_args = [
-    '-p', client.project, '-d', f'C{release_tag}_{data_stage}', '-b',
-    f'{release_tag}_{data_stage}_sandbox', '--data_stage', {data_stage},
+    '-p', client.project, '-d', f"dataset_definition['clean']['name']", '-b',
+    f"dataset_definition['sandbox']['name']", '--data_stage', {data_stage},
     '--run_as', run_as, '-s'
 ]
 
