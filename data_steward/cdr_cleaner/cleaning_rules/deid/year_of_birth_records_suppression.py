@@ -104,16 +104,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
                `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
              WHERE
                 (lower(data_type) in ("date", "datetime", "time", "timestamp") and not REGEXP_CONTAINS(column_name, r'(?i)(partitiontime)'))
-                -- tables we are not interested in cleaning --
-               and not REGEXP_CONTAINS(table_name, '(?i)(_ext)|(person)|(consent)')
-               and lower(table_name) NOT IN ({{fitbit_tables_str}})
-
-               -- make sure table has a person_id column --
-                and table_name in (
-                    select table_name 
-                    from `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS` 
-                    where lower(column_name) = 'person_id'
-                )
+                AND table_name = 'observation'
             ORDER BY 1,2
         )
         """)
