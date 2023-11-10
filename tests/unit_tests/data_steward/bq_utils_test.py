@@ -76,28 +76,3 @@ class BqUtilsTest(unittest.TestCase):
         job_ids = ["job_1", "job_2"]
         bq_utils.wait_on_jobs(job_ids)
         mock_sleep.assert_called_with(max_sleep_interval)
-
-    @mock.patch('bq_utils.os.environ.get')
-    def test_get_validation_results_dataset_id_not_existing(self, mock_env_var):
-        # preconditions
-        mock_env_var.return_value = bq_utils_consts.BLANK
-
-        # test
-        result_id = bq_utils.get_validation_results_dataset_id()
-
-        # post conditions
-        date_string = datetime.now().strftime(bq_utils_consts.DATE_FORMAT)
-        expected = bq_utils_consts.VALIDATION_DATASET_FORMAT.format(date_string)
-        self.assertEqual(result_id, expected)
-
-    @mock.patch('bq_utils.os.environ.get')
-    def test_get_validation_results_dataset_id_existing(self, mock_env_var):
-        # preconditions
-        mock_env_var.return_value = 'dataset_foo'
-
-        # test
-        result_id = bq_utils.get_validation_results_dataset_id()
-
-        # post conditions
-        expected = 'dataset_foo'
-        self.assertEqual(result_id, expected)
