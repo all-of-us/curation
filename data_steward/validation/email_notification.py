@@ -194,5 +194,5 @@ def send_email(email_message):
     except mandrill.Error as e:
         # Mandrill errors are thrown as exceptions
         msg = f"A mandrill error occurred: {e.__class__} - {e}"
-        LOGGER.exception(msg, exec_info=True)
+        LOGGER.exception(msg)
     return result
