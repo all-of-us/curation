@@ -126,6 +126,6 @@ if __name__ == '__main__':
 
     bq_client = BigQueryClient(args.project_id)
 
-    _ = update_ehr_upload_pids_view(args.project_id,
-                                    args.ehr_dataset_id,
-                                    bq_client=bq_client)
+    update_ehr_upload_pids_view(args.project_id,
+                                args.ehr_dataset_id,
+                                bq_client=bq_client)
