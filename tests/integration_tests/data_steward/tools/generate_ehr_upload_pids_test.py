@@ -67,8 +67,7 @@ INSERT INTO `{{project_id}}.{{dataset_id}}.chs_person` (
 """)
 
 ASSERT_QUERY = JINJA_ENV.from_string("""
-SELECT person_id, HPO_ID
-FROM {{project_id}}.{{dataset_id}}.{{table_id}}
+SELECT person_id, HPO_ID FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
 """)
 
 
@@ -153,9 +152,9 @@ class GenerateEhrUploadPids(unittest.TestCase):
             'HPO_ID': 'Pitt'
         }]
 
-        _ = eup.update_ehr_upload_pids_view(self.project_id,
-                                            self.dataset_id,
-                                            bq_client=self.bq_client)
+        eup.update_ehr_upload_pids_view(self.project_id,
+                                        self.dataset_id,
+                                        bq_client=self.bq_client)
 
         assert_query = ASSERT_QUERY.render(project_id=self.project_id,
                                            dataset_id=self.dataset_id,
