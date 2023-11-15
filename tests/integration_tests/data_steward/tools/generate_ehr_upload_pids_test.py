@@ -165,12 +165,12 @@ class GenerateEhrUploadPids(unittest.TestCase):
         self.assertCountEqual(actual, expected)
 
     def tearDown(self):
-        # for table in self.fq_table_names:
-        #     self.bq_client.delete_table(table, not_found_ok=True)
+        for table in self.fq_table_names:
+            self.bq_client.delete_table(table, not_found_ok=True)
 
         # NOTE This is a view. delete_table() can delete views.
-        # self.bq_client.delete_table(
-        #     f'{self.project_id}.{self.dataset_id}.{EHR_UPLOAD_PIDS}',
-        #     not_found_ok=True)
+        self.bq_client.delete_table(
+            f'{self.project_id}.{self.dataset_id}.{EHR_UPLOAD_PIDS}',
+            not_found_ok=True)
 
         super().tearDown()

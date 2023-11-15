@@ -94,7 +94,7 @@ def update_ehr_upload_pids_view(project_id, ehr_dataset_id, bq_client=None):
         hpo_sites=hpo_sites_with_submission,
         pid_tables=pid_tables)
 
-    _ = bq_client.query(query)
+    _ = bq_client.query(query).result()
 
     LOGGER.info(
         "The view is updated. Ensure the view is accessible without errors: "
