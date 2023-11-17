@@ -9,6 +9,10 @@ response.
 This should be done at Registered Tier de-identification and should drop 
 duplicate responses if they are created by this generalization.
 
+NOTE This cleaning rule only updates `value_source_concept_id` and `value_as_concept_id`.
+    String fields will be unchanged. `StringFieldsSuppression` will take care of the 
+    string suppression.
+
 Original Issues: DC-3597
 """
 
@@ -81,8 +85,9 @@ class GeneralizeIndianHealthServices(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = (
-            "This cleaning rule generalizes answers to multiple choice insurance "
-            "questions that indicate Indian Health Services (or a variant).")
+            "Generalizes answers that indicate Indian Health Services (or a variant)."
+            "Generalizes only ID fields. String fields will be suppressed by `StringFieldsSuppression`."
+        )
         super().__init__(issue_numbers=['DC3597'],
                          description=desc,
                          affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
