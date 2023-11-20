@@ -72,3 +72,8 @@ CLUSTER BY
 -- currently unsupported (see https://bit.ly/2VeMs7e) --
 {% if query -%} AS {{ query }} {%- endif %}
 """
+
+GET_HPO_CONTENTS_QUERY = """
+SELECT *
+FROM `{project_id}.{TABLES_DATASET_ID}.{HPO_SITE_TABLE}`
+"""
