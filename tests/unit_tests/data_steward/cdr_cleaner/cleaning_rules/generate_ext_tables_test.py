@@ -67,11 +67,11 @@ class GenerateExtTablesTest(unittest.TestCase):
                 "The provenance of the data associated with the foo_id."
         }]
 
-        # Excluding PERSON, DEATH, and FACT_RELATIONSHIP beacuse they do not
+        # Excluding DEATH, and FACT_RELATIONSHIP beacuse they do not
         # have mapping tables in the combined dataset.
         mapped_table_names = [
-            cdm_table for cdm_table in common.CATI_TABLES if cdm_table not in
-            [common.PERSON, common.DEATH, common.FACT_RELATIONSHIP]
+            cdm_table for cdm_table in common.CATI_TABLES
+            if cdm_table not in [common.DEATH, common.FACT_RELATIONSHIP]
         ]
 
         mapping_table_names = [
@@ -178,9 +178,7 @@ class GenerateExtTablesTest(unittest.TestCase):
             mapping_fields = _get_field_names(
                 f'{common.MAPPING_PREFIX}{cdm_table}')
 
-            if cdm_table not in [
-                    common.PERSON, common.DEATH, common.FACT_RELATIONSHIP
-            ]:
+            if cdm_table not in [common.DEATH, common.FACT_RELATIONSHIP]:
                 query = dict()
                 query[cdr_consts.QUERY] = gen_ext.REPLACE_SRC_QUERY.render(
                     project_id=self.project_id,

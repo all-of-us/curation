@@ -500,7 +500,7 @@ def main(raw_args=None):
                           f'{client.project}.{combined_backup}.{table}')
 
     LOGGER.info('Generating combined mapping tables ...')
-    for domain_table in combine_consts.DOMAIN_TABLES + [SURVEY_CONDUCT]:
+    for domain_table in combine_consts.DOMAIN_TABLES + [SURVEY_CONDUCT, PERSON]:
         LOGGER.info(f'Mapping {domain_table}...')
         generate_combined_mapping_tables(client, domain_table, args.rdr_dataset,
                                          args.unioned_ehr_dataset,
