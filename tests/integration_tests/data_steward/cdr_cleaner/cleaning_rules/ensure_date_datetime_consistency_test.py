@@ -229,6 +229,9 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         """
         Tests that end_datetime fields are assigned a time component of 11:59:59
         """
+
+        # TODO Add test cases for visit_detail to confirm it works for that table too.
+
         self.maxDiff = None
         tmpl = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.drug_exposure`

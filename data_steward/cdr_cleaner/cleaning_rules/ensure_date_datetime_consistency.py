@@ -97,6 +97,8 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
     Ensure no nulls and consistency in the datetime and date fields
     """
 
+    # TODO Add depends_on TemporalConsistency
+
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper information.
