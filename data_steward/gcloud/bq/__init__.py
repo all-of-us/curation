@@ -651,16 +651,14 @@ class BigQueryClient(Client):
 
     def get_hpo_bucket_info(self):
         hpo_list = []
-        project_id = app_identity.get_application_id()
-        hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
-            project_id=project_id,
-            TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
-            HPO_SITE_TABLE=bq_consts.HPO_ID_BUCKET_NAME_TABLE_ID)
-        hpo_response = query(hpo_table_query)
-        hpo_table_contents = response2rows(hpo_response)
-        for hpo_table_row in hpo_table_contents:
-            hpo_id = hpo_table_row[bq_consts.HPO_ID.lower()].lower()
-            hpo_bucket = hpo_table_row[bq_consts.BUCKET_NAME].lower()
+        hpo_table_query = consts.GET_HPO_CONTENTS_QUERY.format(
+            project_id=self.project,
+            TABLES_DATASET_ID=consts.LOOKUP_TABLES_DATASET_ID,
+            HPO_SITE_TABLE=consts.HPO_ID_BUCKET_NAME_TABLE_ID)
+        hpo_response = self.query(hpo_table_query)
+        for hpo_table_row in hpo_response:
+            hpo_id = hpo_table_row[consts.HPO_ID.lower()].lower()
+            hpo_bucket = hpo_table_row[consts.BUCKET_NAME].lower()
             if hpo_id:
                 hpo_dict = {"hpo_id": hpo_id, "bucket_name": hpo_bucket}
                 hpo_list.append(hpo_dict)
