@@ -43,16 +43,18 @@ class FitbitDateShiftRule(DateShiftRule):
         # self.tables = FITBIT_TABLES
         self.tables = [DEVICE]
 
-        super().__init__(issue_numbers=ISSUE_NUMBERS,
-                         description=desc,
-                         affected_datasets=[cdr_consts.FITBIT],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=self.tables,
-                         mapping_dataset_id=mapping_dataset_id,
-                         mapping_table_id=mapping_table_id,
-                         depends_on=[PIDtoRID])
+        super().__init__(
+            issue_numbers=ISSUE_NUMBERS,
+            description=desc,
+            affected_datasets=[cdr_consts.FITBIT],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            #  affected_tables=self.tables,
+            affected_tables=[DEVICE],
+            mapping_dataset_id=mapping_dataset_id,
+            mapping_table_id=mapping_table_id,
+            depends_on=[PIDtoRID])
 
     def get_tables_and_schemas(self):
         tables_and_schemas = dict()
