@@ -43,6 +43,7 @@ date_columns = {
     'sleep_daily_summary': 'sleep_date',
     'device': 'device_date',
 }
+FITBIT_TABLES = ['device']
 secondary_date_column = {
     'device': 'last_sync_time',
     'sleep_level': 'start_datetime',
@@ -469,3 +470,5 @@ def highlight_cells(val):
 
 summary.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
 # -
+
+
