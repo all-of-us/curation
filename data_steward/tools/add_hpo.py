@@ -130,17 +130,18 @@ def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
     return hpo_file_df.sort_values(by='Display_Order')
 
 
-def add_hpo_id_bucket_name_file_df(hpo_id, bucket_name,
+def add_hpo_id_bucket_name_file_df(bq_client, hpo_id, bucket_name,
                                    hpo_id_bucket_name_path):
     """
     Creates dataframe with hpo_id, bucket_name, and service
 
+    :param bq_client: BigQuery Client
     :param hpo_id: hpo_ identifier
     :param bucket_name: GCS bucket name of the site
     :param hpo_id_bucket_name_path: path to csv file containing hpo site information
     :raises ValueError if hpo_id already exists in the lookup table
     """
-    hpo_table = bq_utils.get_hpo_bucket_info()
+    hpo_table = bq_client.get_hpo_bucket_info()
     hpo_table_df = pd.DataFrame(hpo_table)
     if hpo_id in set(hpo_table_df['hpo_id']) or bucket_name in set(
             hpo_table_df['bucket_name']):
@@ -215,16 +216,18 @@ def add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, hpo_site_mappings_path,
                        index=False)
 
 
-def add_hpo_id_bucket_name_csv(hpo_id, bucket_name, hpo_id_bucket_name_path):
+def add_hpo_id_bucket_name_csv(bq_client, hpo_id, bucket_name,
+                               hpo_id_bucket_name_path):
     """
     Writes df with hpo_id and bucket_name to the hpo_id_bucket_name config file
 
+    :param bq_client: BigQuery Client
     :param hpo_id: hpo_ identifier
     :param bucket_name: GCS bucket name for the site.
     :param hpo_id_bucket_name_path: path to csv file containing hpo site information
     :return:
     """
-    hpo_file_df = add_hpo_id_bucket_name_file_df(hpo_id, bucket_name,
+    hpo_file_df = add_hpo_id_bucket_name_file_df(bq_client, hpo_id, bucket_name,
                                                  hpo_id_bucket_name_path)
     hpo_file_df.to_csv(hpo_id_bucket_name_path,
                        quoting=csv.QUOTE_ALL,
@@ -251,7 +254,8 @@ def add_src_hpos_allowed_state_csv(hpo_id, us_state, value_source_concept_id,
                        float_format=lambda x: '%d' % x)
 
 
-def add_hpo_site_to_csv_files(hpo_id,
+def add_hpo_site_to_csv_files(bq_client,
+                              hpo_id,
                               hpo_name,
                               org_id,
                               bucket_name,
@@ -262,6 +266,7 @@ def add_hpo_site_to_csv_files(hpo_id,
     """
     Update both csv files from devops to include data for the newly added site.
 
+    :param bq_client: BigQuery Client
     :param hpo_id: hpo_ identifier
     :param hpo_name: name of the hpo
     :param org_id: hpo organization identifier
@@ -294,7 +299,8 @@ def add_hpo_site_to_csv_files(hpo_id,
                               display_order)
 
     # Update hpo_id_bucket_name.csv file
-    add_hpo_id_bucket_name_csv(hpo_id, bucket_name, hpo_id_bucket_name_path)
+    add_hpo_id_bucket_name_csv(bq_client, hpo_id, bucket_name,
+                               hpo_id_bucket_name_path)
 
     # Update src_hpos_to_allowed_states.csv file
     add_src_hpos_allowed_state_csv(hpo_id, us_state, value_source_concept_id,
@@ -495,8 +501,8 @@ def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
                                credentials=impersonation_creds)
 
     if addition_type == "update_config":
-        add_hpo_site_to_csv_files(hpo_id, hpo_name, org_id, bucket_name,
-                                  hpo_site_csv_path, us_state,
+        add_hpo_site_to_csv_files(bq_client, hpo_id, hpo_name, org_id,
+                                  bucket_name, hpo_site_csv_path, us_state,
                                   value_source_concept_id, display_order)
     elif addition_type == "update_lookup_tables":
         if bucket_access_configured(gcs_client, bucket_name):
