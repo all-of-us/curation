@@ -1,10 +1,11 @@
 """
-Ensuring there are no null datetimes.
+Ensuring there are no null or incorrect/inconsistent datetimes.
+If there are null or incocrrect datetimes, copy the date over to the datetime field.
+
+NOTE: TemporalConsistency is known to update date columns but not datetime columns.
+    This CR must run after TemporalConsistency to fix the inconsistent datetimes it causes.
 
 Original Issues: DC-614, DC-509, DC-432 and DC-2635
-
-The intent is to copy the date over to the datetime field if the datetime
-field is null or incorrect.
 """
 
 # Python imports
@@ -16,6 +17,7 @@ import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules import field_mapping
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.temporal_consistency import TemporalConsistency
 from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
@@ -97,8 +99,6 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
     Ensure no nulls and consistency in the datetime and date fields
     """
 
-    # TODO Add depends_on TemporalConsistency
-
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper information.
@@ -128,7 +128,8 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                 common.SURVEY_CONDUCT, common.DEATH, common.NOTE,
                 common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE,
                 common.VISIT_DETAIL
-            ])
+            ],
+            depends_on=[TemporalConsistency])
 
     def get_cols(self, table):
         """

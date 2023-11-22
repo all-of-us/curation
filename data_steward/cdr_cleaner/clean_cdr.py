@@ -241,6 +241,7 @@ COMBINED_CLEANING_CLASSES = [
     (DrugRefillsDaysSupply,),
     (PopulateRouteIds,),
     (TemporalConsistency,),
+    (EnsureDateDatetimeConsistency,),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     (
