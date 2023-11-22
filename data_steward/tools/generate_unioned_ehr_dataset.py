@@ -83,8 +83,8 @@ def copy_mapping_tables(client, source_dataset, destination_dataset):
     ]:
         source_table = f'{source_dataset}.{table}'
         destination_table = f'{destination_dataset}.{table}'
-        LOGGER.info(f'Copying Table: {source_table}')
         if client.table_exists(table, source_dataset):
+            LOGGER.info(f'Copying Table: {source_table}')
             job = client.copy_table(source_table, destination_table)
             job.result()
             LOGGER.info(
