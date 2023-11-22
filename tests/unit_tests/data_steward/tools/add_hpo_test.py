@@ -129,7 +129,6 @@ class AddHPOTest(TestCase):
 
     def test_add_hpo_site_to_csv_files(self):
         new_site = {
-            # 'bq_client': 'bq_client',
             'org_id': 'fake_org',
             'hpo_id': 'fake_3',
             'hpo_name': 'fake_name',
