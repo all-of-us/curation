@@ -91,24 +91,18 @@ class AddHPOTest(TestCase):
                           new_site['org_id'], self.hpo_site_mappings_path,
                           new_site['display_order'])
 
-    @mock.patch('tools.add_hpo.BigQueryClient')
-    def test_update_site_masking_table(self, mock_bq_client):
+    def test_update_site_masking_table(self):
         # Mocks the job return
         query_job_reference_results = mock.MagicMock(
             name="query_job_reference_results")
         query_job_reference_results.return_value = query_job_reference_results
         query_job_reference_results.errors = []
-
-        mock_call_response = mock.MagicMock(project=self.project_id)
-        mock_call_response.query.return_value = query_job_reference_results
-        mock_bq_client.return_value = mock_call_response
-        mock_query = mock_bq_client.return_value.query
-
-        mock_query.side_effect = query_job_reference_results
+        self.bq_client.project = self.project_id
+        self.bq_client.query.return_value = query_job_reference_results
 
         # Test
         actual_job = add_hpo.update_site_masking_table(
-            mock_bq_client(), self.hpo_id, self.us_state,
+            self.bq_client, self.hpo_id, self.us_state,
             self.value_source_concept_id)
 
         # Post conditions
@@ -123,7 +117,7 @@ class AddHPOTest(TestCase):
             value_source_concept_id=self.value_source_concept_id)
 
         expected_job = query_job_reference_results
-        mock_query.assert_any_call(update_site_masking_query)
+        self.bq_client.query.assert_called_with(update_site_masking_query)
         self.assertEqual(actual_job, expected_job)
 
     def test_check_state_code_format(self):
