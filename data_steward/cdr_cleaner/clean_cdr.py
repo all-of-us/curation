@@ -402,8 +402,9 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (DeidFitbitDeviceId,
     ),  # This rule must occur so that PID can map to device_id
     (FitbitPIDtoRID,),
-    (FitbitDeidSrcID,),
-    (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
+    # (FitbitDeidSrcID,), # NOT NEEDED
+    (
+        RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
 DATA_CONSISTENCY_CLEANING_CLASSES = [
