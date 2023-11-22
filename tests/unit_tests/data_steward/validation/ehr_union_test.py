@@ -312,7 +312,6 @@ class EhrUnionTest(unittest.TestCase):
         eu.main("input_dataset_id",
                 "output_dataset_id",
                 "project_id",
-                "abc@abc.com",
                 hpo_ids_ex=[self.FAKE_SITE_2])
         mock_mapping.assert_called_with(ANY, [self.FAKE_SITE_1],
                                         "input_dataset_id", "output_dataset_id",
