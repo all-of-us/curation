@@ -54,12 +54,63 @@ df = pd.DataFrame(columns=['query', 'result'])
 #
 #
 
-# ## step1
+# ## Step 1
 # - Verify the following columns in the deid_cdr Observation table have been set to null:
 # o   value_as_string
 # o   value_source_value
 #
 # has been done in first sql for deid, can be skipped here
+#
+# ## Query 1.1
+#
+# [DC-3597](https://precisionmedicineinitiative.atlassian.net/browse/DC-3597): Check if insurance selections are “Indian Health Services” (or a variant).
+#
+# Even though this option does not overtly identify a participant as AI/AN, it suggests so.  Therefore, these responses are generalized to "Other" at the registered tier de-id stage.
+#
+# The observation_concept_id's are: `40766241`, `1585389`, and `43528428`.
+
+# +
+query = JINJA_ENV.from_string("""
+SELECT observation_id FROM `{{project_id}}.{{deid_base_cdr}}.observation`
+WHERE observation_id IN (
+    SELECT observation_id
+    FROM (
+        SELECT
+            observation_id,
+            ROW_NUMBER() OVER(
+                PARTITION BY person_id, value_source_concept_id, value_as_concept_id
+                ORDER BY observation_date DESC, observation_id
+            ) AS rn
+        FROM `{{project_id}}.{{deid_base_cdr}}.observation`
+        WHERE (value_source_concept_id = 1384595 AND value_as_concept_id = 1384595)
+        OR (value_source_concept_id = 1585398 AND value_as_concept_id = 45876762)
+        OR (value_source_concept_id = 43528423 AND value_as_concept_id = 43528423)
+    ) WHERE rn <> 1)
+""")
+
+q = query.render(project_id=project_id, deid_base_cdr=deid_base_cdr)
+
+result = execute(client, q)
+if result.empty:
+    df = df.append(
+        {
+            'query':
+                "Query 1.1 No observation_id's indicate Indian Health Services or similar",
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                "Query1.1 observation_id's were found that indicate Indian Health Services or similar",
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
+result
+# -
 
 # ## Query 1.2 Find person_ids in pre_dedi_com_cdr person table who have ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586146 OR 1586142 OR 1586143) , then verify that the output in the deid_base_cdr observation table for that person_id after mapping  will results in 2-rows .
 #
