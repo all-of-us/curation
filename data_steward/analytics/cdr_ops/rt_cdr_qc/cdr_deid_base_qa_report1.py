@@ -56,8 +56,8 @@ df = pd.DataFrame(columns=['query', 'result'])
 
 # ## Step 1
 # - Verify the following columns in the deid_cdr Observation table have been set to null:
-# o   value_as_string
-# o   value_source_value
+#   - value_as_string
+#   - value_source_value
 #
 # has been done in first sql for deid, can be skipped here
 #
