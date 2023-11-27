@@ -109,7 +109,7 @@ else:
     df = df.append(
         {
             'query':
-                "Query1.1 observation_id's were found that indicate Indian Health Services or similar",
+                "Query 1.1 observation_id's were found that indicate Indian Health Services or similar",
             'result':
                 'Failure'
         },
