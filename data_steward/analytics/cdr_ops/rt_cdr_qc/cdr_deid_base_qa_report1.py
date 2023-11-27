@@ -23,11 +23,11 @@ from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
-project_id = ""
-com_cdr = ""
-deid_base_cdr = ""
-pipeline = ""
-run_as = ""
+project_id = ""    # The project to examine (e.g aou-res-curation-prod)
+com_cdr = ""       # The comibend dataset (e.g *_combined)
+deid_base_cdr = "" # the deid dataset (e.g R*_deid)
+pipeline = ""      # the pipeline tables (e.g "pipeline_tables")
+run_as = ""        # The account used to run checks
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
@@ -70,22 +70,22 @@ query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT m.research_id AS person_id
-FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
-JOIN `{{project_id}}.{{com_cdr}}.person` com 
-ON m.person_id = com.person_id 
+FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
+JOIN `{{project_id}}.{{com_cdr}}.person` com
+ON m.person_id = com.person_id
 WHERE com.ethnicity_source_concept_id = 1586147
 AND com.race_source_concept_id in (1586142, 1586143, 1586146 )
  ),
- 
+
 df2 AS (
 SELECT DISTINCT person_id , COUNT (distinct value_source_concept_id ) AS countp
 FROM `{{project_id}}.{{deid_base_cdr}}.observation`
-WHERE  observation_source_value = 'Race_WhatRaceEthnicity' 
+WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 GROUP BY person_id
  )
- 
+
 SELECT COUNT (*) AS n_not_two_rows FROM df2
-WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2 
+WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2
 """)
 q = query.render(project_id=project_id,
                  pipeline=pipeline,
@@ -115,25 +115,25 @@ query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT m.research_id AS person_id
-FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
-JOIN `{{project_id}}.{{com_cdr}}.person` com 
-ON m.person_id = com.person_id 
+FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
+JOIN `{{project_id}}.{{com_cdr}}.person` com
+ON m.person_id = com.person_id
 WHERE com.ethnicity_source_concept_id = 1586147
 AND com.race_source_concept_id in (1586142, 1586143, 1586146 )
  ),
- 
+
 df2 AS (
 SELECT DISTINCT person_id , count (distinct value_source_concept_id ) AS countp
 FROM `{{project_id}}.{{deid_base_cdr}}.observation`
-WHERE  observation_source_value = 'Race_WhatRaceEthnicity' 
+WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 GROUP BY person_id
  )
- 
+
 SELECT distinct person_id, value_source_concept_id, value_source_value
 FROM `{{project_id}}.{{deid_base_cdr}}.observation`
-WHERE  observation_source_value = 'Race_WhatRaceEthnicity' 
+WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 AND person_id IN (SELECT person_id from df2 where countp !=2 )
-AND person_id IN (SELECT person_id FROM df1) 
+AND person_id IN (SELECT person_id FROM df1)
 """)
 q = query.render(project_id=project_id,
                  pipeline=pipeline,
@@ -146,27 +146,25 @@ df1
 
 # ## Query 1.3 step : Verify that if a person_id has ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586145 OR 1586144)  in the pre_deid_com_cdr person table, the output in the deid_cdr observation table for that person_id  after mapping will result in 2-rows AND the 2000000001 race value is populated in value_source_concept_id field in the other row of observation table in the deid dataset.
 
-# +
-
 query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT distinct m.research_id AS person_id
-FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
-join `{{project_id}}.{{com_cdr}}.person` com 
-ON m.person_id = com.person_id 
+FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
+join `{{project_id}}.{{com_cdr}}.person` com
+ON m.person_id = com.person_id
 WHERE com.ethnicity_source_concept_id = 1586147
-AND com.race_source_concept_id IN (1586145, 1586144) 
+AND com.race_source_concept_id IN (1586145, 1586144)
  ),
- 
+
 df2 AS (
 SELECT  person_id , count (distinct value_source_concept_id) AS countp
 FROM `{{project_id}}.{{deid_base_cdr}}.observation`
-WHERE  observation_source_value = 'Race_WhatRaceEthnicity' 
+WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 AND value_source_concept_id IN (2000000001 ,1586147)
 GROUP BY person_id
 )
- 
+
 SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE person_id NOT IN (SELECT person_id FROM df2 WHERE countp=2)
 """)
@@ -190,7 +188,6 @@ else:
         },
         ignore_index=True)
 df1
-# -
 
 # ## Query 1.4 Verify that if a person_id has ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS multiple SELECTions (2 or more) in the pre_deid_com_cdr person table, the output in the deid_base_cdr observation table for that person_id  will result in 2 OR MORE rows .
 #
@@ -200,20 +197,20 @@ query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT distinct person_id
-FROM `{{project_id}}.{{deid_base_cdr}}.person` 
+FROM `{{project_id}}.{{deid_base_cdr}}.person`
 WHERE ethnicity_source_concept_id = 1586147
 AND race_source_concept_id=2000000008
  ),
- 
+
 df2 AS (
 SELECT DISTINCT person_id , count (distinct value_source_concept_id ) AS countp
 FROM `{{project_id}}.{{deid_base_cdr}}.observation`
-WHERE  observation_source_value = 'Race_WhatRaceEthnicity' 
+WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 GROUP BY person_id
  )
- 
+
 SELECT COUNT (*) AS n_row_not_pass FROM df2
-WHERE person_id IN (SELECT person_id FROM df1) AND countp <2 
+WHERE person_id IN (SELECT person_id FROM df1) AND countp <2
 """)
 q = query.render(project_id=project_id,
                  pipeline=pipeline,
@@ -292,7 +289,7 @@ query = JINJA_ENV.from_string("""
 
 SELECT COUNT (distinct p.person_id) AS n_PERSON_ID_not_pass
 FROM  `{{project_id}}.{{com_cdr}}.observation` com
-JOIN  `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
+JOIN  `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON com.person_id=m.person_id
 JOIN  `{{project_id}}.{{deid_base_cdr}}.observation` p
 ON p.person_id=m.research_id AND p.observation_id=com.observation_id
@@ -349,15 +346,15 @@ query = JINJA_ENV.from_string("""
 WITH df1 AS (
 SELECT m.research_id AS person_id
 FROM  `{{project_id}}.{{com_cdr}}.observation` ob
-JOIN  `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
+JOIN  `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 on ob.person_id=m.person_id
 WHERE value_source_value IN ('SexAtBirth_Female' ,'GenderIdentity_Man')
 GROUP BY m.research_id
-HAVING count (distinct value_source_value)=2 
+HAVING count (distinct value_source_value)=2
 )
 
-  
-SELECT COUNT (*) AS n_row_not_pass FROM `{{project_id}}.{{deid_base_cdr}}.person` 
+
+SELECT COUNT (*) AS n_row_not_pass FROM `{{project_id}}.{{deid_base_cdr}}.person`
 JOIN `{{project_id}}.{{deid_base_cdr}}.person_ext` using (person_id)
 WHERE person_id IN (SELECT person_id FROM df1)
 AND (sex_at_birth_source_value !='SexAtBirth_Female' AND gender_source_concept_id !=2000000002)
@@ -396,17 +393,17 @@ WITH df1 AS (
 
 SELECT m.research_id AS person_id
 FROM  `{{project_id}}.{{com_cdr}}.observation` ob
-JOIN  `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
+JOIN  `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON ob.person_id=m.person_id
 WHERE value_source_value IN ('SexAtBirth_Male' ,'GenderIdentity_Woman')
 GROUP BY m.research_id
-HAVING count (distinct value_source_value)=2 
+HAVING count (distinct value_source_value)=2
   )
-  
-SELECT COUNT (*) AS n_row_not_pass FROM `{{project_id}}.{{deid_base_cdr}}.person` 
+
+SELECT COUNT (*) AS n_row_not_pass FROM `{{project_id}}.{{deid_base_cdr}}.person`
 JOIN `{{project_id}}.{{deid_base_cdr}}.person_ext` using (person_id)
-WHERE person_id IN (SELECT person_id FROM df1) 
-AND (sex_at_birth_source_value !='SexAtBirth_Male' AND gender_source_concept_id !=2000000002) 
+WHERE person_id IN (SELECT person_id FROM df1)
+AND (sex_at_birth_source_value !='SexAtBirth_Male' AND gender_source_concept_id !=2000000002)
 """)
 q = query.render(project_id=project_id,
                  pipeline=pipeline,
@@ -569,7 +566,7 @@ df1
 query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
-SELECT 
+SELECT
 sex_at_birth_source_value AS sex_at_birth_value, count(*) AS countp1
 FROM `{{project_id}}.{{deid_base_cdr}}.person_ext`
 JOIN `{{project_id}}.{{deid_base_cdr}}.person` USING (person_id)
