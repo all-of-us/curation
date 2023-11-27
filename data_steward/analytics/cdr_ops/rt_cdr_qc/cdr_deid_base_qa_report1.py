@@ -23,11 +23,11 @@ from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
-project_id = ""
-com_cdr = ""
-deid_base_cdr = ""
-pipeline = ""
-run_as = ""
+project_id = ""  # The project to examine
+com_cdr = ""  # The comibend dataset
+deid_base_cdr = ""  # the deid dataset
+pipeline = ""  # the pipeline tables
+run_as = ""  # The account used to run checks
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
@@ -61,7 +61,64 @@ df = pd.DataFrame(columns=['query', 'result'])
 #
 # has been done in first sql for deid, can be skipped here
 
-# ## Query 1.2 Find person_ids in pre_dedi_com_cdr person table who have ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586146 OR 1586142 OR 1586143) , then verify that the output in the deid_base_cdr observation table for that person_id after mapping  will results in 2-rows .
+# ## Query 1.1
+#
+# [DC-3597](https://precisionmedicineinitiative.atlassian.net/browse/DC-3597): Check if insurance selections are “Indian Health Services” (or a variant).
+#
+# Even though this option does not overtly identify a participant as AI/AN, it suggests so.  Therefore, these responses are generalized to "Other" at the registered tier de-id stage.
+#
+# The observation_concept_id's are:
+# - `40766241`
+#
+# - `1585389`
+#
+# - `43528428`
+
+# +
+query = JINJA_ENV.from_string("""
+SELECT observation_id FROM `{{project_id}}.{{deid_base_cdr}}.observation`
+WHERE observation_id IN (
+    SELECT observation_id
+    FROM (
+        SELECT
+            observation_id,
+            ROW_NUMBER() OVER(
+                PARTITION BY person_id, value_source_concept_id, value_as_concept_id
+                ORDER BY observation_date DESC, observation_id
+            ) AS rn
+        FROM `{{project_id}}.{{deid_base_cdr}}.observation`
+        WHERE (value_source_concept_id = 1384595 AND value_as_concept_id = 1384595)
+        OR (value_source_concept_id = 1585398 AND value_as_concept_id = 45876762)
+        OR (value_source_concept_id = 43528423 AND value_as_concept_id = 43528423)
+    ) WHERE rn <> 1)
+""")
+
+q = query.render(project_id=project_id, deid_base_cdr=deid_base_cdr)
+
+result = execute(client, q)
+if result.empty:
+    df = df.append(
+        {
+            'query':
+                "Query 1.1 No observation_id's indicate Indian Health Services or similar",
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                "Query1.1 observation_id's were found that indicate Indian Health Services or similar",
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
+result
+# -
+
+# ## Query 1.2
+# Find person_ids in pre_dedi_com_cdr person table who have ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586146 OR 1586142 OR 1586143) , then verify that the output in the deid_base_cdr observation table for that person_id after mapping  will results in 2-rows .
 #
 #   step 3
 # Verify that the 2-rows have 2-different value_source_concept_id values in the deid_base_cdr Observation table.
@@ -70,22 +127,22 @@ query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT m.research_id AS person_id
-FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
-JOIN `{{project_id}}.{{com_cdr}}.person` com 
-ON m.person_id = com.person_id 
+FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
+JOIN `{{project_id}}.{{com_cdr}}.person` com
+ON m.person_id = com.person_id
 WHERE com.ethnicity_source_concept_id = 1586147
 AND com.race_source_concept_id in (1586142, 1586143, 1586146 )
  ),
- 
+
 df2 AS (
 SELECT DISTINCT person_id , COUNT (distinct value_source_concept_id ) AS countp
 FROM `{{project_id}}.{{deid_base_cdr}}.observation`
-WHERE  observation_source_value = 'Race_WhatRaceEthnicity' 
+WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 GROUP BY person_id
  )
- 
+
 SELECT COUNT (*) AS n_not_two_rows FROM df2
-WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2 
+WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2
 """)
 q = query.render(project_id=project_id,
                  pipeline=pipeline,
