@@ -44,8 +44,8 @@ df = pd.DataFrame(columns=['query', 'result'])
 # test steps:
 #
 # - Verify the following columns in the de-id Observation table have been set to null:
-# o   value_as_string
-# o   value_source_value"
+#   - value_as_string
+#   - value_source_value"
 #  however, this is already done in query 1, no need here anymore
 # - Find person_ids in pre_deid_com_cdr person table who have ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586146 OR 1586142 OR 1586143) , then verify that the output in the deid_base_cdr observation table for that person_id  will results in 2-rows .
 # - Verify that the 2-rows have 2-different value_source_concept_id values in the deid_base_cdr Observation table.
@@ -54,10 +54,10 @@ df = pd.DataFrame(columns=['query', 'result'])
 #
 #
 
-# ## step1
+# ## Step1
 # - Verify the following columns in the deid_cdr Observation table have been set to null:
-# o   value_as_string
-# o   value_source_value
+#   - value_as_string
+#   - value_source_value
 #
 # has been done in first sql for deid, can be skipped here
 
