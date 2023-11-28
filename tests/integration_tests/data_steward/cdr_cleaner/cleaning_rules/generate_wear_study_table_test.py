@@ -115,12 +115,14 @@ class GenerateWearStudyTableTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [
                 # one yes record.
                 (1, 'Yes', self.date_one, None),
-                # two yes records. earliest recorded
-                (2, 'Yes', self.date_one, None),
-                # two yes records and one no. earliest dates recorded
-                (5, 'Yes', self.date_one, self.date_three),
-                # yes, then no, then yes. earliest dates recorded
-                (6, 'Yes', self.date_one, self.date_two)
+                # two yes records. latest yes recorded
+                (2, 'Yes', self.date_two, None),
+                # two no records then a yes. latest yes recorded
+                (4, 'Yes', self.date_three, None),
+                # two yes records and one no. first no record after the latest yes
+                (5, 'Yes', self.date_two, self.date_three),
+                # yes, then no, then yes. latest yes recorded
+                (6, 'Yes', self.date_three, None)
             ]
         }]
 
