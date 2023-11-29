@@ -1,4 +1,14 @@
 """
+Notes submitted by sites and RDR must be suppressed since they are not being released soon.
+This cleaning rule replaces note_text with “NO_TEXT” and note_title with “NO_TITLE” in the combined stage.
+
+
+This test testes four cases:
+
+1. An unacceptable value in note_title
+2, An inappropriate value in note_text
+3. Both note_title and note_text contain wrong values.
+4. Both note_title and note_text contain acceptable values.
 Original Issues: DC-3607
 """
 
@@ -43,10 +53,6 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
-        # Add _logging_standard_concept_id_replacement to fq_sandbox_table_names for cleanup in
-        # teardown
-        # cls.fq_sandbox_table_names.append(
-        #     f'{cls.project_id}.{cls.sandbox_id}.# {SRC_CONCEPT_ID_TABLE_NAME}')
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
@@ -74,10 +80,10 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
                 language_concept_id
         )
         VALUES
-              (1, 10, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'note_title entry', 'NO_TEXT', 0, 0),
-              (2, 20, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TEXT', 'note_text entry', 0, 0),
-              (3, 30, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'note_title entry', 'note_text entry', 0, 0),
-              (4, 40, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TEXT', 'NO_TEXT', 0, 0)
+              (1, 10, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'bad note_title entry', 'NO_TEXT', 0, 0),
+              (2, 20, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TITLE', 'bad note_text entry', 0, 0),
+              (3, 30, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'bad note_title entry', 'bad note_text entry', 0, 0),
+              (4, 40, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0)
         """)
 
         insert_note_data_query = note_table_data_template.render(
@@ -107,10 +113,10 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
                 'note_text', 'encoding_concept_id', 'language_concept_id'
             ],
             'cleaned_values': [
-                (1, 10, self._date, self._datetime, 0, 0, 'NO_TEXT', 'NO_TEXT', 0, 0),
-                (2, 20, self._date, self._datetime, 0, 0, 'NO_TEXT', 'NO_TEXT', 0, 0),
-                (3, 30, self._date, self._datetime, 0, 0, 'NO_TEXT', 'NO_TEXT', 0, 0),
-                (4, 40, self._date, self._datetime, 0, 0, 'NO_TEXT', 'NO_TEXT', 0, 0),
+                (1, 10, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0),
+                (2, 20, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0),
+                (3, 30, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0),
+                (4, 40, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0),
             ]
         }]
 
