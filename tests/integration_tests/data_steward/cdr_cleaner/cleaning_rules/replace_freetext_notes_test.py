@@ -74,10 +74,10 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
                 language_concept_id
         )
         VALUES
-              (1, 10, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 111, 222, 'note_title entry', 'NO_TEXT', 333, 444)
-              -- (2, 20, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 111, 222, 'NO_TEXT', 'note_text entry', 333, 444), --
-              -- (3, 30, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 111, 222, 'note_title entry', 'note_text entry', 333, 444), --
-              -- (4, 40, DATE('2023-00-01'), TIMESTAMP('2023-11-28 16:22:00'), 111, 222, 'NO_TEXT', 'NO_TEXT', 333, 444) --
+              (1, 10, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'note_title entry', 'NO_TEXT', 0, 0),
+              (2, 20, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TEXT', 'note_text entry', 0, 0),
+              (3, 30, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'note_title entry', 'note_text entry', 0, 0),
+              (4, 40, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TEXT', 'NO_TEXT', 0, 0)
         """)
 
         insert_note_data_query = note_table_data_template.render(
@@ -100,17 +100,17 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{NOTE}',
-            'loaded_ids': [1,],  # 2, 3, 4],
+            'loaded_ids': [1, 2, 3, 4],
             'fields': [
                 'note_id', 'person_id', 'note_date', 'note_datetime',
                 'note_type_concept_id', 'note_class_concept_id', 'note_title',
                 'note_text', 'encoding_concept_id', 'language_concept_id'
             ],
             'cleaned_values': [
-                (1, 10, self._date, self._datetime, 111, 222, 'NO_TEXT', 'NO_TEXT', 333, 444),
-                (2, 20, self._date, self._datetime, 111, 222, 'NO_TEXT', 'NO_TEXT', 333, 444),
-                (3, 30, self._date, self._datetime, 111, 222, 'NO_TEXT', 'NO_TEXT', 333, 444),
-                (4, 40, self._date, self._datetime, 111, 222, 'NO_TEXT', 'NO_TEXT', 333, 444),
+                (1, 10, self._date, self._datetime, 0, 0, 'NO_TEXT', 'NO_TEXT', 0, 0),
+                (2, 20, self._date, self._datetime, 0, 0, 'NO_TEXT', 'NO_TEXT', 0, 0),
+                (3, 30, self._date, self._datetime, 0, 0, 'NO_TEXT', 'NO_TEXT', 0, 0),
+                (4, 40, self._date, self._datetime, 0, 0, 'NO_TEXT', 'NO_TEXT', 0, 0),
             ]
         }]
 
