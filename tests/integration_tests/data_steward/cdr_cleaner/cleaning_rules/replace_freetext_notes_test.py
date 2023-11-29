@@ -107,14 +107,10 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
                 'note_text', 'encoding_concept_id', 'language_concept_id'
             ],
             'cleaned_values': [
-                (1, 10, self._date, self._datetime, 111, 222, 'NO_TEXT',
-                 'NO_TEXT', 333, 444),
-                # (2, 20, '2023-00-00, '2023-11-28 16:22:00', 111, 222,
-                #  'NO_TEXT', 'NO_TEXT', 333, 444),
-                # (3, 30, '2023-00-00, '2023-11-28 16:22:00', 111, 222,
-                #  'NO_TEXT', 'NO_TEXT', 333, 444),
-                # (4, 40, '2023-00-00, '2023-11-28 16:22:00', 111, 222,
-                #  'NO_TEXT', 'NO_TEXT', 333, 444),
+                (1, 10, self._date, self._datetime, 111, 222, 'NO_TEXT', 'NO_TEXT', 333, 444),
+                (2, 20, self._date, self._datetime, 111, 222, 'NO_TEXT', 'NO_TEXT', 333, 444),
+                (3, 30, self._date, self._datetime, 111, 222, 'NO_TEXT', 'NO_TEXT', 333, 444),
+                (4, 40, self._date, self._datetime, 111, 222, 'NO_TEXT', 'NO_TEXT', 333, 444),
             ]
         }]
 
