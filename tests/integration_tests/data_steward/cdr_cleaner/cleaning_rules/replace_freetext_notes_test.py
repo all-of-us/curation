@@ -54,7 +54,6 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
-
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
 
@@ -88,8 +87,7 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
         """)
 
         insert_note_data_query = note_table_data_template.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id)
+            project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Load test data
         self.load_test_data([f'{insert_note_data_query}'])
@@ -115,10 +113,14 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
                 'note_text', 'encoding_concept_id', 'language_concept_id'
             ],
             'cleaned_values': [
-                (1, 10, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0),
-                (2, 20, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0),
-                (3, 30, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0),
-                (4, 40, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0),
+                (1, 10, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT',
+                 0, 0),
+                (2, 20, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT',
+                 0, 0),
+                (3, 30, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT',
+                 0, 0),
+                (4, 40, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT',
+                 0, 0),
             ]
         }]
 
