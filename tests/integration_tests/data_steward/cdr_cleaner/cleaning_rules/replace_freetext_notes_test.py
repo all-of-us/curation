@@ -57,7 +57,7 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
         super().setUp()
 
         self._date = date(2023, 1, 1)
-        self._datetime = parse('2023-01-01 01:00:00 UTC').astimezone(pytz.utc)
+        self._datetime = parse('2023-01-01 00:00:00 UTC').astimezone(pytz.utc)
 
         note_table_data_template = JINJA_ENV.from_string("""
         INSERT INTO `{{project_id}}.{{dataset_id}}.note`
