@@ -18,15 +18,15 @@ LOGGER = logging.getLogger(__name__)
 JIRA_ISSUE_NUMBERS = ['DC3607']
 
 FREE_TEXT_UPDATE_QUERY = JINJA_ENV.from_string("""
-UPDATE
-  `{{project}}.{{dataset}}.note`
-SET
-  note_text = 'NO_TEXT',
-  note_title = 'NO_TEXT'
-WHERE
-  NOT REGEXP_CONTAINS('note_text', '(?i)NO_TEXT')
-    OR
-  NOT REGEXP_CONTAINS('note_title', '(?i)NO_TEXT')
+UPDATE `{{project_id}}.mike_schmidt_combined.note`
+  SET
+    note_title = CASE WHEN NOT REGEXP_CONTAINS('note_title', '(?i)NO_TITLE') THEN 'NO_TITLE'
+     END,
+    note_text = CASE WHEN NOT REGEXP_CONTAINS('note_text', '(?i)NO_TEXT') THEN 'NO_TEXT'
+     END
+WHERE note_title <> 'NO_TITLE'
+  OR
+note_text <> 'NO_TEXT'
 """)
 
 
@@ -65,7 +65,8 @@ class ReplaceFreeTextNotes(BaseCleaningRule):
         query = dict()
 
         query[cdr_consts.QUERY] = FREE_TEXT_UPDATE_QUERY.render(
-            dataset=self.dataset_id, project=self.project_id)
+            project=self.project_id,
+            dataset=self.dataset_id,)
 
         queries_list.append(query)
 
