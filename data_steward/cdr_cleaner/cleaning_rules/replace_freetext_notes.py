@@ -38,10 +38,9 @@ class ReplaceFreeTextNotes(BaseCleaningRule):
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper information.
-        #! UPDATE THIS
         """
         desc = (f'Replace any text in note_text and not_title with '
-                f'NO_TEXT in the notes table')
+                f'NO_TEXT and NOT_TITLE respectively in the notes table')
         super().__init__(
             issue_numbers=JIRA_ISSUE_NUMBERS,
             description=desc,

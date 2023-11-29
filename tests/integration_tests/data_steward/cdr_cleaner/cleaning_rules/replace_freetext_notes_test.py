@@ -2,19 +2,23 @@
 Notes submitted by sites and RDR must be suppressed since they are not being released soon.
 This cleaning rule replaces note_text with “NO_TEXT” and note_title with “NO_TITLE” in the combined stage.
 
-
-This test testes four cases:
+This test checks all four cases:
 
 1. An unacceptable value in note_title
 2, An inappropriate value in note_text
 3. Both note_title and note_text contain wrong values.
 4. Both note_title and note_text contain acceptable values.
+
 Original Issues: DC-3607
 """
 
 # Python Imports
 import os
 from datetime import date, datetime
+
+# 3rd Party
+from dateutil.parser import parse
+import pytz
 
 # Project Imports
 from common import NOTE
@@ -24,9 +28,6 @@ from cdr_cleaner.cleaning_rules.replace_freetext_notes \
     import ReplaceFreeTextNotes
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base \
     import BaseTest
-
-from dateutil.parser import parse
-import pytz
 
 
 class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
@@ -87,7 +88,8 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
         """)
 
         insert_note_data_query = note_table_data_template.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            project_id=self.project_id,
+            dataset_id=self.dataset_id)
 
         # Load test data
         self.load_test_data([f'{insert_note_data_query}'])
