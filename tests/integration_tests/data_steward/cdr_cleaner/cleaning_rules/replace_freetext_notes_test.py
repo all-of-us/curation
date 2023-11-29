@@ -5,7 +5,7 @@ This cleaning rule replaces note_text with “NO_TEXT” and note_title with “
 This test checks all four cases:
 
 1. An unacceptable value in note_title
-2, An inappropriate value in note_text
+2. An inappropriate value in note_text
 3. Both note_title and note_text contain wrong values.
 4. Both note_title and note_text contain acceptable values.
 
