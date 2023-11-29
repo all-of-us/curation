@@ -65,7 +65,8 @@ class ReplaceFreeTextNotes(BaseCleaningRule):
 
         query[cdr_consts.QUERY] = FREE_TEXT_UPDATE_QUERY.render(
             project=self.project_id,
-            dataset=self.dataset_id,)
+            dataset=self.dataset_id,
+        )
 
         queries_list.append(query)
 
