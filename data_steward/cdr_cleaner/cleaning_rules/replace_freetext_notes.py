@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 JIRA_ISSUE_NUMBERS = ['DC3607']
 
 FREE_TEXT_UPDATE_QUERY = JINJA_ENV.from_string("""
-UPDATE `{{project_id}}.mike_schmidt_combined.note`
+UPDATE `{{project_id}}.{{dataset_id}}.note`
   SET
     note_title = CASE WHEN NOT REGEXP_CONTAINS('note_title', '(?i)NO_TITLE') THEN 'NO_TITLE'
      END,
