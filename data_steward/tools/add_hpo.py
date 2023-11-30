@@ -310,6 +310,7 @@ def add_hpo_site_to_csv_files(bq_client,
 def get_last_display_order(bq_client):
     """
     gets the display order from hpo_site_id_mappings table
+
     :param bq_client: BigQuery Client
     :return:
     """
@@ -328,6 +329,7 @@ def get_last_display_order(bq_client):
 def shift_display_orders(bq_client, at_display_order):
     """
     shift the display order in hpo_site_id_mappings_table when a new HPO is to be added.
+
     :param bq_client: BigQuery Client
     :param at_display_order: index where the display order
     :return:
@@ -346,6 +348,7 @@ def shift_display_orders(bq_client, at_display_order):
 def add_hpo_mapping(bq_client, hpo_id, hpo_name, org_id, display_order):
     """
     adds hpo_id, hpo_name, org_id, display_order to the hpo_site_id_mappings table
+
     :param bq_client: BigQuery Client
     :param hpo_id: hpo_ identifier
     :param hpo_name: name of the hpo
@@ -369,6 +372,7 @@ def add_hpo_mapping(bq_client, hpo_id, hpo_name, org_id, display_order):
 def add_hpo_bucket(bq_client, hpo_id, bucket_name, service='default'):
     """
     adds hpo bucket name in hpo_bucket_name table.
+    
     :param bq_client: BigQuery Client
     :param hpo_id: hpo identifier
     :param bucket_name: bucket name assigned to hpo
