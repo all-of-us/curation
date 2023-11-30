@@ -15,26 +15,34 @@ from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUES = ['DC2364']
+JIRA_ISSUES = ['DC2364', 'DC3596']
 
 CREATION_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.wear_study` AS
+WITH max_start_dates AS (
+SELECT
+  person_id,
+  MAX(observation_date) AS wear_consent_start_date
+FROM `{{project_id}}.{{dataset_id}}.observation` o
+WHERE value_source_concept_id = 2100000009
+GROUP BY person_id
+)
 SELECT
   DISTINCT person_id,
   'Yes' AS resultsconsent_wear,
-  MIN(CASE WHEN value_source_concept_id = 2100000009 THEN observation_date END) AS wear_consent_start_date,
-  MIN(CASE WHEN value_source_concept_id = 2100000008 THEN observation_date END) AS wear_consent_end_date
-FROM (  
-  SELECT *
-  FROM `{{project_id}}.{{dataset_id}}.observation`
-  WHERE person_id IN ( -- the first recorded consent was positive --
-    SELECT DISTINCT person_id,
-    FROM `{{project_id}}.{{dataset_id}}.observation`
-    WHERE observation_source_concept_id = 2100000010
-    GROUP BY person_id
-    HAVING MIN(CASE WHEN value_source_concept_id = 2100000009 THEN observation_date END) = MIN(observation_date)
-    ))
-GROUP BY person_id
+  msd.wear_consent_start_date,
+  MIN(CASE WHEN value_source_concept_id = 2100000008 
+           AND observation_date > msd.wear_consent_start_date 
+           THEN observation_date 
+           END) AS wear_consent_end_date
+FROM max_start_dates msd
+LEFT JOIN (
+  SELECT * 
+  FROM`{{project_id}}.{{dataset_id}}.observation` o
+  WHERE value_source_concept_id = 2100000008
+  )
+USING (person_id)
+GROUP BY person_id , msd.wear_consent_start_date
 """)
 
 

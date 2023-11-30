@@ -65,6 +65,7 @@ from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
 from cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization import \
     ConflictingHpoStateGeneralize
 from cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers import GeneralizeCopeInsuranceAnswers
+from cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services import GeneralizeIndianHealthServices
 from cdr_cleaner.cleaning_rules.drop_cope_duplicate_responses import DropCopeDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import \
     DropDuplicatePpiQuestionsAndAnswers
@@ -282,6 +283,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
         ConflictingHpoStateGeneralize,),
     (GeneralizeStateByPopulation,),
     (GeneralizeCopeInsuranceAnswers,),
+    (GeneralizeIndianHealthServices,),
     # (GeneralizeSexGenderConcepts,),
 
     # Data suppressions
