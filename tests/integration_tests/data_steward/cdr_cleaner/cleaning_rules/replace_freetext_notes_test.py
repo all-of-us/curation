@@ -95,11 +95,10 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
     def test_replace_freetext_notes(self):
         """
         note:
-        record 1: a note_text entry thats not NO_TEXT
-        record 2: a note_title entry thats not NO_TEXT
+        record 1: a bad note_title entry thats not NO_TITLE
+        record 2: a bad note_text entry thats not NO_TEXT
         record 3: both note_text and note_title have entries other than NO_TEXT
-        record 4: both note_text and note_tile are correct and contain hold NO_TEXT
-        NO_TEXT values
+        record 4: both note_text and note_tile are correct and contain hold NO_TEXT/NO_TEXT values
         """
 
         # Expected results list
