@@ -593,19 +593,19 @@ q = query.render(project_id=project_id,
 df1 = execute(client, q)
 if df1.loc[0].sum() == 0:
     df = df.append({
-        'query': 'Query 3.3 date not shifited',
+        'query': 'Query 4.0 date not shifited',
         'result': 'PASS'
     },
                    ignore_index=True)
 else:
     df = df.append({
-        'query': 'Query 3.3 date not shifited',
+        'query': 'Query 4.0 date not shifited',
         'result': 'Failure'
     },
                    ignore_index=True)
 df1
 
-# ##  Query 4.0 [DC-1051] Verify that "PPI Drop Duplicates" Rule is excluded COPE responses
+# ##  Query 5.0 [DC-1051] Verify that "PPI Drop Duplicates" Rule is excluded COPE responses
 #
 # steps:
 #
@@ -653,20 +653,20 @@ df1 = execute(client, q)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
-            'query': 'Query 4.0 PPI Drop Duplicates rule exclusion',
+            'query': 'Query 5.0 PPI Drop Duplicates rule exclusion',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query 4.1 PPI Drop Duplicates rule exclusion',
+            'query': 'Query 5.0 PPI Drop Duplicates rule exclusion',
             'result': 'Failure'
         },
         ignore_index=True)
 df1
 
-# # Qury 5.0 equal counts for sex_at_birth columns
+# # Qury 6.0 equal counts for sex_at_birth columns
 #
 # to ensure that there are equal counts FROM both the observation and person_ext tables for the sex_at_birth_* columns that can be added to the RT validation notebook:
 #
@@ -709,14 +709,14 @@ df1 = execute(client, q)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
-            'query': 'Query 5.0 equal counts for sex_at_birth columns',
+            'query': 'Query 6.0 equal counts for sex_at_birth columns',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query 5.0 equal counts for sex_at_birth columns',
+            'query': 'Query 6.0 equal counts for sex_at_birth columns',
             'result': 'Failure'
         },
         ignore_index=True)
