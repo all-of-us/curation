@@ -8,6 +8,7 @@ This test checks all four cases:
 2. An inappropriate value in note_text
 3. Both note_title and note_text contain wrong values.
 4. Both note_title and note_text contain acceptable values.
+5. Both note_title and note_text are empty strings.
 
 Original Issues: DC-3607
 """
@@ -100,6 +101,7 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
         record 2: a bad note_text entry thats not NO_TEXT
         record 3: both note_text and note_title have entries other than NO_TEXT
         record 4: both note_text and note_tile are correct and contain hold NO_TEXT/NO_TEXT values
+        record 5. Both note_title and note_text are empty strings.
         """
 
         # Expected results list
