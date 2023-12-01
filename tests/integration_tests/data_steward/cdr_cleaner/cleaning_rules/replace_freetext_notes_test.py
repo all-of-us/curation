@@ -83,7 +83,8 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
               (1, 10, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'bad note_title entry', 'NO_TEXT', 0, 0),
               (2, 20, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TITLE', 'bad note_text entry', 0, 0),
               (3, 30, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'bad note_title entry', 'bad note_text entry', 0, 0),
-              (4, 40, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0)
+              (4, 40, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0),
+              (5, 50, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, '', '', 0, 0)
         """)
 
         insert_note_data_query = note_table_data_template.render(
@@ -105,7 +106,7 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{NOTE}',
-            'loaded_ids': [1, 2, 3, 4],
+            'loaded_ids': [1, 2, 3, 4, 5],
             'fields': [
                 'note_id', 'person_id', 'note_date', 'note_datetime',
                 'note_type_concept_id', 'note_class_concept_id', 'note_title',
@@ -119,6 +120,8 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
                 (3, 30, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT',
                  0, 0),
                 (4, 40, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT',
+                 0, 0),
+                (5, 50, self._date, self._datetime, 0, 0, 'NO_TITLE', 'NO_TEXT',
                  0, 0),
             ]
         }]
