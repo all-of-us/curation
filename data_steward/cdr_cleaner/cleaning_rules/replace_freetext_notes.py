@@ -19,14 +19,10 @@ JIRA_ISSUE_NUMBERS = ['DC3607']
 
 FREE_TEXT_UPDATE_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.note`
-  SET
-    note_title = CASE WHEN NOT REGEXP_CONTAINS('note_title', '(?i)NO_TITLE') THEN 'NO_TITLE'
-     END,
-    note_text = CASE WHEN NOT REGEXP_CONTAINS('note_text', '(?i)NO_TEXT') THEN 'NO_TEXT'
-     END
-WHERE note_title <> 'NO_TITLE'
-  OR
-note_text <> 'NO_TEXT'
+SET
+  note_text = `NO_TEXT`,
+  note_title = `NO_TITLE`
+WHERE True
 """)
 
 
