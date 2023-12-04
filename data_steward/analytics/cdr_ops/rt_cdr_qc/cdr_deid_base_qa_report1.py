@@ -48,7 +48,11 @@ df = pd.DataFrame(columns=['query', 'result'])
 
 # ## Query 1.0
 #
-# We are generalizing Indian Health Services, and then deduplicated the rows that are created as a result.  Therefore we need a check for each part.  As part of generalization, we are updating value_source_concept_id and value_as_concept_id so this check verifies if the update was successful or not.
+# Even though this option does not overtly identify a participant as AI/AN, it suggests so.  Therefore, these responses are generalized to "Other" and later deduplicate the rows that were created as a result
+#
+# We need a check for each part: We update both the value_source_concept_id and value_as_concept_id. Therefore, it is essential to include a validation check to confirm the success of the update.
+#
+# See [DC-3597](https://precisionmedicineinitiative.atlassian.net/browse/DC-3597)
 
 # +
 query = JINJA_ENV.from_string("""SELECT
@@ -97,9 +101,7 @@ result
 
 # ## Query 1.1
 #
-# [DC-3597](https://precisionmedicineinitiative.atlassian.net/browse/DC-3597): Check if insurance selections are “Indian Health Services” (or a variant).
-#
-# Even though this option does not overtly identify a participant as AI/AN, it suggests so.  Therefore, these responses are generalized to "Other" at the registered tier de-id stage.
+# [DC-3597](https://precisionmedicineinitiative.atlassian.net/browse/DC-3597): Insurance selections of “Indian Health Services” (or a variant) were duplicated to "Other."  This check verifies records were supressed. 
 #
 # The observation_concept_id's are:
 # - `40766241`
@@ -134,7 +136,7 @@ if result.empty:
     df = df.append(
         {
             'query':
-                "Query 1.1 No observation_id's indicate Indian Health Services or similar",
+                "Query 1.1 Duplaced observation_id's indicating Indian Health Services or similar were removed",
             'result':
                 'PASS'
         },
@@ -143,7 +145,7 @@ else:
     df = df.append(
         {
             'query':
-                "Query 1.1 observation_id's were found that indicate Indian Health Services or similar",
+                "Query 1.1 observation_id's indicate indian Health Services are present",
             'result':
                 'Failure'
         },
