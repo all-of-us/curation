@@ -85,7 +85,7 @@ class ReplaceFreeTextNotesTest(BaseTest.CleaningRulesTestBase):
               (2, 20, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TITLE', 'bad note_text entry', 0, 0),
               (3, 30, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'bad note_title entry', 'bad note_text entry', 0, 0),
               (4, 40, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, 'NO_TITLE', 'NO_TEXT', 0, 0),
-              (5, 50, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, '', NULL, 0, 0)
+              (5, 50, DATE('2023-01-01'), TIMESTAMP('2023-01-01 00:00:00'), 0, 0, '', '', 0, 0)
         """)
 
         insert_note_data_query = note_table_data_template.render(

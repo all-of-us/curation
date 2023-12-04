@@ -20,8 +20,8 @@ JIRA_ISSUE_NUMBERS = ['DC3607']
 FREE_TEXT_UPDATE_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.note`
 SET
-  note_text = `NO_TEXT`,
-  note_title = `NO_TITLE`
+  note_text = 'NO_TEXT',
+  note_title = 'NO_TITLE'
 WHERE True
 """)
 
