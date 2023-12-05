@@ -7,6 +7,9 @@ End dates should not be prior to start dates in any table
         * If other tables have dates for that visit, end date = max(all dates from other tables for that visit)
         * Else, end date = start date.
     * Else, If visit type is ER(id 9203)/Outpatient(id 9202), end date = start date
+
+NOTE: TemporalConsistency is known to update date columns but not datetime columns.
+    EnsureDateDatetimeConsistency must run after it to fix the inconsistent datetimes.
 """
 import logging
 

@@ -1,10 +1,8 @@
 """
-Ensuring there are no null datetimes.
+Ensuring there are no null or incorrect/inconsistent datetimes.
+If there are null or incocrrect datetimes, copy the date over to the datetime field.
 
 Original Issues: DC-614, DC-509, DC-432 and DC-2635
-
-The intent is to copy the date over to the datetime field if the datetime
-field is null or incorrect.
 """
 
 # Python imports
