@@ -48,11 +48,12 @@ df = pd.DataFrame(columns=['query', 'result'])
 
 # ## Query 1.0
 #
-# Even though this option does not overtly identify a participant as AI/AN, it suggests so.  Therefore, these responses are generalized to "Other" and later deduplicate the rows that were created as a result
+# Participants answer multiple choice insurance questions on multiple surveys.  One of the available insurance selections is “Indian Health Services” (or a variant).  This option does not necessarily identify a participant as a self identifying AI/AN participant.  Even though this option does not overtly identify a participant as AI/AN, it suggests so.  Hence, we generalize these responses to the category "Other" and subsequently eliminate duplicate rows generated during this process.
 #
-# We need a check for each part: We update both the value_source_concept_id and value_as_concept_id. Therefore, it is essential to include a validation check to confirm the success of the update.
-#
-# See [DC-3597](https://precisionmedicineinitiative.atlassian.net/browse/DC-3597)
+# This check verifies records were suppressed. The observation_concept_id's are:
+# - `40766241`
+# - `1585389`
+# - `43528428`
 
 # +
 query = JINJA_ENV.from_string("""SELECT
@@ -101,14 +102,7 @@ result
 
 # ## Query 1.1
 #
-# [DC-3597](https://precisionmedicineinitiative.atlassian.net/browse/DC-3597): Insurance selections of “Indian Health Services” (or a variant) were duplicated to "Other."  This check verifies records were supressed. 
-#
-# The observation_concept_id's are:
-# - `40766241`
-#
-# - `1585389`
-#
-# - `43528428`
+# Generalized Insurance selections of “Indian Health Services” (or a variant) should not result in duplicate responses. [DC-3597](https://precisionmedicineinitiative.atlassian.net/browse/DC-3597)
 
 # +
 query = JINJA_ENV.from_string("""
