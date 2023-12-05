@@ -37,6 +37,7 @@ from cdr_cleaner.cleaning_rules.sandbox_and_remove_withdrawn_pids import Sandbox
 from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import RemoveRecordsWithWrongDate
 from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveParticipantsUnder18Years
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
+from cdr_cleaner.cleaning_rules.replace_freetext_notes import ReplaceFreeTextNotes
 from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import UpdateFamilyHistoryCodes
 from cdr_cleaner.cleaning_rules.remove_operational_pii_fields import RemoveOperationalPiiFields
 from cdr_cleaner.cleaning_rules.update_ppi_negative_pain_level import UpdatePpiNegativePainLevel
@@ -249,6 +250,7 @@ COMBINED_CLEANING_CLASSES = [
         NullInvalidForeignKeys,),
     (RemoveParticipantDataPastDeactivationDate,),
     (RemoveNonMatchingParticipant,),
+    (ReplaceFreeTextNotes,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (GenerateExtTables,),
