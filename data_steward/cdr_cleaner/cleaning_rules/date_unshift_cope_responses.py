@@ -29,24 +29,29 @@ LOGGER = logging.getLogger(__name__)
 
 OBSERVATION_EXT = f'{OBSERVATION}_ext'
 
+SURVEY_VERSION_CPT_ID_QUERY = JINJA_ENV.from_string("""
+SELECT
+DISTINCT e.survey_version_concept_id
+FROM `{{project_id}}.{{dataset_id}}.{{observation_ext_table}}` e
+JOIN `{{project_id}}.{{dataset_id}}.concept` c
+ON c.concept_id = e.survey_version_concept_id
+""")
+
 SANDBOX_COPE_SURVEY_OBS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{intermediary_obs_table}}` AS
 SELECT *
 FROM `{{project_id}}.{{dataset_id}}.{{observation_table}}`
 INNER JOIN `{{project_id}}.{{dataset_id}}.{{observation_ext_table}}`
 USING (observation_id)
-WHERE survey_version_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
-  2100000007, 905047, 905055, 765936)
+WHERE survey_version_concept_id IN ({{survey_version_cpt_ids}})
 """)
 
 SANDBOX_COPE_SURVEY_SC_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{intermediary_sc_table}}` AS
 SELECT *
 FROM `{{project_id}}.{{dataset_id}}.{{survey_conduct_table}}`
-WHERE survey_source_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
-  2100000007, 905047, 905055, 765936)
-OR survey_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
-  2100000007, 905047, 905055, 765936)
+WHERE survey_source_concept_id IN ({{survey_version_cpt_ids}})
+OR survey_concept_id IN ({{survey_version_cpt_ids}})
 """)
 
 DATE_UNSHIFT_OBS_QUERY = JINJA_ENV.from_string("""
@@ -124,6 +129,8 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
             depends_on=[COPESurveyVersionTask, QRIDtoRID],
             table_namer=table_namer)
 
+        self.survey_version_cpt_ids = None
+
     def get_combined_dataset_from_deid_dataset(self, dataset_name):
         """
         Returns a combined dataset name from a de_identified dataset name
@@ -149,6 +156,12 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
                 f'{self.project_id}.{self.dataset_id}')
         ]
 
+        survey_version_cpt_ids = SURVEY_VERSION_CPT_ID_QUERY.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            observation_ext_table=OBSERVATION_EXT)
+        self.survey_version_cpt_ids = survey_version_cpt_ids
+
     def get_query_specs(self):
         """
         :return:
@@ -164,7 +177,8 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
                     intermediary_obs_table=self.sandbox_table_for(OBSERVATION),
                     dataset_id=self.dataset_id,
                     observation_table=OBSERVATION,
-                    observation_ext_table=OBSERVATION_EXT)
+                    observation_ext_table=OBSERVATION_EXT,
+                    survey_version_cpt_ids=self.survey_version_cpt_ids)
             sandbox_queries.append(sandbox_query_obs)
 
             update_query_obs = dict()
@@ -187,7 +201,8 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
                     intermediary_sc_table=self.sandbox_table_for(
                         SURVEY_CONDUCT),
                     dataset_id=self.dataset_id,
-                    survey_conduct_table=SURVEY_CONDUCT)
+                    survey_conduct_table=SURVEY_CONDUCT,
+                    survey_version_cpt_ids=self.survey_version_cpt_ids)
             sandbox_queries.append(sandbox_query_sc)
 
             update_query_sc = dict()
