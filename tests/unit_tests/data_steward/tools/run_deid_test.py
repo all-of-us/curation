@@ -15,6 +15,7 @@ import unittest
 # Third party imports
 from mock import patch
 import mock
+from unittest.mock import call
 from resources import DEID_PATH
 
 # Project imports
@@ -119,15 +120,25 @@ class RunDeidTest(unittest.TestCase):
         run_deid.main(self.correct_parameter_list)
 
         # Post conditions
-        mock_main.assert_called_once_with([
-            '--rules',
-            os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
-            '--private_key', self.private_key, '--table', 'fake1', '--action',
-            self.action, '--idataset', self.input_dataset, '--log', 'LOGS',
-            '--odataset', self.output_dataset, '--age-limit', self.max_age,
-            '--run_as', self.run_as_email
+        mock_main.assert_has_calls([
+            call([
+                '--rules',
+                os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
+                '--private_key', self.private_key, '--table', 'fake1',
+                '--action', self.action, '--idataset', self.input_dataset,
+                '--log', 'LOGS', '--odataset', self.output_dataset,
+                '--age-limit', self.max_age, '--run_as', self.run_as_email
+            ]),
+            call([
+                '--rules',
+                os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
+                '--private_key', self.private_key, '--table', 'person_ext',
+                '--action', self.action, '--idataset', self.input_dataset,
+                '--log', 'LOGS', '--odataset', self.output_dataset,
+                '--age-limit', self.max_age, '--run_as', self.run_as_email
+            ])
         ])
-        self.assertEqual(mock_main.call_count, 1)
+        self.assertEqual(mock_main.call_count, 2)
         self.assertEqual(mock_copy_ext_tables.call_count, 1)
 
     @patch('tools.run_deid.os.walk')
