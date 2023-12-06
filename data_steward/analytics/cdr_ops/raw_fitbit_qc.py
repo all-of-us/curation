@@ -236,19 +236,14 @@ with all_levels_for_at_least_one_date AS (
         person_id, 
         sleep_date
     FROM
-        `{{project_id}}.{{dataset}}.sleep_level`
+        (SELECT * FROM `{{project_id}}.{{dataset}}.sleep_level` WHERE level != 'unknown')
     GROUP BY 
         person_id, sleep_date
-    HAVING levels > 7
+    HAVING levels > 6
 ) 
 
 SELECT 
-  ROUND((COUNT(DISTINCT person_id)/(
-    SELECT
-        COUNT(DISTINCT person_id)
-    FROM 
-        `{{project_id}}.{{dataset}}.sleep_level`
-   ))*100,2) AS percentage
+  ROUND((COUNT(DISTINCT person_id)/(SELECT COUNT(DISTINCT person_id) FROM `{{project_id}}.{{dataset}}.sleep_level`))*100,2) AS percentage
 FROM
     all_levels_for_at_least_one_date
 """).render(project_id=project_id, dataset=dataset_id)
