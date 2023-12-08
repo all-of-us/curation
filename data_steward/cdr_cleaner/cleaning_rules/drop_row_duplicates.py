@@ -1,10 +1,13 @@
 """
-Removes duplicate responses. Where rows differs only on observation_id.
+Removes duplicate responses where row fields are the same, or differ only on observation_id.
 
 Original Issues: DC-3630
 
 It should not be possible for rows to be duplicated on all fields except for observation_id. This CR sandboxes and
 removes duplicate rows of this type.
+
+Note: This CR will drop both observation records if the entire row is duplicated. These rows should have been dealt with
+prior to the running of this CR.
 
 """
 
@@ -12,103 +15,67 @@ removes duplicate rows of this type.
 import logging
 
 # Project imports
-from common import JINJA_ENV
+from common import JINJA_ENV, OBSERVATION
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-SANDBOX_DUPLICATE_TEMPLATE = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE
-    `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS 
-SELECT
-  *
-FROM
-  `{{project}}.{{dataset}}.observation`
-WHERE
-  observation_id IN 
+SANDBOX_TEMPLATE = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
+WITH id_duplicates AS (
+SELECT  
+  CONCAT(person_id, COALESCE(observation_source_value,'osv_null'), 
+         COALESCE(value_source_value,'vsv_null'),observation_concept_id,
+         COALESCE(value_as_concept_id,1111),COALESCE(value_source_concept_id,2222),
+         COALESCE(visit_occurrence_id,3333),COALESCE(questionnaire_response_id,000),
+         COALESCE(value_as_string,'vas_null')) as dup_id,
+  COUNT(person_id) n
+FROM `{{project_id}}.{{dataset_id}}.observation`
+GROUP BY person_id, value_source_value, questionnaire_response_id,
+         observation_concept_id, observation_date, observation_datetime,
+         observation_type_concept_id, value_as_concept_id,
+         observation_source_value,observation_source_concept_id,
+         value_source_concept_id, value_as_string, visit_occurrence_id
+HAVING n > 1
+                      )
+, ranking_duplicates AS (
+SELECT 
+  RANK() OVER (PARTITION BY CONCAT(person_id, COALESCE(observation_source_value,'osv_null'), 
+                                  COALESCE(value_source_value,'vsv_null'),observation_concept_id,
+                                  COALESCE(value_as_concept_id,1111),COALESCE(value_source_concept_id,2222),
+                                  COALESCE(visit_occurrence_id,3333),COALESCE(questionnaire_response_id,000),
+                                  COALESCE(value_as_string,'vas_null'))
+               ORDER BY observation_id) AS row_rank, 
+  * 
+FROM `{{project_id}}.{{dataset_id}}.observation` o
+WHERE CONCAT(person_id, COALESCE(observation_source_value,'osv_null'), 
+            COALESCE(value_source_value,'vsv_null'),observation_concept_id,
+            COALESCE(value_as_concept_id,1111),COALESCE(value_source_concept_id,2222),
+            COALESCE(visit_occurrence_id,3333),COALESCE(questionnaire_response_id,000),
+            COALESCE(value_as_string,'vas_null')) 
+       IN (SELECT dup_id FROM id_duplicates)
+ORDER BY o.person_id, value_source_value, observation_id
+                        )
+
+SELECT 
+*
+FROM ranking_duplicates
+WHERE row_rank != 1 
 """)
 
-REMOVE_DUPLICATE_TEMPLATE = JINJA_ENV.from_string("""
+DELETION_TEMPLATE = JINJA_ENV.from_string("""
 DELETE
 FROM
-  `{{project}}.{{dataset}}.observation`
+  `{{project_id}}.{{dataset_id}}.observation`
 WHERE
-  observation_id IN 
-""")
-
-IDENTIFY_DUPLICATE_ID_TEMPLATE = JINJA_ENV.from_string("""
-    ( SELECT
-      observation_id
-    FROM (
-      SELECT
-        *,
-        DENSE_RANK() OVER(
-              PARTITION BY person_id, 
-              observation_source_concept_id, 
-              observation_source_value 
-              ORDER BY is_pmi_skip ASC, max_observation_datetime DESC, questionnaire_response_id DESC) AS rank_order
-      FROM (
-        SELECT
-          observation_id,
-          person_id,
-          observation_source_concept_id,
-          observation_source_value,
-          questionnaire_response_id,
-          IF(value_source_value = \'PMI_Skip\', 1, 0) AS is_pmi_skip,
-          MAX(observation_datetime) OVER(
-              PARTITION BY person_id, 
-              observation_source_concept_id, 
-              observation_source_value, 
-              questionnaire_response_id) AS max_observation_datetime
-        FROM `{{project}}.{{dataset}}.observation` 
-        WHERE observation_source_concept_id != 1586099  /* exclude EHRConsentPII_ConsentPermission */
-        AND observation_id NOT IN (
-            SELECT
-                observation_id
-            FROM
-                `{{project}}.{{dataset}}.observation` ob
-            JOIN
-                `{{project}}.{{dataset}}.{{cope_survey_version_table}}` svm
-            ON
-                person_id = participant_id
-            AND ob.questionnaire_response_id = svm.questionnaire_response_id
-            /* exclude COPE & MINUTE Survey Responses */
-        )
-      ) o
-    ) o
-    WHERE o.rank_order != 1 )
+  observation_id IN (SELECT observation_id FROM `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}`)
 """)
 
 
-def get_select_statement(project_id, dataset_id, sandbox_dataset_id,
-                         sandbox_table):
-    duplicate_id_query = IDENTIFY_DUPLICATE_ID_TEMPLATE.render(
-        project=project_id,
-        dataset=dataset_id,
-        cope_survey_version_table=COPE_SURVEY_VERSION_MAP_TABLE)
-
-    select_duplicates_query = SELECT_DUPLICATE_TEMPLATE.render(
-        project=project_id,
-        dataset=dataset_id,
-        sandbox_dataset=sandbox_dataset_id,
-        intermediary_table=sandbox_table)
-    return select_duplicates_query + duplicate_id_query
-
-
-def get_delete_statement(project_id, dataset_id):
-    duplicate_id_query = IDENTIFY_DUPLICATE_ID_TEMPLATE.render(
-        project=project_id,
-        dataset=dataset_id,
-        cope_survey_version_table=COPE_SURVEY_VERSION_MAP_TABLE)
-    delete_duplicates_template = REMOVE_DUPLICATE_TEMPLATE.render(
-        project=project_id, dataset=dataset_id)
-    return delete_duplicates_template + duplicate_id_query
-
-
-class DropPpiDuplicateResponses(BaseCleaningRule):
+class DropRowDuplicates(BaseCleaningRule):
     """
-    Removes the duplicate sets of responses to the same questions excluding COPE survey.
+    Removes duplicate responses where row fields are the same, or differ only on observation_id.
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
@@ -119,8 +86,8 @@ class DropPpiDuplicateResponses(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'Removes the duplicate sets of responses to the same questions excluding COPE survey responses.'
-        super().__init__(issue_numbers=['DC1051', 'DC532'],
+        desc = 'Removes duplicate responses where row fields are the same, or differ only on observation_id.'
+        super().__init__(issue_numbers=['DC3630'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          affected_tables=['observation'],
@@ -137,19 +104,25 @@ class DropPpiDuplicateResponses(BaseCleaningRule):
             are optional but the query is required.
         """
 
-        save_duplicate_rows = {
+        sandbox_duplicates_dict = {
             cdr_consts.QUERY:
-                get_select_statement(self.project_id, self.dataset_id,
-                                     self.sandbox_dataset_id,
-                                     self.get_sandbox_tablenames()[0])
+                SANDBOX_TEMPLATE.render(
+                    project_id=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
+                    dataset_id=self.dataset_id)
         }
 
-        delete_duplicate_rows = {
+        delete_observations_dict = {
             cdr_consts.QUERY:
-                get_delete_statement(self.project_id, self.dataset_id)
+                DELETION_TEMPLATE.render(
+                    project_id=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
+                    dataset_id=self.dataset_id)
         }
 
-        return [save_duplicate_rows, delete_duplicate_rows]
+        return [sandbox_duplicates_dict, delete_observations_dict]
 
     def setup_rule(self, client):
         """
@@ -169,11 +142,11 @@ class DropPpiDuplicateResponses(BaseCleaningRule):
         """
         raise NotImplementedError("Please fix me.")
 
-    def get_sandbox_table_name(self):
-        return f'{self._issue_numbers[0].lower()}_{self.affected_tables[0]}'
-
     def get_sandbox_tablenames(self):
-        return [self.get_sandbox_table_name()]
+        return [
+            self.sandbox_table_for(affected_table)
+            for affected_table in self._affected_tables
+        ]
 
 
 if __name__ == '__main__':
@@ -187,11 +160,11 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(DropPpiDuplicateResponses,)])
+                                                 [(DropRowDuplicates,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(DropPpiDuplicateResponses,)])
+                                   [(DropRowDuplicates,)])
