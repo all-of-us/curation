@@ -150,7 +150,7 @@ def generate_new(args):
                          args.src_dataset_id,
                          args.output_prod_project_id,
                          args.run_as_email,
-                         copy_fitbit=True,
+                         copy_fitbit=False,
                          fitbit_dataset_id=args.fitbit_dataset_id)
 
 
@@ -161,7 +161,7 @@ def generate_output_prod(tier,
                          src_dataset_id,
                          output_prod_project_id,
                          run_as_email,
-                         copy_fitbit=True,
+                         copy_fitbit=False,
                          fitbit_dataset_id=None):
     #Get credentials and instantiate client
     impersonation_creds = auth.get_impersonation_credentials(
@@ -208,8 +208,8 @@ def generate_output_prod(tier,
     update_person(bq_client, output_dataset_name)
 
     #Add records to death table using aou_death table
-    LOGGER.info(f'Populating death table using aou_death table...')
-    populate_death(bq_client, output_prod_project_id, output_dataset_name)
+    # LOGGER.info(f'Populating death table using aou_death table...')
+    # populate_death(bq_client, output_prod_project_id, output_dataset_name)
 
     LOGGER.info(f'Completed successfully.')
 
