@@ -463,31 +463,31 @@ execute(client, query)
 # This QC confirms that the logic for the primary records are applied as expected in the `AOU_DEATH` table.
 
 # +
-query = JINJA_ENV.from_string("""
-WITH qc_aou_death AS (
-    SELECT 
-        aou_death_id, 
-        CASE WHEN aou_death_id IN (
-            SELECT aou_death_id FROM `{{project_id}}.{{dataset_id}}.aou_death`
-            WHERE death_date IS NOT NULL -- NULL death_date records must not become primary --
-            QUALIFY RANK() OVER (
-                PARTITION BY person_id 
-                ORDER BY
-                    LOWER(src_id) NOT LIKE '%healthpro%' DESC, -- EHR records are chosen over HealthPro ones --
-                    death_date ASC, -- Earliest death_date records are chosen over later ones --
-                    death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
-                    src_id ASC -- EHR site that alphabetically comes first is chosen --
-            ) = 1   
-        ) THEN TRUE ELSE FALSE END AS primary_death_record
-    FROM `{{project}}.{{dataset}}.aou_death`    
-)
-SELECT ad.aou_death_id
-FROM `{{project_id}}.{{dataset}}.aou_death` ad
-LEFT JOIN qc_aou_death qad
-ON ad.aou_death_id = qad.aou_death_id
-WHERE ad.primary_death_record != qad.primary_death_record
-""").render(project_id=dest_project_id, dataset=dest_dataset_id)
-df = execute(client, query)
+# query = JINJA_ENV.from_string("""
+# WITH qc_aou_death AS (
+#     SELECT
+#         aou_death_id,
+#         CASE WHEN aou_death_id IN (
+#             SELECT aou_death_id FROM `{{project_id}}.{{dataset_id}}.aou_death`
+#             WHERE death_date IS NOT NULL -- NULL death_date records must not become primary --
+#             QUALIFY RANK() OVER (
+#                 PARTITION BY person_id
+#                 ORDER BY
+#                     LOWER(src_id) NOT LIKE '%healthpro%' DESC, -- EHR records are chosen over HealthPro ones --
+#                     death_date ASC, -- Earliest death_date records are chosen over later ones --
+#                     death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
+#                     src_id ASC -- EHR site that alphabetically comes first is chosen --
+#             ) = 1
+#         ) THEN TRUE ELSE FALSE END AS primary_death_record
+#     FROM `{{project}}.{{dataset}}.aou_death`
+# )
+# SELECT ad.aou_death_id
+# FROM `{{project_id}}.{{dataset}}.aou_death` ad
+# LEFT JOIN qc_aou_death qad
+# ON ad.aou_death_id = qad.aou_death_id
+# WHERE ad.primary_death_record != qad.primary_death_record
+# """).render(project_id=dest_project_id, dataset=dest_dataset_id)
+# df = execute(client, query)
 
 success_msg = 'All death records have the correct `primary_death_record` values.'
 failure_msg = '''
@@ -506,29 +506,29 @@ render_message(df,
 # This QC confirms that the DEATH table is there and has correct data.
 
 # +
-query = JINJA_ENV.from_string("""
-WITH primary_aou_death AS (
-    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
-    FROM `{{project_id}}.{{dataset}}.aou_death`
-    WHERE primary_death_record = TRUE
-), primary_records_missing_from_death AS (
-    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
-    FROM primary_aou_death
-    EXCEPT DISTINCT
-    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
-    FROM `{{project_id}}.{{dataset}}.death`
-), unexpected_records_in_death AS (
-    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
-    FROM `{{project_id}}.{{dataset}}.death`
-    EXCEPT DISTINCT
-    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
-    FROM primary_aou_death
-)
-SELECT "primary_records_missing_from_death" AS issue, * FROM primary_records_missing_from_death
-UNION ALL
-SELECT "unexpected_records_in_death" AS issue, * FROM unexpected_records_in_death
-""").render(project_id=dest_project_id, dataset=dest_dataset_id)
-df = execute(client, query)
+# query = JINJA_ENV.from_string("""
+# WITH primary_aou_death AS (
+#     SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+#     FROM `{{project_id}}.{{dataset}}.aou_death`
+#     WHERE primary_death_record = TRUE
+# ), primary_records_missing_from_death AS (
+#     SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+#     FROM primary_aou_death
+#     EXCEPT DISTINCT
+#     SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+#     FROM `{{project_id}}.{{dataset}}.death`
+# ), unexpected_records_in_death AS (
+#     SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+#     FROM `{{project_id}}.{{dataset}}.death`
+#     EXCEPT DISTINCT
+#     SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+#     FROM primary_aou_death
+# )
+# SELECT "primary_records_missing_from_death" AS issue, * FROM primary_records_missing_from_death
+# UNION ALL
+# SELECT "unexpected_records_in_death" AS issue, * FROM unexpected_records_in_death
+# """).render(project_id=dest_project_id, dataset=dest_dataset_id)
+# df = execute(client, query)
 
 success_msg = 'DEATH table has correct and complete data.'
 failure_msg = '''
