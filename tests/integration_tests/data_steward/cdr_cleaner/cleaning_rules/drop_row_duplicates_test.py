@@ -63,8 +63,7 @@ class DropRowDuplicatesTest(BaseTest.CleaningRulesTestBase):
 
     def test_field_cleaning(self):
         """
-        Tests that the specifications for the SANDBOX_QUERY and CLEAN_PPI_NUMERIC_FIELDS_QUERY
-        perform as designed.
+        Tests that the specifications for the CR perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
@@ -79,13 +78,6 @@ INSERT INTO `{{fq_dataset_name}}.observation` (
     value_source_concept_id, value_as_string, visit_occurrence_id
     )
 VALUES
--- full row duplicates. unaffected. both are ranked 1. --
-  (1, 111, 'value_source_value', 111,111, date('2024-01-01'), 
-  timestamp('2024-01-01 00:00:00 UTC'), 111, 111,
-  "observation_source_value", 111, 111, "value_as_string", 111),
-  (1, 111, 'value_source_value', 111,111, date('2024-01-01'), 
-  timestamp('2024-01-01 00:00:00 UTC'), 111, 111,
-  "observation_source_value", 111, 111, "value_as_string", 111),
 -- duplicates on all except observation_id. larger observation_ids are dropped  --   
   (2, 222, 'value_source_value', 222,222, date('2024-01-01'), 
   timestamp('2024-01-01 00:00:00 UTC'), 222, 222,
@@ -117,15 +109,12 @@ VALUES
 
         # Expected results list
         tables_and_counts = [{
-            'fq_table_name':
-                self.fq_table_names[0],
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[0],
-            'loaded_ids': [1, 1, 2, 3, 4, 5, 6, 7, 8],
+            'fq_table_name': self.fq_table_names[0],
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
+            'loaded_ids': [2, 3, 4, 5, 6, 7, 8],
             'sandboxed_ids': [3, 4, 8],
             'fields': ['observation_id', 'person_id'],
-            'cleaned_values': [(1, 111), (1, 111), (2, 222), (5, 333), (6, 333),
-                               (7, 444)]
+            'cleaned_values': [(2, 222), (5, 333), (6, 333), (7, 444)]
         }]
 
         self.default_test(tables_and_counts)

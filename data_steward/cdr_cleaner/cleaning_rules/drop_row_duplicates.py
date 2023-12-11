@@ -1,11 +1,10 @@
 """
-Removes duplicate responses where row fields are the same, or differ only on observation_id.
+Removes duplicate responses where row fields differ only on observation_id.
 
 Original Issues: DC-3630
 
 This CR sandboxes and removes duplicate rows where all fields except for observation_id are the same.
 
-Note: This CR will NOT drop observation records if the entire row is duplicated.
 
 """
 
@@ -22,44 +21,40 @@ LOGGER = logging.getLogger(__name__)
 SANDBOX_TEMPLATE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
 WITH id_duplicates AS (
-SELECT  
-  CONCAT(person_id, COALESCE(observation_source_value,'osv_null'), 
-         COALESCE(value_source_value,'vsv_null'),observation_concept_id,
-         COALESCE(value_as_concept_id,1111),COALESCE(value_source_concept_id,2222),
-         COALESCE(visit_occurrence_id,3333),COALESCE(questionnaire_response_id,000),
-         COALESCE(value_as_string,'vas_null')) as dup_id,
-  COUNT(person_id) n
+SELECT 
+observation_id,
+person_id,
+observation_concept_id,
+observation_date,
+observation_datetime,
+observation_type_concept_id,
+value_as_number,
+COALESCE(value_as_string,'vas_null') value_as_string,
+COALESCE(value_as_concept_id,1111) value_as_concept_id,
+qualifier_concept_id,
+unit_concept_id,
+provider_id,
+COALESCE(visit_occurrence_id,3333) visit_occurrence_id,
+visit_detail_id,
+COALESCE(observation_source_value,'osv_null') observation_source_value,
+observation_source_concept_id,
+unit_source_value,
+qualifier_source_value,
+COALESCE(value_source_concept_id,2222) value_source_concept_id,
+COALESCE(value_source_value,'vsv_null') value_source_value,
+COALESCE(questionnaire_response_id,000) questionnaire_response_id
 FROM `{{project_id}}.{{dataset_id}}.observation`
-GROUP BY person_id, value_source_value, questionnaire_response_id,
-         observation_concept_id, observation_date, observation_datetime,
-         observation_type_concept_id, value_as_concept_id,
-         observation_source_value,observation_source_concept_id,
-         value_source_concept_id, value_as_string, visit_occurrence_id
-HAVING n > 1
-                      )
-, ranking_duplicates AS (
-SELECT 
-  RANK() OVER (PARTITION BY CONCAT(person_id, COALESCE(observation_source_value,'osv_null'), 
-                                  COALESCE(value_source_value,'vsv_null'),observation_concept_id,
-                                  COALESCE(value_as_concept_id,1111),COALESCE(value_source_concept_id,2222),
-                                  COALESCE(visit_occurrence_id,3333),COALESCE(questionnaire_response_id,000),
-                                  COALESCE(value_as_string,'vas_null'))
-               ORDER BY observation_id) AS row_rank, 
-  * 
-FROM `{{project_id}}.{{dataset_id}}.observation` o
-WHERE CONCAT(person_id, COALESCE(observation_source_value,'osv_null'), 
-            COALESCE(value_source_value,'vsv_null'),observation_concept_id,
-            COALESCE(value_as_concept_id,1111),COALESCE(value_source_concept_id,2222),
-            COALESCE(visit_occurrence_id,3333),COALESCE(questionnaire_response_id,000),
-            COALESCE(value_as_string,'vas_null')) 
-       IN (SELECT dup_id FROM id_duplicates)
-ORDER BY o.person_id, value_source_value, observation_id
-                        )
+),
 
-SELECT 
-*
-FROM ranking_duplicates
-WHERE row_rank != 1 
+ranked_rows as
+(SELECT *, ROW_NUMBER() OVER (PARTITION BY 
+person_id, observation_concept_id, value_source_value, observation_source_value, value_as_string, value_as_concept_id,
+visit_occurrence_id, value_source_concept_id, questionnaire_response_id ORDER BY observation_id) row_num
+FROM id_duplicates)
+
+SELECT *
+FROM ranked_rows
+WHERE row_num != 1
 """)
 
 DELETION_TEMPLATE = JINJA_ENV.from_string("""
