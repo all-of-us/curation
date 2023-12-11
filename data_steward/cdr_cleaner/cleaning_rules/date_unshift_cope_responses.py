@@ -35,6 +35,7 @@ DISTINCT e.survey_version_concept_id
 FROM `{{project_id}}.{{dataset_id}}.{{observation_ext_table}}` e
 JOIN `{{project_id}}.{{dataset_id}}.concept` c
 ON c.concept_id = e.survey_version_concept_id
+WHERE REGEXP_CONTAINS(c.concept_name, r'(COPE)|(COVID)')
 """)
 
 SANDBOX_COPE_SURVEY_OBS_QUERY = JINJA_ENV.from_string("""
