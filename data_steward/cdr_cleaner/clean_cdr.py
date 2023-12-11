@@ -70,6 +70,7 @@ from cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services import Ge
 from cdr_cleaner.cleaning_rules.drop_cope_duplicate_responses import DropCopeDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import \
     DropDuplicatePpiQuestionsAndAnswers
+from cdr_cleaner.cleaning_rules.drop_row_duplicates import DropRowDuplicates
 from cdr_cleaner.cleaning_rules.clean_smoking_ppi import CleanSmokingPpi
 from cdr_cleaner.cleaning_rules.drop_ppi_duplicate_responses import DropPpiDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
@@ -221,6 +222,7 @@ RDR_CLEANING_CLASSES = [
     (StoreExpectedCTList,),
     (DropOrphanedSurveyConductIds,),
     (CalculatePrimaryDeathRecord,),
+    (DropRowDuplicates,),
     (CleanMappingExtTables,),
 ]
 
