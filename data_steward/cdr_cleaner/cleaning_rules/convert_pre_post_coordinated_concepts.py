@@ -283,9 +283,9 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
         }
 
         return [
-            sandbox_old_rows_dict, delete_old_rows_dict, sandbox_new_rows_dict,
+            sandbox_old_rows_dict, sandbox_new_rows_dict,
             insert_new_rows_query_dict, insert_mapping_query_dict,
-            delete_mapping_query_dict
+            delete_old_rows_dict, delete_mapping_query_dict
         ]
 
     def setup_rule(self, client, *args, **keyword_args):
