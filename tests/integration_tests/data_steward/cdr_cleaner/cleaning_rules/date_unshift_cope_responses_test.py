@@ -82,37 +82,36 @@ class DateUnShiftCopeResponsesTest(BaseTest.CleaningRulesTestBase):
              VALUES
              (1, 'EHR site 000', 765936),
              (2, 'EHR site 001', 2100000007),
-             (3, 'EHR site 002', null),
-             (4, 'EHR site 003', 905047),
-             (5, 'EHR site 004', 2100000005),
-             (6, 'EHR site 005', 2100000002),
-             (7, 'EHR site 006', 2100000003),
-             (8, 'EHR site 007', 905055),
-             (9, 'EHR site 008', 2100000004),
-             (10, 'EHR site 009', 2100000006),
-             (11, 'EHR site 010', 1741006)
+             (3, 'EHR site 003', 905047),
+             (4, 'EHR site 004', 2100000005),
+             (5, 'EHR site 005', 2100000002),
+             (6, 'EHR site 006', 2100000003),
+             (7, 'EHR site 007', 905055),
+             (8, 'EHR site 008', 2100000004),
+             (9, 'EHR site 009', 2100000006),
+             (10, 'EHR site 010', 1741006)
              """)
 
         concept_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_table_name}}` (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id,
             standard_concept, concept_code, valid_start_date, valid_end_date,invalid_reason)
             VALUES
-            (765936, 'Test1', 'observation', 'DRG', 'DRG', null, '527', date(1970, 01, 01), date(2050, 01, 01), null),
-            (2100000007, 'Test2', 'drug', 'NDC', '11-digit NDC', null, 'A0000', date(1970, 01, 01), date(2050, 01, 01),
+            (765936, 'COPETest1', 'observation', 'DRG', 'DRG', null, '527', date(1970, 01, 01), date(2050, 01, 01), null),
+            (2100000007, 'COPETest2', 'drug', 'NDC', '11-digit NDC', null, 'A0000', date(1970, 01, 01), date(2050, 01, 01),
              null),
-            (905047, 'Test3', 'observation', 'DRG', 'DRG', null, '527', date(1970, 01, 01), date(2050, 01, 01), null),
-            (2100000005, 'Test4', 'drug', 'NDC', '11-digit NDC', null, 'A0000', date(1970, 01, 01), date(2050, 01, 01),
+            (905047, 'COPETest3', 'observation', 'DRG', 'DRG', null, '527', date(1970, 01, 01), date(2050, 01, 01), null),
+            (2100000005, 'COPETest4', 'drug', 'NDC', '11-digit NDC', null, 'A0000', date(1970, 01, 01), date(2050, 01, 01),
              null),
-            (2100000002, 'Test5', 'observation', 'DRG', 'DRG', null, '527', date(1970, 01, 01), date(2050, 01, 01),
+            (2100000002, 'COPETest5', 'observation', 'DRG', 'DRG', null, '527', date(1970, 01, 01), date(2050, 01, 01),
              null),
-            (2100000003, 'Test6', 'drug', 'NDC', '11-digit NDC', null, 'A0000', date(1970, 01, 01), date(2050, 01, 01),
+            (2100000003, 'COVIDTest6', 'drug', 'NDC', '11-digit NDC', null, 'A0000', date(1970, 01, 01), date(2050, 01, 01),
              null),
-            (905055, 'Test7', 'observation', 'DRG', 'DRG', null, '527', date(1970, 01, 01), date(2050, 01, 01), null),
-            (2100000004, 'Test8', 'drug', 'NDC', '11-digit NDC', null, 'A0000', date(1970, 01, 01), date(2050, 01, 01),
+            (905055, 'COVIDTest7', 'observation', 'DRG', 'DRG', null, '527', date(1970, 01, 01), date(2050, 01, 01), null),
+            (2100000004, 'COVIDTest8', 'drug', 'NDC', '11-digit NDC', null, 'A0000', date(1970, 01, 01), date(2050, 01, 01),
              null),
-            (2100000006, 'Test9', 'observation', 'DRG', 'DRG', null, '527', date(1970, 01, 01), date(2050, 01, 01),
+            (2100000006, 'COVIDTest9', 'observation', 'DRG', 'DRG', null, '527', date(1970, 01, 01), date(2050, 01, 01),
              null),
-            (1741006, 'Test10', 'drug', 'NDC', '11-digit NDC', null, 'A0000', date(1970, 01, 01), date(2050, 01, 01),
+            (1741006, 'COVIDTest10', 'drug', 'NDC', '11-digit NDC', null, 'A0000', date(1970, 01, 01), date(2050, 01, 01),
              null)
         """)
 
