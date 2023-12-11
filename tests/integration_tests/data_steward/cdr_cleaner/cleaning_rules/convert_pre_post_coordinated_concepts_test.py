@@ -75,8 +75,10 @@ class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
         # defined in the resource_files folder. It has the columns defined in `create_rdr_snapshot.py` instead.
         cls.fq_mapping_table_name = f'{cls.project_id}.{cls.dataset_id}.{MAPPING_PREFIX}{OBSERVATION}'
 
+        sandbox_tables = cls.rule_instance.get_sandbox_tablenames()
         cls.fq_sandbox_table_names = [
-            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}'
+            f'{cls.project_id}.{cls.sandbox_id}.{table}'
+            for table in sandbox_tables
         ]
 
         cls.up_class = super().setUpClass()
