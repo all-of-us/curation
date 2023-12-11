@@ -75,8 +75,8 @@ ON m1.concept_id = m2.concept_id
 WHERE m1.new_observation_concept_id IS NOT NULL
 """)
 
-SANDBOX_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
+SANDBOX_DELETE_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_del` AS
 
 WITH concepts_with_only_maps_to_value AS (
     SELECT cr1.concept_id_1
@@ -97,16 +97,15 @@ WHERE c1.standard_concept IS NULL AND cr1.relationship_id = 'Maps to value'
 AND o.value_source_concept_id NOT IN (SELECT concept_id_1 FROM concepts_with_only_maps_to_value)
 """)
 
-DELETE_QUERY = JINJA_ENV.from_string("""
+DELETE_OBS_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project}}.{{dataset}}.observation`
 WHERE observation_id IN (
-    SELECT observation_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+    SELECT observation_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_del`
 )
 """)
 
-INSERT_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.observation`
-({{observation_fields}})
+SANDBOX_INSERT_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_insert` AS
 SELECT 
     -- ROW_NUMBER() here can be 1 - 4. So, the newly generated IDs will be --
     -- in the range of 100,000,000,000 - 499,999,999,999. --
@@ -136,11 +135,18 @@ SELECT
     o.value_source_concept_id,
     o.value_source_value, 
     o.questionnaire_response_id
-FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` o
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_del` o
 JOIN `{{project}}.{{dataset}}.concept` c
 ON o.value_source_value = c.concept_code
 JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_mapping` m
 ON c.concept_id = m.concept_id
+""")
+
+INSERT_OBSERVATION_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.mapping_observation`
+{{observation_fields}}
+SELECT *
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_insert`
 """)
 
 INSERT_MAPPING_QUERY = JINJA_ENV.from_string("""
