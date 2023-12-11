@@ -3,9 +3,6 @@ Integration test for drop_row_duplicates.py
 
 Original Issues: DC-3630
 
-The CR should not affect rows that are not duplicates on every field excluding observation_id.
-If they are duplicates they should be dropped.
-
 """
 
 # Python Imports
@@ -17,8 +14,6 @@ from cdr_cleaner.cleaning_rules.drop_row_duplicates import DropRowDuplicates
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 # Third party imports
-from dateutil.parser import parse
-from datetime import date
 
 
 class DropRowDuplicatesTest(BaseTest.CleaningRulesTestBase):
@@ -86,7 +81,7 @@ INSERT INTO `{{fq_dataset_name}}.observation` (
     value_source_concept_id, value_as_string, visit_occurrence_id
     )
 VALUES
--- full row duplicates. both dropped. --
+-- full row duplicates. unaffected. both are ranked 1. --
   (1, 111, 'value_source_value', 111,111, date('2024-01-01'), 
   timestamp('2024-01-01 00:00:00 UTC'), 111, 111,
   "observation_source_value", 111, 111, "value_as_string", 111),

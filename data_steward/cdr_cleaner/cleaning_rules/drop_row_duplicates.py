@@ -3,11 +3,9 @@ Removes duplicate responses where row fields are the same, or differ only on obs
 
 Original Issues: DC-3630
 
-It should not be possible for rows to be duplicated on all fields except for observation_id. This CR sandboxes and
-removes duplicate rows of this type.
+This CR sandboxes and removes duplicate rows where all fields except for observation_id are the same.
 
-Note: This CR will drop both observation records if the entire row is duplicated. These rows should have been dealt with
-prior to the running of this CR.
+Note: This CR will NOT drop observation records if the entire row is duplicated.
 
 """
 
@@ -75,7 +73,7 @@ WHERE
 
 class DropRowDuplicates(BaseCleaningRule):
     """
-    Removes duplicate responses where row fields are the same, or differ only on observation_id.
+    Removes duplicate responses where row fields differ only on observation_id.
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
@@ -86,7 +84,7 @@ class DropRowDuplicates(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'Removes duplicate responses where row fields are the same, or differ only on observation_id.'
+        desc = 'Removes duplicate responses where row fields differ only on observation_id.'
         super().__init__(issue_numbers=['DC3630'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
