@@ -93,11 +93,11 @@ result.shape
 result
 
 if result['n_row_not_pass'].sum()==0:
- df = df.append({'query' : 'Query1 No COPE in deid_observation table', 'result' : 'Pass'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query1 No COPE in deid_observation table', 'result' : 'Pass'},
+                   ignore_index = True)
 else:
- df = df.append({'query' : 'Query1 No COPE in deid_observation table' , 'result' : 'Failure'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query1 No COPE in deid_observation table' , 'result' : 'Failure'},
+                   ignore_index = True)
 
 # + [markdown] papermill={"duration": 0.023633, "end_time": "2021-02-02T22:30:36.860798", "exception": false, "start_time": "2021-02-02T22:30:36.837165", "status": "completed"} tags=[]
 # # 2 done   Verify if a survey version is provided for the COPE survey.
@@ -138,11 +138,11 @@ result.shape
 result
 
 if result['Failure_row_counts'].sum()==0:
- df = df.append({'query' : 'Query2 survey version provided', 'result' : 'Pass'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query2 survey version provided', 'result' : 'Pass'},
+                   ignore_index = True)
 else:
- df = df.append({'query' : 'Query2 survey version provided', 'result' : 'Failure'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query2 survey version provided', 'result' : 'Failure'},
+                   ignore_index = True)
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 3 done no change Verify that all structured concepts related  to COVID are NOT suppressed in EHR tables
@@ -178,11 +178,11 @@ result.shape
 result
 
 if result['Failure_row_counts'].sum()==0:
- df = df.append({'query' : 'Query3 No COPE in deid_measurement table', 'result' : 'Pass'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query3 No COPE in deid_measurement table', 'result' : 'Pass'},
+                   ignore_index = True)
 else:
- df = df.append({'query' : 'Query3 No COPE in deid_measurement table' , 'result' : 'Failure'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query3 No COPE in deid_measurement table' , 'result' : 'Failure'},
+                   ignore_index = True)
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 4 done no change Verify that all structured concepts related  to COVID are NOT suppressed in EHR condition_occurrence
@@ -195,7 +195,6 @@ else:
 # -
 
 query = JINJA_ENV.from_string("""
-
 SELECT condition_concept_id, concept_name,concept_code,vocabulary_id,
 COUNT(1) AS n_row_not_pass,
 CASE WHEN
@@ -209,7 +208,6 @@ ON ob.condition_concept_id=c.concept_id
 WHERE condition_concept_id IN  (4100065, 37311061, 439676)
 GROUP BY 1,2,3,4
 ORDER BY n_row_not_pass DESC
-
  """)
 q = query.render(project_id=project_id,deid_cdr=deid_cdr)
 result = execute(client, q)
@@ -218,10 +216,10 @@ result.shape
 result
 
 if result['Failure_row_counts'].sum()==0:
- df = df.append({'query' : 'Query4 COVID concepts suppression in deid_observation table', 'result' : 'Pass'},
+    df = df.append({'query' : 'Query4 COVID concepts suppression in deid_observation table', 'result' : 'Pass'},
                 ignore_index = True)
 else:
- df = df.append({'query' : 'Query4 COVID concepts suppression in deid_observation table' , 'result' : 'Failure'},
+    df = df.append({'query' : 'Query4 COVID concepts suppression in deid_observation table' , 'result' : 'Failure'},
                 ignore_index = True)
 
 
@@ -236,7 +234,6 @@ else:
 # -
 
 query = JINJA_ENV.from_string("""
-
 SELECT observation_concept_id, concept_name,concept_code,vocabulary_id,observation_source_concept_id,
 COUNT(1) AS n_row_not_pass,
 CASE WHEN
@@ -259,11 +256,11 @@ result.shape
 result
 
 if result['Failure_row_counts'].sum()==0:
- df = df.append({'query' : 'Query5 COVID concepts suppression in observation table', 'result' : 'Pass'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query5 COVID concepts suppression in observation table', 'result' : 'Pass'},
+                   ignore_index = True)
 else:
- df = df.append({'query' : 'Query5 COVID concepts suppression in observation table' , 'result' : 'Failure'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query5 COVID concepts suppression in observation table' , 'result' : 'Failure'},
+                   ignore_index = True)
 
 # # 6 done updated Verify these concepts are NOT suppressed in EHR observation
 #
@@ -279,7 +276,6 @@ else:
 # 1332843 should be generalized.
 
 query = JINJA_ENV.from_string("""
-
 SELECT observation_source_concept_id, concept_name,concept_code,vocabulary_id,observation_concept_id,
 COUNT(1) AS n_row_pass,
 CASE WHEN
@@ -305,23 +301,22 @@ result.shape
 result
 
 if (result['Failure_row_counts'].sum()==0) and (result[result['observation_source_concept_id'].isin(['1332904','1333140'])].empty) :
- df = df.append({'query' : 'Query6 The concepts are not suppressed in observation table', 'result' : 'Pass'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query6 The concepts are not suppressed in observation table', 'result' : 'Pass'},
+                   ignore_index = True)
 else:
- df = df.append({'query' : 'Query6 The concepts are not suppressed in observation table' , 'result' : 'Failure'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query6 The concepts are not suppressed in observation table' , 'result' : 'Failure'},
+                   ignore_index = True)
 
 # # 7 done Vaccine-related concepts as these EHR-submitted COVID concepts are allowed from RT
 # DC-2374
 # this query was from DC-1752
 
 query = JINJA_ENV.from_string("""
-
 DECLARE vocabulary_tables DEFAULT ['vocabulary', 'concept', 'source_to_concept_map',
                                    'concept_class', 'concept_synonym', 'concept_ancestor',
                                    'concept_relationship', 'relationship', 'drug_strength'];
-SELECT table_name,column_name
 
+SELECT table_name,column_name
 FROM `{{project_id}}.{{deid_cdr}}.INFORMATION_SCHEMA.COLUMNS` c
 JOIN `{{project_id}}.{{deid_cdr}}.__TABLES__` t
  ON c.table_name = t.table_id
@@ -414,12 +409,11 @@ final_result
 # -
 
 if final_result['Failure_row_counts'].sum()==0:
- df = df.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables', 'result' : 'Pass'},
-                ignore_index = True)
+    df = df.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables', 'result' : 'Pass'},
+                   ignore_index = True)
 else:
- df = df.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables' , 'result' : 'Failure'},
-                ignore_index = True)
-
+    df = df.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables' , 'result' : 'Failure'},
+                   ignore_index = True)
 
 
 def target_of(table_name, column_name):
