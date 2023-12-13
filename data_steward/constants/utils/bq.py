@@ -9,6 +9,9 @@ HPO_SITE_ID_MAPPINGS_TABLE_ID = 'hpo_site_id_mappings'
 HPO_ID_BUCKET_NAME_TABLE_ID = 'hpo_id_bucket_name'
 HPO_ID_CONTACT_LIST_TABLE_ID = 'hpo_id_contact_list'
 
+HPO_ID = 'HPO_ID'
+BUCKET_NAME = 'bucket_name'
+
 # Query to select bucket name
 SELECT_BUCKET_NAME_QUERY = """
 SELECT
@@ -68,4 +71,9 @@ CLUSTER BY
 -- Note clustering/partitioning in conjunction with AS query_expression is --
 -- currently unsupported (see https://bit.ly/2VeMs7e) --
 {% if query -%} AS {{ query }} {%- endif %}
+"""
+
+GET_HPO_CONTENTS_QUERY = """
+SELECT *
+FROM `{project_id}.{TABLES_DATASET_ID}.{HPO_SITE_TABLE}`
 """

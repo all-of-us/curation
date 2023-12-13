@@ -29,6 +29,7 @@ class AddHPOTest(TestCase):
         self.us_state = 'PIIState_XY'
         self.value_source_concept_id = 9999999
         self.hpo_id = 1010101
+        self.bq_client = mock.MagicMock()
 
     def test_verify_hpo_site_info_up_to_date(self):
         df_1 = pd.DataFrame({'HPO_ID': ['FAKE_1', 'FAKE_2']})
@@ -90,24 +91,18 @@ class AddHPOTest(TestCase):
                           new_site['org_id'], self.hpo_site_mappings_path,
                           new_site['display_order'])
 
-    @mock.patch('tools.add_hpo.BigQueryClient')
-    def test_update_site_masking_table(self, mock_bq_client):
+    def test_update_site_masking_table(self):
         # Mocks the job return
         query_job_reference_results = mock.MagicMock(
             name="query_job_reference_results")
         query_job_reference_results.return_value = query_job_reference_results
         query_job_reference_results.errors = []
-
-        mock_call_response = mock.MagicMock(project=self.project_id)
-        mock_call_response.query.return_value = query_job_reference_results
-        mock_bq_client.return_value = mock_call_response
-        mock_query = mock_bq_client.return_value.query
-
-        mock_query.side_effect = query_job_reference_results
+        self.bq_client.project = self.project_id
+        self.bq_client.query.return_value = query_job_reference_results
 
         # Test
         actual_job = add_hpo.update_site_masking_table(
-            mock_bq_client(), self.hpo_id, self.us_state,
+            self.bq_client, self.hpo_id, self.us_state,
             self.value_source_concept_id)
 
         # Post conditions
@@ -122,7 +117,7 @@ class AddHPOTest(TestCase):
             value_source_concept_id=self.value_source_concept_id)
 
         expected_job = query_job_reference_results
-        mock_query.assert_any_call(update_site_masking_query)
+        self.bq_client.query.assert_called_with(update_site_masking_query)
         self.assertEqual(actual_job, expected_job)
 
     def test_check_state_code_format(self):
@@ -157,9 +152,10 @@ class AddHPOTest(TestCase):
             mock_src_hpos_file_path.is_file()
 
             self.assertRaises(RuntimeError, add_hpo.add_hpo_site_to_csv_files,
-                              new_site['hpo_id'], new_site['hpo_name'],
-                              new_site['org_id'], new_site['bucket_name'],
-                              hpo_site_csv_path, new_site['us_state'],
+                              self.bq_client, new_site['hpo_id'],
+                              new_site['hpo_name'], new_site['org_id'],
+                              new_site['bucket_name'], hpo_site_csv_path,
+                              new_site['us_state'],
                               new_site['value_source_concept_id'],
                               new_site['display_order'])
 
@@ -174,8 +170,8 @@ class AddHPOTest(TestCase):
             mock_src_hpos_file_path.is_file()
 
             add_hpo.add_hpo_site_to_csv_files(
-                new_site['hpo_id'], new_site['hpo_name'], new_site['org_id'],
-                new_site['bucket_name'], hpo_site_csv_path,
+                self.bq_client, new_site['hpo_id'], new_site['hpo_name'],
+                new_site['org_id'], new_site['bucket_name'], hpo_site_csv_path,
                 new_site['us_state'], new_site['value_source_concept_id'],
                 new_site['display_order'])
 
@@ -184,18 +180,16 @@ class AddHPOTest(TestCase):
                 mock_mapping_file_path, new_site['display_order'])
 
             add_hpo.add_hpo_id_bucket_name_csv.assert_called_with(
-                new_site['hpo_id'], new_site['bucket_name'],
+                self.bq_client, new_site['hpo_id'], new_site['bucket_name'],
                 mock_bucket_file_path)
 
             add_hpo.add_src_hpos_allowed_state_csv.assert_called_with(
                 new_site['hpo_id'], new_site['us_state'],
                 new_site['value_source_concept_id'], mock_src_hpos_file_path)
 
-    @mock.patch('bq_utils.get_hpo_bucket_info')
     @mock.patch('tools.add_hpo.pd.read_csv')
-    def test_add_hpo_id_bucket_name_file_df(self, mock_read_csv,
-                                            mock_hpo_bucket_info):
-        mock_hpo_bucket_info.return_value = [{
+    def test_add_hpo_id_bucket_name_file_df(self, mock_read_csv):
+        self.bq_client.get_hpo_bucket_info.return_value = [{
             'hpo_id': 'fake_1',
             'bucket_name': 'fake_bucket_name_1'
         }, {
@@ -221,7 +215,7 @@ class AddHPOTest(TestCase):
             'bucket_name': 'fake_bucket_name_3'
         }
         actual_df = add_hpo.add_hpo_id_bucket_name_file_df(
-            new_site['hpo_id'], new_site['bucket_name'],
+            self.bq_client, new_site['hpo_id'], new_site['bucket_name'],
             self.hpo_id_bucket_name_path)
 
         expected_df = pd.DataFrame({
@@ -238,8 +232,8 @@ class AddHPOTest(TestCase):
 
         # Check for adding a site that exist in hpo_id_bucket_name.csv file.
         self.assertRaises(ValueError, add_hpo.add_hpo_id_bucket_name_file_df,
-                          new_site['hpo_id'], new_site['bucket_name'],
-                          self.hpo_id_bucket_name_path)
+                          self.bq_client, new_site['hpo_id'],
+                          new_site['bucket_name'], self.hpo_id_bucket_name_path)
 
     @mock.patch('bq_utils.get_hpo_site_state_info')
     @mock.patch('tools.add_hpo.pd.read_csv')
