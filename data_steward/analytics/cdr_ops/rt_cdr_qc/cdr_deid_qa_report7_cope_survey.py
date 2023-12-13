@@ -344,7 +344,7 @@ target_tables
 #table_name="drug_exposure"
 #@column_name="drug_concept_id"
 
-def my_sql(table_name, column_name):
+def target_of(table_name, column_name):
 
     query = JINJA_ENV.from_string("""
 SELECT
@@ -388,23 +388,30 @@ JOIN (
     return r
 
 
-# -
-
+# +
 # use a loop to get table name AND column name AND run sql function
-result = [my_sql(table_name, column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
-result
+tables = [t for t in target_tables['table_name']]
+columns = [c for c in target_tables['column_name']]
+
+result_list = []
+for t, c in zip(tables, columns):
+    result_list.append(target_of(t, c))
+
+
+# result = [parameterize_targets(table_name, column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
+result_list
 # if Row_count is '0' in "Combined" dataset as well, '0' showing up in this check is not a problem
 
 # +
 # AND then get the result back FROM loop result list
-n=len(target_tables.index)
-res2 = pd.DataFrame(result[0])
+n = len(target_tables.index)
+final_result = pd.DataFrame(result_list[0])
 
-for x in range(1,n):
-  res2=res2.append(result[x])
+for i in range(1, n):
+  final_result = final_result.append(result_list[i])
 
 #res2=res2.sort_values(by='row_counts_failure', ascending=False)
-res2
+final_result
 # -
 
 if res2['Failure_row_counts'].sum()==0:
