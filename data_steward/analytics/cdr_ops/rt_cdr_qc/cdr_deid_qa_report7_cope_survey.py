@@ -396,11 +396,9 @@ columns = [c for c in target_tables['column_name']]
 result_list = []
 for t, c in zip(tables, columns):
     result_list.append(target_of(t, c))
+# -
 
-
-# result = [parameterize_targets(table_name, column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
 result_list
-# if Row_count is '0' in "Combined" dataset as well, '0' showing up in this check is not a problem
 
 # +
 # AND then get the result back FROM loop result list
@@ -408,18 +406,77 @@ n = len(target_tables.index)
 final_result = pd.DataFrame(result_list[0])
 
 for i in range(1, n):
-  final_result = final_result.append(result_list[i])
+    final_result = final_result.append(result_list[i])
 
 #res2=res2.sort_values(by='row_counts_failure', ascending=False)
+final_result = final_result.sort_values(by='Failure_row_counts', ascending=False)
 final_result
 # -
 
-if res2['Failure_row_counts'].sum()==0:
+if final_result['Failure_row_counts'].sum()==0:
  df = df.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables', 'result' : 'Pass'},
                 ignore_index = True)
 else:
  df = df.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables' , 'result' : 'Failure'},
                 ignore_index = True)
+
+
+
+def target_of(table_name, column_name):
+
+    query = JINJA_ENV.from_string("""
+SELECT
+'{{table_name}}' AS table_name,
+'{{column_name}}' AS column_name,
+concept_id_in_combined,
+COUNT(*) AS row_counts,
+CASE WHEN
+  COUNT(*) > 0 AND sub.concept_id_in_combined IS NOT NULL
+  THEN 0 ELSE 1
+END
+ AS Failure_row_counts
+FROM `{{project_id}}.{{deid_cdr}}.{{table_name}}` c
+JOIN (
+  SELECT concept_id as concept_id_in_combined
+        FROM `{{project_id}}.{{com_cdr}}.{{table_name}}` c
+        JOIN `{{project_id}}.{{deid_cdr}}.concept`
+        on concept_id={{column_name}}
+        WHERE (REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
+              REGEXP_CONTAINS(concept_name, r'(?i)(VAC)') AND
+        vocabulary_id not in ('PPI'))
+     OR (
+        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(212)|(213)')         and vocabulary_id = 'CVX'
+    ) OR (
+        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')           and vocabulary_id = 'CPT4'
+     )
+AND  domain_id LIKE '%LEFT(c.domain_id, 3)%'
+ ) sub
+  on concept_id_in_combined={{column_name}}
+  GROUP BY concept_id_in_combined
+""")
+    q = query.render(project_id=project_id,
+                     com_cdr=com_cdr,
+                     deid_cdr=deid_cdr,
+                     table_name=table_name,
+                     column_name=column_name)
+    r = execute(client, q)
+    return r
+
+
+# +
+tables = [t for t in target_tables['table_name']]
+columns = [c for c in target_tables['column_name']]
+
+result_list = []
+for t, c in zip(tables, columns):
+    result_list.append(target_of(t, c))
+# -
+
+result_list[0]
+
+result_list[1]
+
+result_list[3]
 
 
 # # Summary_deid_COPE_survey
