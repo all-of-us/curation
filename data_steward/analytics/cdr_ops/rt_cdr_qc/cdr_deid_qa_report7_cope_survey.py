@@ -334,6 +334,10 @@ target_tables.shape
 target_tables
 
 
+# # 8 done foo
+# DC-2374
+# this query was from DC-1752
+
 # +
 #table_name="drug_exposure"
 #@column_name="drug_concept_id"
@@ -408,10 +412,10 @@ final_result
 # -
 
 if final_result['Failure_row_counts'].sum()==0:
-    summary = summary.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables', 'result' : 'Pass'},
+    summary = summary.append({'query' : 'Query8 foo', 'result' : 'Pass'},
                    ignore_index = True)
 else:
-    summary = summary.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables' , 'result' : 'Failure'},
+    summary = summary.append({'query' : 'Query8 foo' , 'result' : 'Failure'},
                    ignore_index = True)
 
 
@@ -481,5 +485,3 @@ def highlight_cells(val):
 
 summary.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
 # -
-
-
