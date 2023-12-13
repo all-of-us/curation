@@ -3,7 +3,7 @@ Interact with Google Cloud BigQuery
 """
 # Python stl imports
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 import typing
 import logging
 from time import sleep
