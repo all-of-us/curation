@@ -287,15 +287,16 @@ CASE WHEN
 END
  AS Failure_row_counts
 
-FROM `{{project_id}}.{{deid_cdr}}.observation` ob
-JOIN `{{project_id}}.{{deid_cdr}}.concept` c
+FROM `{{project_id}}.{{deid_base_cdr}}.observation` ob
+JOIN `{{project_id}}.{{deid_base_cdr}}.concept` c
 ON ob.observation_source_concept_id=c.concept_id
 WHERE observation_source_concept_id IN  (1333015, 1333023, 1332737,1333291,1332904,1333140,1332843)
 OR observation_concept_id IN  (1333015, 1333023,1332737,1333291,1332904,1333140,1332843 )
 GROUP BY 1,2,3,4,5
 ORDER BY n_row_pass DESC
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)
+q = query.render(project_id=project_id,
+                 deid_base_cdr=deid_base_cdr)
 df1=execute(client, q)
 df1.shape
 
@@ -320,8 +321,8 @@ DECLARE vocabulary_tables DEFAULT ['vocabulary', 'concept', 'source_to_concept_m
                                    'concept_relationship', 'relationship', 'drug_strength'];
 SELECT table_name,column_name
 
-FROM `{{project_id}}.{{deid_cdr}}.INFORMATION_SCHEMA.COLUMNS` c
-JOIN `{{project_id}}.{{deid_cdr}}.__TABLES__` t
+FROM `{{project_id}}.{{deid_base_cdr}}.INFORMATION_SCHEMA.COLUMNS` c
+JOIN `{{project_id}}.{{deid_base_cdr}}.__TABLES__` t
  ON c.table_name = t.table_id
 WHERE
      table_name NOT IN UNNEST(vocabulary_tables) and
@@ -330,8 +331,9 @@ WHERE
   AND table_name in ('procedure_occurrence','drug_exposure')
   AND column_name in ('procedure_concept_id','procedure_source_concept_id','drug_concept_id','drug_source_concept_id')
 """)
-q = query.render(project_id=project_id,deid_cdr=deid_cdr)
-target_tables=execute(client, q)
+q = query.render(project_id=project_id,
+                 deid_base_cdr=deid_base_cdr)
+target_tables = execute(client, q)
 target_tables.shape
 
 
@@ -339,36 +341,37 @@ target_tables.shape
 #table_name="drug_exposure"
 #@column_name="drug_concept_id"
 
-def my_sql(table_name,column_name):
+def my_sql(table_name, column_name):
 
     query = JINJA_ENV.from_string("""
-
 SELECT
-'{{table_name}}' AS table_name,
-'{{column_name}}' AS column_name,
+'procedure_occurrence' AS table_name,
+'procedure_concept_id' AS column_name,
+concept_id_in_combined,
 COUNT(*) AS row_counts,
 CASE WHEN
-  COUNT(*) > 0
+  COUNT(*) > 0 AND sub.concept_id_in_combined IS NOT NULL
   THEN 0 ELSE 1
 END
  AS Failure_row_counts
-
-FROM `{{project_id}}.{{deid_cdr}}.{{table_name}}` c
-JOIN  `{{project_id}}.{{deid_cdr}}.concept` on concept_id={{column_name}}
- WHERE (
-        -- done by name and vocab -- -- this alone should be enough, no need for others --
-        REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
-        REGEXP_CONTAINS(concept_name, r'(?i)(VAC)') AND
-        vocabulary_id not in ('PPI')
+FROM `aou-res-curation-prod.R2023q3r5_deid.procedure_occurrence` c
+JOIN (
+  SELECT concept_id as concept_id_in_combined
+        FROM `aou-res-curation-prod.2023q3r2_combined.procedure_occurrence` c
+        JOIN `aou-res-curation-prod.R2023q3r5_deid.concept`
+        on concept_id=procedure_concept_id
+        WHERE (REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
+              REGEXP_CONTAINS(concept_name, r'(?i)(VAC)') AND
+        vocabulary_id not in ('PPI'))
+     OR (
+        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(212)|(213)')         and vocabulary_id = 'CVX'
     ) OR (
-        -- done by code  and vocab --
-        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(212)|(213)') -- not 211 --
-        and vocabulary_id = 'CVX'
-    ) OR (
-        -- done by code and vocab --
-        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')   -- no 91304 --
-        and vocabulary_id = 'CPT4'
+        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')           and vocabulary_id = 'CPT4'
      )
+AND  domain_id LIKE '%LEFT(c.domain_id, 3)%'
+ ) sub
+  on concept_id_in_combined=procedure_concept_id
+  GROUP BY concept_id_in_combined
 
 """)
     q = query.render(project_id=project_id,deid_cdr=deid_cdr,table_name=table_name,column_name=column_name)
