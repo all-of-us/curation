@@ -379,7 +379,7 @@ JOIN  `{{project_id}}.{{deid_cdr}}.concept` on concept_id={{column_name}}
 # -
 
 # use a loop to get table name AND column name AND run sql function
-result = [my_sql (table_name, column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
+result = [my_sql(table_name, column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
 result
 # if Row_count is '0' in "Combined" dataset as well, '0' showing up in this check is not a problem
 
