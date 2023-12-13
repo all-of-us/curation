@@ -322,8 +322,8 @@ DECLARE vocabulary_tables DEFAULT ['vocabulary', 'concept', 'source_to_concept_m
                                    'concept_relationship', 'relationship', 'drug_strength'];
 SELECT table_name,column_name
 
-FROM `{{project_id}}.{{deid_base_cdr}}.INFORMATION_SCHEMA.COLUMNS` c
-JOIN `{{project_id}}.{{deid_base_cdr}}.__TABLES__` t
+FROM `{{project_id}}.{{deid_cdr}}.INFORMATION_SCHEMA.COLUMNS` c
+JOIN `{{project_id}}.{{deid_cdr}}.__TABLES__` t
  ON c.table_name = t.table_id
 WHERE
      table_name NOT IN UNNEST(vocabulary_tables) and
