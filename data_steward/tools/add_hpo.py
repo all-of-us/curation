@@ -161,12 +161,13 @@ def add_hpo_id_bucket_name_file_df(bq_client, hpo_id, bucket_name,
     return hpo_file_df
 
 
-def add_src_hpos_allowed_state_file_df(hpo_id, us_state,
+def add_src_hpos_allowed_state_file_df(bq_client, hpo_id, us_state,
                                        value_source_concept_id,
                                        src_hpos_allowed_state_path):
     """
     Creates dataframe with hpo_id, bucket_name, and service
 
+    :param bq_client: BigQuery Client
     :param hpo_id: hpo_ identifier
     :param us_state: state-code of the site.
     :param value_source_concept_id: concept_id of the site's state
@@ -175,7 +176,7 @@ def add_src_hpos_allowed_state_file_df(hpo_id, us_state,
     """
     hpo_id = hpo_id.lower()
 
-    hpo_table = bq_utils.get_hpo_site_state_info()
+    hpo_table = bq_client.get_hpo_site_state_info()
     hpo_table_df = pd.DataFrame(hpo_table)
     if hpo_id in set(hpo_table_df['hpo_id']) and us_state in set(
             hpo_table_df['state']):
@@ -234,12 +235,14 @@ def add_hpo_id_bucket_name_csv(bq_client, hpo_id, bucket_name,
                        index=False)
 
 
-def add_src_hpos_allowed_state_csv(hpo_id, us_state, value_source_concept_id,
+def add_src_hpos_allowed_state_csv(bq_client, hpo_id, us_state,
+                                   value_source_concept_id,
                                    src_hpos_allowed_state_path):
     """
     Writes df with hpo_id, us_state, and value_source_concept_id to
     src_hpos_to_allowed_state config file
 
+    :param bq_client: BigQuery Client
     :param hpo_id: hpo_ identifier
     :param us_state: state-code of the site.
     :param value_source_concept_id: concept_id of the site's state
@@ -247,7 +250,8 @@ def add_src_hpos_allowed_state_csv(hpo_id, us_state, value_source_concept_id,
     :return:
     """
     hpo_file_df = add_src_hpos_allowed_state_file_df(
-        hpo_id, us_state, value_source_concept_id, src_hpos_allowed_state_path)
+        bq_client, hpo_id, us_state, value_source_concept_id,
+        src_hpos_allowed_state_path)
     hpo_file_df.to_csv(src_hpos_allowed_state_path,
                        quoting=csv.QUOTE_NONE,
                        index=False,
@@ -303,7 +307,8 @@ def add_hpo_site_to_csv_files(bq_client,
                                hpo_id_bucket_name_path)
 
     # Update src_hpos_to_allowed_states.csv file
-    add_src_hpos_allowed_state_csv(hpo_id, us_state, value_source_concept_id,
+    add_src_hpos_allowed_state_csv(bq_client, hpo_id, us_state,
+                                   value_source_concept_id,
                                    src_hpos_allowed_state_path)
 
 
