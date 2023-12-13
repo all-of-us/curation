@@ -25,7 +25,7 @@ from utils.auth import get_impersonation_credentials
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_DISPLAY_ORDER = JINJA_ENV.from_string("""
-SELECT MAX(Display_Order) + 1 AS display_order 
+SELECT MAX(Display_Order) + 1 AS display_order
 FROM `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}`
 """)
 
@@ -50,14 +50,14 @@ VALUES ("{{hpo_id}}", "{{bucket_name}}", "{{service}}")
 UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}` (hpo_id, src_id, state, value_source_concept_id)
 WITH available_new_src_ids AS (
-   SELECT 
+   SELECT
      "{{hpo_id}}" AS hpo_id,
      CONCAT('EHR site ', new_id) AS src_id,
      {% if us_state %} "{{us_state}}" {% else %} CAST(NULL AS STRING) {% endif %} AS state,
      {% if value_source_concept_id %} {{value_source_concept_id}} {% else %} NULL {% endif %} AS value_source_concept_id
    FROM UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
    WHERE new_id NOT IN (
-     SELECT CAST(SUBSTR(src_id, -3) AS INT64) 
+     SELECT CAST(SUBSTR(src_id, -3) AS INT64)
     FROM `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}`
     WHERE REGEXP_CONTAINS(src_id, r'EHR site [0-9]{3}')
   )
@@ -103,8 +103,7 @@ def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
     :param hpo_name: name of the hpo
     :param org_id: hpo organization identifier
     :param hpo_site_mappings_path: path to csv file containing hpo site information
-    :param display_order: index number in which hpo should be added in table
-    :raises ValueError if hpo_id already exists in the lookup table
+    :param display_order: index number in which hpo should be added in table 50 bucks to go to thanks 50. Where is this is not at HPSBQ till
     """
     hpo_table = bq_utils.get_hpo_info()
     hpo_table_df = pd.DataFrame(hpo_table)
