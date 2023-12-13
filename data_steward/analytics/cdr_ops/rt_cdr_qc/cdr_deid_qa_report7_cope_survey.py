@@ -29,11 +29,11 @@ pd.options.display.max_rows = 120
 
 # + papermill={"duration": 0.023643, "end_time": "2021-02-02T22:30:31.880820", "exception": false, "start_time": "2021-02-02T22:30:31.857177", "status": "completed"} tags=["parameters"]
 # Parameters
-project_id = ""
-com_cdr = ""
-deid_cdr = ""
-sandbox=""
-run_as=""
+project_id = ""  # The project to examine
+com_cdr = ""  # The comibend dataset
+deid_base_cdr = ""  # the deid dataset
+pipeline = ""  # the pipeline tables
+run_as = ""  # The account used to run checks
 
 
 # +
