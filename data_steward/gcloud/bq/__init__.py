@@ -27,7 +27,7 @@ from utils import auth
 from resources import fields_for, get_and_validate_schema_fields, replace_special_characters_for_labels, \
     is_rdr_dataset, is_mapping_table
 from constants.utils import bq as consts
-from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH
+from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 
 tracer_provider = TracerProvider()
 trace.set_tracer_provider(tracer_provider)
@@ -661,5 +661,20 @@ class BigQueryClient(Client):
             hpo_bucket = hpo_table_row[consts.BUCKET_NAME].lower()
             if hpo_id:
                 hpo_dict = {"hpo_id": hpo_id, "bucket_name": hpo_bucket}
+                hpo_list.append(hpo_dict)
+        return hpo_list
+
+    def get_hpo_site_state_info(self):
+        hpo_list = []
+        hpo_table_query = consts.GET_HPO_CONTENTS_QUERY.format(
+            project_id=self.project,
+            TABLES_DATASET_ID=PIPELINE_TABLES,
+            HPO_SITE_TABLE=SITE_MASKING_TABLE_ID)
+        hpo_response = self.query(hpo_table_query)
+        for hpo_table_row in hpo_response:
+            hpo_id = hpo_table_row[consts.HPO_ID.lower()].lower()
+            hpo_state = hpo_table_row[consts.HPO_STATE]
+            if hpo_id:
+                hpo_dict = {"hpo_id": hpo_id, "state": hpo_state}
                 hpo_list.append(hpo_dict)
         return hpo_list
