@@ -31,7 +31,8 @@ pd.options.display.max_rows = 120
 # Parameters
 project_id = ""  # The project to examine
 com_cdr = ""  # The comibend dataset
-deid_base_cdr = ""  # the deid dataset
+deid_cdr = ""  # the deid dataset
+sandbox = "" # sandbox dataset
 pipeline = ""  # the pipeline tables
 run_as = ""  # The account used to run checks
 
@@ -91,7 +92,7 @@ result.shape
 
 result
 
-if df1['n_row_not_pass'].sum()==0:
+if result['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query1 No COPE in deid_observation table', 'result' : 'Pass'},
                 ignore_index = True)
 else:
@@ -131,12 +132,12 @@ WHERE
  order by row_counts
  """)
 q = query.render(project_id=project_id,deid_cdr=deid_cdr)
-df1=execute(client, q)
-df1.shape
+result = execute(client, q)
+result.shape
 
-df1
+result
 
-if df1['Failure_row_counts'].sum()==0:
+if result['Failure_row_counts'].sum()==0:
  df = df.append({'query' : 'Query2 survey version provided', 'result' : 'Pass'},
                 ignore_index = True)
 else:
@@ -171,12 +172,12 @@ ORDER BY n_row_not_pass DESC
 
  """)
 q = query.render(project_id=project_id,deid_cdr=deid_cdr)
-df1=execute(client, q)
-df1.shape
+result = execute(client, q)
+result.shape
 
-df1
+result
 
-if df1['Failure_row_counts'].sum()==0:
+if result['Failure_row_counts'].sum()==0:
  df = df.append({'query' : 'Query3 No COPE in deid_measurement table', 'result' : 'Pass'},
                 ignore_index = True)
 else:
@@ -211,12 +212,12 @@ ORDER BY n_row_not_pass DESC
 
  """)
 q = query.render(project_id=project_id,deid_cdr=deid_cdr)
-df1=execute(client, q)
-df1.shape
+result = execute(client, q)
+result.shape
 
-df1
+result
 
-if df1['Failure_row_counts'].sum()==0:
+if result['Failure_row_counts'].sum()==0:
  df = df.append({'query' : 'Query4 COVID concepts suppression in deid_observation table', 'result' : 'Pass'},
                 ignore_index = True)
 else:
@@ -251,13 +252,13 @@ GROUP BY 1,2,3,4,5
 ORDER BY n_row_not_pass DESC
 """)
 q = query.render(project_id=project_id,deid_cdr=deid_cdr)
-df1=execute(client, q)
-df1.shape
+result = execute(client, q)
+result.shape
 
 
-df1
+result
 
-if df1['Failure_row_counts'].sum()==0:
+if result['Failure_row_counts'].sum()==0:
  df = df.append({'query' : 'Query5 COVID concepts suppression in observation table', 'result' : 'Pass'},
                 ignore_index = True)
 else:
@@ -287,8 +288,8 @@ CASE WHEN
 END
  AS Failure_row_counts
 
-FROM `{{project_id}}.{{deid_base_cdr}}.observation` ob
-JOIN `{{project_id}}.{{deid_base_cdr}}.concept` c
+FROM `{{project_id}}.{{deid_cdr}}.observation` ob
+JOIN `{{project_id}}.{{deid_cdr}}.concept` c
 ON ob.observation_source_concept_id=c.concept_id
 WHERE observation_source_concept_id IN  (1333015, 1333023, 1332737,1333291,1332904,1333140,1332843)
 OR observation_concept_id IN  (1333015, 1333023,1332737,1333291,1332904,1333140,1332843 )
@@ -296,14 +297,14 @@ GROUP BY 1,2,3,4,5
 ORDER BY n_row_pass DESC
 """)
 q = query.render(project_id=project_id,
-                 deid_base_cdr=deid_base_cdr)
-df1=execute(client, q)
-df1.shape
+                 deid_cdr=deid_cdr)
+result = execute(client, q)
+result.shape
 
 
-df1
+result
 
-if (df1['Failure_row_counts'].sum()==0) and (df1[df1['observation_source_concept_id'].isin(['1332904','1333140'])].empty) :
+if (result['Failure_row_counts'].sum()==0) and (result[result['observation_source_concept_id'].isin(['1332904','1333140'])].empty) :
  df = df.append({'query' : 'Query6 The concepts are not suppressed in observation table', 'result' : 'Pass'},
                 ignore_index = True)
 else:
@@ -332,7 +333,7 @@ WHERE
   AND column_name in ('procedure_concept_id','procedure_source_concept_id','drug_concept_id','drug_source_concept_id')
 """)
 q = query.render(project_id=project_id,
-                 deid_base_cdr=deid_base_cdr)
+                 deid_cdr=deid_cdr)
 target_tables = execute(client, q)
 target_tables.shape
 
@@ -374,9 +375,12 @@ AND  domain_id LIKE '%LEFT(c.domain_id, 3)%'
   GROUP BY concept_id_in_combined
 
 """)
-    q = query.render(project_id=project_id,deid_cdr=deid_cdr,table_name=table_name,column_name=column_name)
-    df11=execute(client, q)
-    return df11
+    q = query.render(project_id=project_id,
+                     deid_cdr=deid_cdr,
+                     table_name=table_name,
+                     column_name=column_name)
+    r = execute(client, q)
+    return r
 
 
 # -
