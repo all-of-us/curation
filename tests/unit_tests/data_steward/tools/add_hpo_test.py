@@ -184,7 +184,7 @@ class AddHPOTest(TestCase):
                 mock_bucket_file_path)
 
             add_hpo.add_src_hpos_allowed_state_csv.assert_called_with(
-                new_site['hpo_id'], new_site['us_state'],
+                self.bq_client, new_site['hpo_id'], new_site['us_state'],
                 new_site['value_source_concept_id'], mock_src_hpos_file_path)
 
     @mock.patch('tools.add_hpo.pd.read_csv')
@@ -235,11 +235,9 @@ class AddHPOTest(TestCase):
                           self.bq_client, new_site['hpo_id'],
                           new_site['bucket_name'], self.hpo_id_bucket_name_path)
 
-    @mock.patch('bq_utils.get_hpo_site_state_info')
     @mock.patch('tools.add_hpo.pd.read_csv')
-    def test_add_src_hpos_allowed_state_file_df(self, mock_read_csv,
-                                                mock_hpo_site_state_info):
-        mock_hpo_site_state_info.return_value = [{
+    def test_add_src_hpos_allowed_state_file_df(self, mock_read_csv):
+        self.bq_client.get_hpo_site_state_info.return_value = [{
             'hpo_id': 'fake_1',
             'state': 'PIIState_fake1'
         }, {
@@ -265,7 +263,7 @@ class AddHPOTest(TestCase):
             'value_source_concept_id': 1011010
         }
         actual_df = add_hpo.add_src_hpos_allowed_state_file_df(
-            new_site['hpo_id'], new_site['us_state'],
+            self.bq_client, new_site['hpo_id'], new_site['us_state'],
             new_site['value_source_concept_id'], self.hpo_id_bucket_name_path)
 
         expected_df = pd.DataFrame({
@@ -283,6 +281,7 @@ class AddHPOTest(TestCase):
         # Check for adding a site that exist in src_hpos_to_allowed_states.csv file.
         self.assertRaises(ValueError,
                           add_hpo.add_src_hpos_allowed_state_file_df,
-                          new_site['hpo_id'], new_site['us_state'],
+                          self.bq_client, new_site['hpo_id'],
+                          new_site['us_state'],
                           new_site['value_source_concept_id'],
                           self.hpo_id_bucket_name_path)

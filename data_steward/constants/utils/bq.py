@@ -11,6 +11,7 @@ HPO_ID_CONTACT_LIST_TABLE_ID = 'hpo_id_contact_list'
 
 HPO_ID = 'HPO_ID'
 BUCKET_NAME = 'bucket_name'
+HPO_STATE = 'state'
 
 # Query to select bucket name
 SELECT_BUCKET_NAME_QUERY = """
