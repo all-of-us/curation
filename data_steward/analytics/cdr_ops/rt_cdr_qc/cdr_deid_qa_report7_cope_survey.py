@@ -337,6 +337,8 @@ q = query.render(project_id=project_id,
 target_tables = execute(client, q)
 target_tables.shape
 
+target_tables
+
 
 # +
 #table_name="drug_exposure"
@@ -346,8 +348,8 @@ def my_sql(table_name, column_name):
 
     query = JINJA_ENV.from_string("""
 SELECT
-'procedure_occurrence' AS table_name,
-'procedure_concept_id' AS column_name,
+'{{table_name}}' AS table_name,
+'{{column_name}}' AS column_name,
 concept_id_in_combined,
 COUNT(*) AS row_counts,
 CASE WHEN
@@ -355,27 +357,30 @@ CASE WHEN
   THEN 0 ELSE 1
 END
  AS Failure_row_counts
-FROM `aou-res-curation-prod.R2023q3r5_deid.procedure_occurrence` c
+FROM `{{project_id}}.{{deid_cdr}}.procedure_occurrence` c
 JOIN (
   SELECT concept_id as concept_id_in_combined
-        FROM `aou-res-curation-prod.2023q3r2_combined.procedure_occurrence` c
-        JOIN `aou-res-curation-prod.R2023q3r5_deid.concept`
+        FROM `{{project_id}}.{{com_cdr}}.procedure_occurrence` c
+        JOIN `{{project_id}}.{{deid_cdr}}.concept`
         on concept_id=procedure_concept_id
         WHERE (REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
               REGEXP_CONTAINS(concept_name, r'(?i)(VAC)') AND
         vocabulary_id not in ('PPI'))
      OR (
-        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(212)|(213)')         and vocabulary_id = 'CVX'
-    ) OR (
-        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')           and vocabulary_id = 'CPT4'
+        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(212)|(213)')
+        AND vocabulary_id = 'CVX'
+     ) OR (
+        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')
+        AND vocabulary_id = 'CPT4'
      )
-AND  domain_id LIKE '%LEFT(c.domain_id, 3)%'
- ) sub
+    AND  domain_id LIKE '%LEFT(c.domain_id, 3)%'
+  ) sub
   on concept_id_in_combined=procedure_concept_id
   GROUP BY concept_id_in_combined
 
 """)
     q = query.render(project_id=project_id,
+                     com_cdr=com_cdr,
                      deid_cdr=deid_cdr,
                      table_name=table_name,
                      column_name=column_name)
