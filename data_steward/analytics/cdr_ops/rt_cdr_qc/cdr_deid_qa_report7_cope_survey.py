@@ -33,7 +33,7 @@ project_id = ""  # The project to examine
 com_cdr = ""  # The comibend dataset
 deid_cdr = ""  # the deid dataset
 sandbox = "" # sandbox dataset
-pipeline = ""  # the pipeline tables
+pipeline = "" # the pipeline tables
 run_as = ""  # The account used to run checks
 
 
@@ -309,6 +309,8 @@ else:
 # # 7 done Vaccine-related concepts as these EHR-submitted COVID concepts are allowed from RT
 # DC-2374
 # this query was from DC-1752
+#
+# Aslo, ensure concepts existing in combined are maintained in deid, and concepts absent in combine should not appear in deid.  See [DC-3631](https://precisionmedicineinitiative.atlassian.net/browse/DC-3631)
 
 query = JINJA_ENV.from_string("""
 DECLARE vocabulary_tables DEFAULT ['vocabulary', 'concept', 'source_to_concept_map',
@@ -333,10 +335,6 @@ target_tables.shape
 
 target_tables
 
-
-# # 8 done foo
-# DC-2374
-# this query was from DC-1752
 
 # +
 #table_name="drug_exposure"
@@ -365,7 +363,7 @@ JOIN (
               REGEXP_CONTAINS(concept_name, r'(?i)(VAC)') AND
         vocabulary_id not in ('PPI'))
      OR (
-        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(212)|(213)')
+        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(212)|(213)') -- not 211 --
         AND vocabulary_id = 'CVX'
      ) OR (
         REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')
@@ -406,77 +404,9 @@ final_result = pd.DataFrame(result_list[0])
 for i in range(1, n):
     final_result = final_result.append(result_list[i])
 
-#res2=res2.sort_values(by='row_counts_failure', ascending=False)
 final_result = final_result.sort_values(by='Failure_row_counts', ascending=False)
 final_result
-# -
 
-if final_result['Failure_row_counts'].sum()==0:
-    summary = summary.append({'query' : 'Query8 foo', 'result' : 'Pass'},
-                   ignore_index = True)
-else:
-    summary = summary.append({'query' : 'Query8 foo' , 'result' : 'Failure'},
-                   ignore_index = True)
-
-
-def target_of(table_name, column_name):
-
-    query = JINJA_ENV.from_string("""
-SELECT
-'{{table_name}}' AS table_name,
-'{{column_name}}' AS column_name,
-concept_id_in_combined,
-COUNT(*) AS row_counts,
-CASE WHEN
-  COUNT(*) > 0 AND sub.concept_id_in_combined IS NOT NULL
-  THEN 0 ELSE 1
-END
- AS Failure_row_counts
-FROM `{{project_id}}.{{deid_cdr}}.{{table_name}}` c
-JOIN (
-  SELECT concept_id as concept_id_in_combined
-        FROM `{{project_id}}.{{com_cdr}}.{{table_name}}` c
-        JOIN `{{project_id}}.{{deid_cdr}}.concept`
-        on concept_id={{column_name}}
-        WHERE (REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
-              REGEXP_CONTAINS(concept_name, r'(?i)(VAC)') AND
-        vocabulary_id not in ('PPI'))
-     OR (
-        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(212)|(213)')         and vocabulary_id = 'CVX'
-    ) OR (
-        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')           and vocabulary_id = 'CPT4'
-     )
-AND  domain_id LIKE '%LEFT(c.domain_id, 3)%'
- ) sub
-  on concept_id_in_combined={{column_name}}
-  GROUP BY concept_id_in_combined
-""")
-    q = query.render(project_id=project_id,
-                     com_cdr=com_cdr,
-                     deid_cdr=deid_cdr,
-                     table_name=table_name,
-                     column_name=column_name)
-    r = execute(client, q)
-    return r
-
-
-# +
-tables = [t for t in target_tables['table_name']]
-columns = [c for c in target_tables['column_name']]
-
-result_list = []
-for t, c in zip(tables, columns):
-    result_list.append(target_of(t, c))
-# -
-
-result_list[0]
-
-result_list[1]
-
-result_list[3]
-
-
-# # Summary_deid_COPE_survey
 
 # +
 def highlight_cells(val):
@@ -484,4 +414,3 @@ def highlight_cells(val):
     return f'background-color: {color}'
 
 summary.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
-# -
