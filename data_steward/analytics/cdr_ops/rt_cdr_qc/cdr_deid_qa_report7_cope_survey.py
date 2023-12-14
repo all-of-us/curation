@@ -392,8 +392,6 @@ columns = [c for c in target_tables['column_name']]
 result_list = []
 for t, c in zip(tables, columns):
     result_list.append(target_of(t, c))
-# -
-
 result_list
 
 # +
