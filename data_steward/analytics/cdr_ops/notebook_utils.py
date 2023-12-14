@@ -106,7 +106,8 @@ def render_message(results_df,
                    success_msg='',
                    failure_msg='',
                    success_msg_args={},
-                   failure_msg_args={}):
+                   failure_msg_args={},
+                   is_success=None):
     """
     Renders a conditional success or failure message for a DQ check.
 
@@ -115,9 +116,11 @@ def render_message(results_df,
     failure_msg: A templated string to describe failure.
     success_msg_args: A dictionary of args to pass to success_msg template.
     failure_msg_args: A dictionary of args to pass to failiure_msg template.
+    is_success: Optional override of the default is_success value.
 
     """
-    is_success = len(results_df) == 0
+    if is_success is None:
+        is_success = len(results_df) == 0
     status_msg = 'Success' if is_success else 'Failure'
     if is_success:
         display(
