@@ -406,6 +406,14 @@ for i in range(1, n):
 
 final_result = final_result.sort_values(by='Failure_row_counts', ascending=False)
 final_result
+# -
+
+if final_result['Failure_row_counts'].sum() == 0:
+    summary = summary.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables', 'result' : 'Pass'},
+                             ignore_index = True)
+else:
+    summary = summary.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables' , 'result' : 'Failure'},
+                             ignore_index = True)
 
 
 # +
