@@ -170,7 +170,7 @@ END
   gender_source_value,
   gender_source_concept_id,
   CASE
-    WHEN race_concept_id = {{aou_custom_concept}} THEN "AoUDRC_NoneIndicated"
+    WHEN race_concept_id = 0 THEN "AoUDRC_NoneIndicated"
   ELSE
   race_source_value
 END AS race_source_value,
