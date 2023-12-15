@@ -157,7 +157,7 @@ WITH
   GROUP BY
     src_hpo_id)
 SELECT
-  cc.src_hpo_id,
+  src_hpo_id,
   coalesce(previous_unioned_ct, 0) as previous_unioned_ct,
   coalesce(current_unioned_ct, 0)  AS current_unioned_ct,
   coalesce(cast((current_unioned_ct - previous_unioned_ct)/ current_unioned_ct * 100 as INT64), 100) as percentage_change 
@@ -172,37 +172,13 @@ order by percentage_change desc
 execute(client, query)
 # -
 
-# ## Verify Note text data
-
-# +
-query = f'''
-SELECT 'note_text' AS field, note_text AS field_value, COUNT(note_text) AS row_count,
-FROM `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}.note`
-GROUP BY note_text
-
-UNION ALL
-
-SELECT 'note_title' AS field, note_title AS field_value, COUNT(note_title) AS row_count,
-FROM `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}.note`
-GROUP BY note_title
-
-UNION ALL
-
-SELECT 'note_source_value' AS field, note_source_value AS field_value, COUNT(note_source_value) AS row_count,
-FROM `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}.note`
-GROUP BY note_source_value
-'''
-
-execute(client, query)
-# -
-
 # ## Verifying no data past cut-off date
 
 # +
 query = f'''
 SELECT
   'observation' AS TABLE,
-  COUNT(*) AS non_clompling_rows
+  COUNT(*) AS non_complying_rows
 FROM
   `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}.observation`
 WHERE
@@ -210,7 +186,7 @@ WHERE
 UNION ALL
 SELECT
   'measurement' AS TABLE,
-  COUNT(*) AS non_clompling_rows
+  COUNT(*) AS non_complying_rows
 FROM
   `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}.measurement`
 WHERE
@@ -218,7 +194,7 @@ WHERE
 UNION ALL
 SELECT
   'visit_occurrence' AS TABLE,
-  COUNT(*) AS non_clompling_rows
+  COUNT(*) AS non_complying_rows
 FROM
   `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}.visit_occurrence`
 WHERE
@@ -226,7 +202,7 @@ WHERE
 UNION ALL
 SELECT
   'drug_exposure' AS TABLE,
-  COUNT(*) AS non_clompling_rows
+  COUNT(*) AS non_complying_rows
 FROM
   `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}.drug_exposure`
 WHERE
@@ -234,7 +210,7 @@ WHERE
 UNION ALL
 SELECT
   'procedure' AS TABLE,
-  COUNT(*) AS non_clompling_rows
+  COUNT(*) AS non_complying_rows
 FROM
   `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}.procedure_occurrence`
 WHERE
@@ -242,7 +218,7 @@ WHERE
   UNION ALL
 SELECT
   'visit_detail' AS TABLE,
-  COUNT(*) AS non_clompling_rows
+  COUNT(*) AS non_complying_rows
 FROM
   `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}.visit_detail`
 WHERE
@@ -353,7 +329,7 @@ WITH qc_aou_death AS (
     SELECT 
         aou_death_id, 
         CASE WHEN aou_death_id IN (
-            SELECT aou_death_id FROM `{{project_id}}.{{dataset_id}}.aou_death`
+            SELECT aou_death_id FROM `{{project_id}}.{{dataset}}.aou_death`
             WHERE death_date IS NOT NULL -- NULL death_date records must not become primary --
             QUALIFY RANK() OVER (
                 PARTITION BY person_id 
