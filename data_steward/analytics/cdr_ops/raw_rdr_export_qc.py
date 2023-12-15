@@ -1080,7 +1080,7 @@ with ids as (
 src_ids_table = ids_template.render(project_id=project_id,
                                     pipeline=PIPELINE_TABLES,
                                     site_maskings=SITE_MASKING_TABLE_ID)
-for table in set(SRC_ID_TABLES) - {AOU_DEATH} | {DEATH}:
+for table in set(SRC_ID_TABLES):
     tpl = JINJA_ENV.from_string("""
     SELECT
       \'{{table_name}}\' AS table_name,
@@ -1267,7 +1267,7 @@ SELECT
 "Varying consent statuses per consent answer" as issue
 ,COUNT(DISTINCT(consent_for_electronic_health_records)) as n
 FROM obs_consents o
-FULL OUTER JOIN ( -- yes and no consent status only
+FULL OUTER JOIN ( -- yes and no consent status only --
     SELECT *
     FROM `{{project_id}}.{{new_rdr}}.consent_validation` cv
     WHERE consent_for_electronic_health_records IN ('SUBMITTED', 'SUBMITTED_NO')
