@@ -17,6 +17,7 @@ project_id: str = ""  # identifies the project where datasets are located
 fitbit_dataset: str = ""  # identifies the name of the new fitbit dataset
 sandbox_dataset: str = ""  # the pipeline tables sandbox
 source_dataset: str = ""  # identifies the name of the rdr dataset
+deid_dataset: str = "" # dataset contains wear_study table
 cutoff_date: str = ""  # CDR cutoff date in YYYY--MM-DD format
 run_as: str = ""  # service account email to impersonate
 # -
@@ -24,7 +25,7 @@ run_as: str = ""  # service account email to impersonate
 from common import JINJA_ENV, FITBIT_TABLES, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 from utils import auth
 from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
@@ -71,7 +72,8 @@ table_fields_values = {
 }
 
 # ## Identify person_ids that are not in the person table
-# This check verifies that person_ids are valid. That they exist in the CDM person table and are not null. There should be no bad rows.
+# This check verifies that person_ids are valid. That they exist in the CDM person table and are not null.
+# There should be no bad rows.
 #
 # In case of failure:
 # - If the person_id is not in the CDM person table. Check that `RemoveNonExistingPids` was applied.
@@ -201,7 +203,8 @@ execute(client, union_all_query)
 
 # ## Check for rows without a valid date field
 # Fitbit table records must have at least one valid date in order to be deemed valid.
-# This is a preleminary check as this circumstance(lacking a date) should not be possible. No CR currently exists to remove data of this type.
+# This is a preleminary check as this circumstance(lacking a date) should not be possible. No CR currently exists to
+# remove data of this type.
 #
 # If bad rows are found a new CR may be required. Notify and recieve guidance from the DST.
 
@@ -263,4 +266,63 @@ union_all_query = '\nUNION ALL\n'.join(queries_list)
 
 execute(client, union_all_query)
 # -
+# # Check percentage of wear_study participants lacking fitbit data
+#
+# This check requires a deid dataset containing the generated wear_study table. 
+#
+# If the check fails - If one of the data sources is missing or if the percentage of wear_study participants lacking
+# fitbit data is more than 40% for vibrent participants or 10% for ce participants, the data analytics team should be
+# notified.
+# See DC-3629 for more information.
+
+# +
+query = JINJA_ENV.from_string("""
+WITH fb_person_ids AS ( -- identify pids with fitbit data --
+SELECT DISTINCT person_id
+FROM {{project_id}}.{{dataset}}.activity_summary
+)
+, consenting_ws_ids AS ( -- identify consenting pids --
+SELECT person_id,research_id, 
+FROM {{project_id}}.{{pipeline}}.primary_pid_rid_mapping dm
+WHERE research_id IN (SELECT person_id 
+    FROM {{project_id}}.{{deid_dataset}}.wear_study  
+    WHERE wear_consent_end_date IS NULL)
+)
+SELECT 
+src_id, 
+ROUND(COUNT(CASE WHEN fb.person_id IS NULL THEN 1 ELSE NULL END) * 100 / COUNT(c_ws),1) AS percent_without_fb,
+FROM (SELECT * FROM {{project_id}}.{{raw_rdr}}.observation WHERE observation_source_concept_id = 2100000010) o
+JOIN consenting_ws_ids c_ws USING(person_id) 
+LEFT JOIN fb_person_ids fb ON o.person_id = fb.person_id
+GROUP BY 1
+""").render(project_id=project_id,
+            dataset=fitbit_dataset,
+            raw_rdr=source_dataset,
+            pipeline=sandbox_dataset,
+            deid_dataset=deid_dataset)
+
+df = execute(client, query)
+
+# conditions for a passing check
+cond_vibrent_percentage = df.loc[df['src_id'] == 'vibrent', 'percent_without_fb'].iloc[0] < 40
+cond_ce_percentage = df.loc[df['src_id'] == 'ce', 'percent_without_fb'].iloc[0] < 10
+is_success = cond_vibrent_percentage and cond_ce_percentage
+
+success_msg = "Conditions Pass"
+failure_msg = (
+    """
+    One of the following checks failed. Confirm failure, and notify the proper team(Data Analytics) <br>
+    (1) The percentage of wear_study participants lacking fitbit data should be less than than 40% for vibrent. <br>
+    (2) The percentage of wear_study participants lacking fitbit data should be less than than 10% for ce. <br>
+    """
+    )
+
+render_message(df,
+              success_msg,
+              failure_msg,
+              is_success=is_success)
+# -
+
+
+
 
