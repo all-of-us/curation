@@ -33,7 +33,6 @@ project_id = ""  # The project to examine
 com_cdr = ""  # The comibend dataset
 deid_cdr = ""  # the deid dataset
 sandbox = "" # sandbox dataset
-pipeline = "" # the pipeline tables
 run_as = ""  # The account used to run checks
 
 
@@ -353,10 +352,10 @@ CASE WHEN
   THEN 0 ELSE 1
 END
  AS Failure_row_counts
-FROM `{{project_id}}.{{deid_cdr}}.procedure_occurrence` c
+FROM `{{project_id}}.{{deid_cdr}}.{{table_name}}` c
 JOIN (
   SELECT concept_id as concept_id_in_combined
-        FROM `{{project_id}}.{{com_cdr}}.procedure_occurrence` c
+        FROM `{{project_id}}.{{com_cdr}}.{{table}}` c
         JOIN `{{project_id}}.{{deid_cdr}}.concept`
         on concept_id=procedure_concept_id
         WHERE (REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
@@ -371,7 +370,7 @@ JOIN (
      )
     AND  domain_id LIKE '%LEFT(c.domain_id, 3)%'
   ) sub
-  on concept_id_in_combined=procedure_concept_id
+  on concept_id_in_combined={{table_name}}
   GROUP BY concept_id_in_combined
 
 """)
