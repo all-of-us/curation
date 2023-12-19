@@ -1080,7 +1080,7 @@ with ids as (
 src_ids_table = ids_template.render(project_id=project_id,
                                     pipeline=PIPELINE_TABLES,
                                     site_maskings=SITE_MASKING_TABLE_ID)
-for table in set(SRC_ID_TABLES) - {AOU_DEATH} | {DEATH}:
+for table in set(SRC_ID_TABLES):
     tpl = JINJA_ENV.from_string("""
     SELECT
       \'{{table_name}}\' AS table_name,
@@ -1267,7 +1267,7 @@ SELECT
 "Varying consent statuses per consent answer" as issue
 ,COUNT(DISTINCT(consent_for_electronic_health_records)) as n
 FROM obs_consents o
-FULL OUTER JOIN ( -- yes and no consent status only
+FULL OUTER JOIN ( -- yes and no consent status only --
     SELECT *
     FROM `{{project_id}}.{{new_rdr}}.consent_validation` cv
     WHERE consent_for_electronic_health_records IN ('SUBMITTED', 'SUBMITTED_NO')
@@ -1298,18 +1298,62 @@ render_message(df,
                success_msg,
                failure_msg)
 # -
-# # Check to catch duplicate observation_ids
+# # Check to catch duplicates
+# If the query fails find extra information on the issue type below.
+# * "multiple rows with the same observation_id". No rows in the rdr export should have the same 'observation_id'. Relay this issue back to RDR.
+# * "whole row duplicates excluding obs_id" These are rows that have all the same data except for the observation_id. The rdr export should not have duplicates of this type. Relay this issue back to RDR to fix. FYI the RDR CR 'drop_row_duplicates' would remove the duplicate rows if they are not corrected by RDR. 
 
+# +
 tpl = JINJA_ENV.from_string('''
+WITH whole_row_dups AS (
 SELECT
-  observation_id,
-  COUNT(observation_id) AS n
+COUNT(*) as n
+FROM `{{project_id}}.{{new_rdr}}.observation`
+GROUP BY -- all fields except observation_id --
+ person_id, observation_concept_id, observation_date, observation_datetime, observation_type_concept_id, 
+ value_as_number, value_as_string, value_as_concept_id, qualifier_concept_id, unit_concept_id, provider_id, 
+ visit_occurrence_id, visit_detail_id, observation_source_value, observation_source_concept_id, unit_source_value, 
+ qualifier_source_value, value_source_concept_id, value_source_value, questionnaire_response_id
+HAVING n > 1)
+
+, observation_id_dups AS (
+SELECT
+observation_id,
+COUNT(observation_id) AS n
+FROM `{{project_id}}.{{new_rdr}}.observation`
+GROUP BY observation_id
+HAVING n>1)
+
+SELECT
+ "multiple rows with the same obs_id" as issue,
+  COUNT(*) AS n
 FROM 
-    `{{project_id}}.{{new_rdr}}.observation`
-GROUP BY 
-    observation_id
-HAVING n>1
+    observation_id_dups
+
+UNION ALL
+
+SELECT
+ "duplicates on whole row - excluding obs_id" as issue,
+  COUNT(*) AS n
+FROM 
+    whole_row_dups
+
 ''')
 query = tpl.render(project_id=project_id, new_rdr=new_rdr)
-execute(client, query)
+df = execute(client, query)
+
+is_success = sum(df['n']) == 0
+success_msg = 'No issue found.'
+failure_msg = 'Duplicates found. See check description.'
+
+render_message(df,
+               success_msg,
+               failure_msg,
+               is_success=is_success)
+# -
+
+
+
+
+
 

@@ -37,6 +37,7 @@ from cdr_cleaner.cleaning_rules.sandbox_and_remove_withdrawn_pids import Sandbox
 from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import RemoveRecordsWithWrongDate
 from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveParticipantsUnder18Years
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
+from cdr_cleaner.cleaning_rules.replace_freetext_notes import ReplaceFreeTextNotes
 from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import UpdateFamilyHistoryCodes
 from cdr_cleaner.cleaning_rules.remove_operational_pii_fields import RemoveOperationalPiiFields
 from cdr_cleaner.cleaning_rules.update_ppi_negative_pain_level import UpdatePpiNegativePainLevel
@@ -65,9 +66,11 @@ from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
 from cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization import \
     ConflictingHpoStateGeneralize
 from cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers import GeneralizeCopeInsuranceAnswers
+from cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services import GeneralizeIndianHealthServices
 from cdr_cleaner.cleaning_rules.drop_cope_duplicate_responses import DropCopeDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import \
     DropDuplicatePpiQuestionsAndAnswers
+from cdr_cleaner.cleaning_rules.drop_row_duplicates import DropRowDuplicates
 from cdr_cleaner.cleaning_rules.clean_smoking_ppi import CleanSmokingPpi
 from cdr_cleaner.cleaning_rules.drop_ppi_duplicate_responses import DropPpiDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
@@ -219,6 +222,7 @@ RDR_CLEANING_CLASSES = [
     (StoreExpectedCTList,),
     (DropOrphanedSurveyConductIds,),
     (CalculatePrimaryDeathRecord,),
+    (DropRowDuplicates,),
     (CleanMappingExtTables,),
 ]
 
@@ -241,12 +245,14 @@ COMBINED_CLEANING_CLASSES = [
     (DrugRefillsDaysSupply,),
     (PopulateRouteIds,),
     (TemporalConsistency,),
+    (EnsureDateDatetimeConsistency,),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     (
         NullInvalidForeignKeys,),
     (RemoveParticipantDataPastDeactivationDate,),
     (RemoveNonMatchingParticipant,),
+    (ReplaceFreeTextNotes,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (GenerateExtTables,),
@@ -282,6 +288,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
         ConflictingHpoStateGeneralize,),
     (GeneralizeStateByPopulation,),
     (GeneralizeCopeInsuranceAnswers,),
+    (GeneralizeIndianHealthServices,),
     # (GeneralizeSexGenderConcepts,),
 
     # Data suppressions

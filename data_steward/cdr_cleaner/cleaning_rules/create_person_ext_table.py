@@ -54,7 +54,8 @@ ON
   o.observation_id = e.observation_id
   AND o.observation_source_concept_id = 1585249
 LEFT JOIN
-  `{{project}}.{{dataset}}.observation` os
+  (SELECT DISTINCT person_id, observation_source_concept_id, value_as_concept_id, value_source_concept_id
+   FROM `{{project}}.{{dataset}}.observation`) os
 ON
   p.person_id = os.person_id
   AND os.observation_source_concept_id = 1585845

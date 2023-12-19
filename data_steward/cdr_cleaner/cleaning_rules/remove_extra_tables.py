@@ -66,7 +66,7 @@ class RemoveExtraTables(BaseCleaningRule):
         extension_tables = list({
             f'{table}_ext' for table in cdm_schemas().keys()
             if has_domain_table_id(table)
-        } - {'person_ext'}) + ['person_src_hpos_ext']
+        }) + ['person_src_hpos_ext']
         # To Keep AOU_DEATH table
         custom_tables = AOU_CUSTOM_TABLES + [WEAR_STUDY]
         affected_tables = cdm_achilles_vocab_tables + extension_tables + custom_tables

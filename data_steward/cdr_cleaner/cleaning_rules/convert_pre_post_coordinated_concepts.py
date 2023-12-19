@@ -75,8 +75,8 @@ ON m1.concept_id = m2.concept_id
 WHERE m1.new_observation_concept_id IS NOT NULL
 """)
 
-SANDBOX_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
+SANDBOX_OLD_ROWS_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_deleted` AS
 
 WITH concepts_with_only_maps_to_value AS (
     SELECT cr1.concept_id_1
@@ -97,16 +97,15 @@ WHERE c1.standard_concept IS NULL AND cr1.relationship_id = 'Maps to value'
 AND o.value_source_concept_id NOT IN (SELECT concept_id_1 FROM concepts_with_only_maps_to_value)
 """)
 
-DELETE_QUERY = JINJA_ENV.from_string("""
+DELETE_OLD_ROWS_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project}}.{{dataset}}.observation`
 WHERE observation_id IN (
-    SELECT observation_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+    SELECT observation_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_deleted`
 )
 """)
 
-INSERT_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.observation`
-({{observation_fields}})
+SANDBOX_NEW_ROWS_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_inserted` AS
 SELECT 
     -- ROW_NUMBER() here can be 1 - 4. So, the newly generated IDs will be --
     -- in the range of 100,000,000,000 - 499,999,999,999. --
@@ -136,11 +135,18 @@ SELECT
     o.value_source_concept_id,
     o.value_source_value, 
     o.questionnaire_response_id
-FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` o
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_deleted` o
 JOIN `{{project}}.{{dataset}}.concept` c
 ON o.value_source_value = c.concept_code
 JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_mapping` m
 ON c.concept_id = m.concept_id
+""")
+
+INSERT_NEW_ROWS_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.observation`
+({{observation_fields}})
+SELECT *
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_inserted`
 """)
 
 INSERT_MAPPING_QUERY = JINJA_ENV.from_string("""
@@ -156,7 +162,7 @@ SELECT
             m.new_value_as_concept_id
         ) * 100000000000 + o.observation_id AS observation_id,
     om.src_id
-FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` o
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_deleted` o
 JOIN `{{project}}.{{dataset}}.concept` c
 ON o.value_source_value = c.concept_code
 JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_mapping` m
@@ -169,7 +175,7 @@ DELETE_MAPPING_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project}}.{{dataset}}._mapping_observation`
 WHERE observation_id IN (
     SELECT observation_id 
-    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_deleted`
 )
 """)
 
@@ -222,27 +228,34 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
             100,000,000,000 * ((n)th record from the mapping table for the value_source_concept_id) + original observation_id.
             "n" can be 1 - 4. So, the newly generated IDs will be in the range of 100,000,000,000 - 499,999,999,999.
         """
-        sandbox_query_dict = {
+        sandbox_old_rows_dict = {
             cdr_consts.QUERY:
-                SANDBOX_QUERY.render(
+                SANDBOX_OLD_ROWS_QUERY.render(
                     project=self.project_id,
                     sandbox_dataset=self.sandbox_dataset_id,
                     sandbox_table=self.sandbox_table_for(OBSERVATION),
                     dataset=self.dataset_id)
         }
 
-        delete_query_dict = {
+        delete_old_rows_dict = {
             cdr_consts.QUERY:
-                DELETE_QUERY.render(
+                DELETE_OLD_ROWS_QUERY.render(
                     project=self.project_id,
                     sandbox_dataset=self.sandbox_dataset_id,
                     sandbox_table=self.sandbox_table_for(OBSERVATION),
                     dataset=self.dataset_id)
         }
-
-        insert_query_dict = {
+        sandbox_new_rows_dict = {
             cdr_consts.QUERY:
-                INSERT_QUERY.render(
+                SANDBOX_NEW_ROWS_QUERY.render(
+                    project=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
+                    dataset=self.dataset_id)
+        }
+        insert_new_rows_query_dict = {
+            cdr_consts.QUERY:
+                INSERT_NEW_ROWS_QUERY.render(
                     project=self.project_id,
                     sandbox_dataset=self.sandbox_dataset_id,
                     sandbox_table=self.sandbox_table_for(OBSERVATION),
@@ -270,8 +283,9 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
         }
 
         return [
-            sandbox_query_dict, insert_query_dict, insert_mapping_query_dict,
-            delete_query_dict, delete_mapping_query_dict
+            sandbox_old_rows_dict, sandbox_new_rows_dict,
+            insert_new_rows_query_dict, insert_mapping_query_dict,
+            delete_old_rows_dict, delete_mapping_query_dict
         ]
 
     def setup_rule(self, client, *args, **keyword_args):
@@ -303,10 +317,10 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        return [
-            self.sandbox_table_for(affected_table)
-            for affected_table in self._affected_tables
-        ]
+        old_data_sandbox = f'{self.sandbox_table_for(OBSERVATION)}_deleted'
+        new_data_sandbox = f'{self.sandbox_table_for(OBSERVATION)}_inserted'
+        mapping_sandbox = f'{self.sandbox_table_for(OBSERVATION)}_mapping_observation'
+        return [old_data_sandbox, new_data_sandbox, mapping_sandbox]
 
 
 if __name__ == '__main__':

@@ -15,7 +15,7 @@ from dateutil import parser
 
 # Project imports
 from common import (FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_SUMMARY,
-                    HEART_RATE_INTRADAY, STEPS_INTRADAY, DEVICE)
+                    HEART_RATE_INTRADAY, STEPS_INTRADAY, DEVICE, RDR_DATASET_ID)
 from app_identity import PROJECT_ID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
@@ -32,31 +32,29 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
         super().initialize_class_vars()
 
         # Set the test project identifier
-        project_id = os.environ.get(PROJECT_ID)
-        cls.project_id = project_id
+        cls.project_id = os.environ.get(PROJECT_ID)
 
         # Set the expected test datasets
-        dataset_id = os.environ.get('RDR_DATASET_ID')
-        cls.dataset_id = dataset_id
-        sandbox_id = dataset_id + '_sandbox'
-        cls.sandbox_id = sandbox_id
+        cls.dataset_id = RDR_DATASET_ID
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         truncation_date = '2019-11-26'
         cls.kwargs.update({'truncation_date': truncation_date})
 
-        cls.rule_instance = TruncateFitbitData(project_id,
-                                               dataset_id,
-                                               sandbox_id,
+        cls.rule_instance = TruncateFitbitData(cls.project_id,
+                                               cls.dataset_id,
+                                               cls.sandbox_id,
                                                truncation_date=truncation_date)
 
         # Generates list of fully qualified sandbox table names
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
             cls.fq_sandbox_table_names.append(
-                f'{project_id}.{sandbox_id}.{table_name}')
+                f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
         # Generates list of fully qualified FitBit table names
         for table in FITBIT_TABLES:
-            cls.fq_table_names.append(f'{project_id}.{dataset_id}.{table}')
+            cls.fq_table_names.append(
+                f'{cls.project_id}.{cls.dataset_id}.{table}')
 
         # call super to set up the client, create datasets, and create
         # empty test tables

@@ -23,11 +23,11 @@ from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
-project_id = ""
-com_cdr = ""
-deid_base_cdr = ""
-pipeline = ""
-run_as = ""
+project_id = ""  # The project to examine
+com_cdr = ""  # The comibend dataset
+deid_base_cdr = ""  # the deid dataset
+pipeline = ""  # the pipeline tables
+run_as = ""  # The account used to run checks
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
@@ -39,29 +39,136 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # df will have a summary in the end
 df = pd.DataFrame(columns=['query', 'result'])
 
-# # 1 Verify that if a person has multiple SELECTion(Hispanic + other race) in pre_deid_com_cdr, the output in deid_base_cdr observation table should result in two rows - one for Ethnicity AND one for race.
+# ## Step1
+# - Verify the following columns in the deid_cdr Observation table have been set to null:
+#   - value_as_string
+#   - value_source_value
+#
+# has been done in first sql for deid, can be skipped here
+
+# ## Query 1.0
+#
+# Participants answer multiple choice insurance questions on multiple surveys.  One of the available insurance selections is “Indian Health Services” (or a variant).  This option does not necessarily identify a participant as a self identifying AI/AN participant.  Even though this option does not overtly identify a participant as AI/AN, it suggests so.  Hence, we generalize these responses to the category "Other" and subsequently eliminate duplicate rows generated during this process.
+#
+# This check verifies records were suppressed. The observation_concept_id's are:
+# - `40766241`
+# - `1585389`
+# - `43528428`
+
+# +
+query = JINJA_ENV.from_string("""SELECT
+  observation_id
+FROM
+  `{{project_id}}.{{deid_base_cdr}}.observation`
+WHERE
+  (observation_concept_id = 40766241
+    AND observation_source_concept_id = 1384450
+    AND value_source_concept_id = 1384516
+    AND value_as_concept_id = 45883720)
+  OR (observation_concept_id = 1585389
+    AND observation_source_concept_id = 1585389
+    AND value_source_concept_id = 1585396
+    AND value_as_concept_id = 45883720)
+  OR (observation_concept_id = 43528428
+    AND observation_source_concept_id = 43528428
+    AND value_source_concept_id = 43529111
+    AND value_as_concept_id = 45883720)
+""")
+
+
+q = query.render(project_id=project_id, deid_base_cdr=deid_base_cdr)
+result = execute(client, q)
+
+if result.empty:
+    df = df.append(
+        {
+            'query':
+                "Query 1.0 No observation_id's indicate Indian Health Services or similar",
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                "Query 1.0 observation_id's were found that indicate Indian Health Services or similar",
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
+result
+# -
+
+# ## Query 1.1
+#
+# Generalized Insurance selections of “Indian Health Services” (or a variant) should not result in duplicate responses. [DC-3597](https://precisionmedicineinitiative.atlassian.net/browse/DC-3597)
+
+# +
+query = JINJA_ENV.from_string("""
+SELECT observation_id FROM `{{project_id}}.{{deid_base_cdr}}.observation`
+WHERE observation_id IN (
+    SELECT observation_id
+    FROM (
+        SELECT
+            observation_id,
+            ROW_NUMBER() OVER(
+                PARTITION BY person_id, value_source_concept_id, value_as_concept_id
+                ORDER BY observation_date DESC, observation_id
+            ) AS rn
+        FROM `{{project_id}}.{{deid_base_cdr}}.observation`
+        WHERE (value_source_concept_id = 1384595 AND value_as_concept_id = 1384595)
+        OR (value_source_concept_id = 1585398 AND value_as_concept_id = 45876762)
+        OR (value_source_concept_id = 43528423 AND value_as_concept_id = 43528423)
+    ) WHERE rn <> 1)
+""")
+
+q = query.render(project_id=project_id, deid_base_cdr=deid_base_cdr)
+
+result = execute(client, q)
+if result.empty:
+    df = df.append(
+        {
+            'query':
+                "Query 1.1 Duplaced observation_id's indicating Indian Health Services or similar were removed",
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                "Query 1.1 observation_id's indicate indian Health Services are present",
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
+result
+# -
+
+# # 2 Verify that if a person has multiple SELECTion(Hispanic + other race) in pre_deid_com_cdr, the output in deid_base_cdr observation table should result in two rows - one for Ethnicity AND one for race.
 #
 # test steps:
 #
 # - Verify the following columns in the de-id Observation table have been set to null:
-# o   value_as_string
-# o   value_source_value"
+#   - value_as_string
+#   - value_source_value"
 #  however, this is already done in query 1, no need here anymore
 # - Find person_ids in pre_deid_com_cdr person table who have ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586146 OR 1586142 OR 1586143) , then verify that the output in the deid_base_cdr observation table for that person_id  will results in 2-rows .
 # - Verify that the 2-rows have 2-different value_source_concept_id values in the deid_base_cdr Observation table.
 # - Verify that if a person_id in pre_deid_com_cdr hAS ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586145 OR 1586144)  in the person table, the output in the deid_base_cdr observation table for that person_id  will result in 2-rows .
-# - Verify that if a person_id hAS ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS multiple SELECTions (2 or more) in the person table, the output in the deid_base_cdr observation table for that person_id  will result in 2 OR MORE rows .
-#
-#
+# - Verify that if a person_id hAS ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS multiple SELECTions (2 or more) in the person table, the output in the deid_base_cdr observation table for that person_id  will result in 2 OR MORE rows.
 
-# ## step1
+# ## Step 2.0
 # - Verify the following columns in the deid_cdr Observation table have been set to null:
-# o   value_as_string
-# o   value_source_value
+#   - value_as_string
+#   - value_source_value
 #
 # has been done in first sql for deid, can be skipped here
 
-# ## Query 1.2 Find person_ids in pre_dedi_com_cdr person table who have ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586146 OR 1586142 OR 1586143) , then verify that the output in the deid_base_cdr observation table for that person_id after mapping  will results in 2-rows .
+# ## Query 2.1
+# Find person_ids in pre_dedi_com_cdr person table who have ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586146 OR 1586142 OR 1586143) , then verify that the output in the deid_base_cdr observation table for that person_id after mapping  will results in 2-rows.
 #
 #   step 3
 # Verify that the 2-rows have 2-different value_source_concept_id values in the deid_base_cdr Observation table.
@@ -70,22 +177,22 @@ query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT m.research_id AS person_id
-FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
-JOIN `{{project_id}}.{{com_cdr}}.person` com 
-ON m.person_id = com.person_id 
+FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
+JOIN `{{project_id}}.{{com_cdr}}.person` com
+ON m.person_id = com.person_id
 WHERE com.ethnicity_source_concept_id = 1586147
 AND com.race_source_concept_id in (1586142, 1586143, 1586146 )
  ),
- 
+
 df2 AS (
 SELECT DISTINCT person_id , COUNT (distinct value_source_concept_id ) AS countp
 FROM `{{project_id}}.{{deid_base_cdr}}.observation`
-WHERE  observation_source_value = 'Race_WhatRaceEthnicity' 
+WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 GROUP BY person_id
  )
- 
+
 SELECT COUNT (*) AS n_not_two_rows FROM df2
-WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2 
+WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2
 """)
 q = query.render(project_id=project_id,
                  pipeline=pipeline,
@@ -95,14 +202,14 @@ df1 = execute(client, q)
 if df1.eq(0).any().any():
     df = df.append(
         {
-            'query': 'Query 1.2 these person_ids have 2-rows in observation',
+            'query': 'Query 2.1 these person_ids have 2-rows in observation',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query1.2 these person_ids have 2-rows in observation',
+            'query': 'Query 2.1 these person_ids have 2-rows in observation',
             'result': 'Failure'
         },
         ignore_index=True)
@@ -144,7 +251,7 @@ df1 = execute(client, q)
 df1
 # -
 
-# ## Query 1.3 step : Verify that if a person_id has ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586145 OR 1586144)  in the pre_deid_com_cdr person table, the output in the deid_cdr observation table for that person_id  after mapping will result in 2-rows AND the 2000000001 race value is populated in value_source_concept_id field in the other row of observation table in the deid dataset.
+# ## Query 2.2 step : Verify that if a person_id has ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586145 OR 1586144)  in the pre_deid_com_cdr person table, the output in the deid_cdr observation table for that person_id  after mapping will result in 2-rows AND the 2000000001 race value is populated in value_source_concept_id field in the other row of observation table in the deid dataset.
 
 # +
 
@@ -178,21 +285,21 @@ df1 = execute(client, q)
 if df1.eq(0).any().any():
     df = df.append(
         {
-            'query': 'Query1.3 these person_ids have 2-rows in observation',
+            'query': 'Query 2.2 these person_ids have 2-rows in observation',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query1.3 these person_ids have 2-rows in observation',
+            'query': 'Query 2.2 these person_ids have 2-rows in observation',
             'result': 'Failure'
         },
         ignore_index=True)
 df1
 # -
 
-# ## Query 1.4 Verify that if a person_id has ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS multiple SELECTions (2 or more) in the pre_deid_com_cdr person table, the output in the deid_base_cdr observation table for that person_id  will result in 2 OR MORE rows .
+# ## Query 2.3 Verify that if a person_id has ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS multiple SELECTions (2 or more) in the pre_deid_com_cdr person table, the output in the deid_base_cdr observation table for that person_id  will result in 2 OR MORE rows .
 #
 # observation_source_value = 'Race_WhatRaceEthnicity' AND value_source_concept_id
 
@@ -224,7 +331,7 @@ if df1.eq(0).any().any():
     df = df.append(
         {
             'query':
-                'Query1.4 these person_ids have 2 or more rows in observation',
+                'Query 2.3 these person_ids have 2 or more rows in observation',
             'result':
                 'PASS'
         },
@@ -233,14 +340,14 @@ else:
     df = df.append(
         {
             'query':
-                'Query1.4 these person_ids have 2 or more rows in observation',
+                'Query 2.3 these person_ids have 2 or more rows in observation',
             'result':
                 'Failure'
         },
         ignore_index=True)
 df1
 
-# ## Query 1.5  GR_01_2	"Race Ethnicity:  Race non-responses DC-618
+# #### Query 2.4  GR_01_2	"Race Ethnicity:  Race non-responses DC-618
 #
 # Verify that if race_name / race_source_value field in deid_base_cdr PERSON table populates AS "AoUDRC_NoneIndicated", the race_concept_id field in deid_base_cdr person table should populate : 2100000001
 #
@@ -266,7 +373,7 @@ if df1.eq(0).any().any():
     df = df.append(
         {
             'query':
-                'Query1.5 Race_source_concept_id suppresion in observation',
+                'Query 2.4 Race_source_concept_id suppresion in observation',
             'result':
                 'PASS'
         },
@@ -275,14 +382,14 @@ else:
     df = df.append(
         {
             'query':
-                'Query1.5 Race_source_concept_id suppresion in observation',
+                'Query 2.4 Race_source_concept_id suppresion in observation',
             'result':
                 'Failure'
         },
         ignore_index=True)
 df1
 
-# # Query 2 Gender Generalization Rule
+# # Query 3.0 Gender Generalization Rule
 #
 # objective: Account for new gender identify response option (DC-654)
 # The new concept ID in the gender question, “CloserGenderDescription_TwoSpirit” (value_source_concept_id=701374) needs to be generalized to value_source_concept_id = 2000000002 (GenderIdentity_GeneralizedDiffGender)
@@ -309,7 +416,7 @@ if df1.eq(0).any().any():
     df = df.append(
         {
             'query':
-                'Query2 Gender_value_source_concept_id matched value_as_concept_id in observation',
+                'Query 3.0 Gender_value_source_concept_id matched value_as_concept_id in observation',
             'result':
                 'PASS'
         },
@@ -318,14 +425,14 @@ else:
     df = df.append(
         {
             'query':
-                'Query2 Gender_value_source_concept_id matched value_as_concept_id in observation',
+                'Query 3.0 Gender_value_source_concept_id matched value_as_concept_id in observation',
             'result':
                 'Failure'
         },
         ignore_index=True)
 df1
 
-# # Query 3 Sex/gender mismatch
+# # Query 3.1 Sex/gender mismatch
 #
 # Verify that if a person responds
 # 1. Male sex at birth AND female gender
@@ -371,7 +478,7 @@ if df1.eq(0).any().any():
     df = df.append(
         {
             'query':
-                'Query3 Sex_female/gender_man mismatch in deid_base_cdr.person table',
+                'Query 3.1 Sex_female/gender_man mismatch in deid_base_cdr.person table',
             'result':
                 'PASS'
         },
@@ -380,7 +487,7 @@ else:
     df = df.append(
         {
             'query':
-                'Query3 Sex_female/gender_man mismatch in deid_base_cdr.person table',
+                'Query 3.1 Sex_female/gender_man mismatch in deid_base_cdr.person table',
             'result':
                 'Failure'
         },
@@ -417,7 +524,7 @@ if df1.eq(0).any().any():
     df = df.append(
         {
             'query':
-                'Query3.2 Sex_male/gender_woman mismatch in deid_base_cdr.person',
+                'Query 3.2 Sex_male/gender_woman mismatch in deid_base_cdr.person',
             'result':
                 'PASS'
         },
@@ -426,7 +533,7 @@ else:
     df = df.append(
         {
             'query':
-                'Query3.2 Sex_male/gender_woman mismatch in deid_base_cdr.person',
+                'Query 3.2 Sex_male/gender_woman mismatch in deid_base_cdr.person',
             'result':
                 'Failure'
         },
@@ -482,19 +589,19 @@ q = query.render(project_id=project_id,
 df1 = execute(client, q)
 if df1.loc[0].sum() == 0:
     df = df.append({
-        'query': 'Query4 date not shifited',
+        'query': 'Query 4.0 date not shifited',
         'result': 'PASS'
     },
                    ignore_index=True)
 else:
     df = df.append({
-        'query': 'Query4 date not shifited',
+        'query': 'Query 4.0 date not shifited',
         'result': 'Failure'
     },
                    ignore_index=True)
 df1
 
-# ##  Query 4.2 [DC-1051] Verify that "PPI Drop Duplicates" Rule is excluded COPE responses
+# ##  Query 5.0 [DC-1051] Verify that "PPI Drop Duplicates" Rule is excluded COPE responses
 #
 # steps:
 #
@@ -542,20 +649,20 @@ df1 = execute(client, q)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
-            'query': 'Query4.2 PPI Drop Duplicates rule exclusion',
+            'query': 'Query 5.0 PPI Drop Duplicates rule exclusion',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query4.2 PPI Drop Duplicates rule exclusion',
+            'query': 'Query 5.0 PPI Drop Duplicates rule exclusion',
             'result': 'Failure'
         },
         ignore_index=True)
 df1
 
-# # Qury 5 equal counts for sex_at_birth columns
+# # Qury 6.0 equal counts for sex_at_birth columns
 #
 # to ensure that there are equal counts FROM both the observation and person_ext tables for the sex_at_birth_* columns that can be added to the RT validation notebook:
 #
@@ -598,14 +705,14 @@ df1 = execute(client, q)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
-            'query': 'Query5 equal counts for sex_at_birth columns',
+            'query': 'Query 6.0 equal counts for sex_at_birth columns',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query5 equal counts for sex_at_birth columns',
+            'query': 'Query 6.0 equal counts for sex_at_birth columns',
             'result': 'Failure'
         },
         ignore_index=True)
@@ -621,3 +728,6 @@ def highlight_cells(val):
 
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
+# -
+
+

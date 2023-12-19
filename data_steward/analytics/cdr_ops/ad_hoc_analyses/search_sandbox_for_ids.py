@@ -54,16 +54,25 @@ ids_list = ids[search_field].to_list()
 # -
 
 # # Get the tables that contain the search_field, from the sandbox dataset
+#
+# The query will return the sandbox tables in the order of their creation time. Earliest to latest.
 
 # +
 tpl = JINJA_ENV.from_string('''
-    SELECT
-      *
-    FROM
-      `{{project_id}}.{{sandbox_dataset_id}}.INFORMATION_SCHEMA.COLUMNS`
-    WHERE
-      column_name = '{{search_field}}'
-    ORDER BY table_name
+ 
+SELECT
+  c.*, t.creation_time
+  , ROW_NUMBER() OVER (ORDER BY t.creation_time) as run_order
+FROM
+  `{{project_id}}.{{sandbox_dataset_id}}.INFORMATION_SCHEMA.COLUMNS` AS c
+JOIN
+  `{{project_id}}.{{sandbox_dataset_id}}.INFORMATION_SCHEMA.TABLES` AS t
+ON
+  c.table_name = t.table_name
+WHERE
+  c.column_name = '{{search_field}}'
+ORDER BY
+  t.creation_time;
     
 ''')
 query = tpl.render(sandbox_dataset_id=sandbox_dataset_id,
@@ -93,5 +102,25 @@ for table in tables_list:
                        ids_list=ids_list,
                        search_field=search_field)
     queries.append(query)
-execute(client, '\nUNION ALL\n'.join(queries))
+df = execute(client, '\nUNION ALL\n'.join(queries))
+
+
+# # Order and view the results
+
+# +
+# Define the run order
+df['run_order'] = pd.Categorical(df['table'], 
+                                 categories=tables_list,
+                                 ordered=True)
+
+# Sort the results
+ordered_df = (
+    df.sort_values(by='run_order')
+      .iloc[:, :2]
+      .reset_index(drop=True)
+)
+
+ordered_df
+# -
+
 

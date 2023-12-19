@@ -751,19 +751,17 @@ with df_person AS (
     state_of_residence_source_value
 
     FROM `{{project_id}}.{{rt_cdr_deid_clean}}.person_ext` p
-    JOIN `{{project_id}}.{{reg_combine}}._mapping_src_hpos_to_allowed_states` ON value_source_concept_id=state_of_residence_concept_id
-    JOIN `{{project_id}}.{{deid_sand}}.site_maskings` m ON hpo_id=src_hpo_id
+    JOIN `{{project_id}}.{{pipeline_tables}}.site_maskings` m ON value_source_concept_id=state_of_residence_concept_id
     WHERE state_of_residence_concept_id IS NOT NULL
 ),
 
 df_omop AS (
-    SELECT distinct person_id,ext.src_id,m.src_id,hpo_id,mhpo.src_hpo_id,m.hpo_id,
-    State,mhpo.value_source_concept_id as state_id_2
+    SELECT distinct person_id,ext.src_id,m.src_id,
+    State,m.value_source_concept_id as state_id_2
     FROM `{{project_id}}.{{rt_cdr_deid_clean}}.{{table_name}}`
     JOIN `{{project_id}}.{{rt_cdr_deid_clean}}.{{table_name}}_ext` ext USING ({{column_name}})
-    JOIN `{{project_id}}.{{deid_sand}}.site_maskings` m ON ext.src_id=m.src_id
-    JOIN `{{project_id}}.{{reg_combine}}._mapping_src_hpos_to_allowed_states` mhpo ON mhpo.src_hpo_id=m.hpo_id
-    WHERE REGEXP_CONTAINS(src_id, r'(?i)EHR site')
+    JOIN `{{project_id}}.{{pipeline_tables}}.site_maskings` m ON ext.src_id=m.src_id
+    WHERE REGEXP_CONTAINS(m.src_id, r'(?i)EHR site')
 )
 
 SELECT '{{table_name}}' AS table_name,
@@ -780,10 +778,10 @@ WHERE state_id_2 !=state_id_1
 """)
     q = query.render(project_id=project_id,
                      reg_combine=reg_combine,
-                     deid_sand=deid_sand,
                      rt_cdr_deid_clean=rt_cdr_deid_clean,
                      table_name=table_name,
-                     column_name=column_name)
+                     column_name=column_name,
+                     pipeline_tables=pipeline)
     df11 = execute(client, q)
     return df11
 

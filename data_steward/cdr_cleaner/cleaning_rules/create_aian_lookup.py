@@ -61,14 +61,14 @@ class CreateAIANLookup(BaseCleaningRule):
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
-            storage_table_name=self.sandbox_table_for(AIAN_LIST))
+            storage_table_name=AIAN_LIST)
 
         create_sandbox_table_dict = {cdr_consts.QUERY: create_sandbox_table}
 
         return [create_sandbox_table_dict]
 
     def get_sandbox_tablenames(self):
-        return [self.sandbox_table_for(AIAN_LIST)]
+        return [AIAN_LIST]
 
     def setup_rule(self, client):
         pass

@@ -229,8 +229,9 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         """
         Tests that end_datetime fields are assigned a time component of 11:59:59
         """
+
         self.maxDiff = None
-        tmpl = self.jinja_env.from_string("""
+        query_drug = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.drug_exposure`
         (drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date,
          drug_exposure_start_datetime, drug_exposure_end_date, drug_exposure_end_datetime, drug_type_concept_id)
@@ -239,10 +240,20 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
           (102, 2, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-09-05'), timestamp('2016-09-05 13:12:45'), 0),
           (103, 1, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-09-05'), timestamp('2016-09-06 13:12:45'), 0),
           (104, 3, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-09-05'), timestamp('2016-09-05 00:00:00'), 0)
-        """)
+        """).render(fq_dataset_name=self.fq_dataset_name)
 
-        query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
-        self.load_test_data([query])
+        query_visit = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.visit_occurrence`
+        (visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_start_datetime,
+         visit_end_date, visit_end_datetime, visit_type_concept_id)
+        VALUES
+          (101, 1, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-09-05'), NULL, 0),
+          (102, 2, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-09-05'), timestamp('2016-09-05 13:12:45'), 0),
+          (103, 1, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-09-05'), timestamp('2016-09-06 13:12:45'), 0),
+          (104, 3, 0, date('2016-05-01'), timestamp('2016-05-01 00:00:00'), date('2016-09-05'), timestamp('2016-09-05 00:00:00'), 0)
+        """).render(fq_dataset_name=self.fq_dataset_name)
+
+        self.load_test_data([query_drug, query_visit])
 
         tables_and_counts = [{
             'fq_table_name':
@@ -256,6 +267,34 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                 'drug_exposure_start_date', 'drug_exposure_start_datetime',
                 'drug_exposure_end_date', 'drug_exposure_end_datetime',
                 'drug_type_concept_id'
+            ],
+            'cleaned_values': [(101, 1, 0, parser.parse('2016-05-01').date(),
+                                parser.parse('2016-05-01 00:00:00 UTC'),
+                                parser.parse('2016-09-05').date(),
+                                parser.parse('2016-09-05 11:59:59 UTC'), 0),
+                               (102, 2, 0, parser.parse('2016-05-01').date(),
+                                parser.parse('2016-05-01 00:00:00 UTC'),
+                                parser.parse('2016-09-05').date(),
+                                parser.parse('2016-09-05 13:12:45 UTC'), 0),
+                               (103, 1, 0, parser.parse('2016-05-01').date(),
+                                parser.parse('2016-05-01 00:00:00 UTC'),
+                                parser.parse('2016-09-05').date(),
+                                parser.parse('2016-09-05 13:12:45 UTC'), 0),
+                               (104, 3, 0, parser.parse('2016-05-01').date(),
+                                parser.parse('2016-05-01 00:00:00 UTC'),
+                                parser.parse('2016-09-05').date(),
+                                parser.parse('2016-09-05 00:00:00 UTC'), 0)]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, 'visit_occurrence']),
+            'fq_sandbox_table_name':
+                '',
+            'loaded_ids': [101, 102, 103, 104],
+            'sandboxed_ids': [],
+            'fields': [
+                'visit_occurrence_id', 'person_id', 'visit_concept_id',
+                'visit_start_date', 'visit_start_datetime', 'visit_end_date',
+                'visit_end_datetime', 'visit_type_concept_id'
             ],
             'cleaned_values': [(101, 1, 0, parser.parse('2016-05-01').date(),
                                 parser.parse('2016-05-01 00:00:00 UTC'),

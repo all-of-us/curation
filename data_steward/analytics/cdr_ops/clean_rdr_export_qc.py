@@ -1313,4 +1313,59 @@ ORDER BY 6
 query = tpl.render(new_rdr=new_rdr, raw_rdr=raw_rdr, project_id=project_id)
 execute(client, query)
 
+# # Check to catch duplicates in observation
+# If the query fails find extra information on the issue type below.
+# * "multiple rows with the same observation_id". There should not be any rows that have the same observation_id. A similar check exists in the raw rdr qc notebook and should have caught occurrences of this issue in the raw export. This check failing most likely means that a rdr cleaning rule is the culpret. 
+# * "whole row duplicates excluding obs_id" These are rows that have all the same data except for the observation_id. A cleaning rule was created to remove duplicates of this type 'drop_row_duplicates'.  
+
+# +
+tpl = JINJA_ENV.from_string('''
+WITH whole_row_dups AS (
+SELECT
+COUNT(*) as n
+FROM `{{project_id}}.{{new_rdr}}.observation`
+GROUP BY -- all fields except observation_id --
+ person_id, observation_concept_id, observation_date, observation_datetime, observation_type_concept_id, 
+ value_as_number, value_as_string, value_as_concept_id, qualifier_concept_id, unit_concept_id, provider_id, 
+ visit_occurrence_id, visit_detail_id, observation_source_value, observation_source_concept_id, unit_source_value, 
+ qualifier_source_value, value_source_concept_id, value_source_value, questionnaire_response_id
+HAVING n > 1)
+
+, observation_id_dups AS (
+SELECT
+observation_id,
+COUNT(observation_id) AS n
+FROM `{{project_id}}.{{new_rdr}}.observation`
+GROUP BY observation_id
+HAVING n>1)
+
+SELECT
+ "multiple rows with the same obs_id" as issue,
+  COUNT(*) AS n
+FROM 
+    observation_id_dups
+
+UNION ALL
+
+SELECT
+ "duplicates on whole row - excluding obs_id" as issue,
+  COUNT(*) AS n
+FROM 
+    whole_row_dups
+
+''')
+query = tpl.render(project_id=project_id, new_rdr=new_rdr)
+df = execute(client, query)
+
+is_success = sum(df['n']) == 0
+success_msg = 'No issue found.'
+failure_msg = 'Duplicates found. See check description.'
+
+render_message(df,
+               success_msg,
+               failure_msg,
+               is_success=is_success)
+# -
+
+
 
