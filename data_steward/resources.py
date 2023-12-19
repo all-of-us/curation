@@ -10,7 +10,7 @@ import re
 import cachetools
 from datetime import datetime
 
-from git import Repo, TagReference
+from git import Repo
 
 from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
                     FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP,
@@ -665,7 +665,8 @@ def get_git_tag():
     """
     repo = Repo(os.getcwd(), search_parent_directories=True)
     try:
-        tag_ref = TagReference.list_items(repo)[-1].name
+        tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
+        tag_ref = tags[-1]
     except IndexError:
         tag_ref = ''
     return tag_ref

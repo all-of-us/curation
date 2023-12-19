@@ -347,9 +347,17 @@ def main(raw_args=None):
                         age_limit=args.age_limit)
     logging.info(f"Loaded {DEID_MAP_TABLE} table.")
 
+    logging.info(
+        f"Copying ext tables from {args.input_dataset} dataset to {args.odataset} dataset..."
+    )
+    copy_job_list = copy_ext_tables(bq_client, args.input_dataset,
+                                    args.odataset)
+    bq_client.wait_on_jobs(copy_job_list)
+    logging.info(f"Finished copying ext tables.")
+
     exceptions = []
     successes = []
-    for table in tables:
+    for table in tables + ['person_ext']:
         tablepath = None
         if table in configured_tables:
             tablepath = os.path.join(deid_tables_path, table + '.json')
@@ -386,14 +394,6 @@ def main(raw_args=None):
             successes.append(table)
 
     copy_suppressed_table_schemas(known_tables, args.odataset)
-
-    logging.info(
-        f"Copying ext tables from {args.input_dataset} dataset to {args.odataset} dataset..."
-    )
-    copy_job_list = copy_ext_tables(bq_client, args.input_dataset,
-                                    args.odataset)
-    bq_client.wait_on_jobs(copy_job_list)
-    logging.info(f"Finished copying ext tables.")
 
     LOGGER.info(
         "Deid has finished.  Successfully executed on tables: {}".format(
