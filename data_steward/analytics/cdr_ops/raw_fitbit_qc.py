@@ -138,9 +138,6 @@ FROM
 src_ids_check_results = execute(client, src_ids_check)
 zones_check_results = execute(client, zone_names_check)
 
-display(src_ids_check_results)
-display(zones_check_results)
-
 check_status = "Look at the result and see if it meets all the following criteria."
 msg = (
     "The result must show that <br>"
@@ -154,6 +151,10 @@ display(
     HTML(
         f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
     ))
+
+display(src_ids_check_results)
+display(zones_check_results)
+
 # -
 
 # # ACTIVITY_SUMMARY table
@@ -214,6 +215,7 @@ display(
     ))
 
 display(df)
+
 # -
 
 # # SLEEP_LEVEL table
@@ -236,28 +238,20 @@ with all_levels_for_at_least_one_date AS (
         person_id, 
         sleep_date
     FROM
-        `{{project_id}}.{{dataset}}.sleep_level`
+        (SELECT * FROM `{{project_id}}.{{dataset}}.sleep_level` WHERE level != 'unknown')
     GROUP BY 
         person_id, sleep_date
-    HAVING levels > 7
+    HAVING levels > 6
 ) 
 
 SELECT 
-  ROUND((COUNT(DISTINCT person_id)/(
-    SELECT
-        COUNT(DISTINCT person_id)
-    FROM 
-        `{{project_id}}.{{dataset}}.sleep_level`
-   ))*100,2) AS percentage
+  ROUND((COUNT(DISTINCT person_id)/(SELECT COUNT(DISTINCT person_id) FROM `{{project_id}}.{{dataset}}.sleep_level`))*100,2) AS percentage
 FROM
     all_levels_for_at_least_one_date
 """).render(project_id=project_id, dataset=dataset_id)
 
 src_ids_check_results = execute(client, check_src_ids)
 sleep_levels_check_results = execute(client, check_sleep_levels)
-
-display(src_ids_check_results)
-display(sleep_levels_check_results)
 
 check_status = "Look at the result and see if it meets all the following criteria."
 msg = (
@@ -272,6 +266,10 @@ display(
     HTML(
         f'''<h3>Check Status: <span style="color: gold">{check_status}</span></h3><p>{msg}</p>'''
     ))
+
+display(src_ids_check_results)
+display(sleep_levels_check_results)
+
 # -
 
 # # DEVICE table

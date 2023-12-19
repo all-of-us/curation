@@ -274,6 +274,30 @@ query = tpl.render(
 execute(client, query)
 # -
 
+# ## Verify Note text data
+
+# +
+query = f'''
+SELECT 'note_text' AS field, note_text AS field_value, COUNT(note_text) AS row_count,
+FROM `{PROJECT_ID}.{DATASET_ID}.note`
+GROUP BY note_text
+
+UNION ALL
+
+SELECT 'note_title' AS field, note_title AS field_value, COUNT(note_title) AS row_count,
+FROM `{PROJECT_ID}.{DATASET_ID}.note`
+GROUP BY note_title
+
+UNION ALL
+
+SELECT 'note_source_value' AS field, note_source_value AS field_value, COUNT(note_source_value) AS row_count,
+FROM `{PROJECT_ID}.{DATASET_ID}.note`
+GROUP BY note_source_value
+'''
+
+execute(client, query)
+# -
+
 # ## Date and datetime fields should have the same date
 # The date represented by associated `_date` and `_datetime` fields of the same
 # row should be the same. If there any discrepancies, there may be a bug in the

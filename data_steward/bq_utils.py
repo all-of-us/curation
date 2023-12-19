@@ -976,6 +976,8 @@ def get_hpo_bucket_info():
     return hpo_list
 
 
+@deprecated(
+    reason='Use gcloud.bq.BigQueryClient.get_hpo_site_state_info() instead')
 def get_hpo_site_state_info():
     hpo_list = []
     project_id = app_identity.get_application_id()
