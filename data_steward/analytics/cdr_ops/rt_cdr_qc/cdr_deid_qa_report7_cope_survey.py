@@ -355,7 +355,7 @@ END
 FROM `{{project_id}}.{{deid_cdr}}.{{table_name}}` c
 JOIN (
   SELECT concept_id as concept_id_in_combined
-        FROM `{{project_id}}.{{com_cdr}}.{{table}}` c
+        FROM `{{project_id}}.{{com_cdr}}.{{table_name}}` c
         JOIN `{{project_id}}.{{deid_cdr}}.concept`
         on concept_id=procedure_concept_id
         WHERE (REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
@@ -370,7 +370,7 @@ JOIN (
      )
     AND  domain_id LIKE '%LEFT(c.domain_id, 3)%'
   ) sub
-  on concept_id_in_combined={{table_name}}
+  on concept_id_in_combined={{table_name}}_id
   GROUP BY concept_id_in_combined
 
 """)
