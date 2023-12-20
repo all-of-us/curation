@@ -357,7 +357,7 @@ JOIN (
   SELECT concept_id as concept_id_in_combined
         FROM `{{project_id}}.{{com_cdr}}.{{table_name}}` c
         JOIN `{{project_id}}.{{deid_cdr}}.concept`
-        on concept_id=procedure_concept_id
+        on concept_id={{table_name}}_id
         WHERE (REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
               REGEXP_CONTAINS(concept_name, r'(?i)(VAC)') AND
         vocabulary_id not in ('PPI'))
