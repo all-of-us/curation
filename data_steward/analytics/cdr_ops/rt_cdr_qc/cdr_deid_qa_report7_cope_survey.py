@@ -32,7 +32,7 @@ pd.options.display.max_rows = 120
 project_id = ""  # The project to examine
 com_cdr = ""  # The comibend dataset
 deid_cdr = ""  # the deid dataset
-sandbox = "" # sandbox dataset
+sandbox = "" # curation_sandbox dataset, not one related to deid_stage
 run_as = ""  # The account used to run checks
 
 
