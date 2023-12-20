@@ -875,7 +875,7 @@ for _, row in ext_tables.iterrows():
       FROM
         `{{project_id}}.{{dataset}}.{{table_name}}`
       WHERE NOT
-          REGEXP_CONTAINS(src_id, r'(?i)(Portal)|(EHR site)')
+          REGEXP_CONTAINS(src_id, r'(?i)(Portal)|(EHR)')
       OR
         src_id IS NULL
       GROUP BY 1,2
