@@ -23,6 +23,7 @@ EHR_SNAPSHOT_ID = ""  # Identifies the EHR snapshot dataset
 LOOKUP_DATASET_ID = ""  # Identifies the lookup dataset
 VALIDATION_DATASET_ID = ""  # Identifies the validation dataset
 EXCLUDED_SITES = "''"  # List of excluded sites passed as string: eg. "'hpo_id1', 'hpo_id_2', 'hpo_id3',..."
+EXCLUDE_IDENTITY_MATCH = "'identity_match_" + EXCLUDED_SITES.replace(" '", "'identity_match_")[1:]
 RUN_AS = ""
 # -
 
@@ -57,6 +58,7 @@ FROM (
     SELECT *, ROW_NUMBER() OVER(PARTITION BY table_name ORDER BY partition_id DESC) r
     FROM `{PROJECT_ID}.{DRC_DATASET_ID}.INFORMATION_SCHEMA.PARTITIONS`
     WHERE partition_id NOT IN ('__NULL__')
+    AND table_name NOT IN ({EXCLUDE_IDENTITY_MATCH})
 )
 WHERE r = 1
 ORDER BY total_rows DESC
@@ -99,7 +101,7 @@ WITH hpos AS (
    SELECT LOWER(hpo_id) as hpo_id
    FROM `{PROJECT_ID}.{LOOKUP_DATASET_ID}.hpo_site_id_mappings`
    WHERE TRIM(hpo_id) IS NOT NULL
-   AND TRIM(hpo_id) NOT IN ('', {EXCLUDED_SITES})
+   AND TRIM(LOWER(hpo_id)) NOT IN ('', {EXCLUDED_SITES})
 )
 SELECT CONCAT(
    "SELECT * FROM (",
@@ -132,7 +134,7 @@ WITH hpos AS (
    SELECT LOWER(hpo_id) as hpo_id
    FROM `{PROJECT_ID}.{LOOKUP_DATASET_ID}.hpo_site_id_mappings`
    WHERE TRIM(hpo_id) IS NOT NULL
-   AND TRIM(hpo_id) NOT IN ('', {EXCLUDED_SITES})
+   AND TRIM(LOWER(hpo_id)) NOT IN ('', {EXCLUDED_SITES})
 )
 SELECT ARRAY_TO_STRING(ARRAY_AGG(FORMAT(
    """
