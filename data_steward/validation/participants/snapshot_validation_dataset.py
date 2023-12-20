@@ -18,6 +18,7 @@ from common import DRC_OPS, CDR_SCOPES, IDENTITY_MATCH, DE_IDENTIFIED
 from constants.validation.participants.snapshot_validaiton_dataset import (
     PARTITIONS_QUERY, SNAPSHOT_TABLE_QUERY)
 from bq_utils import get_hpo_info, get_table_id
+from validation.participants.validate import setup_and_validate_participants
 
 LOGGER = logging.getLogger(__name__)
 
@@ -103,6 +104,15 @@ def create_snapshot(client: BigQueryClient, release_tag: str) -> str:
     return dataset.dataset_id
 
 
+def validate_hpo_ids(bq_client, skip_list):
+    for item in get_hpo_info():
+        hpo_id = item['hpo_id']
+        if hpo_id in skip_list:
+            continue
+        # Prevent updating udfs for all hpo_sites
+        setup_and_validate_participants(bq_client, hpo_id, update_udf=False)
+
+
 def get_arg_parser():
     parser = argparse.ArgumentParser(
         description="""Generate validation snapshot""")
@@ -125,6 +135,10 @@ def get_arg_parser():
                         dest='run_as_email',
                         help='Service account to impersonate',
                         required=True)
+    parser.add_argument(
+        '--hpo_id_ex',
+        nargs='*',
+        help='List of HPOs to exclude from processing (none by default)')
     return parser
 
 
@@ -140,6 +154,9 @@ def main():
         args.run_as_email, CDR_SCOPES)
 
     bq_client = BigQueryClient(args.project_id, credentials=impersonation_creds)
+
+    # Validate hpo_ids
+    validate_hpo_ids(bq_client, skip_list=args.hpo_id_ex)
 
     dataset_id = create_snapshot(bq_client, args.release_tag)
     create_id_match_tables(bq_client, dataset_id)
