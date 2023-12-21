@@ -867,6 +867,7 @@ ext_tables_query = ext_template.render(project_id=PROJECT_ID,
 ext_tables = execute(client, ext_tables_query)
 result = []
 for _, row in ext_tables.iterrows():
+    # Only participant portal, EHR sites, and participant mediated EHR are allowed
     tpl = JINJA_ENV.from_string("""
       SELECT
         \'{{table_name}}\' AS table_name,
