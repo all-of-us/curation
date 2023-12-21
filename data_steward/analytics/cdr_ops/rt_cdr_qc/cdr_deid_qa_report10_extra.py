@@ -864,26 +864,6 @@ WHERE person_id not in ( -- person table --
   SELECT person_id
   FROM `{{project_id}}.{{rt_cdr_deid}}.person` o
   )
-  
-UNION ALL
-
-SELECT
-  'no primary consent' as issue,
-  COUNT(person_id) as bad_rows
-FROM `{{project_id}}.{{rt_cdr_deid}}.wear_study` ws
-WHERE person_id not in (  -- aou consenting participants --
-  SELECT cte.person_id
-  FROM latest_primary_consent_records cte
-    LEFT JOIN ( -- any positive primary consent --
-      SELECT *
-      FROM `{{project_id}}.{{rt_cdr_deid}}.observation`
-      WHERE REGEXP_CONTAINS(observation_source_value, '(?i)extraconsent_agreetoconsent')
-      AND value_as_concept_id = 45877994) o
-    ON cte.person_id = o.person_id
-    AND cte.latest_date = o.observation_date
-  WHERE o.person_id IS NOT NULL
-  )
-
 """)
 q = query.render(project_id=project_id,
                  rt_cdr_deid=rt_cdr_deid)

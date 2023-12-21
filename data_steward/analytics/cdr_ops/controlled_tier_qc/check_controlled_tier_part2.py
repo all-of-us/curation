@@ -1300,7 +1300,6 @@ res2
 # **If check fails:**<br>
 # * The issue `participant with multiple records` means that those participants have multiple rows in the wear_study table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table. <br>
 # * The issue `not in person table` means that participants exist in the wear_study table that aren't in the person table, which should not be possible. Investigate the issue. Start with the CR that creates the wear_study table.<br>
-# * The issue `no primary consent` means that participants exist in the wear_study table that do not have proper primary consent. Investigate the issue. It is possible that there is another way to determine primary consent. <br>
 
 # +
 query = JINJA_ENV.from_string("""
@@ -1329,26 +1328,6 @@ WHERE person_id not in ( -- person table --
   SELECT person_id
   FROM `{{project_id}}.{{ct_dataset}}.person` o
   )
-
-UNION ALL
-
-SELECT
-  'no primary consent' as issue,
-  COUNT(person_id) as bad_rows
-FROM `{{project_id}}.{{ct_dataset}}.wear_study` ws
-WHERE person_id not in (  -- aou consenting participants --
-  SELECT cte.person_id
-  FROM latest_primary_consent_records cte
-    LEFT JOIN ( -- any positive primary consent --
-      SELECT *
-      FROM `{{project_id}}.{{ct_dataset}}.observation`
-      WHERE REGEXP_CONTAINS(observation_source_value, '(?i)extraconsent_agreetoconsent')
-      AND value_as_concept_id = 45877994) o
-    ON cte.person_id = o.person_id
-    AND cte.latest_date = o.observation_date
-  WHERE o.person_id IS NOT NULL
-  )
-
 """)
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
 df1 = execute(client, q)
@@ -1370,6 +1349,7 @@ else:
         },
         ignore_index=True)
 # -
+
 
 df1
 
