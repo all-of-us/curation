@@ -1016,7 +1016,7 @@ END
 
 FROM `{{project_id}}.{{ct_dataset}}.concept` c
 JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}`  ON (concept_id={{column_name}})
-WHERE  standard_concept !='S'
+WHERE  standard_concept not in ('S', 'C')
 AND {{column_name}} !=0
 """)
     q = query.render(project_id=project_id,
