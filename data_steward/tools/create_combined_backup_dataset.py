@@ -529,14 +529,14 @@ def main(raw_args=None):
         '--target_dataset', combined_backup
     ])
     today = datetime.now().strftime('%Y-%m-%d')
+    git_version = str(get_git_tag())
     add_cdr_metadata.main([
         '--component', add_cdr_metadata.INSERT, '--project_id', client.project,
-        '--target_dataset', combined_backup, '--etl_version',
-        get_git_tag(), '--ehr_source', args.unioned_ehr_dataset,
-        '--ehr_cutoff_date', args.ehr_cutoff_date, '--rdr_source',
-        args.rdr_dataset, '--cdr_generation_date', today,
-        '--vocabulary_version', args.vocab_dataset, '--rdr_export_date',
-        args.rdr_export_date
+        '--target_dataset', combined_backup, '--etl_version', git_version,
+        '--ehr_source', args.unioned_ehr_dataset, '--ehr_cutoff_date',
+        args.ehr_cutoff_date, '--rdr_source', args.rdr_dataset,
+        '--cdr_generation_date', today, '--vocabulary_version',
+        args.vocab_dataset, '--rdr_export_date', args.rdr_export_date
     ],
                           bq_client=client)
     LOGGER.info('EHR + RDR combine completed')
