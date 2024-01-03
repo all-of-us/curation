@@ -10,7 +10,6 @@ from unittest.mock import patch
 
 # Project imports
 import app_identity
-import bq_utils
 from common import BIGQUERY_DATASET_ID
 from tests import test_util
 from retraction import retract_data_gcs as rd
