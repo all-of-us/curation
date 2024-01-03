@@ -14,7 +14,6 @@
 
 import warnings
 
-import bq_utils
 import utils.bq
 from notebooks import parameters
 warnings.filterwarnings('ignore')
@@ -33,11 +32,11 @@ def get_hpo_table_columns(hpo_id):
     :param hpo_id: hpo site id
     :return: dataframe with table name, column name and table row count
     """
-    query = """SELECT table_name, column_name, t.row_count as table_row_count, '{hpo_id}' as hpo_id 
+    query = """SELECT table_name, column_name, t.row_count as table_row_count, '{hpo_id}' as hpo_id
                FROM {dataset}.INFORMATION_SCHEMA.COLUMNS c
                JOIN {dataset}.__TABLES__ t on c.table_name=t.table_id
                WHERE STARTS_WITH(table_id, lower('{hpo_id}'))=true AND
-               NOT(table_id like '_mapping%') AND 
+               NOT(table_id like '_mapping%') AND
                 (
                   table_id like '%person' OR
                   table_id like '%visit_occurrence' OR
@@ -59,25 +58,25 @@ def get_hpo_table_columns(hpo_id):
 
 
 def create_hpo_completeness_query(table_columns, hpo_id):
-    query_with_concept_id = """SELECT current_datetime() as report_run_time, x.*, CASE WHEN total_rows=0 THEN 0 ELSE (num_nonnulls_zeros)/(total_rows) END as percent_field_populated 
+    query_with_concept_id = """SELECT current_datetime() as report_run_time, x.*, CASE WHEN total_rows=0 THEN 0 ELSE (num_nonnulls_zeros)/(total_rows) END as percent_field_populated
        FROM (
             SELECT '{table_name}' as table_name, '{column_name}' as column_name,
                    '{hpo_id}' as site_name,
-                   {table_row_count} as total_rows, 
+                   {table_row_count} as total_rows,
                    sum(case when {column_name}=0 then 0 else 1 end) as num_nonnulls_zeros,
-                   ({table_row_count} - count({column_name})) as non_populated_rows 
-                   FROM {dataset}.{table_name} 
-        ) as x 
+                   ({table_row_count} - count({column_name})) as non_populated_rows
+                   FROM {dataset}.{table_name}
+        ) as x
     """
-    query_without_concept_id = """SELECT current_datetime() as report_run_time, x.*, CASE WHEN total_rows=0 THEN 0 ELSE (num_nonnulls_zeros)/(total_rows) END as percent_field_populated 
+    query_without_concept_id = """SELECT current_datetime() as report_run_time, x.*, CASE WHEN total_rows=0 THEN 0 ELSE (num_nonnulls_zeros)/(total_rows) END as percent_field_populated
        FROM (
             SELECT '{table_name}' as table_name, '{column_name}' as column_name,
                    '{hpo_id}' as site_name,
-                   {table_row_count} as total_rows, 
-                   count({column_name}) as num_nonnulls_zeros, 
-                   ({table_row_count} - count({column_name})) as non_populated_rows 
-                   FROM {dataset}.{table_name} 
-        ) as x 
+                   {table_row_count} as total_rows,
+                   count({column_name}) as num_nonnulls_zeros,
+                   ({table_row_count} - count({column_name})) as non_populated_rows
+                   FROM {dataset}.{table_name}
+        ) as x
     """
     queries = []
     for i, row in table_columns.iterrows():
