@@ -1,5 +1,4 @@
 # +
-import bq_utils
 import utils.bq
 from notebooks import parameters
 
@@ -17,7 +16,7 @@ SELECT
   COUNT(*)
 FROM
   `{DEID}.observation` AS o
-JOIN 
+JOIN
 (
   SELECT
     observation_id
@@ -31,7 +30,7 @@ JOIN
         observation_id DESC) AS rank_order,
       observation_id
     FROM
-      `{DEID}.observation` 
+      `{DEID}.observation`
     JOIN
       `{COMBINED}._mapping_observation` as map
     USING
@@ -40,9 +39,9 @@ JOIN
       AND value_source_concept_id IN (2000000008, 2000000005, 2000000004, 2000000002)
       AND map.src_hpo_id like "rdr"
     ) o
-  WHERE 
+  WHERE
     o.rank_order <> 1
-) unique_observation_ids 
+) unique_observation_ids
 ON o.observation_id = unique_observation_ids.observation_id
 """
 q = DUPLICATE_GEN_RACE_QUERY.format(DEID=DEID, COMBINED=COMBINED)
