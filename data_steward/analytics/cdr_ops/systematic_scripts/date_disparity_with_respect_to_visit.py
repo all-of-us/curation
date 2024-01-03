@@ -38,7 +38,6 @@ client = bigquery.Client()
 # %load_ext google.cloud.bigquery
 
 # +
-import bq_utils
 import utils.bq
 from notebooks import parameters
 
@@ -72,11 +71,11 @@ DATASET TO USE: {}
 p_v_query = """
 SELECT
 DISTINCT
-a.*, 
+a.*,
 (a.procedure_vis_start_diff + a.procedure_vis_end_diff + a.procedure_vis_start_dt_diff + a.procedure_vis_end_dt_diff + a.procedure_dt_vis_start_dt_diff + a.procedure_dt_vis_end_dt_diff) as total_diff
-FROM 
+FROM
 ( SELECT
-  mpo.src_hpo_id, COUNT(mpo.src_hpo_id) as num_bad_records, 
+  mpo.src_hpo_id, COUNT(mpo.src_hpo_id) as num_bad_records,
   IFNULL(ABS(DATE_DIFF(po.procedure_date, vo.visit_start_date, DAY)), 0) as procedure_vis_start_diff,
   IFNULL(ABS(DATE_DIFF(po.procedure_date, vo.visit_end_date, DAY)), 0) as procedure_vis_end_diff,
   IFNULL(ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), po.procedure_date, DAY)), 0) as procedure_vis_start_dt_diff,
@@ -85,19 +84,19 @@ FROM
   IFNULL(ABS(DATE_DIFF(CAST(po.procedure_datetime AS DATE), CAST(vo.visit_end_datetime AS DATE), DAY)), 0) as procedure_dt_vis_end_dt_diff,
 
   (
-  ABS(DATE_DIFF(po.procedure_date, vo.visit_start_date, DAY)) = 
-  ABS(DATE_DIFF(po.procedure_date, vo.visit_end_date, DAY)) 
+  ABS(DATE_DIFF(po.procedure_date, vo.visit_start_date, DAY)) =
+  ABS(DATE_DIFF(po.procedure_date, vo.visit_end_date, DAY))
   AND
   ABS(DATE_DIFF(po.procedure_date, vo.visit_end_date, DAY)) =
-  ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), po.procedure_date, DAY)) 
+  ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), po.procedure_date, DAY))
   AND
   ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), po.procedure_date, DAY)) =
   ABS(DATE_DIFF(CAST(vo.visit_end_datetime AS DATE), po.procedure_date, DAY))
   AND
-  ABS(DATE_DIFF(CAST(vo.visit_end_datetime AS DATE), po.procedure_date, DAY)) = 
-  ABS(DATE_DIFF(CAST(po.procedure_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) 
+  ABS(DATE_DIFF(CAST(vo.visit_end_datetime AS DATE), po.procedure_date, DAY)) =
+  ABS(DATE_DIFF(CAST(po.procedure_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY))
   AND
-  ABS(DATE_DIFF(CAST(po.procedure_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) = 
+  ABS(DATE_DIFF(CAST(po.procedure_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) =
   ABS(DATE_DIFF(CAST(po.procedure_datetime AS DATE), CAST(vo.visit_end_datetime AS DATE), DAY))
   ) as all_discrepancies_equal
 
@@ -131,7 +130,7 @@ FROM
     OR
     po.procedure_date > vo.visit_end_date)
 
-    OR 
+    OR
     -- problem with datetime
     (po.procedure_datetime < vo.visit_start_datetime
     OR
@@ -142,9 +141,9 @@ FROM
     (po.procedure_date < CAST(vo.visit_start_datetime AS DATE)
     OR
     po.procedure_date > CAST(vo.visit_end_datetime AS DATE))
-    
+
     OR
-    
+
     --problem with the datetime
     (CAST(po.procedure_datetime AS DATE) < CAST(vo.visit_start_datetime AS DATE)
     OR
@@ -188,28 +187,28 @@ def create_dicts_w_info(df,
     """
     This function is used to create a dictionary that can be easily converted to a
     graphical representation based on the values for a particular dataframe
-    
+
     Parameters
     ----------
     df (dataframe): dataframe that contains the information to be converted
-    
+
     table_visit_diff_string (string): the column that is used to calculate the 'average'
         difference between a date of interest and the visit start date. for instance,
         this would allow someone to specify the difference between the observation
         date and the visit start date.
-        
+
     bad_records_string (string): the column of the dataframe whose rows will be summed
         and then converted to the keys of a dictionary. for instance 'num_bad_records'
         is often used to show the total number of 'bad' (discrepant) records
         for a particular site
-    
+
     Returns
     -------
     num_bad_records (dictionary): has the following structure
         keys: the HPOs
         values: the total number of 'bad' (discrepant) records for the particular
             column of interest
-    
+
     table_visit_diff_dict (dictionary): has the following structure
         keys: the HPOs
         values: the 'average' difference between the two types of dates as specified
@@ -262,27 +261,27 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, colour,
     """
     Function is used to create a bar graph for a particular dictionary with information about
     data quality
-    
+
     Parameters
     ----------
     info_dict (dictionary): contains information about data quality. The keys for the dictionary
         will serve as the x-axis labels whereas the values should serve as the 'y-value' for the
         particular bar
-        
+
     xlabel (str): label to display across the x-axis
-    
+
     ylabel (str): label to display across the y-axis
-    
+
     title (str): title for the graph
-    
+
     img_name (str): image used to save the image to the local repository
-    
+
     colour (str): character used to specify the colours of the bars
-    
+
     total_diff_colour (bool): indicates whether or not the last bar should be coloured red (
         as opposed to the rest of the bars on the graph). This is typically used when the ultimate
         value of the dictionary is of particular important (e.g. representing an 'aggregate' metric
-        across all of the sites)    
+        across all of the sites)
     """
     bar_list = plt.bar(range(len(info_dict)),
                        list(info_dict.values()),
@@ -339,11 +338,11 @@ create_graphs(
 observation_visit_query = """
 SELECT
 DISTINCT
-a.*, 
+a.*,
 (a.observation_vis_start_diff + a.observation_vis_end_diff + a.observation_vis_start_dt_diff + a.observation_vis_end_dt_diff + a.observation_dt_vis_start_dt_diff + a.observation_dt_vis_end_dt_diff) as total_diff
-FROM 
+FROM
 ( SELECT
-  mo.src_hpo_id, COUNT(mo.src_hpo_id) as num_bad_records, 
+  mo.src_hpo_id, COUNT(mo.src_hpo_id) as num_bad_records,
   IFNULL(ABS(DATE_DIFF(o.observation_date, vo.visit_start_date, DAY)), 0) as observation_vis_start_diff,
   IFNULL(ABS(DATE_DIFF(o.observation_date, vo.visit_end_date, DAY)), 0) as observation_vis_end_diff,
   IFNULL(ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), o.observation_date, DAY)), 0) as observation_vis_start_dt_diff,
@@ -352,19 +351,19 @@ FROM
   IFNULL(ABS(DATE_DIFF(CAST(o.observation_datetime AS DATE), CAST(vo.visit_end_datetime AS DATE), DAY)), 0) as observation_dt_vis_end_dt_diff,
 
   (
-  ABS(DATE_DIFF(o.observation_date, vo.visit_start_date, DAY)) = 
-  ABS(DATE_DIFF(o.observation_date, vo.visit_end_date, DAY)) 
+  ABS(DATE_DIFF(o.observation_date, vo.visit_start_date, DAY)) =
+  ABS(DATE_DIFF(o.observation_date, vo.visit_end_date, DAY))
   AND
   ABS(DATE_DIFF(o.observation_date, vo.visit_end_date, DAY)) =
-  ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), o.observation_date, DAY)) 
+  ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), o.observation_date, DAY))
   AND
   ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), o.observation_date, DAY)) =
   ABS(DATE_DIFF(CAST(vo.visit_end_datetime AS DATE), o.observation_date, DAY))
   AND
-  ABS(DATE_DIFF(CAST(vo.visit_end_datetime AS DATE), o.observation_date, DAY)) = 
-  ABS(DATE_DIFF(CAST(o.observation_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) 
+  ABS(DATE_DIFF(CAST(vo.visit_end_datetime AS DATE), o.observation_date, DAY)) =
+  ABS(DATE_DIFF(CAST(o.observation_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY))
   AND
-  ABS(DATE_DIFF(CAST(o.observation_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) = 
+  ABS(DATE_DIFF(CAST(o.observation_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) =
   ABS(DATE_DIFF(CAST(o.observation_datetime AS DATE), CAST(vo.visit_end_datetime AS DATE), DAY))
   ) as all_discrepancies_equal
 
@@ -398,7 +397,7 @@ FROM
     OR
     o.observation_date > vo.visit_end_date)
 
-    OR 
+    OR
     -- problem with datetime
     (o.observation_datetime < vo.visit_start_datetime
     OR
@@ -409,9 +408,9 @@ FROM
     (o.observation_date < CAST(vo.visit_start_datetime AS DATE)
     OR
     o.observation_date > CAST(vo.visit_end_datetime AS DATE))
-    
+
     OR
-    
+
     --problem with the datetime
     (CAST(o.observation_datetime AS DATE) < CAST(vo.visit_start_datetime AS DATE)
     OR
@@ -487,11 +486,11 @@ create_graphs(
 measurement_visit_query = """
 SELECT
 DISTINCT
-a.*, 
+a.*,
 (a.measurement_vis_start_diff + a.measurement_vis_end_diff + a.measurement_vis_start_dt_diff + a.measurement_vis_end_dt_diff + a.measurement_dt_vis_start_dt_diff + a.measurement_dt_vis_end_dt_diff) as total_diff
-FROM 
+FROM
 ( SELECT
-  mm.src_hpo_id, COUNT(mm.src_hpo_id) as num_bad_records, 
+  mm.src_hpo_id, COUNT(mm.src_hpo_id) as num_bad_records,
   IFNULL(ABS(DATE_DIFF(m.measurement_date, vo.visit_start_date, DAY)), 0) as measurement_vis_start_diff,
   IFNULL(ABS(DATE_DIFF(m.measurement_date, vo.visit_end_date, DAY)), 0) as measurement_vis_end_diff,
   IFNULL(ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), m.measurement_date, DAY)), 0) as measurement_vis_start_dt_diff,
@@ -500,19 +499,19 @@ FROM
   IFNULL(ABS(DATE_DIFF(CAST(m.measurement_datetime AS DATE), CAST(vo.visit_end_datetime AS DATE), DAY)), 0) as measurement_dt_vis_end_dt_diff,
 
   (
-  ABS(DATE_DIFF(m.measurement_date, vo.visit_start_date, DAY)) = 
-  ABS(DATE_DIFF(m.measurement_date, vo.visit_end_date, DAY)) 
+  ABS(DATE_DIFF(m.measurement_date, vo.visit_start_date, DAY)) =
+  ABS(DATE_DIFF(m.measurement_date, vo.visit_end_date, DAY))
   AND
   ABS(DATE_DIFF(m.measurement_date, vo.visit_end_date, DAY)) =
-  ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), m.measurement_date, DAY)) 
+  ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), m.measurement_date, DAY))
   AND
   ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), m.measurement_date, DAY)) =
   ABS(DATE_DIFF(CAST(vo.visit_end_datetime AS DATE), m.measurement_date, DAY))
   AND
-  ABS(DATE_DIFF(CAST(vo.visit_end_datetime AS DATE), m.measurement_date, DAY)) = 
-  ABS(DATE_DIFF(CAST(m.measurement_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) 
+  ABS(DATE_DIFF(CAST(vo.visit_end_datetime AS DATE), m.measurement_date, DAY)) =
+  ABS(DATE_DIFF(CAST(m.measurement_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY))
   AND
-  ABS(DATE_DIFF(CAST(m.measurement_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) = 
+  ABS(DATE_DIFF(CAST(m.measurement_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) =
   ABS(DATE_DIFF(CAST(m.measurement_datetime AS DATE), CAST(vo.visit_end_datetime AS DATE), DAY))
   ) as all_discrepancies_equal
 
@@ -546,7 +545,7 @@ FROM
     OR
     m.measurement_date > vo.visit_end_date)
 
-    OR 
+    OR
     -- problem with datetime
     (m.measurement_datetime < vo.visit_start_datetime
     OR
@@ -557,9 +556,9 @@ FROM
     (m.measurement_date < CAST(vo.visit_start_datetime AS DATE)
     OR
     m.measurement_date > CAST(vo.visit_end_datetime AS DATE))
-    
+
     OR
-    
+
     --problem with the datetime
     (CAST(m.measurement_datetime AS DATE) < CAST(vo.visit_start_datetime AS DATE)
     OR
@@ -634,21 +633,21 @@ create_graphs(
 condition_visit_query = """
 SELECT
 DISTINCT
-a.*, 
+a.*,
 (a.condition_vis_start_diff + a.condition_vis_start_dt_diff + a.condition_dt_vis_start_dt_diff) as total_diff
-FROM 
+FROM
 ( SELECT
-  mco.src_hpo_id, COUNT(mco.src_hpo_id) as num_bad_records, 
+  mco.src_hpo_id, COUNT(mco.src_hpo_id) as num_bad_records,
   IFNULL(ABS(DATE_DIFF(co.condition_start_date, vo.visit_start_date, DAY)), 0) as condition_vis_start_diff,
   IFNULL(ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), co.condition_start_date, DAY)), 0) as condition_vis_start_dt_diff,
   IFNULL(ABS(DATE_DIFF(CAST(co.condition_start_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)), 0) as condition_dt_vis_start_dt_diff,
-  
+
   (
-  ABS(DATE_DIFF(co.condition_start_date, vo.visit_start_date, DAY)) = 
-  ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), co.condition_start_date, DAY)) 
+  ABS(DATE_DIFF(co.condition_start_date, vo.visit_start_date, DAY)) =
+  ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), co.condition_start_date, DAY))
   AND
   ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), co.condition_start_date, DAY)) =
-  ABS(DATE_DIFF(CAST(co.condition_start_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) 
+  ABS(DATE_DIFF(CAST(co.condition_start_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY))
   ) as all_discrepancies_equal
 
   FROM
@@ -679,16 +678,16 @@ FROM
     -- problem with procedure date
     (co.condition_start_date < vo.visit_start_date)
 
-    OR 
+    OR
     -- problem with datetime
     (co.condition_start_datetime < vo.visit_start_datetime)
 
     OR
     -- problem with the datetime (extracting date for comparison)
     (co.condition_start_date < CAST(vo.visit_start_datetime AS DATE))
-    
+
     OR
-    
+
     --problem with the datetime
     (CAST(co.condition_start_datetime AS DATE) < CAST(vo.visit_start_datetime AS DATE))
     )
@@ -752,21 +751,21 @@ create_graphs(
 drug_visit_query = """
 SELECT
 DISTINCT
-a.*, 
+a.*,
 (a.drug_vis_start_diff + a.drug_vis_start_dt_diff + a.drug_dt_vis_start_dt_diff) as total_diff
-FROM 
+FROM
 ( SELECT
-  mde.src_hpo_id, COUNT(mde.src_hpo_id) as num_bad_records, 
+  mde.src_hpo_id, COUNT(mde.src_hpo_id) as num_bad_records,
   IFNULL(ABS(DATE_DIFF(de.drug_exposure_start_date, vo.visit_start_date, DAY)), 0) as drug_vis_start_diff,
   IFNULL(ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), de.drug_exposure_start_date, DAY)), 0) as drug_vis_start_dt_diff,
   IFNULL(ABS(DATE_DIFF(CAST(de.drug_exposure_start_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)), 0) as drug_dt_vis_start_dt_diff,
-  
+
   (
-  ABS(DATE_DIFF(de.drug_exposure_start_date, vo.visit_start_date, DAY)) = 
-  ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), de.drug_exposure_start_date, DAY)) 
+  ABS(DATE_DIFF(de.drug_exposure_start_date, vo.visit_start_date, DAY)) =
+  ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), de.drug_exposure_start_date, DAY))
   AND
   ABS(DATE_DIFF(CAST(vo.visit_start_datetime AS DATE), de.drug_exposure_start_date, DAY)) =
-  ABS(DATE_DIFF(CAST(de.drug_exposure_start_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY)) 
+  ABS(DATE_DIFF(CAST(de.drug_exposure_start_datetime AS DATE), CAST(vo.visit_start_datetime AS DATE), DAY))
   ) as all_discrepancies_equal
 
   FROM
@@ -797,16 +796,16 @@ FROM
     -- problem with procedure date
     (de.drug_exposure_start_date < vo.visit_start_date)
 
-    OR 
+    OR
     -- problem with datetime
     (de.drug_exposure_start_datetime < vo.visit_start_datetime)
 
     OR
     -- problem with the datetime (extracting date for comparison)
     (de.drug_exposure_start_date < CAST(vo.visit_start_datetime AS DATE))
-    
+
     OR
-    
+
     --problem with the datetime
     (CAST(de.drug_exposure_start_datetime AS DATE) < CAST(vo.visit_start_datetime AS DATE))
     )
