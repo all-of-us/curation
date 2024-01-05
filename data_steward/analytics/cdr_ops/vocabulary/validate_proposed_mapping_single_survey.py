@@ -55,8 +55,8 @@ form_names = [
 ]
 
 # odysseus proposal file names
-concept_file_name = '20231128_new_concepts.csv'
-concept_relationship_file_name = '20231128_new_relationships.csv'
+concept_file_name = '20231228_new_concepts.csv'
+concept_relationship_file_name = '20231228_new_relationships.csv'
 
 # the concept_codes in this list will be removed from filters
 ignore_list=['nan', 'pmi_dontknow', 'pmi_prefernottoanswer', 'record_id']
@@ -141,22 +141,47 @@ ody_cr = ody_cr.loc[:,['concept_id_1','concept_id_2','relationship_id']]
 
 # ## current vocabulary
 
+# current_vocabulary = execute(f'''
+# SELECT *
+# FROM `{test_project}.{vocab_dataset}.concept`
+# WHERE vocabulary_id IN ('PPI' )
+# ''')
+
+# standard_concepts
+
+# +
+# Get data on any concept_ids already existing in Athena that appear in the Odysseus concept proposal.
+# Used to check for proper non-standard to standard mapping
+
+# Get list of concepts to look for in Athena. 
+search_for_standards_concept_list = pd.concat([ody_cr['concept_id_1'], ody_cr['concept_id_2']], ignore_index=True).drop_duplicates(keep='first').tolist()
+
+
 current_vocabulary = execute(f'''
 SELECT *
 FROM `{test_project}.{vocab_dataset}.concept`
 WHERE vocabulary_id = 'PPI'
+OR concept_id IN UNNEST ({search_for_standards_concept_list})
 ''')
 
 # +
 # initial cleaning of the current ppi vocabulary for analysis use.
 current_vocabulary['concept_code']=current_vocabulary['concept_code'].str.lower()
 
-# create filter_vocabulary. Use when joining via concept_code or concept_name
-filter_vocabulary= current_vocabulary[['concept_code','concept_name']]
+# # create filter_vocabulary. Use when joining via concept_code or concept_name
+# filter_vocabulary= current_vocabulary[['concept_code','concept_name']]
 
-# create filter_vocabulary_ids. Use when joining via concept_code or concept_id
-filter_vocabulary_ids= current_vocabulary[['concept_code','concept_id']]
+# # create filter_vocabulary_ids. Use when joining via concept_code or concept_id
+# filter_vocabulary_ids= current_vocabulary[['concept_code','concept_id']]
+
+
 # -
+
+# This function will grab the defined fields from the current_vocabulary df(current vocabulary found in Athena)
+def get_concept_data(columns:list):
+    vocabulary_snip = current_vocabulary[columns]
+    return vocabulary_snip
+
 
 # # Create the mock tables
 
@@ -260,6 +285,8 @@ mock_concept_w_ids = mock_concept.copy()
 # answers to standard <br>
 #
 # The reverse mappings <br>
+#
+# TODO: descriptive concepts can have branching logic. These mappings do not need to be created. Use only branching logic where neither concept is a descriptive field_type
 
 # +
 # Create half of the CONCEPT_RELATIONSHIP table
@@ -393,18 +420,19 @@ reverse_half_cr['relationship_id'] = np.where(reverse_half_cr['relationship_id']
 cr_dfs_list = [half_concept_relationship,reverse_half_cr]
 
 concat_cr = pd.concat(cr_dfs_list, axis=0, ignore_index=True) 
-print(len(concat_cr))
+
+print(f'length of concept_relationship original {len(concat_cr)}')
 
 # remove any duplicates
 mock_concept_relationship = concat_cr.drop_duplicates(keep='first', ignore_index=True).reset_index(drop=True)
-print(len(mock_concept_relationship))
+print(f'length of concept_relationship without duplicates {len(mock_concept_relationship)}')
 
 
 # final cleaning
 mock_concept_relationship = mock_concept_relationship[~mock_concept_relationship['concept_code_1'].isin(ignore_list) &
                                                       ~mock_concept_relationship['concept_code_2'].isin(ignore_list)]
 
-print(len(mock_concept_relationship))
+print(f'length of concept_relationship without duplicates and ignored relationships {len(mock_concept_relationship)}')
 # -
 
 mock_cr_w_ids = mock_concept_relationship.copy()
@@ -432,9 +460,22 @@ add_ids_cr_merge = add_ids_cr_merge_half.merge(slice_concept,
 
 full_relationships=add_ids_cr_merge.copy()
 
-mock_fin = full_relationships[['concept_code_1','concept_code_2','concept_id_x','concept_id_y','relationship_id']]
-mock_fin = mock_fin.rename(columns={'concept_id_x':'concept_id_1', 'concept_id_y':'concept_id_2'})
-mock_fin
+reformat_cr = full_relationships[['concept_code_1','concept_code_2','concept_id_x','concept_id_y','relationship_id']]
+reformat_cr = reformat_cr.rename(columns={'concept_id_x':'concept_id_1', 'concept_id_y':'concept_id_2'})
+reformat_cr
+
+# +
+# remove the 'mapping to self'(maps to, mapping from) for the concepts odysseus has not flagged as Standard
+# list non-standards
+ody_standards = ody_concept.loc[ody_concept['standard_concept'].isna(), 'concept_id'].to_list()
+# df without the non-standard mapping to self relationships
+cr_removed_ns_mapping = reformat_cr[~((reformat_cr['concept_id_1'] == reformat_cr['concept_id_2']) 
+                                    & reformat_cr['concept_id_1'].isin(ody_standards))]
+
+cr_removed_ns_mapping
+# -
+
+mock_fin = cr_removed_ns_mapping.copy()
 
 # # Concept table checks
 
@@ -516,7 +557,9 @@ concept_w_status
 looksee = concept_w_status[(concept_w_status['status_comb'] != 'Accepted') &
                          (concept_w_status['status_comb'] != 'concept_code does not match dictionary') &
                          (concept_w_status['status_comb'] != 'no matching concept_id')]
-looksee
+
+if len(looksee) > 0:
+    assert False, "Condition failed. Stopping notebook execution."
 # -
 
 # final clean up for the status
@@ -536,16 +579,20 @@ concept_w_status
 # concept_w_status is all concept records(aou and ody) with their current status
 concept_w_status
 
+# +
 # it is possible that the concept code was not given an id from odysseus because it already exists in athena.
 # look for concept codes in the file that are already in athena in two ways.
 # concepts that are expected to be mapped by the dd (concept_code_lacking_id)
 # concepts that were mapped by ody but already exist in athena - these should not be mapped again.
-athena_join=concept_w_status.merge(filter_vocabulary,
+
+vocab_filter = get_concept_data(['concept_code','concept_name'])
+
+athena_join=concept_w_status.merge(vocab_filter,
                          how ='left',
                          left_on='concept_code_lacking_id',
                          right_on='concept_code'
                          )
-athena_join2=athena_join.merge(filter_vocabulary,
+athena_join2=athena_join.merge(vocab_filter,
                          how ='left',
                          left_on='concept_code_x',
                          right_on='concept_code'
@@ -555,6 +602,7 @@ athena_join2['concept_code_exists_in_athena']=np.where((~athena_join2['concept_c
                                                       (~athena_join2['concept_code'].isnull()),
                                                      'True', 
                                                      'False')
+# -
 
 # If concept_code_exists_in_athena = True and status = Accepted these need to go back to ody. They already have an ID in athena and should not be remapped.
 # If concept_code_exists_in_athena = True and status = no_matching_concept_id these are known to already be mapped in Athena. Have broader conversation to make sure these are as they should be.
@@ -563,6 +611,8 @@ already_exist_in_athena = athena_join2[athena_join2['concept_code_exists_in_athe
 already_exist_in_athena
 
 # Concept check: Not mapped concepts, already mapped concepts, ids not unique
+
+# # Print Feedback concept
 
 # +
 feedback_with_athena= athena_join2[['concept_id',
@@ -618,11 +668,26 @@ print(len(vocabulary_ids_check))
 standards_check = concept_qc_base[(concept_qc_base['standard_concept_x']!=concept_qc_base['standard_concept_y']) &
                                  (concept_qc_base['_merge']=='both')]
 print(len(standards_check))
+standards_check
 # -
 
+
+
 # ## TODO Add second standard check. Are the concepts marked standard mapped to themselves and are the non-standard ones mapped to another vocabulary.
+#
 
 # ## TODO Take a look at the non-standard to standard mappings. Visual check. Do they look correct.
+
+# # TODO Add a check for non-standard concepts
+# They should 'Maps to' a LOINC or SNOMED code in the 'Observation' Domain
+
+# # TODO Bring allong the original indexes with the odysseus files
+# Helps troubleshoot
+#
+#
+# # cr feedback concept_id_1 for ace concepts not showing up?
+#
+# # Dont create maps to maps from for concepts marked as non-standard in the proposed file. or remove them.
 
 # # Concept_relationship table checks
 
@@ -654,21 +719,17 @@ approved_rel = cr_qc_base[cr_qc_base['_merge'] == 'both']
 approved_rel=approved_rel.sort_values(by='concept_id_1', ascending=True).reset_index(drop=True)
 approved_rel
 
-# +
-# sanity check pop up analysis. Many of the results above were linked to these two concept_ids which are a known issue for odysseus to fix.
-# look at the ones that are not linked to the ids
-id_list = [903079.0,903087.0]
-issues_added = added_rel[
-   ( ~added_rel['concept_id_1'].isin(id_list) )&
-    (~added_rel['concept_id_2'].isin(id_list))
-].reset_index(drop=True)
-                         
-issues_added
+# # sanity check pop up analysis. Many of the results above were linked to these two concept_ids which are a known issue for odysseus to fix.
+# # look at the ones that are not linked to the ids
+# id_list = [903079.0,903087.0]
+# issues_added = added_rel[
+#    ( ~added_rel['concept_id_1'].isin(id_list) )&
+#     (~added_rel['concept_id_2'].isin(id_list))
+# ].reset_index(drop=True)
 
-# +
-# manual edits to send back to odysseus
-# Create a table that shows the status of each concept_code (accepted, concept_code_does not match dictionary, no matching concept_id)
-# -
+# # Transformation
+#  manual edits to send back to odysseus
+#  Create a table that shows the status of each concept_code (accepted, concept_code_does not match dictionary, no matching concept_id)
 
 # step 1 make a copy to work off of 
 ody_cr_no_ids = ody_cr.copy()
@@ -697,12 +758,15 @@ frank_cr
 # +
 # it is possible that the concept code was not given an id from odysseus because it already exists in athena.
 # look for concept ids in the file that are already in athena in two ways.
-athena_join_cr=frank_cr.merge(filter_vocabulary_ids,
+
+vocab_filter = get_concept_data(['concept_code','concept_id'])
+
+athena_join_cr=frank_cr.merge(vocab_filter,
                          how ='left',
                          left_on='concept_id_1',
                          right_on='concept_id'
                          )
-athena_join_cr2=athena_join_cr.merge(filter_vocabulary_ids,
+athena_join_cr2=athena_join_cr.merge(vocab_filter,
                          how ='left',
                          left_on='concept_id_2',
                          right_on='concept_id'
@@ -733,12 +797,15 @@ athena_join_cr2['concept_code_2']=np.where((~athena_join_cr2['concept_code_y'].i
 # drop unnecessary fields
 athena_join_cr2 =athena_join_cr2.drop(columns={'concept_code_x','concept_code_y','concept_id_x','concept_id_y'})
 athena_join_cr2
-# -
 
+# +
 # sanity check. At this point concept_codes should not be null
 test =athena_join_cr2[(athena_join_cr2['concept_code_1'].isnull()) |
-                  (athena_join_cr2['concept_code_2'].isnull())]
-test
+                  (athena_join_cr2['concept_code_2'].isnull())].reset_index(drop=True)
+
+if len(test) > 0:
+    assert False, "Condition failed. Stopping notebook execution."
+# -
 
 # step 2 create the table for accepted relationships
 approved_rel_cut = approved_rel.loc[:, :'relationship_id_x']
@@ -805,7 +872,32 @@ base_cr_with_status = cr_merge_missing.copy()
 test = base_cr_with_status[(base_cr_with_status['status'] != 'Accepted') &
                          (base_cr_with_status['status'] != 'aou generated might need to be added') &
                          (base_cr_with_status['status'] != 'ody generated. manually review')]
-test
+
+
+if len(test) > 0:
+    assert False, "Condition failed. Stopping notebook execution."
+# -
+
+# # Check non-standard - Standard mappings
+# 1. PPI survey concepts should always map to self or other concepts in the 'Observation' domain.
+# 2. To find concepts that are flagged non-standard but are lacking the mapping to a standard concept see the feedback print out. These would be included in those marked 'aou generated might need to be added'
+
+# +
+# Check 1. Standard domains
+vocab_filter = get_concept_data(['concept_id','domain_id'])
+
+concepts_w_incorrect_domain = vocab_filter.loc[vocab_filter['domain_id'] != 'Observation', 'concept_id'].to_list()
+
+
+standard_domain_failures = base_cr_with_status[base_cr_with_status['concept_id_1'].isin(concepts_w_incorrect_domain)]
+
+reverse_half_cr['relationship_id'] = np.where(reverse_half_cr['relationship_id'].str.contains('Maps to'),
+                                                     'Mapped from', 
+                                                     reverse_half_cr['relationship_id'])
+standard_domain_failures
+# -
+
+# # Print Feedback concept_relationship
 
 # +
 feedback_with_athena_cr= base_cr_with_status[['concept_id_1',
