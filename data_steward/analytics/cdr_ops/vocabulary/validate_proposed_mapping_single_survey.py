@@ -113,7 +113,7 @@ concept_column_names = ['concept_id',
                         'invalid_reason']
 
 ody_concept = read_csv_file(file_path, concept_file_name, concept_column_names)
-
+ody_concept['index'] = ody_concept.reset_index().index + 1
 # Sanity check
 ody_concept.head()
 
@@ -127,6 +127,7 @@ cr_column_names = ['concept_id_1',
                    'invalid_reason']
 
 ody_cr = read_csv_file(file_path, concept_relationship_file_name, cr_column_names)
+ody_cr['index'] = ody_cr.reset_index().index + 1
 
 # Sanity check
 ody_cr.head()
@@ -137,7 +138,7 @@ ody_concept['concept_code'] = ody_concept['concept_code'].str.lower()
 
 # initial cleaning of odysseus concept_relationship file.
 # The first three fields are needed at this time.
-ody_cr = ody_cr.loc[:,['concept_id_1','concept_id_2','relationship_id']]
+ody_cr = ody_cr.loc[:,['index','concept_id_1','concept_id_2','relationship_id']]
 
 # ## current vocabulary
 
@@ -270,7 +271,7 @@ mock_concept = mock_concept.append(module_concepts, ignore_index=True)
 mock_concept.tail()
 # -
 
-#final cleaning
+# remove rows created from the concept codes that have special considerations.
 mock_concept = mock_concept[~mock_concept['concept_code'].isin(ignore_list)]
 
 mock_concept_w_ids = mock_concept.copy()
@@ -424,7 +425,8 @@ concat_cr = pd.concat(cr_dfs_list, axis=0, ignore_index=True)
 print(f'length of concept_relationship original {len(concat_cr)}')
 
 # remove any duplicates
-mock_concept_relationship = concat_cr.drop_duplicates(keep='first', ignore_index=True).reset_index(drop=True)
+mock_concept_relationship = concat_cr.drop_duplicates(keep='first', ignore_index=True)
+
 print(f'length of concept_relationship without duplicates {len(mock_concept_relationship)}')
 
 
@@ -435,6 +437,8 @@ mock_concept_relationship = mock_concept_relationship[~mock_concept_relationship
 print(f'length of concept_relationship without duplicates and ignored relationships {len(mock_concept_relationship)}')
 # -
 
+mock_concept_relationship
+
 mock_cr_w_ids = mock_concept_relationship.copy()
 
 # +
@@ -442,7 +446,7 @@ mock_cr_w_ids = mock_concept_relationship.copy()
 # mock concept relationship table id replacement
 
 # merge with only few concept fields
-slice_concept = ody_concept[['concept_code', 'concept_id']]
+slice_concept = ody_concept[['concept_code', 'concept_id']].dropna()
 
 add_ids_cr_merge_half = mock_cr_w_ids.merge(slice_concept,
                         how = 'outer',
@@ -460,17 +464,22 @@ add_ids_cr_merge = add_ids_cr_merge_half.merge(slice_concept,
 
 full_relationships=add_ids_cr_merge.copy()
 
+# +
 reformat_cr = full_relationships[['concept_code_1','concept_code_2','concept_id_x','concept_id_y','relationship_id']]
 reformat_cr = reformat_cr.rename(columns={'concept_id_x':'concept_id_1', 'concept_id_y':'concept_id_2'})
+
+reformat_cr['concept_id_1'] = reformat_cr['concept_id_1'].fillna(0).astype(int)
+reformat_cr['concept_id_2'] = reformat_cr['concept_id_2'].fillna(0).astype(int)
+
 reformat_cr
 
 # +
 # remove the 'mapping to self'(maps to, mapping from) for the concepts odysseus has not flagged as Standard
 # list non-standards
-ody_standards = ody_concept.loc[ody_concept['standard_concept'].isna(), 'concept_id'].to_list()
+ody_nonstandards = ody_concept.loc[ody_concept['standard_concept'].isna(), 'concept_id'].to_list()
 # df without the non-standard mapping to self relationships
 cr_removed_ns_mapping = reformat_cr[~((reformat_cr['concept_id_1'] == reformat_cr['concept_id_2']) 
-                                    & reformat_cr['concept_id_1'].isin(ody_standards))]
+                                    & reformat_cr['concept_id_1'].isin(ody_nonstandards))]
 
 cr_removed_ns_mapping
 # -
@@ -610,12 +619,15 @@ athena_join2['concept_code_exists_in_athena']=np.where((~athena_join2['concept_c
 already_exist_in_athena = athena_join2[athena_join2['concept_code_exists_in_athena'] == 'True']
 already_exist_in_athena
 
+athena_join2
+
 # Concept check: Not mapped concepts, already mapped concepts, ids not unique
 
 # # Print Feedback concept
 
 # +
-feedback_with_athena= athena_join2[['concept_id',
+feedback_with_athena= athena_join2[['index',
+                                   'concept_id',
                                    'concept_name_x',
                                    'domain_id',
                                    'vocabulary_id',
@@ -676,18 +688,12 @@ standards_check
 # ## TODO Add second standard check. Are the concepts marked standard mapped to themselves and are the non-standard ones mapped to another vocabulary.
 #
 
-# ## TODO Take a look at the non-standard to standard mappings. Visual check. Do they look correct.
-
-# # TODO Add a check for non-standard concepts
-# They should 'Maps to' a LOINC or SNOMED code in the 'Observation' Domain
-
-# # TODO Bring allong the original indexes with the odysseus files
-# Helps troubleshoot
+# # TODO descriptive types are seen in the cr file. stop this
+# # TODO nulls are present in cr file. stop this
 #
 #
 # # cr feedback concept_id_1 for ace concepts not showing up?
 #
-# # Dont create maps to maps from for concepts marked as non-standard in the proposed file. or remove them.
 
 # # Concept_relationship table checks
 
@@ -730,6 +736,8 @@ approved_rel
 # # Transformation
 #  manual edits to send back to odysseus
 #  Create a table that shows the status of each concept_code (accepted, concept_code_does not match dictionary, no matching concept_id)
+
+ody_cr
 
 # step 1 make a copy to work off of 
 ody_cr_no_ids = ody_cr.copy()
@@ -826,42 +834,43 @@ added_rel_cut=added_rel_cut.rename(columns={'relationship_id_y':'relationship_id
 added_rel_cut
 
 # +
-#merge concept_relationships  statuses
+# Merge concept_relationships statuses
 
-# step 5 merge tables 
+# Step 5 merge tables
 cr_merge_approved = athena_join_cr2.merge(approved_rel_cut,
-                         how = 'outer',
-                         left_on = ['concept_id_1','concept_id_2', 'relationship_id'],
-                         right_on = ['concept_id_1','concept_id_2', 'relationship_id'],
-                         indicator=False)
+                                          how='outer',
+                                          left_on=['concept_id_1', 'concept_id_2', 'relationship_id'],
+                                          right_on=['concept_id_1', 'concept_id_2', 'relationship_id'],
+                                          indicator=False)
 
 cr_merge_approved['concept_code_1'] = cr_merge_approved['concept_code_1_x'].combine_first(cr_merge_approved['concept_code_1_y'])
 cr_merge_approved['concept_code_2'] = cr_merge_approved['concept_code_2_x'].combine_first(cr_merge_approved['concept_code_2_y'])
-cr_merge_approved = cr_merge_approved.drop(columns={'concept_code_1_x','concept_code_1_y','concept_code_2_x','concept_code_2_y'})
+cr_merge_approved = cr_merge_approved.drop(columns={'concept_code_1_x', 'concept_code_1_y', 'concept_code_2_x', 'concept_code_2_y'})
 
 cr_merge_added = cr_merge_approved.merge(added_rel_cut,
-                         how = 'outer',
-                         left_on = ['concept_id_1','concept_id_2', 'relationship_id'],
-                         right_on = ['concept_id_1','concept_id_2', 'relationship_id'],
-                         indicator=False)
+                                         how='outer',
+                                         left_on=['concept_id_1', 'concept_id_2', 'relationship_id'],
+                                         right_on=['concept_id_1', 'concept_id_2', 'relationship_id'],
+                                         indicator=False)
 
 cr_merge_added['concept_code_1'] = cr_merge_added['concept_code_1_x'].combine_first(cr_merge_added['concept_code_1_y'])
 cr_merge_added['concept_code_2'] = cr_merge_added['concept_code_2_x'].combine_first(cr_merge_added['concept_code_2_y'])
 cr_merge_added['status'] = cr_merge_added['status_x'].combine_first(cr_merge_added['status_y'])
-cr_merge_added = cr_merge_added.drop(columns={'concept_code_1_x','concept_code_1_y','concept_code_2_x','concept_code_2_y','status_x','status_y'})
+cr_merge_added = cr_merge_added.drop(columns={'concept_code_1_x', 'concept_code_1_y', 'concept_code_2_x', 'concept_code_2_y', 'status_x', 'status_y'})
 
 cr_merge_missing = cr_merge_added.merge(missing_rel_cut,
-                         how = 'outer',
-                         left_on = ['concept_id_1','concept_id_2', 'relationship_id'],
-                         right_on = ['concept_id_1','concept_id_2', 'relationship_id'],
-                         indicator=False)
+                                        how='outer',
+                                        left_on=['concept_id_1', 'concept_id_2', 'relationship_id'],
+                                        right_on=['concept_id_1', 'concept_id_2', 'relationship_id'],
+                                        indicator=False)
 
 cr_merge_missing['concept_code_1'] = cr_merge_missing['concept_code_1_x'].combine_first(cr_merge_missing['concept_code_1_y'])
 cr_merge_missing['concept_code_2'] = cr_merge_missing['concept_code_2_x'].combine_first(cr_merge_missing['concept_code_2_y'])
 cr_merge_missing['status'] = cr_merge_missing['status_x'].combine_first(cr_merge_missing['status_y'])
-cr_merge_missing = cr_merge_missing.drop(columns={'concept_code_1_x','concept_code_1_y','concept_code_2_x','concept_code_2_y','status_x','status_y'})
+cr_merge_missing = cr_merge_missing.drop(columns={'concept_code_1_x', 'concept_code_1_y', 'concept_code_2_x', 'concept_code_2_y', 'status_x', 'status_y'})
 
 cr_merge_missing
+
 # -
 
 base_cr_with_status = cr_merge_missing.copy()
@@ -875,7 +884,7 @@ test = base_cr_with_status[(base_cr_with_status['status'] != 'Accepted') &
 
 
 if len(test) > 0:
-    assert False, "Condition failed. Stopping notebook execution."
+    assert False, "Condition failed. Stopping notebook execution. Figure out why they don't all have a status"
 # -
 
 # # Check non-standard - Standard mappings
@@ -891,16 +900,62 @@ concepts_w_incorrect_domain = vocab_filter.loc[vocab_filter['domain_id'] != 'Obs
 
 standard_domain_failures = base_cr_with_status[base_cr_with_status['concept_id_1'].isin(concepts_w_incorrect_domain)]
 
-reverse_half_cr['relationship_id'] = np.where(reverse_half_cr['relationship_id'].str.contains('Maps to'),
-                                                     'Mapped from', 
-                                                     reverse_half_cr['relationship_id'])
-standard_domain_failures
+base_cr_with_status['status'] = np.where(
+    base_cr_with_status['concept_id_1'].isin(concepts_w_incorrect_domain),
+    'ody generated. Standard concept domain issue',
+    base_cr_with_status['status']
+)
+base_cr_with_status
+
+# +
+# These mappings are generally decided by odysseus. This is created as a visual check of these mappings.
+# Get concept data with selected columns
+vocab_filter = get_concept_data(['concept_id', 'concept_name', 'domain_id'])
+
+# Filter and process ody_cr DataFrame
+view_rels = (
+    ody_cr[(ody_cr['concept_id_1'].isin(ody_nonstandards))
+           & (ody_cr['relationship_id'] == 'Maps to')]
+    [['concept_id_1', 'concept_id_2']]
+    .drop_duplicates(keep='first')
+    .reset_index(drop=True)
+)
+
+# Merge with ody_concept to get concept names for concept_id_1
+splice_ody = ody_concept[['concept_id', 'concept_name']]
+view_rels = (
+    view_rels
+    .merge(
+        splice_ody,
+        how='left',
+        left_on='concept_id_1',
+        right_on='concept_id'
+    )
+    .drop('concept_id', axis=1)
+    .rename(columns={'concept_name': 'concept_name_1'})
+)
+
+# Merge with vocab_filter to get concept names for concept_id_2
+view_rels = (
+    view_rels
+    .merge(
+        vocab_filter,
+        how='left',
+        left_on='concept_id_2',
+        right_on='concept_id'
+    )
+    .drop('concept_id', axis=1)
+    .rename(columns={'concept_name': 'concept_name_2'})
+)
+
+view_rels
 # -
 
 # # Print Feedback concept_relationship
 
 # +
-feedback_with_athena_cr= base_cr_with_status[['concept_id_1',
+feedback_with_athena_cr= base_cr_with_status[['index',
+                                              'concept_id_1',
                                     'concept_id_2',
                                     'concept_code_1',
                                     'concept_code_2',
