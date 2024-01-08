@@ -165,15 +165,8 @@ WHERE vocabulary_id = 'PPI'
 OR concept_id IN UNNEST ({search_for_standards_concept_list})
 ''')
 
-# +
 # initial cleaning of the current ppi vocabulary for analysis use.
 current_vocabulary['concept_code']=current_vocabulary['concept_code'].str.lower()
-
-# # create filter_vocabulary. Use when joining via concept_code or concept_name
-# filter_vocabulary= current_vocabulary[['concept_code','concept_name']]
-
-# # create filter_vocabulary_ids. Use when joining via concept_code or concept_id
-# filter_vocabulary_ids= current_vocabulary[['concept_code','concept_id']]
 
 
 # -
@@ -245,7 +238,6 @@ build_concept = execute(final_build_query)
 
 # cleaning the generated mock concept data
 mock_concept = build_concept.drop_duplicates(keep='first')
-mock_concept
 
 # +
 # Create and insert the Module Concept
@@ -289,7 +281,6 @@ mock_concept_w_ids = mock_concept.copy()
 #
 # TODO: descriptive concepts can have branching logic. These mappings do not need to be created. Use only branching logic where neither concept is a descriptive field_type
 
-# +
 # Create half of the CONCEPT_RELATIONSHIP table
 # These are all relationships from parent to child and concept to standard.
 build_concept_relationship_query = (f'''
@@ -389,12 +380,8 @@ final_build_query = ' UNION ALL '.join(sql_statements)
 build_cr = execute(final_build_query)
 half_concept_relationship = build_cr.drop_duplicates(keep='first')
 
-half_concept_relationship
-# -
-
 # # copy to make a base df for the reverse mappings
 reverse_half_cr = half_concept_relationship.copy()
-reverse_half_cr
 
 # +
 # create the reverse mappings
@@ -437,8 +424,6 @@ mock_concept_relationship = mock_concept_relationship[~mock_concept_relationship
 print(f'length of concept_relationship without duplicates and ignored relationships {len(mock_concept_relationship)}')
 # -
 
-mock_concept_relationship
-
 mock_cr_w_ids = mock_concept_relationship.copy()
 
 # +
@@ -472,17 +457,14 @@ reformat_cr['concept_id_1'] = reformat_cr['concept_id_1'].fillna(0).astype(int)
 reformat_cr['concept_id_2'] = reformat_cr['concept_id_2'].fillna(0).astype(int)
 
 reformat_cr
+# -
 
-# +
 # remove the 'mapping to self'(maps to, mapping from) for the concepts odysseus has not flagged as Standard
 # list non-standards
 ody_nonstandards = ody_concept.loc[ody_concept['standard_concept'].isna(), 'concept_id'].to_list()
 # df without the non-standard mapping to self relationships
 cr_removed_ns_mapping = reformat_cr[~((reformat_cr['concept_id_1'] == reformat_cr['concept_id_2']) 
                                     & reformat_cr['concept_id_1'].isin(ody_nonstandards))]
-
-cr_removed_ns_mapping
-# -
 
 mock_fin = cr_removed_ns_mapping.copy()
 
@@ -619,10 +601,6 @@ athena_join2['concept_code_exists_in_athena']=np.where((~athena_join2['concept_c
 already_exist_in_athena = athena_join2[athena_join2['concept_code_exists_in_athena'] == 'True']
 already_exist_in_athena
 
-athena_join2
-
-# Concept check: Not mapped concepts, already mapped concepts, ids not unique
-
 # # Print Feedback concept
 
 # +
@@ -646,6 +624,8 @@ feedback_with_athena=feedback_with_athena.drop_duplicates(ignore_index=True,keep
 feedback_with_athena
 feedback_with_athena.to_csv(f'data_storage/mapping_files/{feedback_c}')
 # -
+
+# # Concept table checks
 
 # ## concept check: concept_class_id
 
@@ -683,19 +663,12 @@ print(len(standards_check))
 standards_check
 # -
 
-
-
-# ## TODO Add second standard check. Are the concepts marked standard mapped to themselves and are the non-standard ones mapped to another vocabulary.
-#
-
-# # TODO descriptive types are seen in the cr file. stop this
-# # TODO nulls are present in cr file. stop this
-#
-#
-# # cr feedback concept_id_1 for ace concepts not showing up?
-#
-
-# # Concept_relationship table checks
+# ## TODO 
+# * Add second standard check. Are the concepts marked standard mapped to themselves and are the non-standard ones mapped to another vocabulary.
+# * descriptive types are seen in the cr file. stop this
+# * nulls are present in cr file. stop this
+# * cr feedback concept_id_1 for ace concepts not showing up?
+# * Concept_relationship table checks
 
 mock_vs_ody = mock_fin.merge(ody_cr,
                         how = 'outer',
@@ -725,19 +698,9 @@ approved_rel = cr_qc_base[cr_qc_base['_merge'] == 'both']
 approved_rel=approved_rel.sort_values(by='concept_id_1', ascending=True).reset_index(drop=True)
 approved_rel
 
-# # sanity check pop up analysis. Many of the results above were linked to these two concept_ids which are a known issue for odysseus to fix.
-# # look at the ones that are not linked to the ids
-# id_list = [903079.0,903087.0]
-# issues_added = added_rel[
-#    ( ~added_rel['concept_id_1'].isin(id_list) )&
-#     (~added_rel['concept_id_2'].isin(id_list))
-# ].reset_index(drop=True)
-
 # # Transformation
 #  manual edits to send back to odysseus
 #  Create a table that shows the status of each concept_code (accepted, concept_code_does not match dictionary, no matching concept_id)
-
-ody_cr
 
 # step 1 make a copy to work off of 
 ody_cr_no_ids = ody_cr.copy()
@@ -868,9 +831,6 @@ cr_merge_missing['concept_code_1'] = cr_merge_missing['concept_code_1_x'].combin
 cr_merge_missing['concept_code_2'] = cr_merge_missing['concept_code_2_x'].combine_first(cr_merge_missing['concept_code_2_y'])
 cr_merge_missing['status'] = cr_merge_missing['status_x'].combine_first(cr_merge_missing['status_y'])
 cr_merge_missing = cr_merge_missing.drop(columns={'concept_code_1_x', 'concept_code_1_y', 'concept_code_2_x', 'concept_code_2_y', 'status_x', 'status_y'})
-
-cr_merge_missing
-
 # -
 
 base_cr_with_status = cr_merge_missing.copy()
@@ -898,14 +858,15 @@ vocab_filter = get_concept_data(['concept_id','domain_id'])
 concepts_w_incorrect_domain = vocab_filter.loc[vocab_filter['domain_id'] != 'Observation', 'concept_id'].to_list()
 
 
-standard_domain_failures = base_cr_with_status[base_cr_with_status['concept_id_1'].isin(concepts_w_incorrect_domain)]
+standard_domain_failures = base_cr_with_status[(base_cr_with_status['concept_id_1'].isin(concepts_w_incorrect_domain))
+                                              |(base_cr_with_status['concept_id_2'].isin(concepts_w_incorrect_domain))]
 
 base_cr_with_status['status'] = np.where(
-    base_cr_with_status['concept_id_1'].isin(concepts_w_incorrect_domain),
+    base_cr_with_status['concept_id_1'].isin(concepts_w_incorrect_domain)
+    |base_cr_with_status['concept_id_2'].isin(concepts_w_incorrect_domain),
     'ody generated. Standard concept domain issue',
     base_cr_with_status['status']
 )
-base_cr_with_status
 
 # +
 # These mappings are generally decided by odysseus. This is created as a visual check of these mappings.
@@ -967,5 +928,14 @@ feedback_with_athena_cr=feedback_with_athena_cr.drop_duplicates(ignore_index=Tru
 
 feedback_with_athena_cr.to_csv(f'data_storage/mapping_files/{feedback_cr}')
 # -
-
+# Check for:
+# concept_feedback
+# 1. No concepts should already exist in Athena. 
+# 2. All new questions and answers should be given a new concept. None should have the status 'no matching concept_id'
+# 3. ids not unique
+#
+# concept_relationship_feedback
+# 1. Not mapped concepts
+# 2. already mapped concepts
+#
 
