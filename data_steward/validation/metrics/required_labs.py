@@ -9,6 +9,7 @@ import oauth2client
 import app_identity
 import resources
 import common
+import bq_utils
 from constants import bq_utils as bq_consts
 from gcloud.bq import BigQueryClient
 from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
