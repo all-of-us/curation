@@ -96,7 +96,7 @@ co_results
 # #### Check instances where the final concept is not standard
 
 co_cleaning_rule_failure = co_results.loc[(
-    co_results['post_cr_standard_concept'] != 'S')]
+    co_results['post_cr_standard_concept'] not in ('S', 'C'))]
 
 co_cleaning_rule_failure
 
