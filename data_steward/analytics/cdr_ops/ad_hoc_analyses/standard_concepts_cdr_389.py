@@ -172,7 +172,7 @@ de_results
 # #### Check instances where the final concept is not standard
 
 de_cleaning_rule_failure = de_results.loc[(
-    de_results['post_cr_standard_concept'] != 'S')]
+    de_results['post_cr_standard_concept'] not in ('S', 'C'))]
 
 de_cleaning_rule_failure
 
