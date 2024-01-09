@@ -28,7 +28,8 @@
 #
 # - The original concept was non-standard
 # - The original concept was standard and subsequently converted to a nonstandard concept
-#
+
+##### DC-3667:
 # #### This notebook checks where non-standard concepts failed to map to standard concepts using c1.standard_concept NOT IN ('S', 'C')'.
 #
 #
