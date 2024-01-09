@@ -244,7 +244,7 @@ m_results = utils.bq.query(m_query)
 m_results
 
 m_cleaning_rule_failure = m_results.loc[(m_results['post_cr_standard_concept']
-                                         != 'S')]
+                                         not in ('S', 'C'))]
 
 m_cleaning_rule_failure
 
