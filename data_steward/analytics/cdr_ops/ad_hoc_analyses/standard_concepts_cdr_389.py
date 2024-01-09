@@ -23,17 +23,17 @@
 # - domain_id of the concept matches the domain_id
 #
 # Concept IDs should be replaced if it does not meet all of the three criteria are not met.
+#
+# #### DC-3667:
+# This notebook checks where non-standard concepts failed to map to standard concepts using c1.standard_concept NOT IN ('S', 'C')'.
+#
+# This notebook also does not exclude instances where the concept_id = 0.
 
 # ## NOTE: This notebook currently looks to see if there are ANY instances in which the ultimate 'concept_id' for a table in the combined data set is either non-standard or in the incorrect domain. This includes instances where:
 #
 # - The original concept was non-standard
 # - The original concept was standard and subsequently converted to a nonstandard concept
 
-# ##### DC-3667:
-# #### This notebook checks where non-standard concepts failed to map to standard concepts using c1.standard_concept NOT IN ('S', 'C')'.
-#
-#
-# #### This notebook also does not exclude instances where the concept_id = 0.
 import bq_utils
 import utils.bq
 from notebooks import parameters
