@@ -53,7 +53,7 @@ Combined Dataset: {combined}
 co_query = """
 SELECT
 DISTINCT
-co.condition_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn, 
+co.condition_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn,
 co_combined.condition_concept_id as post_cr_concept_id, c2.standard_concept as post_cr_standard_concept, c2.concept_name as post_cr_cn,
 (LOWER(c2.domain_id) LIKE '%condition%') as post_cr_domain_correct,
 COUNT(*) as count, COUNT(DISTINCT mco.src_hpo_id) as num_sites_w_change
@@ -127,7 +127,7 @@ print(
 de_query = """
 SELECT
 DISTINCT
-de.drug_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn, 
+de.drug_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn,
 de_combined.drug_concept_id as post_cr_concept_id, c2.standard_concept as post_cr_standard_concept, c2.concept_name as post_cr_cn,
 (LOWER(c2.domain_id) LIKE '%drug%') as post_cr_domain_correct,
 COUNT(*) as count, COUNT(DISTINCT mde.src_hpo_id) as num_sites_w_change
@@ -202,7 +202,7 @@ print(
 m_query = """
 SELECT
 DISTINCT
-m.measurement_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn, 
+m.measurement_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn,
 m_combined.measurement_concept_id as post_cr_concept_id, c2.standard_concept as post_cr_standard_concept, c2.concept_name as post_cr_cn,
 (LOWER(c2.domain_id) LIKE '%measurement%') as post_cr_domain_correct,
 COUNT(*) as count, COUNT(DISTINCT mm.src_hpo_id) as num_sites_w_change
@@ -272,7 +272,7 @@ print(
 v_query = """
 SELECT
 DISTINCT
-v.visit_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn, 
+v.visit_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn,
 v_combined.visit_concept_id as post_cr_concept_id, c2.standard_concept as post_cr_standard_concept, c2.concept_name as post_cr_cn,
 (LOWER(c2.domain_id) LIKE '%visit%') as post_cr_domain_correct,
 COUNT(*) as count, COUNT(DISTINCT mv.src_hpo_id) as num_sites_w_change
@@ -342,7 +342,7 @@ print(
 p_query = """
 SELECT
 DISTINCT
-p.procedure_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn, 
+p.procedure_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn,
 p_combined.procedure_concept_id as post_cr_concept_id, c2.standard_concept as post_cr_standard_concept, c2.concept_name as post_cr_cn,
 (LOWER(c2.domain_id) LIKE '%procedure%') as post_cr_domain_correct,
 COUNT(*) as count, COUNT(DISTINCT mp.src_hpo_id) as num_sites_w_change
@@ -411,7 +411,7 @@ print(
 o_query = """
 SELECT
 DISTINCT
-o.observation_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn, 
+o.observation_concept_id as pre_cr_concept_id, c1.standard_concept as pre_cr_standard_concept, c1.concept_name as pre_cr_cn,
 o_combined.observation_concept_id as post_cr_concept_id, c2.standard_concept as post_cr_standard_concept, c2.concept_name as post_cr_cn,
 (LOWER(c2.domain_id) LIKE '%observation%') as post_cr_domain_correct,
 COUNT(*) as count, COUNT(DISTINCT mo.src_hpo_id) as num_sites_w_change
