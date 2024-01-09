@@ -478,7 +478,7 @@ else:
 #
 # If this check fails investigate. Ensure all participants lacking basics data have been dropped.
 #
-# Note: Since the CR `drop_participants_without_any_basics` occurs in the RDR cleaning stage it is possible that a small number of participants have their Basics data dropped between the rdr and CT pipeline stages. At this time(V8), participants without Basics data in the CT dataset are allowed in the CDR if they had Basics data in the rdr stage. 
+# Note: Since the CR `drop_participants_without_any_basics` occurs in the RDR cleaning stage it is possible that a small number of participants have their Basics data dropped between the rdr and CT pipeline stages. At this time(V8), participants without Basics data in the CT dataset are allowed in the CDR if they had Basics data in the rdr stage.
 
 # +
 query = JINJA_ENV.from_string("""
@@ -690,7 +690,7 @@ WITH
         AND REGEXP_CONTAINS(table_name, r'(?i)(visit_occurrence)')
         AND REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
-    
+
     OR (
     (table_name IN (
       SELECT
@@ -844,7 +844,7 @@ WITH
         AND REGEXP_CONTAINS(table_name, r'(?i)(visit_occurrence)')
         AND REGEXP_CONTAINS(column_name, r'(?i)(visit_occurrence)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
-    
+
     OR (
           (table_name IN (
       SELECT
@@ -854,7 +854,7 @@ WITH
         AND REGEXP_CONTAINS(table_name, r'(?i)(visit_detail)')
         AND REGEXP_CONTAINS(column_name, r'(?i)(visit_detail_id)')
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(preceding)') )
-    
+
     OR (
           (table_name IN (
       SELECT
@@ -1015,7 +1015,7 @@ END
  AS Failure_primary_key_match
 
 FROM `{{project_id}}.{{ct_dataset}}.concept` c
-JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}`  ON (concept_id={{column_name}})
+JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}` ON (concept_id={{column_name}})
 WHERE  standard_concept not in ('S', 'C')
 AND {{column_name}} !=0
 """)
