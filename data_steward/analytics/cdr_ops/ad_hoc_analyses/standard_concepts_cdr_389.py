@@ -315,7 +315,7 @@ v_results = utils.bq.query(v_query)
 v_results
 
 v_cleaning_rule_failure = v_results.loc[(v_results['post_cr_standard_concept']
-                                         not in ('S', 'C')]
+                                         not in ('S', 'C'))]
 
 v_cleaning_rule_failure
 
