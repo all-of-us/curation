@@ -29,7 +29,7 @@
 # - The original concept was non-standard
 # - The original concept was standard and subsequently converted to a nonstandard concept
 #
-# #### This notebook, however, can be modified to look for instances where non-standard concepts failed to map to standard concepts by adding the 'WHERE c1.standard_concept NOT IN ('S')' to the queries.
+# #### This notebook checks where non-standard concepts failed to map to standard concepts using c1.standard_concept NOT IN ('S', 'C')'.
 #
 #
 # #### This notebook also does not exclude instances where the concept_id = 0.
