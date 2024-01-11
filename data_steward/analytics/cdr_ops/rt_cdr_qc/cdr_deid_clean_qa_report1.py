@@ -36,8 +36,8 @@ impersonation_creds = auth.get_impersonation_credentials(
 client = BigQueryClient(project_id, credentials=impersonation_creds)
 # -
 
-# df will have a summary in the end
-df = pd.DataFrame(columns=['query', 'result'])
+# summary will have a summary in the end
+summary = pd.DataFrame(columns=['query', 'result'])
 
 # ## QA queries on new CDR_deid_clean drop rows with 0 OR null
 
@@ -58,13 +58,13 @@ FROM `{{project_id}}.{{deid_clean_cdr}}.observation`
 q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
 result = execute(client, q)
 if result.loc[0].sum() == 0:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query1 observation',
         'result': 'PASS'
     },
                    ignore_index=True)
 else:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query1 observation',
         'result': 'Failure'
     },
@@ -91,13 +91,13 @@ OR ( condition_source_concept_id IS NULL AND condition_concept_id IS NULL)
 q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
 result = execute(client, q)
 if result.loc[0].sum() == 0:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query2 condition',
         'result': 'PASS'
     },
                    ignore_index=True)
 else:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query2 condition',
         'result': 'Failure'
     },
@@ -119,13 +119,13 @@ FROM `{{project_id}}.{{deid_clean_cdr}}.procedure_occurrence`
 q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
 result = execute(client, q)
 if result.loc[0].sum() == 0:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query3 procedure',
         'result': 'PASS'
     },
                    ignore_index=True)
 else:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query3 procedure',
         'result': 'Failure'
     },
@@ -148,13 +148,13 @@ FROM `{{project_id}}.{{deid_clean_cdr}}.visit_occurrence`
 q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
 result = execute(client, q)
 if result.loc[0].sum() == 0:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query4 visit',
         'result': 'PASS'
     },
                    ignore_index=True)
 else:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query4 visit',
         'result': 'Failure'
     },
@@ -178,13 +178,13 @@ FROM `{{project_id}}.{{deid_clean_cdr}}.drug_exposure`
 q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
 result = execute(client, q)
 if result.loc[0].sum() == 0:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query5 drug_exposure',
         'result': 'PASS'
     },
                    ignore_index=True)
 else:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query5 drug_exposure',
         'result': 'Failure'
     },
@@ -207,13 +207,13 @@ FROM `{{project_id}}.{{deid_clean_cdr}}.device_exposure`
 q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
 result = execute(client, q)
 if result.loc[0].sum() == 0:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query6 device',
         'result': 'PASS'
     },
                    ignore_index=True)
 else:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query6 device',
         'result': 'Failure'
     },
@@ -236,13 +236,13 @@ FROM`{{project_id}}.{{deid_clean_cdr}}.measurement`
 q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
 result = execute(client, q)
 if result.loc[0].sum() == 0:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query7 measurement',
         'result': 'PASS'
     },
                    ignore_index=True)
 else:
-    df = df.append({
+    summary = summary.append({
         'query': 'Query7, measurement',
         'result': 'Failure'
     },
@@ -271,14 +271,14 @@ q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
 result = execute(client, q)
 
 if result.loc[0].sum() == 0:
-    df = df.append(
+    summary = summary.append(
         {
             'query': 'Query 8, State_of_Residence in person_ext',
             'result': ' Failure'
         },
         ignore_index=True)
 else:
-    df = df.append(
+    summary = summary.append(
         {
             'query': 'Query 8, State_of_Residence in person_ext',
             'result': 'PASS'
@@ -296,4 +296,4 @@ def highlight_cells(val):
     return f'background-color: {color}'
 
 
-df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
+summary.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
