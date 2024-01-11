@@ -161,6 +161,7 @@ else:
                    ignore_index=True)
 df1.T
 
+
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 5 Verify that in drug_exposure table if drug_exposure_source_concept_id AND the drug_exposure_concept_id both of those fields are null OR zero, the row should be removed.
 
@@ -242,55 +243,14 @@ if df1.loc[0].sum() == 0:
                    ignore_index=True)
 else:
     df = df.append({
-        'query': 'Query7 measurement',
+        'query': 'Query7, measurement',
         'result': 'Failure'
     },
                    ignore_index=True)
 df1.T
 # -
 
-# # 8 Verify that in aou_death table both cause_source_concept_id and cause_concept_id are null OR zero.
-#
-#
-
-# +
-# how to COUNT NaN
-# in old cdr_clean , the value is NaN; in contrast, the value is empty in new cdr_clean
-query = JINJA_ENV.from_string("""
-
-SELECT
-SUM(CASE WHEN cause_source_concept_id != 0 AND cause_concept_id != 0 THEN 1 ELSE 0 END) AS n_cause_source_concept_id_both_not_0,
-SUM(CASE WHEN cause_source_concept_id IS NOT NULL AND cause_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_cause_source_concept_id_both_not_null,
-SUM(CASE WHEN cause_source_concept_id != 0 AND cause_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_cause_source_concept_id_either_0,
-SUM(CASE WHEN cause_source_concept_id IS NOT NULL AND cause_concept_id !=0 THEN 1 ELSE 0 END) AS n_cause_source_concept_id_either_null
-FROM `{{project_id}}.{{deid_clean_cdr}}.aou_death`
-
-""")
-q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
-df1 = execute(client, q)
-if df1.loc[0].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query8 cause_source_concept_id/cause_concept_id is null in aou_death table',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query8 cause_source_concept_id/cause_concept_id is null in aou_death table',
-            'result':
-                'Failure'
-        },
-        ignore_index=True)
-
-df1.T
-# -
-
-# # 9  check State_of_Residence fields in the person_ext table in deid_clean
+# # 8  check State_of_Residence fields in the person_ext table in deid_clean
 #
 # Generalization Rules for reference
 #
@@ -308,24 +268,23 @@ ON  d.person_id = e.person_id
 WHERE state_of_residence_concept_id IS NOT NULL OR state_of_residence_source_value IS NOT NULL
 """)
 q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
-df1 = execute(client, q)
+result = execute(client, q)
 
-if df1.loc[0].sum() == 0:
+if result.loc[0].sum() == 0:
     df = df.append(
         {
-            'query': 'Query9 State_of_Residence in person_ext',
+            'query': 'Query 8, State_of_Residence in person_ext',
             'result': ' Failure'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query9 State_of_Residence in person_ext',
+            'query': 'Query 8, State_of_Residence in person_ext',
             'result': 'PASS'
         },
         ignore_index=True)
-df1
-
+result
 # -
 
 # # Summary_row_ICD_suppression
