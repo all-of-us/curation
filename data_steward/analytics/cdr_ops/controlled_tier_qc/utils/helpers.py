@@ -157,25 +157,29 @@ def run_check_by_row(df,
         primary_key = form_field_param_from_row(row, 'primary_key')
         mapping_table = form_field_param_from_row(row, 'mapping_table')
         new_id = form_field_param_from_row(row, 'new_id')
-        query = Template(template_query).render(
-            project_id=project_id,
-            post_deid_dataset=post_deid_dataset,
-            questionnaire_response_dataset=questionnaire_response_dataset,
-            pre_deid_dataset=pre_deid_dataset,
-            table_name=row['table_name'],
-            column_name=column_name,
-            concept_id=concept_id,
-            concept_code=concept_code,
-            data_type=data_type,
-            primary_key=primary_key,
-            new_id=new_id,
-            mapping_dataset=mapping_dataset,
-            mapping_table=mapping_table,
-            pipeline_dataset=PIPELINE_TABLES,
-            zip_table_name=ZIP_CODE_AGGREGATION_MAP)
-        result_df = pd.read_gbq(query, dialect="standard")
-        result_df['query'] = str(query)
-        results.append(result_df)
+        is_suppressed = form_field_param_from_row(row, 'is_suppressed')
+        if 'is_suppressed' in check_df.columns and is_suppressed == 'NO':
+            pass
+        else:
+            query = Template(template_query).render(
+                project_id=project_id,
+                post_deid_dataset=post_deid_dataset,
+                questionnaire_response_dataset=questionnaire_response_dataset,
+                pre_deid_dataset=pre_deid_dataset,
+                table_name=row['table_name'],
+                column_name=column_name,
+                concept_id=concept_id,
+                concept_code=concept_code,
+                data_type=data_type,
+                primary_key=primary_key,
+                new_id=new_id,
+                mapping_dataset=mapping_dataset,
+                mapping_table=mapping_table,
+                pipeline_dataset=PIPELINE_TABLES,
+                zip_table_name=ZIP_CODE_AGGREGATION_MAP)
+            result_df = pd.read_gbq(query, dialect="standard")
+            result_df['query'] = str(query)
+            results.append(result_df)
 
     results_df = (pd.concat(results, sort=True).pipe(format_cols_to_string))
 
