@@ -273,14 +273,14 @@ result = execute(client, q)
 if result.loc[0].sum() == 0:
     summary = summary.append(
         {
-            'query': 'Query 8, State_of_Residence in person_ext',
+            'query': 'Query8, State_of_Residence in person_ext',
             'result': ' Failure'
         },
         ignore_index=True)
 else:
     summary = summary.append(
         {
-            'query': 'Query 8, State_of_Residence in person_ext',
+            'query': 'Query8, State_of_Residence in person_ext',
             'result': 'PASS'
         },
         ignore_index=True)
