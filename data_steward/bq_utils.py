@@ -46,34 +46,9 @@ def get_rdr_project_id():
     return os.environ.get('RDR_PROJECT_ID')
 
 
-@deprecated(reason='get_output_project_id is deprecated')
-def get_output_project_id():
-    return os.environ.get('OUTPUT_PROJECT_ID')
-
-
 @deprecated(reason='Use common.BIGQUERY_DATASET_ID instead')
 def get_dataset_id():
     return os.environ.get('BIGQUERY_DATASET_ID')
-
-
-@deprecated(reason='Use common.UNIONED_DATASET_ID instead')
-def get_unioned_dataset_id():
-    return os.environ.get('UNIONED_DATASET_ID')
-
-
-@deprecated(reason='Use common.RDR_DATASET_ID instead')
-def get_rdr_dataset_id():
-    return os.environ.get('RDR_DATASET_ID')
-
-
-@deprecated(reason='get_combined_snapshot_dataset_id is deprecated')
-def get_combined_snapshot_dataset_id():
-    return os.environ.get('COMBINED_SNAPSHOT')
-
-
-@deprecated(reason='Use common.COMBINED_DATASET_ID instead')
-def get_combined_dataset_id():
-    return os.environ.get('COMBINED_DATASET_ID')
 
 
 @deprecated(reason='get_combined_deid_clean_dataset_id is deprecated')
@@ -95,12 +70,6 @@ def get_retraction_pid_table_id():
 
 def get_retraction_sandbox_dataset_id():
     return os.environ.get('RETRACTION_SANDBOX_DATASET_ID')
-
-
-@deprecated(reason='get_fitbit_dataset_id is deprecated')
-def get_fitbit_dataset_id():
-    return os.environ.get('FITBIT_DATASET_ID')
-
 
 def get_retraction_dataset_ids_table():
     """
@@ -126,29 +95,6 @@ def get_retraction_submission_folder():
     :return: string 'all_folders' or submission folder name
     """
     return os.environ.get('RETRACTION_SUBMISSION_FOLDER')
-
-
-@deprecated(reason='get_combined_deid_dataset_id is deprecated')
-def get_combined_deid_dataset_id():
-    return os.environ.get('COMBINED_DEID_DATASET_ID')
-
-
-@deprecated(reason='get_validation_results_dataset_id is deprecated')
-def get_validation_results_dataset_id():
-    """
-    Get the Validation dataset id.
-
-    If the environment variable has not been set, default to the defined name,
-    set the environment variable, and return the dataset name.
-
-    :return:  A name for the validation dataset id.
-    """
-    dataset_id = os.environ.get(bq_consts.MATCH_DATASET, bq_consts.BLANK)
-    if dataset_id == bq_consts.BLANK:
-        date_string = datetime.now().strftime(bq_consts.DATE_FORMAT)
-        dataset_id = bq_consts.VALIDATION_DATASET_FORMAT.format(date_string)
-        os.environ[bq_consts.MATCH_DATASET] = dataset_id
-    return dataset_id
 
 
 @deprecated(
@@ -953,25 +899,6 @@ def get_hpo_info():
         hpo_name = hpo_table_row[bq_consts.SITE_NAME]
         if hpo_id and hpo_name:
             hpo_dict = {"hpo_id": hpo_id, "name": hpo_name}
-            hpo_list.append(hpo_dict)
-    return hpo_list
-
-
-@deprecated(reason='Use gcloud.bq.BigQueryClient.get_hpo_bucket_info() instead')
-def get_hpo_bucket_info():
-    hpo_list = []
-    project_id = app_identity.get_application_id()
-    hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
-        project_id=project_id,
-        TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
-        HPO_SITE_TABLE=bq_consts.HPO_ID_BUCKET_NAME_TABLE_ID)
-    hpo_response = query(hpo_table_query)
-    hpo_table_contents = response2rows(hpo_response)
-    for hpo_table_row in hpo_table_contents:
-        hpo_id = hpo_table_row[bq_consts.HPO_ID.lower()].lower()
-        hpo_bucket = hpo_table_row[bq_consts.BUCKET_NAME].lower()
-        if hpo_id:
-            hpo_dict = {"hpo_id": hpo_id, "bucket_name": hpo_bucket}
             hpo_list.append(hpo_dict)
     return hpo_list
 
