@@ -392,5 +392,5 @@ def mock_google_cloud_error(content: bytes = b'418: I\'m a teapot'):
 
 
 def mock_google_service_unavailable_error(
-    content: bytes = b'418: I\'m a teapot'):
+        content: bytes = b'418: I\'m a teapot'):
     return ServiceUnavailable(message=content.decode())

@@ -248,9 +248,10 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
                 """
         cols = list(self.client.query(cols_query).result())
         dataset_tables = {
-            dataset_id: set(col.table_name
-                            for col in cols
-                            if col.table_schema == dataset_id)
+            dataset_id:
+                set(col.table_name
+                    for col in cols
+                    if col.table_schema == dataset_id)
             for dataset_id in (self.dataset_id, self.sandbox_dataset_id)
         }
         return dataset_tables

@@ -225,8 +225,8 @@ class EhrUnionTest(unittest.TestCase):
     @mock.patch('validation.ehr_union.get_person_to_observation_query')
     @mock.patch('validation.ehr_union.query')
     def test_move_ehr_person_to_observation(
-        self, mock_query, mock_get_person_to_observation_query,
-        mock_output_table_for, mock_hpo_info):
+            self, mock_query, mock_get_person_to_observation_query,
+            mock_output_table_for, mock_hpo_info):
         dataset_id = 'fake_dataset'
         output_table = 'fake_table'
 

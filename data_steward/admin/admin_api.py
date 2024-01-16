@@ -14,9 +14,8 @@ from flask import Flask
 import api_util
 import app_identity
 from admin import key_rotation, prod_pid_detection
-from curation_logging.curation_gae_handler import (begin_request_logging,
-                                                   end_request_logging,
-                                                   initialize_logging)
+
+import google.cloud.logging as gc_logging
 
 PREFIX = '/admin/v1/'
 REMOVE_EXPIRED_KEYS_RULE = f'{PREFIX}RemoveExpiredServiceAccountKeys'
@@ -30,6 +29,10 @@ BODY_TEMPLATE = ('service_account_email={service_account_email}\n'
                  'created_at={created_at}\n')
 
 DETECT_PID_VIOLATION_RULE = f'{PREFIX}DetectPersonIdViolation'
+
+# Set up logging client so the logs will be grouped with "Correlate by"
+logging_client = gc_logging.Client()
+logging_client.setup_logging()
 
 app = Flask(__name__)
 
@@ -93,11 +96,6 @@ def detect_pid_violation():
     return 'detect-pid-violation-complete'
 
 
-@app.before_first_request
-def set_up_logging():
-    initialize_logging()
-
-
 app.add_url_rule(REMOVE_EXPIRED_KEYS_RULE,
                  endpoint='remove_expired_keys',
                  view_func=remove_expired_keys,
@@ -107,8 +105,3 @@ app.add_url_rule(DETECT_PID_VIOLATION_RULE,
                  endpoint='detect_pid_violation',
                  view_func=detect_pid_violation,
                  methods=['GET'])
-
-app.before_request(
-    begin_request_logging)  # Must be first before_request() call.
-
-app.teardown_request(end_request_logging)

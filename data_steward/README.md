@@ -4,7 +4,7 @@ Specification document and data curation processes for data submitted to the DRC
 
 ## Development Requirements
 
- * Python 3.7.x (download from [here](https://www.python.org/downloads/) and install)
+ * Python 3.11.x (download from [here](https://www.python.org/downloads/) and install)
  * pip (download [get-pip.py](https://bootstrap.pypa.io/get-pip.py) and run `python get-pip.py`)
  * _Recommended: [virtualenv](https://pypi.python.org/pypi/virtualenv)_
 
@@ -29,8 +29,8 @@ the internet. The following environment variables are needed to configure access
 
  * Create a virtual environment and install requirements by running
     ```
-    # create a new environment with python3.7 as the default python
-    virtualenv -p "$(which python3.7)" <path_to_desired_virtualenv_location>
+    # create a new environment with python3.11 as the default python
+    virtualenv -p "$(which python3.11)" <path_to_desired_virtualenv_location>
     
     # activate it
     source <path_to_desired_virtualenv_location>/bin/activate

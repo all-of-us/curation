@@ -15,8 +15,14 @@ import resources
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
-from validation import main
 from tests.test_util import mock_google_http_error, mock_google_cloud_error, mock_google_service_unavailable_error
+
+with mock.patch('google.cloud.logging.Client') as mock_gc_logging_client:
+    # mocking the client at the time of import so the script will not check the credential.
+    mock_client = mock.MagicMock()
+    mock_gc_logging_client.return_value = mock_client
+
+    from validation import main
 
 
 class ValidationMainTest(TestCase):
@@ -332,11 +338,11 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.is_valid_rdr')
     def test_process_hpo_ignore_dirs(
-        self, mock_valid_rdr, mock_first_validation,
-        mock_has_all_required_files, mock_folder_items, mock_validation,
-        mock_get_hpo_name, mock_get_duplicate_counts_query, mock_query_rows,
-        mock_all_required_files_loaded, mock_run_achilles, mock_export,
-        mock_valid_folder_name, mock_query):
+            self, mock_valid_rdr, mock_first_validation,
+            mock_has_all_required_files, mock_folder_items, mock_validation,
+            mock_get_hpo_name, mock_get_duplicate_counts_query, mock_query_rows,
+            mock_all_required_files_loaded, mock_run_achilles, mock_export,
+            mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 

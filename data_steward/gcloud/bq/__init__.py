@@ -28,6 +28,7 @@ from resources import fields_for, get_and_validate_schema_fields, replace_specia
     is_rdr_dataset, is_mapping_table
 from constants.utils import bq as consts
 from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
+from resources import get_bq_col_type
 
 tracer_provider = TracerProvider()
 trace.set_tracer_provider(tracer_provider)
@@ -106,22 +107,6 @@ class BigQueryClient(Client):
 
         return schema
 
-    def _to_standard_sql_type(self, field_type: str) -> str:
-        """
-        Get standard SQL type corresponding to a SchemaField type
-
-        :param field_type: type in SchemaField object (can be legacy or standard SQL type)
-        :return: standard SQL type name
-        """
-        upper_field_type = field_type.upper()
-        standard_sql_type_code = bigquery.schema.LEGACY_TO_STANDARD_TYPES.get(
-            upper_field_type)
-        if not standard_sql_type_code:
-            raise ValueError(f'{field_type} is not a valid field type')
-        standard_sql_type = bigquery.StandardSqlDataTypes(
-            standard_sql_type_code)
-        return standard_sql_type.name
-
     def _to_sql_field(self,
                       field: bigquery.SchemaField) -> bigquery.SchemaField:
         """
@@ -130,9 +115,12 @@ class BigQueryClient(Client):
         :param field: the schema field object
         :return: a converted schema field object
         """
-        return bigquery.SchemaField(
-            field.name, self._to_standard_sql_type(field.field_type),
-            field.mode, field.description, field.fields)
+        return bigquery.SchemaField(name=field.name,
+                                    field_type=get_bq_col_type(
+                                        field.field_type),
+                                    mode=field.mode,
+                                    description=field.description,
+                                    fields=field.fields)
 
     def get_validated_schema_fields(
             schema_filepath: str) -> typing.List[bigquery.SchemaField]:

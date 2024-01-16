@@ -317,10 +317,10 @@ def get_retraction_queries_fact_relationship(
 
 
 def get_tables_to_retract(
-        client: BigQueryClient,
-        dataset,
-        retraction_type,
-        hpo_id: Optional[str] = None,
+    client: BigQueryClient,
+    dataset,
+    retraction_type,
+    hpo_id: Optional[str] = None,
 ) -> List[str]:
     """
     Creates a list of tables that need retraction in the dataset.

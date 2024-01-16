@@ -64,11 +64,11 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
     @patch.object(ReplaceWithStandardConceptId,
                   'get_src_concept_id_logging_queries')
     def test_replace_standard_id_in_domain_tables(
-        self, mock_get_src_concept_id_logging_queries,
-        mock_get_sandbox_src_concept_id_update_queries,
-        mock_get_src_concept_id_update_queries,
-        mock_get_mapping_table_update_queries,
-        mock_get_delete_empty_sandbox_tables_queries):
+            self, mock_get_src_concept_id_logging_queries,
+            mock_get_sandbox_src_concept_id_update_queries,
+            mock_get_src_concept_id_update_queries,
+            mock_get_mapping_table_update_queries,
+            mock_get_delete_empty_sandbox_tables_queries):
         query = 'select this query'
 
         mock_get_src_concept_id_logging_queries.return_value = [{
@@ -155,8 +155,8 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
     @patch.object(ReplaceWithStandardConceptId,
                   'parse_src_concept_id_logging_query')
     def test_get_src_concept_id_logging_queries(
-        self, mock_parse_src_concept_id_logging_query,
-        mock_parse_duplicate_id_update_query):
+            self, mock_parse_src_concept_id_logging_query,
+            mock_parse_duplicate_id_update_query):
         src_concept_id_logging_condition = 'condition UNION ALL procedure'
         duplicate_id_update_query = ('UPDATE `test_project_id.dataset_id'
                                      '._logging_standard_concept_id_replacement'
@@ -186,8 +186,8 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
     @patch.object(ReplaceWithStandardConceptId,
                   'parse_sandbox_src_concept_id_update_query')
     def test_get_sandbox_src_concept_id_update_queries(
-        self, mock_parse_sandbox_src_concept_id_update_query,
-        mock_sandbox_table_for):
+            self, mock_parse_sandbox_src_concept_id_update_query,
+            mock_sandbox_table_for):
         sandbox_query_condition = 'condition sandbox query'
         sandbox_query_procedure = 'procedure sandbox query'
         condition_sandbox_table = 'condition_sandbox_table'
@@ -232,7 +232,7 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
     @patch.object(ReplaceWithStandardConceptId,
                   'parse_src_concept_id_update_query')
     def test_get_src_concept_id_update_queries(
-        self, mock_parse_src_concept_id_update_query):
+            self, mock_parse_src_concept_id_update_query):
         update_query_condition = 'select a random value'
         update_query_procedure = 'select a random value procedure'
         mock_parse_src_concept_id_update_query.side_effect = [
@@ -260,8 +260,8 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
     @mock.patch('resources.get_domain_id_field')
     @mock.patch('resources.fields_for')
     def test_parse_src_concept_id_update_query(
-        self, mock_fields_for, mock_get_domain_id_field,
-        mock_get_domain_concept_id, mock_get_domain_source_concept_id):
+            self, mock_fields_for, mock_get_domain_id_field,
+            mock_get_domain_concept_id, mock_get_domain_source_concept_id):
         mock_fields_for.return_value = [{
             'name': 'condition_occurrence_id'
         }, {
@@ -298,7 +298,8 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
         'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.mapping_table_for'
     )
     def test_get_mapping_table_update_queries(
-        self, mock_mapping_table_for, mock_parse_mapping_table_update_query):
+            self, mock_mapping_table_for,
+            mock_parse_mapping_table_update_query):
         mock_mapping_table_for.side_effect = [
             self.condition_mapping_table, self.procedure_mapping_table
         ]

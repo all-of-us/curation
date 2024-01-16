@@ -127,19 +127,6 @@ class BqTest(TestCase):
                 new_labels_or_tags={'label': 'oranges'},
                 overwrite_ok=False)
 
-    def test_to_standard_sql_type(self):
-        # All types used in schema files should successfully map to standard sql types
-        all_field_types = _get_all_field_types()
-        for field_type in all_field_types:
-            result = bq._to_standard_sql_type(field_type)
-            self.assertTrue(result)
-
-        # Unknown types should raise ValueError
-        with self.assertRaises(ValueError) as c:
-            bq._to_standard_sql_type('unknown_type')
-            self.assertEqual(str(c.exception),
-                             f'unknown_type is not a valid field type')
-
     def test_get_table_ddl(self):
         # Schema is determined by table name
         ddl = bq.get_create_or_replace_table_ddl(self.project_id,

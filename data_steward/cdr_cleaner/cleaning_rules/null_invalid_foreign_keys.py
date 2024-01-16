@@ -108,8 +108,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         :return: dict. Table's column names as keys and the column's mode (nullable/required) as values.
         """
         return {
-            field['name']: field['mode']
-            for field in resources.fields_for(table)
+            field['name']: field['mode'] for field in resources.fields_for(table)
         }
 
     def get_foreign_keys(self, table):

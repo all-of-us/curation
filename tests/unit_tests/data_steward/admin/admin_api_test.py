@@ -1,7 +1,12 @@
 import unittest
 import mock
 
-from admin import admin_api
+with mock.patch('google.cloud.logging.Client') as mock_gc_logging_client:
+    # mocking the client at the time of import so the script will not check the credential.
+    mock_client = mock.MagicMock()
+    mock_gc_logging_client.return_value = mock_client
+
+    from admin import admin_api
 
 
 class AdminApiTest(unittest.TestCase):

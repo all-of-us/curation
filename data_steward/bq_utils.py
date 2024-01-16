@@ -157,8 +157,8 @@ def create_service():
     return build('bigquery', 'v2', cache={})
 
 
-@deprecated(reason='Use resources.get_table_id(table_name, hpo_id=None) instead'
-           )
+@deprecated(
+    reason='Use resources.get_table_id(table_name, hpo_id=None) instead')
 def get_table_id(hpo_id, table_name):
     """
     Get the bigquery table id associated with an HPOs CDM table
@@ -172,8 +172,8 @@ def get_table_id(hpo_id, table_name):
     return hpo_id + '_' + table_name
 
 
-@deprecated(reason='Use gcloud.bq.BigQueryClient.get_table(self, table) instead'
-           )
+@deprecated(
+    reason='Use gcloud.bq.BigQueryClient.get_table(self, table) instead')
 def get_table_info(table_id, dataset_id=None, project_id=None):
     """
     Get metadata describing a table
