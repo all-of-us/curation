@@ -71,6 +71,7 @@ def get_retraction_pid_table_id():
 def get_retraction_sandbox_dataset_id():
     return os.environ.get('RETRACTION_SANDBOX_DATASET_ID')
 
+
 def get_retraction_dataset_ids_table():
     """
     BigQuery table containing dataset ids from which to retract, on separate rows.
