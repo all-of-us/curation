@@ -149,7 +149,7 @@ SELECT
 FROM
   `{{project}}.{{dataset}}.{{table_name}}` t
 JOIN
-  `{{project}}.{{dataset}}_sandbox._deactivated_participants` d
+  `{{project}}.{{sandbox_dataset}}._deactivated_participants` d
 USING
   (person_id)
 WHERE
@@ -166,7 +166,7 @@ for table in FITBIT_TABLES:
             project=project_id,
             dataset=fitbit_dataset,
             table_name=table,
-            sandbox_dataset=sandbox_dataset,
+            sandbox_dataset=f"{fitbit_dataset}_sandbox",
             date_column=date_columns[table],
             secondary_date_column=secondary_date_column.get(table)))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
