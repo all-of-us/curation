@@ -379,7 +379,7 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_validation_report.call_count, 0)
 
     def test_match_participants_same_participant_simulate_location_pii_read_errors(
-        self):
+            self):
         # pre conditions
         self.mock_location_pii.side_effect = test_util.mock_google_http_error(
             status_code=500, content=b'content', reason='reason')

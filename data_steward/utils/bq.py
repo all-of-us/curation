@@ -17,7 +17,7 @@ from deprecated import deprecated
 # Project Imports
 from utils import auth
 from constants.utils import bq as consts
-from resources import fields_for
+from resources import fields_for, get_bq_col_type
 from common import JINJA_ENV
 
 _MAX_RESULTS_PADDING = 100
@@ -165,26 +165,6 @@ def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
 
 @deprecated(
     reason=
-    'Use gcloud.bq.BigQueryClient._to_standard_sql_type(self, field_type: str) instead'
-)
-def _to_standard_sql_type(field_type: str) -> str:
-    """
-    Get standard SQL type corresponding to a SchemaField type
-
-    :param field_type: type in SchemaField object (can be legacy or standard SQL type)
-    :return: standard SQL type name
-    """
-    upper_field_type = field_type.upper()
-    standard_sql_type_code = bigquery.schema.LEGACY_TO_STANDARD_TYPES.get(
-        upper_field_type)
-    if not standard_sql_type_code:
-        raise ValueError(f'{field_type} is not a valid field type')
-    standard_sql_type = bigquery.StandardSqlDataTypes(standard_sql_type_code)
-    return standard_sql_type.name
-
-
-@deprecated(
-    reason=
     'Use gcloud.bq.BigQueryClient._to_sql_field(self,field: bigquery.SchemaField) instead'
 )
 def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
@@ -194,9 +174,11 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
     :param field: the schema field object
     :return: a converted schema field object
     """
-    return bigquery.SchemaField(field.name,
-                                _to_standard_sql_type(field.field_type),
-                                field.mode, field.description, field.fields)
+    return bigquery.SchemaField(name=field.name,
+                                field_type=get_bq_col_type(field.field_type),
+                                mode=field.mode,
+                                description=field.description,
+                                fields=field.fields)
 
 
 @deprecated(reason="""

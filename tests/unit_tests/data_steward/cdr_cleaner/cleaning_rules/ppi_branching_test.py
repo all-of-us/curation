@@ -10,6 +10,7 @@ from cdr_cleaner.cleaning_rules.ppi_branching import PPI_BRANCHING_RULE_PATHS
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching, OBSERVATION, BACKUP_ROWS_QUERY, RULES_LOOKUP_TABLE_ID
 from common import JINJA_ENV
 from constants.utils import bq as consts
+from resources import get_bq_col_type
 
 
 def _get_csv_row_count() -> int:
@@ -49,20 +50,13 @@ def _get_create_or_replace_table_ddl(project,
                                      as_query: str = None,
                                      **table_options) -> str:
 
-    def _to_standard_sql_type(field_type) -> str:
-        upper_field_type = field_type.upper()
-        standard_sql_type_code = bigquery.schema.LEGACY_TO_STANDARD_TYPES.get(
-            upper_field_type)
-        if not standard_sql_type_code:
-            raise ValueError(f'{field_type} is not a valid field type')
-        standard_sql_type = bigquery.StandardSqlDataTypes(
-            standard_sql_type_code)
-        return standard_sql_type.name
-
     def _to_sql_field(field):
-        return bigquery.SchemaField(field.name,
-                                    _to_standard_sql_type(field.field_type),
-                                    field.mode, field.description, field.fields)
+        return bigquery.SchemaField(name=field.name,
+                                    field_type=get_bq_col_type(
+                                        field.field_type),
+                                    mode=field.mode,
+                                    description=field.description,
+                                    fields=field.fields)
 
     CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string(
         consts.CREATE_OR_REPLACE_TABLE_QUERY)

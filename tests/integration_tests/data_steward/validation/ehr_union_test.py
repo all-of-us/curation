@@ -5,8 +5,6 @@ import unittest
 import mock
 
 # Third party imports
-import dpath
-import moz_sql_parser
 
 # Project imports
 import bq_utils
@@ -34,10 +32,6 @@ Test {expr} in {table} subquery
 
 {subquery}
 '''
-
-
-def first_or_none(l):
-    return next(iter(l or []), None)
 
 
 class EhrUnionTest(unittest.TestCase):
@@ -536,31 +530,21 @@ class EhrUnionTest(unittest.TestCase):
         subquery = ehr_union.table_hpo_subquery(table, NYC_HPO_ID, dataset_in,
                                                 dataset_out)
 
-        # moz-sql-parser doesn't support the ROW_NUMBER() OVER() a analytical function of sql we are removing
-        # that statement from the returned query for the parser be able to parse out the query without erroring out.
-
-        subquery = re.sub(
-            r",\s+ROW_NUMBER\(\) OVER \(PARTITION BY nm\..+?_id\) AS row_num",
-            " ", subquery)
-        # offset is being used as a column-name in note_nlp table.
-        # Although, BigQuery does not throw any errors for this, moz_sql_parser indentifies as a SQL Keyword.
-        # So, change required only in Test Script as a workaround.
-        if 'offset,' in subquery:
-            subquery = subquery.replace('offset,', '"offset",')
-        stmt = moz_sql_parser.parse(subquery)
+        # Lowercase the subquery, remove breaklines and duplicate spaces
+        # to use the string for the test easily
+        subquery = subquery.replace('\n', ' ').lower()
+        subquery = re.sub(r'\s+', ' ', subquery)
 
         # Sanity check it is a select statement
-        if 'select' not in stmt:
+        if 'select' not in subquery:
             return SUBQUERY_FAIL_MSG.format(expr='query type',
                                             table=table,
                                             expected='select',
                                             actual=str(stmt),
                                             subquery=subquery)
 
-        # Input table should be first in FROM expression
-        actual_from = first_or_none(
-            dpath.util.values(stmt, 'from/0/value/from/value') or
-            dpath.util.values(stmt, 'from'))
+        # Input table should be the first table name enclosed by `` in FROM clause
+        actual_from = subquery.split('from `', 1)[1].split('`', 1)[0]
         expected_from = f'{dataset_in}.{resources.get_table_id(table, hpo_id=NYC_HPO_ID)}'
         if expected_from != actual_from:
             return SUBQUERY_FAIL_MSG.format(expr='first object in FROM',
@@ -574,17 +558,21 @@ class EhrUnionTest(unittest.TestCase):
         fields = resources.fields_for(table)
         id_field = f'{table}_id'
         key_ind = 0
-        expected_join = None
-        actual_join = None
+        expr = ''
+        expected_join = ''
+        actual_joins = []
         for field in fields:
             if field['name'] in self.mapped_fields:
-                # key_ind += 1  # TODO use this increment when we generalize solution for all foreign keys
                 if field['name'] == id_field:
                     # Primary key, mapping table associated with this one should be INNER joined
                     key_ind += 1
                     expr = 'inner join on primary key'
-                    actual_join = first_or_none(
-                        dpath.util.values(stmt, 'from/%s/join/value' % key_ind))
+
+                    # Inner join always comes at the beginning of joins in this case,
+                    # so [0] is specified in actual_joins here.
+                    actual_joins = [
+                        subquery.split('join ', 1)[1].split(' ', 1)[0]
+                    ]
                     expected_join = dataset_out + '.' + ehr_union.mapping_table_for(
                         table)
 
@@ -592,18 +580,10 @@ class EhrUnionTest(unittest.TestCase):
                     # Foreign key, mapping table associated with the referenced table should be LEFT joined
                     key_ind += 1
                     expr = 'left join on foreign key'
-                    # Visit_detail table has 'visit_occurrence' column after 'care_site', which is different from
-                    # other cdm tables, where 'visit_occurrence' comes before other foreign_keys.
-                    # The test expects the same order as other cmd tables, so the expected-query has
-                    # 'visit_occurrence' before 'care_site'. The following reorder is required to match the sequence
-                    # to the actual-query.
-                    if table == 'visit_detail' and key_ind == 2:
-                        stmt['from'][2], stmt['from'][3], stmt['from'][4], stmt[
-                            'from'][5] = stmt['from'][3], stmt['from'][4], stmt[
-                                'from'][5], stmt['from'][2]
-                    actual_join = first_or_none(
-                        dpath.util.values(stmt,
-                                          'from/%s/left join/value' % key_ind))
+                    actual_joins = [
+                        _.split(' ', 1)[0] for _ in subquery.split('left join')
+                    ]
+
                     joined_table = field['name'].replace('_id', '')
 
                     if field['name'] in self.self_reference_keys:
@@ -611,12 +591,13 @@ class EhrUnionTest(unittest.TestCase):
                     else:
                         expected_join = f'{dataset_out}.{ehr_union.mapping_table_for(joined_table)}'
 
-                if expected_join != actual_join:
-                    return SUBQUERY_FAIL_MSG.format(expr=expr,
-                                                    table=table,
-                                                    expected=expected_join,
-                                                    actual=actual_join,
-                                                    subquery=subquery)
+                if expected_join in actual_joins:
+                    return SUBQUERY_FAIL_MSG.format(
+                        expr=expr,
+                        table=table,
+                        expected=expected_join,
+                        actual=', '.join(actual_joins),
+                        subquery=subquery)
 
     def test_hpo_subquery(self):
         input_dataset_id = 'input'
