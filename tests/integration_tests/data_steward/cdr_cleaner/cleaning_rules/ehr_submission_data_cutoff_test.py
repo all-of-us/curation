@@ -43,6 +43,14 @@ class EhrSubmissionDataCutoffTest(BaseTest.CleaningRulesTestBase):
         cutoff_date = "2020-05-01"
         cls.kwargs.update({'cutoff_date': cutoff_date})
 
+        # mocks the return value of get_affected_tables as we only want to loop through the
+        # visit_occurrence not all of the CDM tables
+        get_affected_tables_patch = patch(
+            'cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_affected_tables'
+        )
+        cls.mock_get_affected_tables = get_affected_tables_patch.start()
+        cls.mock_get_affected_tables.return_value = [common.VISIT_OCCURRENCE]
+
         cls.rule_instance = EhrSubmissionDataCutoff(project_id, dataset_id,
                                                     sandbox_id)
 
@@ -75,16 +83,11 @@ class EhrSubmissionDataCutoffTest(BaseTest.CleaningRulesTestBase):
 
         super().setUp()
 
-    @patch.object(EhrSubmissionDataCutoff, 'get_affected_tables')
-    def test_ehr_submission_data_cutoff(self, mock_get_affected_tables):
+    def test_ehr_submission_data_cutoff(self):
         """
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
         """
-        # mocks the return value of get_affected_tables as we only want to loop through the
-        # visit_occurrence not all of the CDM tables
-        mock_get_affected_tables.return_value = [common.VISIT_OCCURRENCE]
-
         queries = []
         visit_occurrence_tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.{{cdm_table}}`
@@ -133,3 +136,8 @@ class EhrSubmissionDataCutoffTest(BaseTest.CleaningRulesTestBase):
         }]
 
         self.default_test(table_and_counts)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.mock_get_affected_tables.stop()
+        super().tearDownClass()
