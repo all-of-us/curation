@@ -1,0 +1,26 @@
+[
+    {
+        "type": "string",
+        "name": "Org_ID",
+        "mode": "nullable",
+        "description": "Organization ID of the HPO site."
+    },
+    {
+        "type": "string",
+        "name": "HPO_ID",
+        "mode": "nullable",
+        "description": "HPO ID of the HPO site."
+    },
+    {
+        "type": "string",
+        "name": "Site_Name",
+        "mode": "nullable",
+        "description": "HPO site name."
+    },
+    {
+        "type": "integer",
+        "name": "Display_Order",
+        "mode": "nullable",
+        "description": "Order in which HPO sites are shown in the report."
+    }
+]
