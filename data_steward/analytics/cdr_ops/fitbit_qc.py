@@ -16,7 +16,7 @@
 project_id: str = ""  # identifies the project where datasets are located
 fitbit_dataset: str = ""  # identifies the name of the new fitbit dataset
 sandbox_dataset: str = ""  # the pipeline tables sandbox
-source_dataset: str = ""  # identifies the name of the rdr dataset
+source_dataset: str = ""  # identifies the name of the clean rdr dataset
 deid_dataset: str = "" # dataset contains wear_study table
 cutoff_date: str = ""  # CDR cutoff date in YYYY--MM-DD format
 run_as: str = ""  # service account email to impersonate
@@ -166,7 +166,7 @@ for table in FITBIT_TABLES:
             project=project_id,
             dataset=fitbit_dataset,
             table_name=table,
-            sandbox_dataset=sandbox_dataset,
+            sandbox_dataset=f"{fitbit_dataset}_sandbox",
             date_column=date_columns[table],
             secondary_date_column=secondary_date_column.get(table)))
 union_all_query = '\nUNION ALL\n'.join(queries_list)
@@ -291,13 +291,14 @@ WHERE research_id IN (SELECT person_id
 SELECT 
 src_id, 
 ROUND(COUNT(CASE WHEN fb.person_id IS NULL THEN 1 ELSE NULL END) * 100 / COUNT(c_ws),1) AS percent_without_fb,
-FROM (SELECT * FROM {{project_id}}.{{raw_rdr}}.observation WHERE observation_source_concept_id = 2100000010) o
+FROM (SELECT * FROM {{project_id}}.{{source_dataset}}.observation WHERE observation_source_concept_id = 2100000010) o
+JOIN {{project_id}}.{{source_dataset}}._mapping_observation USING(observation_id) 
 JOIN consenting_ws_ids c_ws USING(person_id) 
 LEFT JOIN fb_person_ids fb ON o.person_id = fb.person_id
 GROUP BY 1
 """).render(project_id=project_id,
             dataset=fitbit_dataset,
-            raw_rdr=source_dataset,
+            source_dataset=source_dataset,
             pipeline=sandbox_dataset,
             deid_dataset=deid_dataset)
 
