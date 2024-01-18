@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.7.1
+#       jupytext_version: 1.15.2
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -21,7 +21,7 @@
 project_id = ""
 rt_dataset = ""
 ct_dataset = ""
-combined_sandbox_dataset = ""
+rdr_sandbox_dataset = ""
 withdrawn_pids_table = ""
 maximum_age = ""
 run_as = ""
@@ -122,14 +122,14 @@ SET person_tables = Array(
     SELECT table_name
     FROM `{{project_id}}.{{rt_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where lower(column_name) = 'person_id'
-    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)|(wear)')
+    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)|(wear)|(_ext)')
 
     UNION DISTINCT 
 
     SELECT table_name
     FROM `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where lower(column_name) = 'person_id'
-    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)|(wear)')
+    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)|(wear)|(_ext)')
 
 );
 
@@ -208,14 +208,14 @@ SET ext_tables = Array(
     SELECT table_name, column_name
     FROM `{{project_id}}.{{rt_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where REGEXP_CONTAINS(table_name, r'(?i)(_ext)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)|(language)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)|(language)|(sex)|(state)')
 
     UNION DISTINCT 
 
     SELECT table_name, column_name
     FROM `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where REGEXP_CONTAINS(table_name, r'(?i)(_ext)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)|(language)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)|(language)|(sex)|(state)')
 )
 SELECT AS STRUCT table_name, column_name
 FROM data
@@ -527,6 +527,7 @@ SET person_tables = Array(
     SELECT table_name                                                                                                                                                                                
     FROM `{{project_id}}.{{rt_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where lower(column_name) = 'person_id'
+    # AND not REGEXP_CONTAINS(table_name, r'(?i)(_ext)
 );
 
 CREATE TEMP TABLE rt_person_id(person_id INT64);
@@ -562,8 +563,8 @@ WHERE person_id NOT IN (SELECT DISTINCT person_id FROM ct_person_id)
 END LOOP;
 
 SELECT DISTINCT person_id,
-{{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, birth_datetime) AS age,
-CASE WHEN {{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, birth_datetime) < {{maximum_age}}
+{{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, DATE(birth_datetime)) AS age,
+CASE WHEN {{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, DATE(birth_datetime)) < {{maximum_age}}
 THEN 1 ELSE 0 END AS Failure
 FROM ct_person_id
 JOIN `{{project_id}}.{{ct_dataset}}.person`
@@ -643,6 +644,7 @@ if df1['bad_rows'].sum() == 0:
             'result': 'PASS'
         },
         ignore_index=True)
+    display(df1)
 else:
     df = df.append(
         {
@@ -668,7 +670,7 @@ pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
 
 query = JINJA_ENV.from_string("""
     SELECT
-        \{{table_name}}\ AS table_name,
+        '{{table_name}}' AS table_name,
         COUNT(*) AS total_records
     FROM
         `{{project_id}}.{{dataset_id}}.{{table_name}}`
@@ -678,7 +680,7 @@ query = JINJA_ENV.from_string("""
         FROM
            `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}` AS pr
         JOIN 
-            `{{project_id}}.{{combined_sandbox_dataset}}.{{withdrawn_pids_table}}` AS w
+            `{{project_id}}.{{rdr_sandbox_dataset}}.{{withdrawn_pids_table}}` AS w
         ON 
             pr.person_id = w.person_id
     )
@@ -690,7 +692,7 @@ for table in pid_table_list:
         query.render(project_id=project_id,
                      dataset_id=rt_dataset,
                      table_name=table,
-                     combined_sandbox_dataset=combined_sandbox_dataset,
+                     rdr_sandbox_dataset=rdr_sandbox_dataset,
                      withdrawn_pids_table=withdrawn_pids_table,
                      pipeline_tables=PIPELINE_TABLES,
                      pid_rid_mapping=PID_RID_MAPPING))
@@ -733,7 +735,7 @@ pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
 
 query = JINJA_ENV.from_string("""
     SELECT
-        \{{table_name}}\ AS table_name,
+        '{{table_name}}' AS table_name,
         COUNT(*) AS total_records
     FROM
         `{{project_id}}.{{dataset_id}}.{{table_name}}`
@@ -743,7 +745,7 @@ query = JINJA_ENV.from_string("""
         FROM
            `{{project_id}}.{{pipeline_tables}}.{{pid_rid_mapping}}` AS pr
         JOIN 
-            `{{project_id}}.{{combined_sandbox_dataset}}.{{withdrawn_pids_table}}` AS w
+            `{{project_id}}.{{rdr_sandbox_dataset}}.{{withdrawn_pids_table}}` AS w
         ON 
             pr.person_id = w.person_id
     )
@@ -755,7 +757,7 @@ for table in pid_table_list:
         query.render(project_id=project_id,
                      dataset_id=ct_dataset,
                      table_name=table,
-                     combined_sandbox_dataset=combined_sandbox_dataset,
+                     rdr_sandbox_dataset=rdr_sandbox_dataset,
                      withdrawn_pids_table=withdrawn_pids_table,
                      pipeline_tables=PIPELINE_TABLES,
                      pid_rid_mapping=PID_RID_MAPPING))

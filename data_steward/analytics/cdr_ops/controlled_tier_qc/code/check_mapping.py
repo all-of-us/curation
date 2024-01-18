@@ -1,6 +1,6 @@
 import pandas as pd
 
-from analytics.cdr_ops.controlled_tier_qc.utils.helpers import run_check_by_row
+from analytics.cdr_ops.controlled_tier_qc.ct_utils.helpers import run_check_by_row
 from analytics.cdr_ops.controlled_tier_qc.sql.query_templates import (
     QUERY_ID_NOT_OF_CORRECT_TYPE, QUERY_ID_NOT_CHANGED_BY_DEID,
     QUERY_ID_NOT_IN_MAPPING, QUERY_ID_NOT_MAPPED_PROPERLY,
