@@ -284,6 +284,8 @@ df1
 # By the stricter nature of the Registered Tier, more data should exist in the
 # Controlled Tier than in the Registered Tier. This check codifies that notion
 # that more data should exist in the CT than in the RT.
+#
+# `zip3_ses_map` is expected in CT but not RT
 
 # +
 query = JINJA_ENV.from_string("""
@@ -298,6 +300,7 @@ END AS Failure
 FROM `{{project_id}}.{{ct_dataset}}.__TABLES__` c
 FULL OUTER JOIN `{{project_id}}.{{rt_dataset}}.__TABLES__` r
 USING (table_id)
+WHERE table_id != 'zip3_ses_map'
 """)
 
 q = query.render(project_id=project_id,
