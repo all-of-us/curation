@@ -1,7 +1,6 @@
 # # Person
 # ## Person ID validation
 
-import bq_utils
 import utils.bq
 from notebooks.parameters import RDR_DATASET_ID, EHR_DATASET_ID
 
@@ -13,7 +12,7 @@ INVALID_THRESHOLD = 0.5
 hpo_ids = utils.bq.query("""
 SELECT REPLACE(table_id, '_person', '') AS hpo_id
 FROM `{EHR_DATASET_ID}.__TABLES__`
-WHERE table_id LIKE '%person' 
+WHERE table_id LIKE '%person'
 AND table_id NOT LIKE '%unioned_ehr_%' AND table_id NOT LIKE '\\\_%'
 """.format(EHR_DATASET_ID=EHR_DATASET_ID)).hpo_id.tolist()
 
@@ -31,7 +30,7 @@ LEFT JOIN
 (SELECT COUNT(1) AS n
  FROM {EHR_DATASET_ID}.{h}_person e
  WHERE NOT EXISTS(
-  SELECT 1 
+  SELECT 1
   FROM {RDR_DATASET_ID}.person r
   WHERE r.person_id = e.person_id)) not_in_rdr
  ON TRUE
@@ -63,31 +62,31 @@ hpos_above_threshold
 RDR_EHR_NAME_MATCH_QUERY = '''
 WITH
   rdr_first_name AS
-  (SELECT DISTINCT person_id, 
-   FIRST_VALUE(value_as_string) 
+  (SELECT DISTINCT person_id,
+   FIRST_VALUE(value_as_string)
      OVER (PARTITION BY person_id, observation_source_value ORDER BY value_as_string) val
   FROM {RDR_DATASET_ID}.observation
   WHERE observation_source_value = 'PIIName_First'),
 
   rdr_last_name AS
-  (SELECT DISTINCT person_id, 
-   FIRST_VALUE(value_as_string) 
+  (SELECT DISTINCT person_id,
+   FIRST_VALUE(value_as_string)
      OVER (PARTITION BY person_id, observation_source_value ORDER BY value_as_string) val
   FROM {RDR_DATASET_ID}.observation
   WHERE observation_source_value = 'PIIName_Last'),
 
   rdr_name AS
-  (SELECT 
+  (SELECT
      f.person_id person_id,
-     f.val       first_name, 
+     f.val       first_name,
      l.val       last_name
    FROM rdr_first_name f JOIN rdr_last_name l USING (person_id))
 
  SELECT
    '{HPO_ID}'                 hpo_id,
-   rdr.person_id              rdr_person_id, 
-   rdr.first_name             rdr_first_name, 
-   rdr.last_name              rdr_last_name, 
+   rdr.person_id              rdr_person_id,
+   rdr.first_name             rdr_first_name,
+   rdr.last_name              rdr_last_name,
    pii.person_id              pii_person_id,
    pii.first_name             pii_first_name,
    pii.middle_name            pii_middle_name,
@@ -97,7 +96,7 @@ WITH
  FROM rdr_name rdr
  JOIN `{EHR_DATASET_ID}.{HPO_ID}_pii_name` pii
    ON  pii.first_name = rdr.first_name
-   AND pii.last_name  = rdr.last_name 
+   AND pii.last_name  = rdr.last_name
  LEFT JOIN `{EHR_DATASET_ID}.{HPO_ID}_person` p
    ON pii.person_id = p.person_id
 '''

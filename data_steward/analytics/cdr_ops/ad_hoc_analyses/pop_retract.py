@@ -1,7 +1,6 @@
 # +
 from jinja2 import Template
 
-import bq_utils
 import utils.bq
 from notebooks import render
 from notebooks.defaults import is_deid_dataset
@@ -36,14 +35,14 @@ ID_TABLE={ID_TABLE}
 
 # Determine associated research IDs for RDR participants whose data must be retracted
 AIAN_PID_QUERY = """
-SELECT DISTINCT 
+SELECT DISTINCT
        rdr.person_id    AS person_id,
        deid.research_id AS research_id
 FROM `{RDR}.observation` rdr
  JOIN `{COMBINED}.deid_map` deid
   ON rdr.person_id = deid.person_id
-WHERE 
-    rdr.observation_source_concept_id = 1586140 
+WHERE
+    rdr.observation_source_concept_id = 1586140
 AND rdr.value_source_concept_id       = 1586141
 """
 q = AIAN_PID_QUERY.format(RDR=RDR, COMBINED=COMBINED)
@@ -80,24 +79,24 @@ ROW_COUNTS_QUERY_TPL = """
 WITH delete_row_counts AS (
  {% for table in TABLES %}
    (
-     SELECT '{{ table }}' AS table_name, 
+     SELECT '{{ table }}' AS table_name,
      COUNT(1) AS rows_to_delete,
      (SELECT row_count FROM {{ INPUT_DATASET }}.__TABLES__ WHERE table_id = '{{ table }}') AS total_rows
      FROM `{{ INPUT_DATASET }}.{{ table }}` t
      WHERE EXISTS (
-      SELECT 1 FROM `{{ ID_TABLE }}` 
+      SELECT 1 FROM `{{ ID_TABLE }}`
       WHERE {{ 'research_id' if IS_INPUT_DATASET_DEID else 'person_id' }} = t.person_id)
-   ) 
+   )
    {% if not loop.last %}
    UNION ALL
-   {% endif %}  
+   {% endif %}
  {% endfor %}
 )
-SELECT 
- d.table_name, 
+SELECT
+ d.table_name,
  d.total_rows                                    AS input_row_count,
  d.rows_to_delete                                AS rows_to_delete,
- d.total_rows - d.rows_to_delete                 AS expected_output_row_count, 
+ d.total_rows - d.rows_to_delete                 AS expected_output_row_count,
  t.row_count                                     AS actual_output_row_count,
  t.row_count = (d.total_rows - d.rows_to_delete) AS pass
 FROM delete_row_counts d

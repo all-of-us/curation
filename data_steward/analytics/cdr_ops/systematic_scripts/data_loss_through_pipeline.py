@@ -29,7 +29,6 @@ client = bigquery.Client()
 # %load_ext google.cloud.bigquery
 
 # %matplotlib inline
-import bq_utils
 import utils.bq
 from notebooks import parameters
 import pandas as pd
@@ -58,25 +57,25 @@ def create_dicts_w_info(df, x_label, column_label):
     """
     This function is used to create a dictionary that can be easily converted to a
     graphical representation based on the values for a particular dataframe
-    
+
     Parameters
     ----------
     df (dataframe): dataframe that contains the information to be converted
-    
+
     x_label (string): the column of the dataframe whose rows will then be converted
         to they keys of a dictionary
-    
+
     column_label (string): the column that contains the data quality metric being
         investigated
-    
+
     Returns
     -------
     data_qual_info (dictionary): has the following structure
-        
+
         keys: the column for a particular dataframe that represents the elements that
             whose data quality is being compared (e.g. HPOs, different measurement/unit
             combinations)
-        
+
         values: the data quality metric being compared
     """
     rows = df[x_label].unique().tolist()
@@ -98,28 +97,28 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, color,
     """
     Function is used to create a bar graph for a particular dictionary with information about
     data quality
-    
+
     Parameters
     ----------
     info_dict (dictionary): contains information about data quality. The keys for the dictionary
         will serve as the x-axis labels whereas the values should serve as the 'y-value' for the
         particular bar
-        
+
     xlabel (str): label to display across the x-axis
-    
+
     ylabel (str): label to display across the y-axis
-    
+
     title (str): title for the graph
-    
+
     img_name (str): image used to save the image to the local repository
-    
+
     color (str): character used to specify the colours of the bars
-    
+
     total_diff_color (bool): indicates whether or not the last bar should be coloured red (
         as opposed to the rest of the bars on the graph). This is typically used when the ultimate
         value of the dictionary is of particular important (e.g. representing an 'aggregate' metric
         across all of the sites)
-        
+
     turnoff_x (bool): used to disable the x-axis labels (for each of the bars). This is typically used
         when there are so many x-axis labels that they overlap and obscure legibility
     """
@@ -191,23 +190,23 @@ def create_pie_chart(dataframe, title, img_name):
     """
     Function is used to create a pie chart that can show how much each site contributes
     to the overall 'drop' between the unioned and combined datasets
-    
+
     Function also saves the outputted pie chart to the current directory
-    
+
     Parameters
     ----------
-    dataframe (df): dataframe for a particular table. shows the following for 
+    dataframe (df): dataframe for a particular table. shows the following for
                     HPOs that uploaded data:
-                    
+
         a. the number of rows in the unioned dataset
         b. the number of rows in the combined dataset
         c. the total 'drop' of rows across unioned to combined, expressed as a percentage
         d. the relative 'contribution' of each site to the overall drop from unioned to
            combined
-           
-    
+
+
     title (str): title of the graph
-    
+
     img_name (str): title of the image to be saved
     """
     hpo_list = dataframe['source_hpo'].tolist()[1:]  # do not take 'total'
@@ -246,24 +245,24 @@ def generate_query(dataset, person_var, record_var, table_name, field_name):
         a. generate a string that can be fed into BigQuery
         b. create a dataframe that contains information about the number of people and
            records for a particular dataset
-           
+
     Parameters
     ----------
     dataset (string): name of the dataset that will be queried (originally from the
                       parameters file)
-    
+
     person_var (string): variable that dictates how the 'number of people' will be
                          displayed in the resultant dataframe
-                         
+
     record_var (string): variable that dictates how the 'number of records' will be
                          displayed in the resultant dataframe
-                         
+
     table_name (string): represents the table that is being queried
-                         
+
     field_name (string): represents the field that should count the number of records
                          for a particular dataset/table combination. this is usually
                          'table name'_id
-    
+
 
     Returns
     -------
@@ -295,11 +294,11 @@ def generate_query(dataset, person_var, record_var, table_name, field_name):
 def extract_first_int_from_series(series):
     """
     Function is used to extract the first integer from a Pandas series object.
-    
+
     Parameters
     ----------
     series (series): Pandas series object
-    
+
     Returns
     -------
     integer (int): the first integer from a Pandas series object
@@ -319,38 +318,38 @@ def create_aggregate_table_df(unioned, combined, deid, unioned_persons_string,
                               record_string):
     """
     Function is used to create a dataframe that can display the 'drop off' of records across multiple
-    stages of the pipeline. 
-    
-    
+    stages of the pipeline.
+
+
     Parameters:
     -----------
-    
+
     unioned (dataframe): contains information regarding the number of persons and record in the unioned
         dataset
-    
+
     combined (dataframe): contains information regarding the number of persons and record in the combined
         dataset
-    
+
     deid (dataframe): contains information regarding the number of persons and record in the deid
         dataset
-    
+
     unioned_person_string (str): column name to determine the number of persons in the unioned dataset
-    
+
     combined_person_string (str): column name to determine the number of persons in the combined dataset
-    
+
     deid_person_string (str): column name to determine the number of persons in the deid dataset
-    
+
     unioned_records_string (str): column name to determine the number of records in the unioned dataset
-    
+
     combined_records_string (str): column name to determine the number of records in the combined dataset
 
     deid_records_string (str): column name to determine the number of records in the deid dataset
-    
+
     person_string (str): row title to indicate the person drop for each stage of the pipeline
-    
+
     record_string (str): row title to indicate the record drop for each stage of the pipeline
-    
-    
+
+
     Returns:
     --------
     df (dataframe): contains information about the record and person count drop across each stage of
@@ -761,19 +760,19 @@ def generate_site_level_query(id_name, unioned, table_name, combined):
         b. the number of rows for the HPO for a particular table in the unioned dataset
         c. the number of rows for the HPO for a particular table in the combined dataset
         d. the total 'drop' of rows across unioned to combined, expressed as a percentage
-    
+
     Parameters
     ----------
-    id_name (string): represents the 'primary key' of the table (the unique identifier 
+    id_name (string): represents the 'primary key' of the table (the unique identifier
                       for each row)
-                      
+
     unioned (string): the name of the unioned dataset to be queried
-    
+
     table_name (string): name of the table that is being investigated
-    
+
     combined (string): the name of the combined dataset to be queried
-    
-    
+
+
     Returns
     -------
     dataframe (df): contains all of the information outlined in the top of the docstring
@@ -827,17 +826,17 @@ def add_total_drop_row(dataframe):
     """
     Function is used to add a 'total' row at the bottom of a dataframe that shows the
     relative 'drop' across the pipeline (unioned to combined) for the different sites.
-    
+
     This row will show:
         a. the number of rows in the unioned dataset
         b. the number of rows in the combined dataset
         c. the total 'drop' of rows across unioned to combined, expressed as a percentage
-    
+
     Parameters:
     ----------
     dataframe (df): dataframe for a particular table. shows a-c (above) for each of the
         HPOs that uploaded data
-        
+
     Returns:
     --------
     dataframe (df): the inputted dataframe with an additional 'total' row at the end
@@ -869,16 +868,16 @@ def add_percent_of_drop_column(dataframe):
     Function is used to add a 'percent_of_drop' column that shows how much
     each site's 'drop' contributed to the 'overall' drop from the unioned
     to the combined steps of the pipeline.
-    
+
     Parameters
     ----------
-    dataframe (df): dataframe for a particular table. shows the following for 
+    dataframe (df): dataframe for a particular table. shows the following for
                     HPOs that uploaded data:
-                    
+
         a. the number of rows in the unioned dataset
         b. the number of rows in the combined dataset
         c. the total 'drop' of rows across unioned to combined, expressed as a percentage
-        
+
     Returns
     -------
     dataframe (df): the above dataframe with a new column that shows each site's

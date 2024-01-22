@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # +
-import bq_utils
 import utils.bq
 from notebooks import render, parameters
 import pandas as pd
@@ -27,19 +26,19 @@ VOCAB = {VOCAB}""".format(RDR=RDR, DEID=DEID, VOCAB=VOCAB))
 
 MULTIRACIAL_DIST_QUERY = """
 WITH race_combo AS
-(SELECT o.person_id, 
-  o.questionnaire_response_id, 
+(SELECT o.person_id,
+  o.questionnaire_response_id,
   STRING_AGG(REPLACE(c.concept_code, 'WhatRaceEthnicity_', ''), ' ' ORDER BY value_source_value) selected_races
  FROM {DATASET}.observation o
- JOIN {VOCAB}.concept c ON o.value_source_concept_id = c.concept_id  
+ JOIN {VOCAB}.concept c ON o.value_source_concept_id = c.concept_id
  WHERE observation_source_concept_id = 1586140
  GROUP BY person_id, questionnaire_response_id)
- 
-SELECT 
-  selected_races, 
+
+SELECT
+  selected_races,
   (LENGTH(selected_races) - LENGTH(REPLACE(selected_races, ' ', '')) + 1) AS selected_count,
   COUNT(DISTINCT person_id) row_count
-FROM race_combo 
+FROM race_combo
 GROUP BY selected_races
 ORDER BY selected_count, selected_races
 """
