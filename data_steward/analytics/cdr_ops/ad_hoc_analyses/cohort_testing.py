@@ -21,7 +21,6 @@
 #     - Record count (condition_occurrence)
 #
 # - We want to determine if these fluctations are potentially caused by OMOP vocabulary issues. If this is the case, we should be able to determine similar trends in AoU data.
-import bq_utils
 import utils.bq
 from notebooks import parameters
 
@@ -42,8 +41,8 @@ Quarter 2 2019 Dataset: {Q2_2019}
 q4_2018_hypo_obs_card_query = """
 SELECT
 DISTINCT
-co.condition_concept_id, c.concept_name, COUNT(DISTINCT p.person_id) AS num_persons, 
-COUNT(DISTINCT co.condition_occurrence_id) as num_records, 
+co.condition_concept_id, c.concept_name, COUNT(DISTINCT p.person_id) AS num_persons,
+COUNT(DISTINCT co.condition_occurrence_id) as num_records,
 ROUND(COUNT(DISTINCT co.condition_occurrence_id) / COUNT(DISTINCT p.person_id), 2) as records_per_capita
 
 FROM
@@ -190,8 +189,8 @@ q4_2018_hypo_obs_card
 q2_2019_hypo_obs_card_query = """
 SELECT
 DISTINCT
-co.condition_concept_id, c.concept_name, COUNT(DISTINCT p.person_id) AS num_persons, 
-COUNT(DISTINCT co.condition_occurrence_id) as num_records, 
+co.condition_concept_id, c.concept_name, COUNT(DISTINCT p.person_id) AS num_persons,
+COUNT(DISTINCT co.condition_occurrence_id) as num_records,
 ROUND(COUNT(DISTINCT co.condition_occurrence_id) / COUNT(DISTINCT p.person_id), 2) as records_per_capita
 
 FROM
@@ -339,14 +338,14 @@ combination_query = """
 SELECT
 DISTINCT
 q4.*, q2.*, (SUM(q2.num_persons) - SUM(q4.old_num_persons)) as person_difference,
-(SUM(q2.num_records) - SUM(q4.old_num_records)) as record_difference 
+(SUM(q2.num_records) - SUM(q4.old_num_records)) as record_difference
 FROM
 
     (SELECT
     DISTINCT
-    co.condition_concept_id as old_condition_concept_id, c.concept_name as old_concept_name, 
-    COUNT(DISTINCT p.person_id) AS old_num_persons, 
-    COUNT(DISTINCT co.condition_occurrence_id) as old_num_records, 
+    co.condition_concept_id as old_condition_concept_id, c.concept_name as old_concept_name,
+    COUNT(DISTINCT p.person_id) AS old_num_persons,
+    COUNT(DISTINCT co.condition_occurrence_id) as old_num_records,
     ROUND(COUNT(DISTINCT co.condition_occurrence_id) / COUNT(DISTINCT p.person_id), 2) as old_records_per_capita
 
     FROM
@@ -378,13 +377,13 @@ FROM
 
     GROUP BY 1, 2
     ORDER BY old_num_persons DESC) q4
-    
+
     LEFT JOIN
-    
+
     (SELECT
     DISTINCT
-    co.condition_concept_id, c.concept_name, COUNT(DISTINCT p.person_id) AS num_persons, 
-    COUNT(DISTINCT co.condition_occurrence_id) as num_records, 
+    co.condition_concept_id, c.concept_name, COUNT(DISTINCT p.person_id) AS num_persons,
+    COUNT(DISTINCT co.condition_occurrence_id) as num_records,
     ROUND(COUNT(DISTINCT co.condition_occurrence_id) / COUNT(DISTINCT p.person_id), 2) as records_per_capita
 
     FROM
@@ -416,10 +415,10 @@ FROM
 
     GROUP BY 1, 2
     ORDER BY num_persons DESC) q2
-    
+
     ON
     q4.old_condition_concept_id = q2.condition_concept_id
-    
+
     GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     ORDER BY old_num_persons DESC
 
