@@ -7,9 +7,9 @@ import oauth2client
 
 # Project imports
 import app_identity
-import bq_utils
 import resources
 import common
+import bq_utils
 from constants import bq_utils as bq_consts
 from gcloud.bq import BigQueryClient
 from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
@@ -165,7 +165,7 @@ def get_lab_concept_summary_query(client, hpo_id):
     Get the query that checks if the HPO site has submitted the required labs
     :param client: a BigQueryClient
     :param hpo_id: Identifies the HPO site
-    :return: 
+    :return:
     """
     dataset_id = common.BIGQUERY_DATASET_ID
     hpo_measurement_table = resources.get_table_id(common.MEASUREMENT,

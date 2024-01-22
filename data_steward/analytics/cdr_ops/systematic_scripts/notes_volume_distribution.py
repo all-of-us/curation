@@ -21,7 +21,6 @@ client = bigquery.Client()
 # %load_ext google.cloud.bigquery
 
 # +
-import bq_utils
 import utils.bq
 from notebooks import parameters
 
@@ -68,11 +67,11 @@ def create_dicts_w_info(df, column_label):
     """
     This function is used to create a dictionary that can be easily converted to a
     graphical representation based on the values for a particular dataframe
-    
+
     Parameters
     ----------
     df (dataframe): dataframe that contains the information to be converted
-    
+
     column_label (string): the column of the dataframe whose rows will then be
         converted to the keys of the dictionary
     """
@@ -95,23 +94,23 @@ def create_graphs(info_dict, xlabel, ylabel, title, img_name, colour,
     """
     Function is used to create a bar graph for a particular dictionary with information about
     data quality
-    
+
     Parameters
     ----------
     info_dict (dictionary): contains information about data quality. The keys for the dictionary
         will serve as the x-axis labels whereas the values should serve as the 'y-value' for the
         particular bar
-        
+
     xlabel (str): label to display across the x-axis
-    
+
     ylabel (str): label to display across the y-axis
-    
+
     title (str): title for the graph
-    
+
     img_name (str): image used to save the image to the local repository
-    
+
     colour (str): character used to specify the colours of the bars
-    
+
     total_diff_colour (bool): indicates whether or not the last bar should be coloured red (
         as opposed to the rest of the bars on the graph). This is typically used when the ultimate
         value of the dictionary is of particular important (e.g. representing an 'aggregate' metric

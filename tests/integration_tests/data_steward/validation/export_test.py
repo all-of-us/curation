@@ -7,7 +7,6 @@ import mock
 
 # Project imports
 import app_identity
-import bq_utils
 import common
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient

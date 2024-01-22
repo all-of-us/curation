@@ -1,5 +1,4 @@
 # +
-import bq_utils
 import utils.bq
 from notebooks import render, parameters
 
@@ -12,10 +11,10 @@ DEID = {DEID}""".format(COMBINED=COMBINED, DEID=DEID))
 # ## Row counts in combined `_mapping*` and deid `*_ext` tables
 
 ROW_COUNTS_QUERY = """
-SELECT dataset_id, 
-  REPLACE(REPLACE(table_id, '_mapping_', ''), '_ext', '') mapped_table, 
-  table_id, 
-  creation_time, 
+SELECT dataset_id,
+  REPLACE(REPLACE(table_id, '_mapping_', ''), '_ext', '') mapped_table,
+  table_id,
+  creation_time,
   last_modified_time,
   row_count
 FROM
@@ -25,7 +24,7 @@ FROM
 
  UNION ALL
 
- SELECT * 
+ SELECT *
  FROM {COMBINED}.__TABLES__ d1
  WHERE table_id LIKE '\\\_mapping\\\_%')
 
