@@ -26,7 +26,6 @@ from google.cloud import bigquery
 client = bigquery.Client()
 # %load_ext google.cloud.bigquery
 
-import bq_utils
 import utils.bq
 from notebooks import parameters
 # %matplotlib inline
@@ -95,18 +94,18 @@ race_dict = race_dict['concept_name']  # get rid of unnecessary nesting
 racial_distribution_by_site_query = """
 SELECT
 DISTINCT
-a.*, b.number_from_site, ROUND(a.number_of_demographic / b.number_from_site * 100, 2) as percent_of_site_persons 
+a.*, b.number_from_site, ROUND(a.number_of_demographic / b.number_from_site * 100, 2) as percent_of_site_persons
 FROM
   (SELECT
   DISTINCT
-  mp.src_hpo_id, p.race_concept_id, c.concept_name, 
+  mp.src_hpo_id, p.race_concept_id, c.concept_name,
   COUNT(p.race_concept_id) as number_of_demographic,
   FROM
   `{DATASET}.unioned_ehr_person` p
   LEFT JOIN
   `{DATASET}._mapping_person` mp
   ON
-  p.person_id = mp.src_person_id 
+  p.person_id = mp.src_person_id
   LEFT JOIN
   `{DATASET}.concept` c
   ON
@@ -141,17 +140,17 @@ def return_hpos_to_display(hpo_names, max_num_sites_to_display):
     Function is intended to return a means for divide the number of HPOs into an
     appropriate number of lists based on the maximum number of sites a user
     wants to display.
-    
+
     This is useful for creating graphs that will only display a fraction of the
     total HPOs.
-    
+
     Parameters
     ----------
     hpo_names (list): list of all the health provider organizations (in string form)
-    
+
     num_sites_to_display (int): user-specified number of sites to display in each graph
-    
-    
+
+
     Returns
     -------
     all_hpos (list): contains several lists, each of which contains a number of sites
@@ -195,17 +194,17 @@ def create_information_dictionary_for_sites(hpo_dfs, selected_hpo_names,
     """
     Function is used to create a dictionary that contains the racial makeup of a selected
     number of sites (expressed as a percentage, from a source dataframe)
-    
+
     Parameters
     ----------
     hpo_dfs (dictonary): has the following structure
         key: string representing an HPO ID
         value: dataframe that contains information about the different race concepts (IDs
                and names) and their relative spread within the site
-    
+
     selected_hpo_names (list): contains strings that represent the different HPOs that will
         ultimately be translated to a dictionary
-        
+
 
     most_popular_race_cids (list): list of the most popular concept IDs (across all sites)
 
@@ -253,23 +252,23 @@ def create_information_dictionary_for_sites(hpo_dfs, selected_hpo_names,
 def create_graphs(hpo_names_to_display, num_races_for_legend,
                   racial_percentages, img_name):
     """
-    Function is used to create and save graphs that show the racial distribution for 
+    Function is used to create and save graphs that show the racial distribution for
     a selected number of sites
-    
+
     Parameters
     ----------
     hpo_names_to_display (list): list with a user-specified number of HPOs that are to
         be displayed in the graph
-        
+
     num_races_for_legend (int): the number of races that are to be displayed next
         to the graph
-        
+
     racial_percentages (dictionary): has the following structure
         key: race concept ID
         value: list, each index represents one of the sites in the 'selected_hpo_names'
                parameter. the value represents the proportion of persons from the HPO
                who have the reported race concept ID
-               
+
     img_name (string): name for the image to be displayed
     """
     num_sites_to_display = len(hpo_names_to_display)
@@ -408,46 +407,46 @@ def create_query_for_particular_table(dataset, percent_of_table, table_name):
             - number of IDs for that particular group in the specified table
             - total number of IDs for the HPO
             - percentage of the records for the site that belong to that demographic class
-            
+
     This query is then run through bigquery and returns a dataframe
-         
-         
+
+
     Parameters
     ----------
     dataset (str): dataset to be queried (defined at the top of the workbook)
-    
+
     percent_of_table (str): the string to represent the percentage of the records for the
                             site that belong to the particular demographic class
-    
+
     table_name (str): name of the table to be investigated
-    
-    
+
+
     Returns
     -------
     dataframe (df): contains the information specified in the top of the docstring
-    
+
     """
 
     query = """
     SELECT
     DISTINCT
-    a.src_hpo_id, a.race_concept_id, a.concept_name, 
-    ROUND(a.number_of_demographic / b.number_from_site * 100, 2) as {percent_of_table} 
+    a.src_hpo_id, a.race_concept_id, a.concept_name,
+    ROUND(a.number_of_demographic / b.number_from_site * 100, 2) as {percent_of_table}
     FROM
       (SELECT
       DISTINCT
-      mp.src_hpo_id, p.race_concept_id, c.concept_name, 
+      mp.src_hpo_id, p.race_concept_id, c.concept_name,
       COUNT(p.race_concept_id) as number_of_demographic,
       FROM
       `{dataset}.unioned_ehr_{table_name}` x
       LEFT JOIN
       `{dataset}.unioned_ehr_person` p
       ON
-      x.person_id = p.person_id 
+      x.person_id = p.person_id
       LEFT JOIN
       `{dataset}._mapping_person` mp
       ON
-      p.person_id = mp.src_person_id 
+      p.person_id = mp.src_person_id
       LEFT JOIN
       `{dataset}.concept` c
       ON
@@ -464,7 +463,7 @@ def create_query_for_particular_table(dataset, percent_of_table, table_name):
       LEFT JOIN
       `{dataset}.unioned_ehr_person` p
       ON
-        x.person_id = p.person_id 
+        x.person_id = p.person_id
       LEFT JOIN
       `{dataset}._mapping_person` mp
       ON
@@ -549,13 +548,13 @@ def find_all_distributions_for_site_race_combo(df, hpo, race,
     This function is used to calculate the relative 'underrepresentation' of a given
     race for a particular table when compared to the race's overall representation in
     the person table.
-    
+
     For instance, a site may have 65% participants who identify as 'White'. The persons
     who identify with this race, however, only make up 60% of the drug_exposure_ids in
     the drug exposure table. This would result in a 'underrepresentation' of 5% for
     persons at this particular site for this particular table.
-    
-    
+
+
     Parameters
     ----------
     df (df): dataframe that contains the following information in its fields:
@@ -567,15 +566,15 @@ def find_all_distributions_for_site_race_combo(df, hpo, race,
                                          aforementioned race_concept_id
         e. the same metric as d but also for the condition, observation, procedure,
            and visit tables
-           
+
     hpo (string): HPO whose 'representation' metric is going to be assessed
-    
+
     race (string): race concept name that will be evaluated for 'representation'
-    
+
     person_distribution: the proportion of person_ids for the particular site that
                          belong to the aforementioned race
-                         
-    
+
+
     Returns
     -------
     difference_df: contains the 'difference' between the proportion of records

@@ -12,7 +12,6 @@
 #     name: python3
 # ---
 
-import bq_utils
 import utils.bq
 from notebooks import parameters
 
@@ -26,7 +25,7 @@ print(bigquery_dataset_id)
 query = """
 SELECT REPLACE(table_id, '_person', '') AS hpo_id
 FROM `{bq_dataset_id}.__TABLES__`
-WHERE table_id LIKE '%person' 
+WHERE table_id LIKE '%person'
 AND table_id NOT LIKE '%unioned_ehr_%' AND table_id NOT LIKE '\\\_%'
 """.format(bq_dataset_id=bigquery_dataset_id)
 hpo_ids = utils.bq.query(query).tolist()
@@ -48,7 +47,7 @@ SELECT
 FROM prod_drc_dataset.__TABLES__ T
 LEFT JOIN
 (select distinct '{h}_{d}' as table_name, count(*) as num_dups
-from `{bq_dataset_id}.{h}_{d}` 
+from `{bq_dataset_id}.{h}_{d}`
 group by {d}_id
 having count(*) > 1
 order by num_dups desc

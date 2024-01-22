@@ -116,6 +116,8 @@ WHERE {{ column_name }}
     SELECT {{ new_id }}
     {% if mapping_table == 'site_maskings' %}
     FROM `{{ project_id }}.{{ pipeline_dataset }}.{{ mapping_table }}`
+    {% elif mapping_table == '_deid_questionnaire_response_map' %}
+    FROM `{{ project_id }}.{{ questionnaire_response_dataset }}.{{ mapping_table }}`
     {% else %}
     FROM `{{ project_id }}.{{ mapping_dataset }}.{{ mapping_table }}`
     {% endif %}

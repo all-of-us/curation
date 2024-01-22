@@ -16,7 +16,6 @@
 
 # +
 import datetime
-import bq_utils
 import utils.bq
 from notebooks.parameters import RDR_PROJECT_ID, RDR_DATASET_ID, EHR_DATASET_ID
 
@@ -65,17 +64,17 @@ utils.bq.query(query)
 # ## EHR Site Submission Counts
 
 utils.bq.query('''
-SELECT 
+SELECT
   l.Org_ID AS org_id,
   l.HPO_ID AS hpo_id,
   l.Site_Name AS site_name,
-  table_id AS table_id, 
+  table_id AS table_id,
   row_count AS row_count
 FROM `{EHR_DATASET_ID}.__TABLES__` AS t
-JOIN `lookup_tables.hpo_site_id_mappings` AS l  
+JOIN `lookup_tables.hpo_site_id_mappings` AS l
   ON STARTS_WITH(table_id,lower(l.HPO_ID))=true
 WHERE table_id like '%person%' AND
-NOT(table_id like '%unioned_ehr_%') AND 
+NOT(table_id like '%unioned_ehr_%') AND
 l.hpo_id <> ''
 ORDER BY Display_Order
 '''.format(EHR_DATASET_ID=EHR_DATASET_ID))
@@ -84,7 +83,7 @@ ORDER BY Display_Order
 hpo_ids = utils.bq.query("""
 SELECT REPLACE(table_id, '_person', '') AS hpo_id
 FROM `{EHR_DATASET_ID}.__TABLES__`
-WHERE table_id LIKE '%person' 
+WHERE table_id LIKE '%person'
 AND table_id NOT LIKE '%unioned_ehr_%' AND table_id NOT LIKE '\\\_%'
 """.format(EHR_DATASET_ID=EHR_DATASET_ID)).hpo_id.tolist()
 
