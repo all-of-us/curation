@@ -7,7 +7,6 @@
 #   * `sex_at_birth_concept_id` contains the associated `value_as_concept_id`
 #   * `sex_at_birth_source_concept_id` contains the associated `value_source_concept_id`
 #   * `sex_at_birth_source_value` contains the `concept_code` associated with `sex_at_birth_source_concept_id`
-import bq_utils
 import utils.bq
 from notebooks import render
 from notebooks.parameters import SANDBOX, DEID_DATASET_ID
@@ -88,7 +87,7 @@ df_to_gbq(gender_df, destination_table=gender_log_table)
 # -
 
 UPDATED_PERSON_QUERY = """
-SELECT 
+SELECT
   p.person_id,
   g.gender_concept_id,
   p.year_of_birth,
@@ -127,7 +126,7 @@ df_to_gbq(person_df,
           table_schema=person_schema)
 
 PERSON_HIST_QUERY = """
-SELECT 
+SELECT
  p.gender_concept_id,
  p.gender_source_value,
  p.gender_source_concept_id,

@@ -28,7 +28,6 @@
 #     - gender_concept_id = value_as_concept_id
 #     - gender_source_value = concept_code associated with value_source_concept_id
 #     - gender_source_concept_id = value_source_concept_id
-import bq_utils
 import utils.bq
 from notebooks import render, parameters
 import pandas as pd
