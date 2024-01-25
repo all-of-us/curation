@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.7.1
+#       jupytext_version: 1.15.2
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -55,11 +55,11 @@ form_names = [
 ]
 
 # odysseus proposal file names
-concept_file_name = '20231228_new_concepts.csv'
-concept_relationship_file_name = '20231228_new_relationships.csv'
+concept_file_name = '20240124_new_concepts.csv'
+concept_relationship_file_name = '20240124_new_relationships.csv'
 
 # the concept_codes in this list will be removed from filters
-ignore_list=['nan', 'pmi_dontknow', 'pmi_prefernottoanswer', 'record_id']
+ignore_list=['nan', 'pmi_dontknow', 'pmi_prefernottoanswer', 'record_id', 'pmi_doesnotapplytome', 'pmi_none']
 
 # +
 CLIENT = bigquery.Client(project=test_project)
@@ -314,16 +314,19 @@ WHERE dd.form_name = '{{full_name}}'
 UNION ALL
 
 SELECT -- parent to child questions, branching logic --
-  parent_question as concept_code_1,
+  DISTINCT parent_question as concept_code_1,
   child_question as concept_code_2,
   'PPI parent code of' as relationship_id
 FROM (SELECT 
-  DISTINCT question_code, answer_code, b.*
+  DISTINCT dd.question_code, dd.answer_code, b.*
 FROM `{test_project}.{redcap_dataset}.data_dictionaries` dd
 LEFT JOIN `{test_project}.{redcap_dataset}.branching_logic` b
   ON dd.question_code = b.parent_question
+LEFT JOIN `{test_project}.{redcap_dataset}.data_dictionaries` dd2
+  ON dd2.question_code = b.child_question
 WHERE dd.form_name = '{{full_name}}'
-  AND field_type NOT IN ('descriptive')  )
+  AND (dd.field_type NOT IN ('descriptive') AND dd2.field_type NOT IN ('descriptive'))
+  )
 
 UNION ALL
 
@@ -669,6 +672,7 @@ standards_check
 # * nulls are present in cr file. stop this
 # * cr feedback concept_id_1 for ace concepts not showing up?
 # * Concept_relationship table checks
+# * Modules need their mock standard relationships generated
 
 mock_vs_ody = mock_fin.merge(ody_cr,
                         how = 'outer',
