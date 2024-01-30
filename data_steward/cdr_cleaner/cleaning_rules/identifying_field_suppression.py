@@ -32,7 +32,7 @@ import logging
 # Project imports
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, CDM_TABLES
+from common import JINJA_ENV, NPH_TABLES
 from utils import pipeline_logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
@@ -85,7 +85,7 @@ class IDFieldSuppression(BaseCleaningRule):
             issue_numbers=JIRA_ISSUE_NUMBERS,
             description=desc,
             affected_datasets=[cdr_consts.COMBINED],
-            affected_tables=CDM_TABLES,
+            affected_tables=NPH_TABLES,
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
