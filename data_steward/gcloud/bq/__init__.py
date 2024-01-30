@@ -214,7 +214,7 @@ class BigQueryClient(Client):
         dataset = bigquery.Dataset(dataset_id)
         dataset.description = description
         dataset.labels = label_or_tag
-        dataset.location = "US"
+        dataset.location = "us-central1"
 
         return dataset
 
