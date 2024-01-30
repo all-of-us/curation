@@ -345,11 +345,7 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
 ]
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
-    (RtCtPIDtoRID,),
-    (QRIDtoRID,),  # Should run before any row suppression rules
-    (TruncateEraTables,),
-    (NullPersonBirthdate,),
-    (TableSuppression,),
+    # (RtCtPIDtoRID,),
     (ControlledTierReplacedConceptSuppression,),
     (GeneralizeZipCodes,),  # Should run after any data remapping rules
     # (RaceEthnicityRecordSuppression,),  # Should run after any data remapping rules
@@ -360,22 +356,13 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (GeoLocationConceptSuppression,),
     (BirthInformationSuppression,),
     (YearOfBirthRecordsSuppression,),
-    (ControlledCopeSurveySuppression,),
     (IDFieldSuppression,),  # Should run after any data remapping
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (SectionParticipationConceptSuppression,),
     (StringFieldsSuppression,),
     (AggregateZipCodes,),
     (DeidentifyAIANZip3Values,),
-    (FreeTextSurveyResponseSuppression,),
-    (DropOrphanedSurveyConductIds,),
-    (DropOrphanedPIDS,),
-    (GenerateWearStudyTable,),
-    (DropViaSurveyConduct,),  # should run after wear study table creation
-    (RemoveExtraTables,),  # Should be last cleaning rule to be run
-    (CalculatePrimaryDeathRecord,),
-    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
-]
+    (FreeTextSurveyResponseSuppression,)]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
