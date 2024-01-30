@@ -355,7 +355,12 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
     (BirthInformationSuppression,),
-    (YearOfBirthRecordsSuppression,),
+
+    # removed because lack of person table causes failure
+    # see https://precisionmedicineinitiative.atlassian.net/browse/DL-176?focusedCommentId=194193
+    # (YearOfBirthRecordsSuppression,),
+
+
     (IDFieldSuppression,),  # Should run after any data remapping
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (SectionParticipationConceptSuppression,),
