@@ -212,9 +212,8 @@ class RecentConceptSuppression(AbstractBqLookupTableConceptSuppression):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        return super().get_sandbox_tablenames() + [
-            SUPPRESSION_RULE_CONCEPT_TABLE, CONCEPT_FIRST_USE_TABLE
-        ]
+        # Use the Super class method
+        return super().get_sandbox_tablenames() + [CONCEPT_FIRST_USE_TABLE]
 
 
 if __name__ == '__main__':
