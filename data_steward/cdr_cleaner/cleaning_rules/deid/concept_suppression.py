@@ -198,6 +198,12 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
         # Create the suppression lookup table
         self.create_suppression_lookup_table(client)
 
+    def get_sandbox_tablenames(self):
+        # Use the Super class method
+        return super().get_sandbox_tablenames() + [
+            self._concept_suppression_lookup_table
+        ]
+
     @abstractmethod
     def create_suppression_lookup_table(self, client: Client):
         """

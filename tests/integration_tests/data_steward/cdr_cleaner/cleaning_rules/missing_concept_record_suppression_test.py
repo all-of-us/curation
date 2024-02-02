@@ -9,7 +9,8 @@ import os
 
 #Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
+from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression, \
+SUPPRESSION_RULE_CONCEPT_TABLE
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import AOU_DEATH, DEATH, OBSERVATION, CONCEPT
 
@@ -51,6 +52,7 @@ class MissingConceptRecordSuppressionTest(BaseTest.CleaningRulesTestBase):
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(AOU_DEATH)}',
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(DEATH)}',
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}',
+            f'{cls.project_id}.{cls.sandbox_id}.{SUPPRESSION_RULE_CONCEPT_TABLE}'
         ]
 
         super().setUpClass()

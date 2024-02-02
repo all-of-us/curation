@@ -12,7 +12,8 @@ import os
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
+from cdr_cleaner.cleaning_rules.section_participation_concept_suppression \
+    import SectionParticipationConceptSuppression, SUPPRESSION_RULE_CONCEPT_TABLE
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import OBSERVATION, VOCABULARY_TABLES
 
@@ -57,6 +58,8 @@ class SectionParticipationConceptSuppressionTest(BaseTest.CleaningRulesTestBase
         cls.fq_sandbox_table_names = [
             f'{project_id}.{sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}',
         ]
+        cls.fq_sandbox_table_names.append(
+            f'{project_id}.{sandbox_id}.{SUPPRESSION_RULE_CONCEPT_TABLE}')
 
         # call super to set up the client, create datasets, and create
         # empty test tables
