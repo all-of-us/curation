@@ -87,11 +87,7 @@ class ReplaceFreeTextNotes(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        raise NotImplementedError("Please fix me.")
-        """
-        Validates the cleaning rule which deletes or updates the data from the tables
-        """
-        raise NotImplementedError("Please fix me.")
+        pass
 
 
 if __name__ == '__main__':

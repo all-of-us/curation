@@ -68,12 +68,13 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
 
         desc = (f'All rows of data in the RDR ETL with dates after '
                 f'{self.cutoff_date} will be sandboxed and dropped.')
-
+        affected_tables = list(set(AOU_REQUIRED) - {'person'})
         super().__init__(issue_numbers=['DC1445'],
                          description=desc,
                          affected_datasets=[cdr_consts.UNIONED],
                          project_id=project_id,
                          dataset_id=dataset_id,
+                         affected_tables=affected_tables,
                          sandbox_dataset_id=sandbox_dataset_id)
 
     def get_affected_tables(self):

@@ -115,7 +115,7 @@ class RoundPpiValuesToNearestInteger(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        raise NotImplementedError("Please fix me.")
+        return ['observation']
 
 
 if __name__ == '__main__':
