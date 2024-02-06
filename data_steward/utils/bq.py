@@ -518,26 +518,6 @@ def create_dataset(project_id,
     return dataset
 
 
-@deprecated(reason='query_sheet_linked_bq_table is deprecated')
-def query_sheet_linked_bq_table(project_id, table_content_query,
-                                external_data_scopes):
-    """
-    Queries Google Sheet sourced BigQuery Table and returns results dataframe
-
-    :param project_id: identifies the project
-    :param table_content_query: query to retrieve table contents
-    :param external_data_scopes: scopes needed to query the external data sourced table
-    :return: result dataframe
-    """
-    # add Google OAuth2.0 scopes
-    client = get_client(project_id, external_data_scopes)
-    query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
-    result_df = client.query(table_content_query,
-                             job_config=query_job_config).to_dataframe()
-
-    return result_df
-
-
 @deprecated(
     reason=
     'Use gcloud.bq.BigQueryClient.to_scalar(self, result: typing.Union[bigquery.table.RowIterator,bigquery.QueryJob]) instead'
