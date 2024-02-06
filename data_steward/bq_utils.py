@@ -976,26 +976,6 @@ def get_hpo_bucket_info():
     return hpo_list
 
 
-@deprecated(
-    reason='Use gcloud.bq.BigQueryClient.get_hpo_site_state_info() instead')
-def get_hpo_site_state_info():
-    hpo_list = []
-    project_id = app_identity.get_application_id()
-    hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
-        project_id=project_id,
-        TABLES_DATASET_ID=common.PIPELINE_TABLES,
-        HPO_SITE_TABLE=common.SITE_MASKING_TABLE_ID)
-    hpo_response = query(hpo_table_query)
-    hpo_table_contents = response2rows(hpo_response)
-    for hpo_table_row in hpo_table_contents:
-        hpo_id = hpo_table_row[bq_consts.HPO_ID.lower()].lower()
-        hpo_state = hpo_table_row[bq_consts.HPO_STATE]
-        if hpo_id:
-            hpo_dict = {"hpo_id": hpo_id, "state": hpo_state}
-            hpo_list.append(hpo_dict)
-    return hpo_list
-
-
 @deprecated(reason='Use resources.has_primary_key(table) instead')
 def has_primary_key(table):
     """
