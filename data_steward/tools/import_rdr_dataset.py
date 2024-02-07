@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python
 
 # Imports RDR ETL results into a dataset in BigQuery.
 # Assumes you have already activated a service account that is able to
@@ -17,7 +17,7 @@ from google.api_core.exceptions import NotFound
 # Project imports
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
-from common import CDR_SCOPES, AOU_DEATH, DEATH
+from common import CDR_SCOPES, AOU_DEATH, DEATH, JINJA_ENV
 from resources import (replace_special_characters_for_labels,
                        validate_date_string, rdr_src_id_schemas, cdm_schemas,
                        fields_for, rdr_specific_schemas)
@@ -99,11 +99,11 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
 
     Uses the client to load data directly from the dataset into
     a table.
-    
+
     NOTE: Death records are loaded to AOU_DEATH table. We do not
     create DEATH table here because RDR's death records contain
     NULL death_date records, which violates CDM's DEATH definition.
-    We assign `aou_death_id` using UUID on the fly. 
+    We assign `aou_death_id` using UUID on the fly.
     `primary_death_record` is set to FALSE here. The CR CalculatePrimaryDeathRecord
     will update it to the right values later in the RDR data stage.
 
@@ -155,17 +155,19 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
             if table_ref.num_rows == 0:
                 raise NotFound(f'`{source_table_id}` has No data To copy from')
 
-            sc_list = []
-            for item in schema_list:
-                if item.name == 'aou_death_id':
-                    field = 'GENERATE_UUID() AS aou_death_id'
-                elif item.name == 'primary_death_record':
-                    field = 'FALSE AS primary_death_record'
-                else:
-                    field = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
-                sc_list.append(field)
-
-            fields_name_str = ',\n'.join(sc_list)
+            fields_name_str = JINJA_ENV.from_string("""
+            {% for item in schema_list %}
+            {% set name = item.name %}
+            {% set field_type = item.field_type %}
+                {% if name == 'aou_death_id' %}
+                    GENERATE_UUID() AS aou_death_id,
+                {% elif name == 'primary_death_record' %}
+                    FALSE AS primary_death_record,
+                {% else %}
+                    CAST({{ name }} AS {{BIGQUERY_DATA_TYPES[field_type.lower()]}}) AS {{ name }}{{", " if not loop.last else "" }}
+                {% endif %}
+            {% endfor %}""").render(schema_list=schema_list,
+                                    BIGQUERY_DATA_TYPES=BIGQUERY_DATA_TYPES)
 
             # copy contents from source dataset to destination dataset
             if table == 'cope_survey_semantic_version_map':
