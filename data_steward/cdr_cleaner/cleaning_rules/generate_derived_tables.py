@@ -20,7 +20,7 @@ POPULATE_OBS_PRD = JINJA_ENV.from_string("""
 INSERT INTO observation_period
 SELECT person_id,
 observation_period_start_date,
-    CASE WHEN observation_period_end_date > DATE('2023-10-01') THEN '2023-10-01'
+    CASE WHEN observation_period_end_date > DATE('{{ehr_cutoff_date}}') THEN '{{ehr_cutoff_date}}'
     ELSE observation_period_end_date
 END AS observation_period_end_date,
 period_type_concept_id
@@ -36,7 +36,7 @@ FROM (SELECT person_id,
         JOIN `{{project_id}}.{{dataset_id}}.visit_occurrence_ext` AS e ON vt.visit_occurrence_id = e.visit_occurrence_id
             WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM vt.visit_start_date) >= 1985
-            AND vt.visit_start_date <= '2023-10-01'
+            AND vt.visit_start_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
         
         UNION ALL
@@ -49,7 +49,7 @@ FROM (SELECT person_id,
         JOIN `{{project_id}}.{{dataset_id}}.condition_occurrence_ext` AS e ON co.condition_occurrence_id = e.condition_occurrence_id
             WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM co.condition_start_date) >= 1985
-            AND co.condition_start_date <= '2023-10-01'
+            AND co.condition_start_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
 
         UNION ALL
@@ -62,7 +62,7 @@ FROM (SELECT person_id,
         JOIN `{{project_id}}.{{dataset_id}}.procedure_occurrence_ext` AS e ON po.procedure_occurrence_id = e.procedure_occurrence_id
             WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM po.procedure_date) >= 1985
-            AND po.procedure_date <= '2023-10-01'
+            AND po.procedure_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
 
         UNION ALL
@@ -75,7 +75,7 @@ FROM (SELECT person_id,
         JOIN `{{project_id}}.{{dataset_id}}.drug_exposure_ext` AS e ON de.drug_exposure_id = e.drug_exposure_id
             WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM de.drug_exposure_start_date) >= 1985
-            AND de.drug_exposure_start_date <= '2023-10-01'
+            AND de.drug_exposure_start_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
 
         UNION ALL
@@ -88,7 +88,7 @@ FROM (SELECT person_id,
         JOIN `{{project_id}}.{{dataset_id}}.device_exposure_ext` AS e ON de.device_exposure_id = e.device_exposure_id
             WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM de.device_exposure_start_date) >= 1985
-            AND de.device_exposure_start_date <= '2023-10-01'
+            AND de.device_exposure_start_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
 
         UNION ALL
@@ -101,7 +101,7 @@ FROM (SELECT person_id,
         JOIN `{{project_id}}.{{dataset_id}}.observation_ext` AS e ON o.observation_id = e.observation_id
             WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM o.observation_date) >= 1985
-            AND o.observation_date <= '2023-10-01'
+            AND o.observation_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
 
         UNION ALL
@@ -114,7 +114,7 @@ FROM (SELECT person_id,
         JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS e ON m.measurement_id = e.measurement_id
             WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM m.measurement_date) >= 1985
-            AND m.measurement_date <= '2023-10-01'
+            AND m.measurement_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
     ) AS min_max_op
 WHERE min_max_op.observation_period_end_date IS NOT NULL
@@ -294,6 +294,7 @@ class CreateDerivedTables(BaseCleaningRule):
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
+            ehr_cutoff_date=self.ehr_cutoff_date,
             storage_table_name=OBSERVATION_PERIOD)
 
         create_drug_era_table = POPULATE_DRG_ERA.render(
