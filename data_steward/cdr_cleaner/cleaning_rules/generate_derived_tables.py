@@ -17,6 +17,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 LOGGER = logging.getLogger(__name__)
 
 POPULATE_OBS_PRD = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{storage_table_name}}` AS (
 INSERT INTO observation_period
 SELECT person_id,
 observation_period_start_date,
@@ -119,9 +120,11 @@ FROM (SELECT person_id,
     ) AS min_max_op
 WHERE min_max_op.observation_period_end_date IS NOT NULL
 GROUP BY person_id)
+)
 """)
 
 POPULATE_DRG_ERA = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{storage_table_name}}` AS (
 WITH ctePreDrugTarget AS (
   SELECT
     d.drug_exposure_id,d.person_id,c.concept_id AS drug_concept_id,d.drug_exposure_start_date AS drug_exposure_start_date,d.days_supply AS days_supply
@@ -205,9 +208,11 @@ SELECT
   ,DATE_DIFF(drug_era_end_date,MIN(drug_sub_exposure_start_date), DAY) - SUM(days_exposed) as gap_days
 FROM cteDrugEraEnds dee
 GROUP BY person_id,drug_concept_id,drug_era_end_date
+)
 """)
 
 POPULATE_COND_ERA = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{storage_table_name}}` AS (
 WITH cteConditionTarget AS (
   SELECT co.person_id,co.condition_concept_id,co.condition_start_date
     ,COALESCE(co.condition_end_date, DATE_ADD(condition_start_date, INTERVAL 1 DAY)) AS condition_end_date
@@ -256,6 +261,7 @@ SELECT ROW_NUMBER() OVER (ORDER BY person_id) AS condition_era_id
   ,COUNT(*) AS condition_occurrence_count
 FROM cteConditionEnds
 GROUP BY person_id,condition_concept_id,era_end_date
+)
 """)
 
 
