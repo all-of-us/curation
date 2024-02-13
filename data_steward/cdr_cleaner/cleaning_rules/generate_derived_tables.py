@@ -273,10 +273,12 @@ class CreateDerivedTables(BaseCleaningRule):
 
         super().__init__(issue_numbers=['DC3729'],
                          description=desc,
-                         affected_datasets=[cdr_consts.REGISTERED_TIER_DEID_BASE,
-                                            cdr_consts.REGISTERED_TIER_DEID_CLEAN,
-                                            cdr_consts.CONTROLLED_TIER_DEID_BASE,
-                                            cdr_consts.CONTROLLED_TIER_DEID_CLEAN],
+                         affected_datasets=[
+                             cdr_consts.REGISTERED_TIER_DEID_BASE,
+                             cdr_consts.REGISTERED_TIER_DEID_CLEAN,
+                             cdr_consts.CONTROLLED_TIER_DEID_BASE,
+                             cdr_consts.CONTROLLED_TIER_DEID_CLEAN
+                         ],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -306,9 +308,12 @@ class CreateDerivedTables(BaseCleaningRule):
             sandbox_dataset_id=self.sandbox_dataset_id,
             storage_table_name=CONDITION_ERA)
 
-        create_sandbox_table_list.append({cdr_consts.QUERY: create_observation_period_table})
-        create_sandbox_table_list.append({cdr_consts.QUERY: create_drug_era_table})
-        create_sandbox_table_list.append({cdr_consts.QUERY: create_condition_era_table})
+        create_sandbox_table_list.append(
+            {cdr_consts.QUERY: create_observation_period_table})
+        create_sandbox_table_list.append(
+            {cdr_consts.QUERY: create_drug_era_table})
+        create_sandbox_table_list.append(
+            {cdr_consts.QUERY: create_condition_era_table})
 
         return create_sandbox_table_list
 
