@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.7.1
+#       jupytext_version: 1.15.2
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -54,6 +54,8 @@ df = pd.DataFrame(columns=['query', 'result'])
 # - `40766241`
 # - `1585389`
 # - `43528428`
+#
+# This check does not apply to CT
 
 # +
 query = JINJA_ENV.from_string("""SELECT
@@ -252,6 +254,8 @@ df1
 # -
 
 # ## Query 2.2 step : Verify that if a person_id has ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586145 OR 1586144)  in the pre_deid_com_cdr person table, the output in the deid_cdr observation table for that person_id  after mapping will result in 2-rows AND the 2000000001 race value is populated in value_source_concept_id field in the other row of observation table in the deid dataset.
+#
+# This check does not apply to CT
 
 # +
 
@@ -393,6 +397,8 @@ df1
 #
 # objective: Account for new gender identify response option (DC-654)
 # The new concept ID in the gender question, “CloserGenderDescription_TwoSpirit” (value_source_concept_id=701374) needs to be generalized to value_source_concept_id = 2000000002 (GenderIdentity_GeneralizedDiffGender)
+#
+# This check does not apply to CT
 
 # has to be deid_base
 query = JINJA_ENV.from_string("""

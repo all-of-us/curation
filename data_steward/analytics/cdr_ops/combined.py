@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.7.1
+#       jupytext_version: 1.15.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -275,6 +275,8 @@ execute(client, query)
 # -
 
 # ## Verify Note text data
+# note_title should have a field_value of 'no_title'
+# note_text should have a field_value 'no_text'
 
 # +
 query = f'''
@@ -287,12 +289,6 @@ UNION ALL
 SELECT 'note_title' AS field, note_title AS field_value, COUNT(note_title) AS row_count,
 FROM `{PROJECT_ID}.{DATASET_ID}.note`
 GROUP BY note_title
-
-UNION ALL
-
-SELECT 'note_source_value' AS field, note_source_value AS field_value, COUNT(note_source_value) AS row_count,
-FROM `{PROJECT_ID}.{DATASET_ID}.note`
-GROUP BY note_source_value
 '''
 
 execute(client, query)

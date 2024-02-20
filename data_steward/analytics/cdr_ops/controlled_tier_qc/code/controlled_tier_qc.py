@@ -20,7 +20,7 @@ from analytics.cdr_ops.controlled_tier_qc.code.check_mapping import (
     check_mapping, check_site_mapping, check_mapping_zipcode_generalization)
 
 # funtions from utils
-from analytics.cdr_ops.controlled_tier_qc.utils.helpers import (
+from analytics.cdr_ops.controlled_tier_qc.ct_utils.helpers import (
     highlight, load_check_description, load_tables_for_check,
     filter_data_by_rule, pretty_print)
 
