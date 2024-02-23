@@ -329,9 +329,9 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
         MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
-    (CreateDerivedTables,),
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
+    (CreateDerivedTables,),
     (CalculatePrimaryDeathRecord,),
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -393,9 +393,9 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
-    (CreateDerivedTables,),
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
+    (CreateDerivedTables,),
     (CalculatePrimaryDeathRecord,),
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
