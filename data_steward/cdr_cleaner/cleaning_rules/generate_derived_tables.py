@@ -6,19 +6,25 @@ But re-creating these tables post-deid will allow OHDSI tools to run on workbenc
 """
 # Python imports
 import logging
+from datetime import datetime
 
 # Third party imports
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from resources import validate_date_string
 from common import CONDITION_ERA, DRUG_ERA, OBSERVATION_PERIOD, JINJA_ENV
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
+DELETION_QUERY = JINJA_ENV.from_string("""
+DELETE FROM `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`
+WHERE TRUE
+""")
+
 POPULATE_OBS_PRD = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{storage_table_name}}` AS
-INSERT INTO observation_period
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`
 SELECT person_id,
 observation_period_start_date,
     CASE WHEN observation_period_end_date > DATE('{{ehr_cutoff_date}}') THEN '{{ehr_cutoff_date}}'
@@ -123,7 +129,7 @@ GROUP BY person_id)
 """)
 
 POPULATE_DRG_ERA = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{storage_table_name}}` AS
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`
 WITH ctePreDrugTarget AS (
   SELECT
     d.drug_exposure_id,d.person_id,c.concept_id AS drug_concept_id,d.drug_exposure_start_date AS drug_exposure_start_date,d.days_supply AS days_supply
@@ -210,7 +216,7 @@ GROUP BY person_id,drug_concept_id,drug_era_end_date
 """)
 
 POPULATE_COND_ERA = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{storage_table_name}}` AS
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`
 WITH cteConditionTarget AS (
   SELECT co.person_id,co.condition_concept_id,co.condition_start_date
     ,COALESCE(co.condition_end_date, DATE_ADD(condition_start_date, INTERVAL 1 DAY)) AS condition_end_date
@@ -271,8 +277,16 @@ class CreateDerivedTables(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
+                 ehr_cutoff_date=None,
                  table_namer=None):
         desc = 'Create derived tables post-deid in both CT/RT and both base/clean.'
+
+        try:
+            # set to provided date string if the date string is valid
+            self.ehr_cutoff_date = validate_date_string(ehr_cutoff_date)
+        except (TypeError, ValueError):
+            # otherwise, default to using today's date as the date string
+            self.cutoff_date = str(datetime.now().date())
 
         super().__init__(issue_numbers=['DC3729'],
                          description=desc,
@@ -293,6 +307,13 @@ class CreateDerivedTables(BaseCleaningRule):
         :return: a list of SQL strings to run
         """
         create_sandbox_table_list = []
+        for table in [OBSERVATION_PERIOD, DRUG_ERA, CONDITION_ERA]:
+            create_sandbox_table_list.append({
+                cdr_consts.QUERY:
+                    DELETION_QUERY.render(project_id=self.project_id,
+                                          dataset_id=self.dataset_id,
+                                          storage_table_name=table)
+            })
         create_observation_period_table = POPULATE_OBS_PRD.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
