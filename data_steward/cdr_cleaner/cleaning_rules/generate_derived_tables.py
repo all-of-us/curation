@@ -7,6 +7,8 @@ But re-creating these tables post-deid will allow OHDSI tools to run on workbenc
 # Python imports
 import logging
 from datetime import datetime
+import os
+import json
 
 # Third party imports
 
@@ -15,6 +17,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from resources import validate_date_string
 from common import CONDITION_ERA, DRUG_ERA, OBSERVATION_PERIOD, JINJA_ENV
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from resources import cdm_fields_path
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,8 +27,9 @@ WHERE TRUE
 """)
 
 POPULATE_OBS_PRD = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`
-SELECT person_id,
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`{{cols}}
+SELECT ROW_NUMBER() OVER (ORDER BY person_id) AS observation_period_id,
+person_id,
 observation_period_start_date,
     CASE WHEN observation_period_end_date > DATE('{{ehr_cutoff_date}}') THEN '{{ehr_cutoff_date}}'
     ELSE observation_period_end_date
@@ -129,7 +133,7 @@ GROUP BY person_id)
 """)
 
 POPULATE_DRG_ERA = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`{{cols}}
 WITH ctePreDrugTarget AS (
   SELECT
     d.drug_exposure_id,d.person_id,c.concept_id AS drug_concept_id,d.drug_exposure_start_date AS drug_exposure_start_date,d.days_supply AS days_supply
@@ -216,7 +220,7 @@ GROUP BY person_id,drug_concept_id,drug_era_end_date
 """)
 
 POPULATE_COND_ERA = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`{{cols}}
 WITH cteConditionTarget AS (
   SELECT co.person_id,co.condition_concept_id,co.condition_start_date
     ,COALESCE(co.condition_end_date, DATE_ADD(condition_start_date, INTERVAL 1 DAY)) AS condition_end_date
@@ -306,41 +310,60 @@ class CreateDerivedTables(BaseCleaningRule):
         """
         :return: a list of SQL strings to run
         """
-        create_sandbox_table_list = []
+        create_derived_table_list = []
+        derived_path = os.path.join(cdm_fields_path, 'derived')
+        schema_result = dict()
+
         for table in [OBSERVATION_PERIOD, DRUG_ERA, CONDITION_ERA]:
-            create_sandbox_table_list.append({
+            # Delete data for Table
+            create_derived_table_list.append({
                 cdr_consts.QUERY:
                     DELETION_QUERY.render(project_id=self.project_id,
                                           dataset_id=self.dataset_id,
                                           storage_table_name=table)
             })
+
+            # Get Schema for table
+            for dir_path, dirs, files in os.walk(derived_path, topdown=True):
+                for f in files:
+                    if f != table:
+                        continue
+                    file_path = os.path.join(dir_path, f)
+                    with open(file_path, 'r', encoding='utf-8') as fp:
+                        schema = json.load(fp)
+                        schema_result[table] = schema
+
         create_observation_period_table = POPULATE_OBS_PRD.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             ehr_cutoff_date=self.ehr_cutoff_date,
-            storage_table_name=OBSERVATION_PERIOD)
+            storage_table_name=OBSERVATION_PERIOD,
+            cols=f"({self.get_bq_fields_sql(schema_result[OBSERVATION_PERIOD])})"
+        )
 
         create_drug_era_table = POPULATE_DRG_ERA.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
-            storage_table_name=DRUG_ERA)
+            storage_table_name=DRUG_ERA,
+            cols=f"({self.get_bq_fields_sql(schema_result[DRUG_ERA])})")
 
         create_condition_era_table = POPULATE_COND_ERA.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
-            storage_table_name=CONDITION_ERA)
+            storage_table_name=CONDITION_ERA,
+            cols=f"({self.get_bq_fields_sql(schema_result[CONDITION_ERA])})")
 
-        create_sandbox_table_list.append(
+        create_derived_table_list.append(
             {cdr_consts.QUERY: create_observation_period_table})
-        create_sandbox_table_list.append(
+        create_derived_table_list.append(
             {cdr_consts.QUERY: create_drug_era_table})
-        create_sandbox_table_list.append(
+        create_derived_table_list.append(
             {cdr_consts.QUERY: create_condition_era_table})
 
-        return create_sandbox_table_list
+        return create_derived_table_list
 
     def get_sandbox_tablenames(self):
         return [OBSERVATION_PERIOD, DRUG_ERA, CONDITION_ERA]
