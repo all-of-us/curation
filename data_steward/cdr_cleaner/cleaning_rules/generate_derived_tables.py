@@ -27,7 +27,7 @@ WHERE TRUE
 """)
 
 POPULATE_OBS_PRD = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`{{cols}}
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}` {{cols}}
 SELECT ROW_NUMBER() OVER (ORDER BY person_id) AS observation_period_id,
 person_id,
 observation_period_start_date,
@@ -133,7 +133,7 @@ GROUP BY person_id)
 """)
 
 POPULATE_DRG_ERA = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`{{cols}}
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}` {{cols}}
 WITH ctePreDrugTarget AS (
   SELECT
     d.drug_exposure_id,d.person_id,c.concept_id AS drug_concept_id,d.drug_exposure_start_date AS drug_exposure_start_date,d.days_supply AS days_supply
@@ -220,7 +220,7 @@ GROUP BY person_id,drug_concept_id,drug_era_end_date
 """)
 
 POPULATE_COND_ERA = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`{{cols}}
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{storage_table_name}}` {{cols}}
 WITH cteConditionTarget AS (
   SELECT co.person_id,co.condition_concept_id,co.condition_start_date
     ,COALESCE(co.condition_end_date, DATE_ADD(condition_start_date, INTERVAL 1 DAY)) AS condition_end_date
@@ -326,12 +326,15 @@ class CreateDerivedTables(BaseCleaningRule):
             # Get Schema for table
             for dir_path, dirs, files in os.walk(derived_path, topdown=True):
                 for f in files:
-                    if f != table:
+                    if f != table + '.json':
                         continue
                     file_path = os.path.join(dir_path, f)
                     with open(file_path, 'r', encoding='utf-8') as fp:
                         schema = json.load(fp)
-                        schema_result[table] = schema
+                        columns = []
+                        for field in schema:
+                            columns.append(field.get('name'))
+                        schema_result[table] = columns
 
         create_observation_period_table = POPULATE_OBS_PRD.render(
             project_id=self.project_id,
@@ -339,22 +342,21 @@ class CreateDerivedTables(BaseCleaningRule):
             sandbox_dataset_id=self.sandbox_dataset_id,
             ehr_cutoff_date=self.ehr_cutoff_date,
             storage_table_name=OBSERVATION_PERIOD,
-            cols=f"({self.get_bq_fields_sql(schema_result[OBSERVATION_PERIOD])})"
-        )
+            cols=f"({','.join(schema_result[OBSERVATION_PERIOD])})")
 
         create_drug_era_table = POPULATE_DRG_ERA.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             storage_table_name=DRUG_ERA,
-            cols=f"({self.get_bq_fields_sql(schema_result[DRUG_ERA])})")
+            cols=f"({','.join(schema_result[DRUG_ERA])})")
 
         create_condition_era_table = POPULATE_COND_ERA.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             storage_table_name=CONDITION_ERA,
-            cols=f"({self.get_bq_fields_sql(schema_result[CONDITION_ERA])})")
+            cols=f"({','.join(schema_result[CONDITION_ERA])})")
 
         create_derived_table_list.append(
             {cdr_consts.QUERY: create_observation_period_table})
