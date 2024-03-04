@@ -203,7 +203,7 @@ WITH ctePreDrugTarget AS (
   ) e
   WHERE (2 * e.start_ordinal) - e.overall_ord = 0)
 ,cteDrugEraEnds AS (
-  SELECT ft.person_id,ft.drug_concept_id,ft.drug_sub_exposure_start_date,MIN(e.end_date) AS drug_era_end_date,drug_exposure_count,days_exposed
+  SELECT ft.person_id,ft.drug_concept_id,ft.drug_sub_exposure_start_date,MIN(e.end_date) AS drug_end_date,drug_exposure_count,days_exposed
   FROM cteFinalTarget ft
   JOIN cteEndDates e ON ft.person_id = e.person_id AND ft.drug_concept_id = e.drug_concept_id AND e.end_date >= ft.drug_sub_exposure_start_date
   GROUP BY ft.person_id,ft.drug_concept_id,ft.drug_sub_exposure_start_date,drug_exposure_count,days_exposed)
@@ -212,11 +212,11 @@ SELECT
   ,person_id
   ,drug_concept_id
   ,TIMESTAMP(MIN(drug_sub_exposure_start_date)) AS drug_era_start_date
-  ,TIMESTAMP(drug_era_end_date) as drug_era_end_date
+  ,TIMESTAMP(drug_end_date) as drug_era_end_date
   ,SUM(drug_exposure_count) AS drug_exposure_count
-  ,DATE_DIFF(drug_era_end_date,MIN(drug_sub_exposure_start_date), DAY) - SUM(days_exposed) as gap_days
+  ,DATE_DIFF(drug_end_date,MIN(drug_sub_exposure_start_date), DAY) - SUM(days_exposed) as gap_days
 FROM cteDrugEraEnds dee
-GROUP BY person_id,drug_concept_id,drug_era_end_date
+GROUP BY person_id,drug_concept_id,drug_end_date
 """)
 
 POPULATE_COND_ERA = JINJA_ENV.from_string("""
