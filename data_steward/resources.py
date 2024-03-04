@@ -66,6 +66,10 @@ VALUE_MAPPINGS_PATH = os.path.join(domain_mappings_path, 'value_mappings.csv')
 CDR_CLEANER_PATH = os.path.join(resource_files_path, 'cdr_cleaner')
 REPLACED_PRIVACY_CONCEPTS_PATH = os.path.join(
     CDR_CLEANER_PATH, 'controlled_tier_replaced_privacy_concepts.csv')
+CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH = os.path.join(
+    CDR_CLEANER_PATH, 'ct_additional_privacy_concepts.csv')
+RT_ADDITIONAL_PRIVACY_CONCEPTS_PATH = os.path.join(
+    CDR_CLEANER_PATH, 'rt_additional_privacy_concepts.csv')
 COPE_SUPPRESSION_PATH = os.path.join(CDR_CLEANER_PATH, 'cope_suppression')
 RT_CT_COPE_SUPPRESSION_CSV_PATH = os.path.join(COPE_SUPPRESSION_PATH,
                                                'rt_ct_cope_suppression.csv')
