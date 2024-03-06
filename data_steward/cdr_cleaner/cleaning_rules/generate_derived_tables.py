@@ -45,7 +45,6 @@ FROM (SELECT person_id,
         FROM `{{project_id}}.{{dataset_id}}.person` AS pt
         JOIN `{{project_id}}.{{dataset_id}}.visit_occurrence` AS vt ON pt.person_id = vt.person_id
         JOIN `{{project_id}}.{{dataset_id}}.visit_occurrence_ext` AS e ON vt.visit_occurrence_id = e.visit_occurrence_id
-            WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM vt.visit_start_date) >= 1985
             AND vt.visit_start_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
@@ -58,7 +57,6 @@ FROM (SELECT person_id,
         FROM `{{project_id}}.{{dataset_id}}.person` AS pt 
         JOIN `{{project_id}}.{{dataset_id}}.condition_occurrence` AS co ON pt.person_id = co.person_id
         JOIN `{{project_id}}.{{dataset_id}}.condition_occurrence_ext` AS e ON co.condition_occurrence_id = e.condition_occurrence_id
-            WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM co.condition_start_date) >= 1985
             AND co.condition_start_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
@@ -71,7 +69,6 @@ FROM (SELECT person_id,
         FROM `{{project_id}}.{{dataset_id}}.person` AS pt 
         JOIN `{{project_id}}.{{dataset_id}}.procedure_occurrence` AS po ON pt.person_id = po.person_id
         JOIN `{{project_id}}.{{dataset_id}}.procedure_occurrence_ext` AS e ON po.procedure_occurrence_id = e.procedure_occurrence_id
-            WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM po.procedure_date) >= 1985
             AND po.procedure_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
@@ -84,7 +81,6 @@ FROM (SELECT person_id,
         FROM `{{project_id}}.{{dataset_id}}.person` AS pt 
         JOIN `{{project_id}}.{{dataset_id}}.drug_exposure` AS de ON pt.person_id = de.person_id
         JOIN `{{project_id}}.{{dataset_id}}.drug_exposure_ext` AS e ON de.drug_exposure_id = e.drug_exposure_id
-            WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM de.drug_exposure_start_date) >= 1985
             AND de.drug_exposure_start_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
@@ -97,7 +93,6 @@ FROM (SELECT person_id,
         FROM `{{project_id}}.{{dataset_id}}.person` AS pt 
         JOIN `{{project_id}}.{{dataset_id}}.device_exposure` AS de ON pt.person_id = de.person_id
         JOIN `{{project_id}}.{{dataset_id}}.device_exposure_ext` AS e ON de.device_exposure_id = e.device_exposure_id
-            WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM de.device_exposure_start_date) >= 1985
             AND de.device_exposure_start_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
@@ -110,7 +105,6 @@ FROM (SELECT person_id,
         FROM `{{project_id}}.{{dataset_id}}.person` AS pt 
         JOIN `{{project_id}}.{{dataset_id}}.observation` AS o ON pt.person_id = o.person_id
         JOIN `{{project_id}}.{{dataset_id}}.observation_ext` AS e ON o.observation_id = e.observation_id
-            WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM o.observation_date) >= 1985
             AND o.observation_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
@@ -123,7 +117,6 @@ FROM (SELECT person_id,
         FROM `{{project_id}}.{{dataset_id}}.person` AS pt 
         JOIN `{{project_id}}.{{dataset_id}}.measurement` AS m ON pt.person_id = m.person_id
         JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS e ON m.measurement_id = e.measurement_id
-            WHERE src_id LIKE '%EHR%'
             AND EXTRACT(YEAR FROM m.measurement_date) >= 1985
             AND m.measurement_date <= DATE('{{ehr_cutoff_date}}')
         GROUP BY pt.person_id
