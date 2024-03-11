@@ -69,9 +69,9 @@ REPLACED_PRIVACY_CONCEPTS_PATH = os.path.join(
 ADDITIONAL_PRIVACY_CONCEPTS_PATH = os.path.join(CDR_CLEANER_PATH,
                                                 'additional_privacy')
 CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH = os.path.join(
-    ADDITIONAL_PRIVACY_CONCEPTS_PATH, 'ct_additional_privacy_concepts.csv')
+    ADDITIONAL_PRIVACY_CONCEPTS_PATH, 'ct_additional_privacy_suppressions.csv')
 RT_ADDITIONAL_PRIVACY_CONCEPTS_PATH = os.path.join(
-    ADDITIONAL_PRIVACY_CONCEPTS_PATH, 'rt_additional_privacy_concepts.csv')
+    ADDITIONAL_PRIVACY_CONCEPTS_PATH, 'rt_additional_privacy_suppressions.csv')
 COPE_SUPPRESSION_PATH = os.path.join(CDR_CLEANER_PATH, 'cope_suppression')
 RT_CT_COPE_SUPPRESSION_CSV_PATH = os.path.join(COPE_SUPPRESSION_PATH,
                                                'rt_ct_cope_suppression.csv')
