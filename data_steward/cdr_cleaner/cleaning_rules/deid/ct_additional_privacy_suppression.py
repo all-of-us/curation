@@ -59,12 +59,10 @@ class CTAdditionalPrivacyConceptSuppression(
 
     def create_suppression_lookup_table(self, client):
         df = pd.read_csv(CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
-        df_concept_id = df['concept_id'].astype(int)
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
         table_ref = dataset_ref.table(self.concept_suppression_lookup_table)
-        result = client.load_table_from_dataframe(df_concept_id,
-                                                  table_ref).result()
+        result = client.load_table_from_dataframe(df, table_ref).result()
 
         if hasattr(result, 'errors') and result.errors:
             LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
