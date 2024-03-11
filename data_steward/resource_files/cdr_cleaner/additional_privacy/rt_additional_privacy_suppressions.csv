@@ -1,0 +1,928 @@
+concept_id,concept_code,privacy_rule,vocabulary_id
+8515,2,"demographics (race/ethnicity, gender)",race
+8516,3,"demographics (race/ethnicity, gender)",race
+8527,5,"demographics (race/ethnicity, gender)",race
+8905,26,military_operations,cms place of service
+19225,T74.91,assault/homicide,icd10cm
+19246,T76.22,assault/homicide,icd10cm
+19248,T76.32,assault/homicide,icd10cm
+72434,82062003,perinatal,snomed
+75605,14022007,death cause,snomed
+136530,206539008,perinatal,snomed
+137974,655007,liveborn_infants,snomed
+140526,4184009,perinatal,snomed
+192379,111431001,perinatal,snomed
+193254,25658005,perinatal,snomed
+193532,198705001,perinatal,snomed
+195595,4576001,legal_intervention,snomed
+196754,198718009,perinatal,snomed
+197333,27169005,perinatal,snomed
+255084,78895009,perinatal,snomed
+312723,13213009,perinatal,snomed
+314478,22271007,liveborn_infants,snomed
+380513,79410001,perinatal,snomed
+432373,199307003,death cause,snomed
+432430,46906003,perinatal,snomed
+432441,366323009,perinatal,snomed
+432534,269716005,motor vehicle accident,snomed
+432810,219356008,suicide,snomed
+433107,219340003,suicide,snomed
+433374,242397005,motor vehicle accident,snomed
+433823,40609001,perinatal,snomed
+433864,64920003,perinatal,snomed
+433869,1857005,perinatal,snomed
+434095,198709007,perinatal,snomed
+434153,74345006,gender/sex,snomed
+434153,74345006,gender/sex,snomed
+434156,63565007,perinatal,snomed
+434489,419099009,death cause,snomed
+434705,198707009,perinatal,snomed
+434849,287184008,suicide,snomed
+435017,198722004,perinatal,snomed
+435131,95930005,assault/homicide,snomed
+435151,371779005,assault/homicide,snomed
+435155,219334005,military_operations,snomed
+435155,219334005,suicide,snomed
+435443,17886000,motor vehicle accident,snomed
+435640,72544005,perinatal,snomed
+435868,267193004,perinatal,snomed
+435937,51178009,death cause,snomed
+436001,371774000,assault/homicide,snomed
+436169,74978008,legal_intervention,snomed
+436292,217897003,motor vehicle accident,snomed
+436313,102458000,assault/homicide,snomed
+436532,59527008,perinatal,snomed
+436589,217115005,suffocation,snomed
+436605,287186005,suicide,snomed
+436666,56627002,"demographics (race/ethnicity, gender)",snomed
+436666,56627002,gender/sex,snomed
+436747,34500003,perinatal,snomed
+436874,217935007,motor vehicle accident,snomed
+436878,219359001,suicide,snomed
+436892,219358009,suicide,snomed
+437167,218081007,military_operations,snomed
+437449,397940009,assault/homicide,snomed
+437460,95922009,assault/homicide,snomed
+437748,309535002,motor vehicle accident,snomed
+438043,225824003,assault/homicide,snomed
+438196,198719001,perinatal,snomed
+438542,313178001,perinatal,snomed
+438943,225826001,assault/homicide,snomed
+439235,276853009,military_operations,snomed
+439236,219335006,suicide,snomed
+439325,198743003,legal_intervention,snomed
+439327,198724003,perinatal,snomed
+439391,371778002,assault/homicide,snomed
+439395,371775004,assault/homicide,snomed
+439397,371704001,terrorism,snomed
+439615,217150002,motor vehicle accident,snomed
+439701,191787001,"demographics (race/ethnicity, gender)",snomed
+439788,190745006,perinatal,snomed
+439922,313179009,perinatal,snomed
+440068,268637002,gender/sex,snomed
+440167,53443007,liveborn_infants,snomed
+440314,219336007,suicide,snomed
+440453,198706000,perinatal,snomed
+440577,78523004,terrorism,snomed
+440615,71677004,military_operations,snomed
+441073,267194005,perinatal,snomed
+441128,79995002,perinatal,snomed
+441139,50514002,death cause,snomed
+441349,48433002,perinatal,snomed
+441364,80113008,assault/homicide,snomed
+441481,406137001,assault/homicide,snomed
+441647,429187001,death cause,snomed
+441678,78395001,perinatal,snomed
+441911,198720007,perinatal,snomed
+441915,7802000,perinatal,snomed
+442289,53559009,death cause,snomed
+442596,61752008,legal_intervention,snomed
+442605,6476001,death cause,snomed
+442985,248153007,"demographics (race/ethnicity, gender)",snomed
+442986,248152002,"demographics (race/ethnicity, gender)",snomed
+443080,213017001,assault/homicide,snomed
+443256,276849007,assault/homicide,snomed
+443271,274912004,suicide,snomed
+443278,287181000,suicide,snomed
+443279,287185009,suicide,snomed
+443414,313182004,military_operations,snomed
+443549,419916003,assault/homicide,snomed
+443584,418362005,death cause,snomed
+443705,18684002,legal_intervention,snomed
+443882,15355001,death cause,snomed
+444048,38784004,legal_intervention,snomed
+444094,118185001,perinatal,snomed
+444267,84132007,perinatal,snomed
+444377,86095007,perinatal,snomed
+444417,45139008,perinatal,snomed
+600520,1004019008,perinatal,snomed
+600527,1004026008,perinatal,snomed
+600552,1010282001,perinatal,snomed
+600767,8521000175109,death cause,snomed
+602337,12399371000119105,assault/homicide,snomed
+602338,12399411000119106,assault/homicide,snomed
+605035,1010286003,perinatal,snomed
+725454,P91.821,perinatal,icd10cm
+725455,P91.822,perinatal,icd10cm
+725457,P91.829,perinatal,icd10cm
+725641,V00.841A,motor vehicle accident,icd10cm
+725642,V00.841D,motor vehicle accident,icd10cm
+725649,V00.848A,motor vehicle accident,icd10cm
+760973,125161000119103,military_operations,snomed
+762055,288331000119108,assault/homicide,snomed
+762058,288401000119109,assault/homicide,snomed
+762124,29221000119106,assault/homicide,snomed
+762999,434771000124107,location,snomed
+764548,456471000124108,death cause,snomed
+765389,288381000119109,assault/homicide,snomed
+765761,446141000124107,"demographics (race/ethnicity, gender)",snomed
+766415,P00.82,perinatal,icd10cm
+766421,P09.6,perinatal,icd10cm
+766422,P09.8,perinatal,icd10cm
+766505,Y35.899A,legal_intervention,icd10cm
+903057,LiveInFollowingAreas_LiveInWesternMichigan,geolocationconceptsuppression,ppi
+903060,SpectrumHealthSitePairing_Yes,geolocationconceptsuppression,ppi
+903061,SpectrumHealthSitePairing_No,geolocationconceptsuppression,ppi
+903513,Reconsent_Signature,explicitidentifiersuppression,ppi
+903562,ResultsConsent_Signature,explicitidentifiersuppression,ppi
+1001698,93374-7,death cause,loinc
+1332899,cope_a_45,sexual_orientation,ppi
+1340204,OMOP5165859,liveborn_infants,omop extension
+1553974,Y35.049A,legal_intervention,icd10cm
+1554018,Y35.399A,legal_intervention,icd10cm
+1554034,Y35.819A,legal_intervention,icd10cm
+1554039,Y35.831A,legal_intervention,icd10cm
+1554047,Y35.833A,legal_intervention,icd10cm
+1554051,Y35.839A,legal_intervention,icd10cm
+1554055,Y35.99XA,legal_intervention,icd10cm
+1568253,F64,"demographics (race/ethnicity, gender)",icd10cm
+1575155,T74.1,assault/homicide,icd10cm
+1575156,T74.2,assault/homicide,icd10cm
+1575158,T74.9,assault/homicide,icd10cm
+1575165,T76.1,assault/homicide,icd10cm
+1575166,T76.2,assault/homicide,icd10cm
+1576139,Z62.81,assault/homicide,icd10cm
+1585471,AZSitepairingLocation_Phoenix,geolocationconceptsuppression,ppi
+1585472,AZSitepairingLocation_Mesa,geolocationconceptsuppression,ppi
+1585473,AZSitepairingLocation_TucsonUniversityCampus,geolocationconceptsuppression,ppi
+1585474,AZSitepairingLocation_TuscsonSouthCampus,geolocationconceptsuppression,ppi
+1585564,LiveInFollowingAreas_LiveInEastSouthEastMichigan,geolocationconceptsuppression,ppi
+1585901,SexualOrientation_Gay,sexual_orientation,ppi
+1585902,SexualOrientation_Lesbian,sexual_orientation,ppi
+1585903,SexualOrientation_Bisexual,sexual_orientation,ppi
+1586053,SecondContactState_Michigan,geolocationconceptsuppression,ppi
+1595725,T74.51XS,assault/homicide,icd10cm
+1595780,Z04.81,assault/homicide,icd10cm
+1595794,Z62.813,assault/homicide,icd10cm
+1595798,Z91.42,assault/homicide,icd10cm
+2007107,89.8,death cause,icd9proc
+2102032,1157F,legal_intervention,cpt4
+2106303,3085F,death cause,cpt4
+2213196,88000,death cause,cpt4
+2213197,88005,death cause,cpt4
+2213202,88020,death cause,cpt4
+2213203,88025,death cause,cpt4
+2213208,88037,death cause,cpt4
+2314106,95824,death cause,cpt4
+2721594,S9989,location,hcpcs
+2721666,T2007,motor vehicle accident,hcpcs
+3005917,21842-0,location,loinc
+3019523,11351-4,sexual_orientation,loinc
+3026373,18743-5,death cause,loinc
+3026646,21838-8,"demographics (race/ethnicity, gender)",loinc
+3038482,52531-1,location,loinc
+3041797,52532-9,location,loinc
+3043579,45401-7,location,loinc
+3046965,46098-0,"demographics (race/ethnicity, gender)",loinc
+3046965,46098-0,gender/sex,loinc
+3050381,46463-6,"demographics (race/ethnicity, gender)",loinc
+3051581,54133-4,"demographics (race/ethnicity, gender)",loinc
+3052558,46499-0,location,loinc
+3212942,185984009,"demographics (race/ethnicity, gender)",nebraska lexicon
+3656374,25711000087100,location,snomed
+3656374,25711000087100,location,snomed
+3656378,25771000087107,location,snomed
+4002575,10029008,death cause,snomed
+4009631,111332007,gender/sex,snomed
+4009631,111332007,gender/sex,snomed
+4012613,113173007,location,snomed
+4014465,169886007,perinatal,snomed
+4020158,213015009,assault/homicide,snomed
+4021192,225337009,death cause,snomed
+4021520,225728007,location,snomed
+4022081,105530003,location,snomed
+4022081,105530003,location,snomed
+4022124,225820007,assault/homicide,snomed
+4022125,225823009,assault/homicide,snomed
+4026163,225818009,assault/homicide,snomed
+4026163,225818009,terrorism,snomed
+4026164,225825002,assault/homicide,snomed
+4028786,237363008,death cause,snomed
+4032248,108259003,death cause,snomed
+4035165,15086000,"demographics (race/ethnicity, gender)",snomed
+4041280,118213005,liveborn_infants,snomed
+4041280,118213005,perinatal,snomed
+4041991,118199002,sexual_orientation,snomed
+4045163,12247004,motor vehicle accident,snomed
+4048144,206266009,liveborn_infants,snomed
+4048592,206372007,perinatal,snomed
+4048809,230802007,death cause,snomed
+4051266,160471004,death cause,snomed
+4051267,160473001,death cause,snomed
+4053113,160877008,assault/homicide,snomed
+4053381,160333008,death cause,snomed
+4053381,160333008,suicide,snomed
+4054939,243069004,assault/homicide,snomed
+4055396,242693000,motor vehicle accident,snomed
+4058280,161472001,assault/homicide,snomed
+4059334,161580006,perinatal,snomed
+4059480,161743003,death cause,snomed
+4060206,161811009,perinatal,snomed
+4060206,161811009,death cause,snomed
+4060241,169582001,death cause,snomed
+4060296,199112006,perinatal,snomed
+4060424,199257008,perinatal,snomed
+4060687,199607009,death cause,snomed
+4060687,199607009,liveborn_infants,snomed
+4061268,16983000,death cause,snomed
+4061289,17044007,assault/homicide,snomed
+4061426,169578003,perinatal,snomed
+4061738,20078004,location,snomed
+4062254,200155004,death cause,snomed
+4062790,199294004,perinatal,snomed
+4062790,199294004,perinatal,snomed
+4063309,199608004,death cause,snomed
+4066378,200724002,perinatal,snomed
+4071162,21753002,motor vehicle accident,snomed
+4071610,206283000,perinatal,snomed
+4074047,219221007,assault/homicide,snomed
+4074169,219365001,suffocation,snomed
+4075234,225049000,suicide,snomed
+4075529,224680000,location,snomed
+4075529,224680000,location,snomed
+4075631,224709006,location,snomed
+4075631,224709006,location,snomed
+4075635,223686002,location,snomed
+4075636,223687006,location,snomed
+4075638,223694009,location,snomed
+4076658,225048008,suicide,snomed
+4079844,276507005,suffocation,snomed
+4079844,276507005,death cause,snomed
+4079968,276639007,perinatal,snomed
+4081426,183928007,location,snomed
+4082921,278067008,perinatal,snomed
+4083591,184102003,location,snomed
+4083743,184305005,death cause,snomed
+4087925,186034007,"demographics (race/ethnicity, gender)",snomed
+4089069,249053001,perinatal,snomed
+4090129,281255004,suffocation,snomed
+4092095,247650009,death cause,snomed
+4105261,281575007,military_operations,snomed
+4105393,257564005,location,snomed
+4107655,284465006,assault/homicide,snomed
+4110772,285116001,"demographics (race/ethnicity, gender)",snomed
+4111063,285093007,location,snomed
+4111063,285093007,location,snomed
+4111660,284453007,location,snomed
+4111660,284453007,location,snomed
+4113010,284555002,location,snomed
+4113010,284555002,location,snomed
+4113020,284607007,assault/homicide,snomed
+4119716,257557008,location,snomed
+4119716,257557008,location,snomed
+4119859,257656006,location,snomed
+4119859,257656006,location,snomed
+4121313,302768007,military_operations,snomed
+4121550,257418003,motor vehicle accident,snomed
+4121719,257641002,location,snomed
+4121719,257641002,location,snomed
+4126257,289205009,perinatal,snomed
+4129155,289530006,perinatal,snomed
+4129846,237361005,suffocation,snomed
+4129846,237361005,death cause,snomed
+4132087,127335003,perinatal,snomed
+4132309,26636000,death cause,snomed
+4133009,127277000,perinatal,snomed
+4135806,31637002,"demographics (race/ethnicity, gender)",snomed
+4140071,33010005,perinatal,snomed
+4145947,267258002,perinatal,snomed
+4147109,309985003,location,snomed
+4147554,310207003,location,snomed
+4147554,310207003,location,snomed
+4149398,268854008,perinatal,snomed
+4149451,310530008,perinatal,snomed
+4150851,311465003,assault/homicide,snomed
+4151405,269795008,suffocation,snomed
+4153697,283545005,assault/homicide,snomed
+4154726,284176003,location,snomed
+4154726,284176003,location,snomed
+4156363,272379006,military_operations,snomed
+4159152,371121002,perinatal,snomed
+4160280,430283008,death cause,snomed
+4160622,371772001,assault/homicide,snomed
+4161447,371773006,assault/homicide,snomed
+4161694,398070004,location,snomed
+4162299,29240004,death cause,snomed
+4163494,291838005,assault/homicide,snomed
+4164912,45618002,location,snomed
+4166164,293206002,gender/sex,snomed
+4167217,416471007,liveborn_infants,snomed
+4167918,275359008,perinatal,snomed
+4168974,420008001,location,snomed
+4169278,418189009,assault/homicide,snomed
+4170582,42035005,sexual_orientation,snomed
+4170582,42035005,sexual_orientation,snomed
+4170582,42035005,sexual_orientation,snomed
+4171711,42085001,assault/homicide,snomed
+4172624,50084004,assault/homicide,snomed
+4173334,276660001,perinatal,snomed
+4177669,49588008,military_operations,snomed
+4177807,49713007,death cause,snomed
+4182566,429746005,assault/homicide,snomed
+4193573,313217007,assault/homicide,snomed
+4195901,79993009,location,snomed
+4197467,313214000,assault/homicide,snomed
+4197468,313216003,assault/homicide,snomed
+4199872,301705009,military_operations,snomed
+4201937,315280000,"demographics (race/ethnicity, gender)",snomed
+4202389,318784009,military_operations,snomed
+4208350,313070006,assault/homicide,snomed
+4208970,313215004,assault/homicide,snomed
+4210607,56417000,death cause,snomed
+4210749,56890008,assault/homicide,snomed
+4213182,80522000,location,snomed
+4214582,394685004,death cause,snomed
+4214687,394743007,"demographics (race/ethnicity, gender)",snomed
+4214956,417662000,liveborn_infants,snomed
+4215271,394744001,"demographics (race/ethnicity, gender)",snomed
+4215475,71783008,motor vehicle accident,snomed
+4216115,41501003,death cause,snomed
+4217564,395507008,perinatal,snomed
+4218813,41587001,perinatal,snomed
+4219491,72598009,death cause,snomed
+4220022,398033008,death cause,snomed
+4220533,82823006,death cause,snomed
+4228490,405769009,gender/sex,snomed
+4228490,405769009,gender/sex,snomed
+4229439,888003,perinatal,snomed
+4230492,89217008,"demographics (race/ethnicity, gender)",snomed
+4230492,89217008,gender/sex,snomed
+4230492,89217008,sexual_orientation,snomed
+4230492,89217008,sexual_orientation,snomed
+4230638,88817006,suicide,snomed
+4235695,406138006,assault/homicide,snomed
+4236049,360875003,location,snomed
+4236321,90774003,assault/homicide,snomed
+4239065,91576008,perinatal,snomed
+4239435,363901006,gender/sex,snomed
+4239435,363901006,sexual_orientation,snomed
+4239435,363901006,sexual_orientation,snomed
+4241830,59291004,death cause,snomed
+4251491,73893000,perinatal,snomed
+4263727,46160005,motor vehicle accident,snomed
+4264823,364587008,perinatal,snomed
+4265167,399753006,death cause,snomed
+4267373,365508006,location,snomed
+4268837,365956009,gender/sex,snomed
+4268837,365956009,sexual_orientation,snomed
+4268837,365956009,sexual_orientation,snomed
+4268912,62480006,location,snomed
+4269424,364617005,perinatal,snomed
+4271764,364703007,military_operations,snomed
+4274420,365474007,military_operations,snomed
+4278848,66190008,assault/homicide,snomed
+4279142,65367001,operations_of_war,snomed
+4279142,65367001,assault/homicide,snomed
+4279142,65367001,terrorism,snomed
+4279451,66280005,location,snomed
+4279614,66466001,suffocation,snomed
+4283657,66621004,gender/sex,snomed
+4283657,66621004,sexual_orientation,snomed
+4283657,66621004,sexual_orientation,snomed
+4296024,76799001,perinatal,snomed
+4297375,386702006,assault/homicide,snomed
+4299535,77386006,liveborn_infants,snomed
+4300517,78077007,assault/homicide,snomed
+4302066,418506006,assault/homicide,snomed
+4305831,418715001,assault/homicide,snomed
+4306655,419620001,assault/homicide,snomed
+4306655,419620001,suffocation,snomed
+4306655,419620001,death cause,snomed
+4306655,419620001,suicide,snomed
+4309752,216343002,location,snomed
+4309756,216356009,location,snomed
+4309757,216359002,location,snomed
+4309760,216382000,location,snomed
+4310061,216403008,location,snomed
+4310064,216417004,location,snomed
+4310775,217116006,suffocation,snomed
+4310928,216323008,location,snomed
+4310930,216329007,location,snomed
+4311062,216362004,location,snomed
+4311069,216392008,location,snomed
+4311070,216398007,location,snomed
+4311072,216404002,location,snomed
+4311076,216418009,location,snomed
+4311078,216424003,location,snomed
+4311213,216450004,location,snomed
+4312316,217118007,suffocation,snomed
+4312840,216330002,location,snomed
+4312841,216331003,location,snomed
+4312843,216340004,location,snomed
+4312846,216355008,location,snomed
+4312966,216391001,location,snomed
+4312969,216409007,location,snomed
+4312970,216420007,location,snomed
+4312972,216427005,location,snomed
+4312974,216429008,location,snomed
+4312978,216437000,location,snomed
+4312979,216445005,location,snomed
+4314870,216312009,motor vehicle accident,snomed
+4314873,216315006,location,snomed
+4314989,216333000,location,snomed
+4314991,216339001,location,snomed
+4314998,216357000,location,snomed
+4314999,216358005,location,snomed
+4315001,216366001,location,snomed
+4315006,216378002,location,snomed
+4315007,216383005,location,snomed
+4315085,216386002,location,snomed
+4315088,216395005,location,snomed
+4315095,216416008,location,snomed
+4315096,216423009,location,snomed
+4315099,216438005,location,snomed
+4315100,216440000,location,snomed
+4316720,217120005,suffocation,snomed
+4316721,217121009,suffocation,snomed
+4317150,95281009,death cause,snomed
+4318126,95921002,assault/homicide,snomed
+4319155,95877004,operations_of_war,snomed
+4319561,21987001,liveborn_infants,snomed
+4320042,95934001,assault/homicide,snomed
+4320813,95821001,perinatal,snomed
+4323285,70591005,perinatal,snomed
+4323285,70591005,perinatal,snomed
+4326265,75148009,military_operations,snomed
+4326589,75164001,gender/sex,snomed
+4326589,75164001,gender/sex,snomed
+4328364,76102007,"demographics (race/ethnicity, gender)",snomed
+4328364,76102007,gender/sex,snomed
+4328364,76102007,sexual_orientation,snomed
+4328364,76102007,sexual_orientation,snomed
+4328757,223668000,location,snomed
+4329097,431268006,perinatal,snomed
+4330180,224780008,location,snomed
+4330180,224780008,location,snomed
+4330840,224858000,location,snomed
+4330840,224858000,location,snomed
+4331312,22674006,motor vehicle accident,snomed
+4345685,240302002,perinatal,snomed
+21492869,80431-0,location,loinc
+21492871,80433-6,location,loinc
+35225239,Z63.4,death cause,icd10cm
+35225252,Z65.4,assault/homicide,icd10cm
+35225252,Z65.4,terrorism,icd10cm
+35225253,Z65.5,operations_of_war,icd10cm
+35225257,Z70.0,sexual_orientation,icd10cm
+35225258,Z70.1,sexual_orientation,icd10cm
+35225259,Z70.2,sexual_orientation,icd10cm
+35225260,Z70.3,gender/sex,icd10cm
+35625043,768011006,suffocation,snomed
+35625043,768011006,assault/homicide,snomed
+36303203,LA22875-1,sexual_orientation,loinc
+36305281,87721-7,location,loinc
+36305361,87720-9,location,loinc
+36307527,LA22877-7,sexual_orientation,loinc
+36307702,LA22879-3,"demographics (race/ethnicity, gender)",loinc
+36308665,LA22878-5,"demographics (race/ethnicity, gender)",loinc
+36684960,459521000124102,assault/homicide,snomed
+36684961,459531000124104,assault/homicide,snomed
+36684962,459541000124109,assault/homicide,snomed
+36712668,10211000132109,perinatal,snomed
+36712857,134561000119109,death cause,snomed
+36713087,288391000119107,assault/homicide,snomed
+36713088,288411000119107,assault/homicide,snomed
+36715173,720684005,assault/homicide,snomed
+36715279,720824009,assault/homicide,snomed
+36715950,721744003,perinatal,snomed
+36717004,134251000119105,perinatal,snomed
+36717284,288371000119106,assault/homicide,snomed
+37016099,101071000119104,perinatal,snomed
+37016211,15635291000119101,perinatal,snomed
+37016212,15635331000119107,perinatal,snomed
+37016213,15635451000119107,perinatal,snomed
+37016216,15750001000119103,perinatal,snomed
+37016218,15750081000119106,perinatal,snomed
+37016220,15887011000119107,perinatal,snomed
+37017051,713234005,death cause,snomed
+37017129,713346006,terrorism,snomed
+37018683,15635411000119106,perinatal,snomed
+37018684,15887131000119101,perinatal,snomed
+37018896,114961000119106,perinatal,snomed
+37020140,91390-5,assault/homicide,loinc
+37108765,12277711000119108,"demographics (race/ethnicity, gender)",snomed
+37108765,12277711000119108,gender/sex,snomed
+37109041,16216731000119106,death cause,snomed
+37110280,724484007,perinatal,snomed
+37110290,724497009,perinatal,snomed
+37110290,724497009,liveborn_infants,snomed
+37111595,726626004,death cause,snomed
+37117130,12277671000119109,"demographics (race/ethnicity, gender)",snomed
+37118028,726565008,perinatal,snomed
+37202302,Z84.82,death cause,icd10cm
+37204043,787209003,assault/homicide,snomed
+37206226,785867009,perinatal,snomed
+37206227,785868004,perinatal,snomed
+37206229,785870008,perinatal,snomed
+37207733,293611000119101,assault/homicide,snomed
+37395583,288001000119103,military_operations,snomed
+37399733,3161000175102,death cause,snomed
+37402948,P28.30,perinatal,icd10cm
+37402956,P28.43,perinatal,icd10cm
+37402957,P28.49,perinatal,icd10cm
+37403780,Z87.68,perinatal,icd10cm
+40192406,SDOH_37,sexual_orientation,ppi
+40213244,53,military_operations,cvx
+40479849,444557007,assault/homicide,snomed
+40481828,442084003,assault/homicide,snomed
+40482897,445272000,assault/homicide,snomed
+40483663,443846001,location,snomed
+40483738,443913008,assault/homicide,snomed
+40484207,445548006,death cause,snomed
+40485048,444135009,perinatal,snomed
+40491865,447259000,perinatal,snomed
+40611621,61626005,death cause,snomed
+40758409,55280-2,military_operations,loinc
+40759918,56799-0,location,loinc
+40766229,63501-1,location,loinc
+40766239,63512-8,location,loinc
+40771514,68989-3,location,loinc
+40771522,68997-6,location,loinc
+40771985,69490-1,"demographics (race/ethnicity, gender)",loinc
+42538171,739684008,perinatal,snomed
+42539560,762287001,perinatal,snomed
+43020429,149141000119102,assault/homicide,snomed
+43020442,207871000119100,assault/homicide,snomed
+43020449,237451000119100,assault/homicide,snomed
+43020450,237461000119103,assault/homicide,snomed
+43020670,472321009,death cause,snomed
+43021197,472981000,gender/sex,snomed
+43021197,472981000,gender/sex,snomed
+43021205,472989003,gender/sex,snomed
+43021205,472989003,gender/sex,snomed
+43021802,473453008,assault/homicide,snomed
+43530894,609429008,perinatal,snomed
+43530907,609446006,perinatal,snomed
+43530908,609447002,perinatal,snomed
+43530910,609450004,perinatal,snomed
+43530911,609451000,perinatal,snomed
+43530939,609485004,perinatal,snomed
+43530945,609491002,perinatal,snomed
+43531705,609428000,perinatal,snomed
+43533176,G8932,death cause,hcpcs
+43533278,G8933,death cause,hcpcs
+44782688,128391000119101,legal_intervention,snomed
+44783184,699241002,military_operations,snomed
+44784256,698301002,assault/homicide,snomed
+44784273,698318003,perinatal,snomed
+44784482,698636009,perinatal,snomed
+44786876,74221-3,location,loinc
+44786929,74286-6,motor vehicle accident,loinc
+44819548,302.6,"demographics (race/ethnicity, gender)",icd9cm
+44819548,302.6,gender/sex,icd9cm
+44819549,302.9,"demographics (race/ethnicity, gender)",icd9cm
+44819549,302.9,gender/sex,icd9cm
+44819872,651.33,death cause,icd9cm
+44820252,995.53,assault/homicide,icd9cm
+44820392,V15.4,assault/homicide,icd9cm
+44821216,761.6,death cause,icd9cm
+44821408,995.80,assault/homicide,icd9cm
+44821588,V61.03,legal_intervention,icd9cm
+44821603,V71.81,assault/homicide,icd9cm
+44822074,636.20,legal_intervention,icd9cm
+44822587,E885.0,motor vehicle accident,icd9cm
+44822729,V61.0,military_operations,icd9cm
+44823255,651.63,death cause,icd9cm
+44823647,995.85,assault/homicide,icd9cm
+44824123,302.71,sexual_orientation,icd9cm
+44824377,636.40,legal_intervention,icd9cm
+44824838,995.54,assault/homicide,icd9cm
+44825303,302.0,gender/sex,icd9cm
+44825303,302.0,sexual_orientation,icd9cm
+44825303,302.0,sexual_orientation,icd9cm
+44825304,302.50,gender/sex,icd9cm
+44825304,302.50,sexual_orientation,icd9cm
+44825605,651.30,death cause,icd9cm
+44825609,656.43,death cause,icd9cm
+44826231,V61.02,military_operations,icd9cm
+44826508,302.52,"demographics (race/ethnicity, gender)",icd9cm
+44826508,302.52,gender/sex,icd9cm
+44826508,302.52,sexual_orientation,icd9cm
+44826509,302.7,"demographics (race/ethnicity, gender)",icd9cm
+44826509,302.7,gender/sex,icd9cm
+44826938,752.7,gender/sex,icd9cm
+44826990,798.0,death cause,icd9cm
+44827330,V17.41,death cause,icd9cm
+44827663,302.53,"demographics (race/ethnicity, gender)",icd9cm
+44827663,302.53,gender/sex,icd9cm
+44827663,302.53,sexual_orientation,icd9cm
+44827664,302.73,"demographics (race/ethnicity, gender)",icd9cm
+44827665,302.89,"demographics (race/ethnicity, gender)",icd9cm
+44827665,302.89,gender/sex,icd9cm
+44827922,636.70,legal_intervention,icd9cm
+44828342,995.50,assault/homicide,icd9cm
+44828581,V61.1,assault/homicide,icd9cm
+44829132,656.4,death cause,icd9cm
+44829474,995.52,assault/homicide,icd9cm
+44829596,V13.7,perinatal,icd9cm
+44829931,302.3,gender/sex,icd9cm
+44829931,302.3,gender/sex,icd9cm
+44830203,636.50,legal_intervention,icd9cm
+44830204,636.91,legal_intervention,icd9cm
+44830232,651.41,death cause,icd9cm
+44830233,651.53,death cause,icd9cm
+44831399,651.60,death cause,icd9cm
+44831785,995.5,assault/homicide,icd9cm
+44831786,995.51,assault/homicide,icd9cm
+44831788,995.81,assault/homicide,icd9cm
+44831789,995.84,assault/homicide,icd9cm
+44831987,V61.11,assault/homicide,icd9cm
+44831990,V62.2,military_operations,icd9cm
+44832243,302.85,"demographics (race/ethnicity, gender)",icd9cm
+44832243,302.85,gender/sex,icd9cm
+44832925,995.59,assault/homicide,icd9cm
+44832927,995.82,assault/homicide,icd9cm
+44833141,V62.83,assault/homicide,icd9cm
+44833708,636.90,legal_intervention,icd9cm
+44834122,995.83,assault/homicide,icd9cm
+44834317,V61.01,military_operations,icd9cm
+44834593,302.72,"demographics (race/ethnicity, gender)",icd9cm
+44834594,302.74,"demographics (race/ethnicity, gender)",icd9cm
+44834595,302.79,"demographics (race/ethnicity, gender)",icd9cm
+44834595,302.79,gender/sex,icd9cm
+44834898,651.40,death cause,icd9cm
+44835510,V61.21,assault/homicide,icd9cm
+44835797,302.51,"demographics (race/ethnicity, gender)",icd9cm
+44835797,302.51,gender/sex,icd9cm
+44835797,302.51,sexual_orientation,icd9cm
+44835798,302.70,"demographics (race/ethnicity, gender)",icd9cm
+44835798,302.70,gender/sex,icd9cm
+44836103,656.41,death cause,icd9cm
+44836610,V15.41,assault/homicide,icd9cm
+44836686,V61.07,death cause,icd9cm
+44836976,302.5,"demographics (race/ethnicity, gender)",icd9cm
+44836976,302.5,gender/sex,icd9cm
+44837251,651.31,death cause,icd9cm
+44837252,651.43,death cause,icd9cm
+44837273,656.40,death cause,icd9cm
+44837772,V15.42,assault/homicide,icd9cm
+45533174,G93.82,death cause,icd10cm
+45534210,O31.22X0,death cause,icd10cm
+45534327,O9A.419,assault/homicide,icd10cm
+45536996,T74.11XA,assault/homicide,icd10cm
+45536998,T76.22XA,assault/homicide,icd10cm
+45536999,T76.22XD,assault/homicide,icd10cm
+45537591,Y92.008,location,icd10cm
+45537593,Y92.119,location,icd10cm
+45537594,Y92.128,location,icd10cm
+45537595,Y92.129,location,icd10cm
+45537601,Y92.413,location,icd10cm
+45537602,Y92.414,location,icd10cm
+45537682,Z82.41,death cause,icd10cm
+45539156,O36.4XX0,death cause,icd10cm
+45539157,O36.4XX2,death cause,icd10cm
+45541788,T74.92XD,assault/homicide,icd10cm
+45542372,Y92.012,location,icd10cm
+45542373,Y92.017,location,icd10cm
+45542374,Y92.121,location,icd10cm
+45542375,Y92.126,location,icd10cm
+45542376,Y92.149,location,icd10cm
+45542381,Y92.215,location,icd10cm
+45546654,T74.01XS,assault/homicide,icd10cm
+45546656,T74.21XS,assault/homicide,icd10cm
+45546663,T76.12XA,assault/homicide,icd10cm
+45546664,T76.12XD,assault/homicide,icd10cm
+45546665,T76.22XS,assault/homicide,icd10cm
+45546666,T76.31XA,assault/homicide,icd10cm
+45547256,Y92.001,location,icd10cm
+45547257,Y92.002,location,icd10cm
+45547258,Y92.015,location,icd10cm
+45547259,Y92.032,location,icd10cm
+45547261,Y92.160,location,icd10cm
+45547334,Z63.71,military_operations,icd10cm
+45547337,Z69.010,assault/homicide,icd10cm
+45548743,O31.23X0,death cause,icd10cm
+45548770,O36.4XX1,death cause,icd10cm
+45551440,T74.12XA,assault/homicide,icd10cm
+45551441,T74.21XD,assault/homicide,icd10cm
+45551444,T76.31XS,assault/homicide,icd10cm
+45551831,W05.1XXA,motor vehicle accident,icd10cm
+45552037,Y92.028,location,icd10cm
+45552038,Y92.031,location,icd10cm
+45552039,Y92.049,location,icd10cm
+45552040,Y92.096,location,icd10cm
+45552043,Y92.162,location,icd10cm
+45552046,Y92.411,location,icd10cm
+45552093,Z63.31,military_operations,icd10cm
+45553623,O9A.319,assault/homicide,icd10cm
+45556215,T74.01XA,assault/homicide,icd10cm
+45556216,T74.22XA,assault/homicide,icd10cm
+45556219,T76.91XD,assault/homicide,icd10cm
+45556581,W05.1XXD,motor vehicle accident,icd10cm
+45556782,Y92.013,location,icd10cm
+45556783,Y92.016,location,icd10cm
+45556784,Y92.039,location,icd10cm
+45556785,Y92.041,location,icd10cm
+45556787,Y92.098,location,icd10cm
+45556788,Y92.120,location,icd10cm
+45556790,Y92.192,location,icd10cm
+45556793,Y92.481,location,icd10cm
+45556794,Y92.482,location,icd10cm
+45556796,Y92.810,motor vehicle accident,icd10cm
+45556806,Y99.1,military_operations,icd10cm
+45558274,O36.4XX3,death cause,icd10cm
+45560993,T74.01XD,assault/homicide,icd10cm
+45560994,T74.11XD,assault/homicide,icd10cm
+45560998,T76.02XA,assault/homicide,icd10cm
+45561000,T76.31XD,assault/homicide,icd10cm
+45561001,T76.32XA,assault/homicide,icd10cm
+45561002,T76.91XA,assault/homicide,icd10cm
+45561587,Y92.003,location,icd10cm
+45561590,Y92.142,location,icd10cm
+45561593,Y92.199,location,icd10cm
+45561597,Y92.410,location,icd10cm
+45561599,Y92.814,motor vehicle accident,icd10cm
+45561610,Z04.71,assault/homicide,icd10cm
+45563087,O31.20X0,death cause,icd10cm
+45563090,O31.23X1,death cause,icd10cm
+45566373,Y92.048,location,icd10cm
+45566374,Y92.112,location,icd10cm
+45566377,Y92.190,location,icd10cm
+45566378,Y92.193,location,icd10cm
+45566379,Y92.197,location,icd10cm
+45566380,Y92.210,location,icd10cm
+45566381,Y92.212,location,icd10cm
+45566385,Y92.813,motor vehicle accident,icd10cm
+45566446,Z62.810,assault/homicide,icd10cm
+45567909,O31.22X1,death cause,icd10cm
+45570668,T74.02XA,assault/homicide,icd10cm
+45570670,T74.31XD,assault/homicide,icd10cm
+45570671,T74.32XA,assault/homicide,icd10cm
+45571289,Y92.009,location,icd10cm
+45571290,Y92.011,location,icd10cm
+45571291,Y92.091,location,icd10cm
+45571292,Y92.093,location,icd10cm
+45571293,Y92.122,location,icd10cm
+45571294,Y92.139,location,icd10cm
+45571294,Y92.139,military_operations,icd10cm
+45571295,Y92.147,location,icd10cm
+45571297,Y92.168,location,icd10cm
+45571298,Y92.198,location,icd10cm
+45571303,Y92.415,location,icd10cm
+45572791,O31.21X2,death cause,icd10cm
+45572915,O9A.412,assault/homicide,icd10cm
+45572916,O9A.42,assault/homicide,icd10cm
+45572917,O9A.513,assault/homicide,icd10cm
+45575515,T74.91XS,assault/homicide,icd10cm
+45576103,Y92.027,location,icd10cm
+45576108,Y92.169,location,icd10cm
+45576109,Y92.194,location,icd10cm
+45576112,Y92.816,motor vehicle accident,icd10cm
+45576174,Z69.11,assault/homicide,icd10cm
+45580372,T76.11XD,assault/homicide,icd10cm
+45580772,W05.2XXA,motor vehicle accident,icd10cm
+45580983,Y92.042,location,icd10cm
+45580987,Y92.213,location,icd10cm
+45580992,Y92.815,motor vehicle accident,icd10cm
+45582603,O9A.311,assault/homicide,icd10cm
+45585193,T74.02XS,assault/homicide,icd10cm
+45585194,T74.12XD,assault/homicide,icd10cm
+45585195,T74.22XD,assault/homicide,icd10cm
+45585196,T74.31XS,assault/homicide,icd10cm
+45585204,T76.02XS,assault/homicide,icd10cm
+45585205,T76.11XA,assault/homicide,icd10cm
+45585767,Y92.000,location,icd10cm
+45585768,Y92.020,location,icd10cm
+45585769,Y92.022,location,icd10cm
+45585771,Y92.099,location,icd10cm
+45585772,Y92.10,location,icd10cm
+45585775,Y92.191,location,icd10cm
+45585776,Y92.412,location,icd10cm
+45585780,Y92.811,motor vehicle accident,icd10cm
+45585847,Z62.811,assault/homicide,icd10cm
+45585880,Z91.419,assault/homicide,icd10cm
+45587403,O9A.32,assault/homicide,icd10cm
+45587405,O9A.52,assault/homicide,icd10cm
+45590670,Y92.007,location,icd10cm
+45590672,Y92.030,location,icd10cm
+45590673,Y92.095,location,icd10cm
+45590674,Y92.214,location,icd10cm
+45590675,Y92.218,location,icd10cm
+45590695,Z04.72,assault/homicide,icd10cm
+45590746,Z62.819,assault/homicide,icd10cm
+45590752,Z69.021,assault/homicide,icd10cm
+45590772,Z91.411,assault/homicide,icd10cm
+45592220,O31.21X0,death cause,icd10cm
+45592221,O31.23X2,death cause,icd10cm
+45592318,O9A.313,assault/homicide,icd10cm
+45592319,O9A.411,assault/homicide,icd10cm
+45592320,O9A.413,assault/homicide,icd10cm
+45594865,T74.91XA,assault/homicide,icd10cm
+45594871,T76.91XS,assault/homicide,icd10cm
+45595452,Y92.010,location,icd10cm
+45595453,Y92.018,location,icd10cm
+45595455,Y92.046,location,icd10cm
+45595456,Y92.124,location,icd10cm
+45595461,Y92.480,location,icd10cm
+45595466,Y92.818,motor vehicle accident,icd10cm
+45596949,O31.22X2,death cause,icd10cm
+45596984,O36.4XX9,death cause,icd10cm
+45599709,T74.12XS,assault/homicide,icd10cm
+45599710,T74.21XA,assault/homicide,icd10cm
+45599711,T74.31XA,assault/homicide,icd10cm
+45599712,T74.92XS,assault/homicide,icd10cm
+45600285,Y92.038,location,icd10cm
+45600288,Y92.211,location,icd10cm
+45600290,Y92.488,location,icd10cm
+45600334,Z56.82,military_operations,icd10cm
+45600351,Z69.81,assault/homicide,icd10cm
+45604502,T74.32XS,assault/homicide,icd10cm
+45604503,T74.4XXA,assault/homicide,icd10cm
+45604504,T74.92XA,assault/homicide,icd10cm
+45604507,T76.01XD,assault/homicide,icd10cm
+45604508,T76.21XD,assault/homicide,icd10cm
+45604509,T76.21XS,assault/homicide,icd10cm
+45605068,Y92.014,location,icd10cm
+45605069,Y92.019,location,icd10cm
+45605070,Y92.090,location,icd10cm
+45605071,Y92.092,location,icd10cm
+45605072,Y92.094,location,icd10cm
+45605074,Y92.125,location,icd10cm
+45605076,Y92.138,location,icd10cm
+45605076,Y92.138,military_operations,icd10cm
+45605077,Y92.148,location,icd10cm
+45605078,Y92.219,location,icd10cm
+45605082,Y92.812,motor vehicle accident,icd10cm
+45605172,Z91.410,assault/homicide,icd10cm
+45606569,O31.21X1,death cause,icd10cm
+45606570,O31.23X3,death cause,icd10cm
+45606682,O9A.312,assault/homicide,icd10cm
+45609287,T74.22XS,assault/homicide,icd10cm
+45609288,T74.91XD,assault/homicide,icd10cm
+45609291,T76.01XA,assault/homicide,icd10cm
+45609292,T76.21XA,assault/homicide,icd10cm
+45609676,W05.2XXD,motor vehicle accident,icd10cm
+45609763,W94.11XA,location,icd10cm
+45609888,Y92.023,location,icd10cm
+45609890,Y92.029,location,icd10cm
+45609892,Y92.143,location,icd10cm
+45609957,Z62.812,assault/homicide,icd10cm
+45757135,10756261000119102,assault/homicide,snomed
+45757136,10756301000119105,assault/homicide,snomed
+45757170,10760941000119102,assault/homicide,snomed
+45757171,10760981000119107,assault/homicide,snomed
+45757172,10761021000119102,assault/homicide,snomed
+45757173,10761061000119107,assault/homicide,snomed
+45763732,700229002,assault/homicide,snomed
+45765604,702579009,assault/homicide,snomed
+45766189,703300001,suffocation,snomed
+45767012,704294006,perinatal,snomed
+45768441,706872008,assault/homicide,snomed
+45768458,706893006,assault/homicide,snomed
+45768510,706957005,location,snomed
+45876350,LA4168-6,"demographics (race/ethnicity, gender)",loinc
+45876631,LA4443-3,"demographics (race/ethnicity, gender)",loinc
+45876999,LA7-7,"demographics (race/ethnicity, gender)",loinc
+45877398,LA10601-5,"demographics (race/ethnicity, gender)",loinc
+45877442,LA6155-1,"demographics (race/ethnicity, gender)",loinc
+45877496,LA15581-4,sexual_orientation,loinc
+45877987,LA4457-3,"demographics (race/ethnicity, gender)",loinc
+45877988,LA10610-6,"demographics (race/ethnicity, gender)",loinc
+45878240,LA10611-4,"demographics (race/ethnicity, gender)",loinc
+45878463,LA3-6,"demographics (race/ethnicity, gender)",loinc
+45879207,LA14509-6,"demographics (race/ethnicity, gender)",loinc
+45879439,LA6156-9,"demographics (race/ethnicity, gender)",loinc
+45880669,LA2-8,"demographics (race/ethnicity, gender)",loinc
+45880773,LA14511-2,"demographics (race/ethnicity, gender)",loinc
+45882242,LA3969-8,"demographics (race/ethnicity, gender)",loinc
+45882243,LA4595-0,"demographics (race/ethnicity, gender)",loinc
+45883294,LA15575-6,"demographics (race/ethnicity, gender)",loinc
+45883615,LA16816-3,"demographics (race/ethnicity, gender)",loinc
+45884422,LA14045-1,"demographics (race/ethnicity, gender)",loinc
+45885214,LA4300-5,"demographics (race/ethnicity, gender)",loinc
+45923856,126582,assault/homicide,ciel
+46235213,76689-9,gender/sex,loinc
+46235214,76690-7,gender/sex,loinc
+46235214,76690-7,sexual_orientation,loinc
+46235214,76690-7,sexual_orientation,loinc
+46235215,76691-5,"demographics (race/ethnicity, gender)",loinc
+46235215,76691-5,gender/sex,loinc
+46235350,75617-1,location,loinc
+46237778,LA14042-8,"demographics (race/ethnicity, gender)",loinc
+46238126,LA23729-9,"demographics (race/ethnicity, gender)",loinc
+46270007,117361000119104,death cause,snomed
+46270374,29231000119109,military_operations,snomed
+46270374,29231000119109,assault/homicide,snomed
+46270485,32570681000036106,gender/sex,snomed
+46271794,710045002,assault/homicide,snomed
+46273637,32570691000036108,gender/sex,snomed
