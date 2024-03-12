@@ -145,6 +145,10 @@ concept_id,concept_code,privacy_rule,vocabulary_id
 903061,SpectrumHealthSitePairing_No,geolocationconceptsuppression,ppi
 903513,Reconsent_Signature,explicitidentifiersuppression,ppi
 903562,ResultsConsent_Signature,explicitidentifiersuppression,ppi
+1585395,HealthInsuranceType_Military,active_duty_military_status,ppi
+1585898,CurrentMaritalStatus_LivingWithPartner,living_situation,ppi
+1332916,cope_a_104,living_situation,ppi
+43529920,InsuranceTypeUpdate_Military,active_duty_military_status,ppi
 1001698,93374-7,death cause,loinc
 1332899,cope_a_45,sexual_orientation,ppi
 1340204,OMOP5165859,liveborn_infants,omop extension
