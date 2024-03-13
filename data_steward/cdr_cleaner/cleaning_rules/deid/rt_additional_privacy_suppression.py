@@ -2,6 +2,9 @@
 Ensures that all the newly identified concepts as of 02/29/2024 in vocabulary are being suppressed
 in the Registered tier dataset and sandboxed in the sandbox dataset
 
+For concepts that are suppressed in both PPI and EHR, this Cleaning rule accounts for their suppression
+For concepts that are suppressed in EHR but not in PPI, post coordination affects them so they are suppressed by
+the RTObsPrivacySuppression
 
 Original Issue: DC-3749
 
