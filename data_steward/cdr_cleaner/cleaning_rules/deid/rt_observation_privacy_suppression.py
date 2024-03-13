@@ -2,12 +2,12 @@
 Ensures that all the newly identified concepts as of 02/29/2024 in vocabulary are being suppressed
 in the Registered tier dataset and sandboxed in the sandbox dataset
 
-For concepts that are suppressed in EHR but not in PPI, post coordination affects them so they are suppressed by
-this CR. For the rest, it is handled by the RTAdditionalPrivacyConceptSuppression CR.
+For observation table, we need to ensure PPI concepts that are post-coordinated are not suppressed by this CR
+For concepts that are suppressed in both PPI and EHR, it is handled by RTAdditionalPrivacyConceptSuppression
 
 Original Issue: DC-3749
 
-The intent of this cleaning rule is to ensure the postcoordinated concepts to suppress
+The intent of this cleaning rule is to ensure the post-coordinated concepts to suppress
 in RT are sandboxed and suppressed.
 """
 
@@ -17,7 +17,7 @@ import pandas as pd
 
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 # Project imports
-from resources import RT_OBSERVATION_PRIVACY_CONCEPTS_PATH
+from resources import RT_OBSERVATION_PRIVACY_CONCEPTS_PATH, RT_ADDITIONAL_PRIVACY_CONCEPTS_PATH
 from gcloud.bq import bigquery
 from common import OBSERVATION, JINJA_ENV
 from utils import pipeline_logging
@@ -27,9 +27,9 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from google.cloud.exceptions import GoogleCloudError
 
 LOGGER = logging.getLogger(__name__)
-ISSUE_NUMBERS = ['dc3749', 'rt_postc']
+ISSUE_NUMBERS = ['dc3749']
 
-SANDBOX_POSTC_OBS = JINJA_ENV.from_string("""
+SANDBOX_OBS = JINJA_ENV.from_string("""
 CREATE TABLE `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS
 SELECT
   d.*
@@ -52,6 +52,35 @@ LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{postc_concept_sup}}` AS s7
   ON d.value_source_concept_id = s7.concept_id 
 WHERE m.src_id LIKE "%EHR%"
 AND COALESCE(
+   s1.concept_id
+,  s2.concept_id
+,  s3.concept_id
+,  s4.concept_id
+,  s5.concept_id
+,  s6.concept_id
+,  s7.concept_id
+) IS NOT NULL
+UNION ALL
+SELECT
+  d.*
+FROM `{{project_id}}.{{dataset_id}}.observation` AS d
+JOIN `{{project_id}}.{{dataset_id}}.observation_ext` AS m
+  ON d.observation_id = m.observation_id
+LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{rest_concept_sup}}` AS s1
+  ON d.observation_concept_id = s1.concept_id 
+LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{rest_concept_sup}}` AS s2
+  ON d.observation_type_concept_id = s2.concept_id 
+LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{rest_concept_sup}}` AS s3
+  ON d.value_as_concept_id = s3.concept_id 
+LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{rest_concept_sup}}` AS s4
+  ON d.qualifier_concept_id = s4.concept_id 
+LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{rest_concept_sup}}` AS s5
+  ON d.unit_concept_id = s5.concept_id 
+LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{rest_concept_sup}}` AS s6
+  ON d.observation_source_concept_id = s6.concept_id 
+LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{rest_concept_sup}}` AS s7
+  ON d.value_source_concept_id = s7.concept_id 
+WHERE COALESCE(
    s1.concept_id
 ,  s2.concept_id
 ,  s3.concept_id
@@ -87,7 +116,8 @@ class RTObservationPrivacySuppression(BaseCleaningRule):
         """
         desc = f'Any record with an concept_id equal to any of the values in ' \
                f'{ISSUE_NUMBERS} will be sandboxed and dropped from the domain tables'
-        self.rt_observation_privacy_concept_table = f'rt_observation_privacy_{ISSUE_NUMBERS[0]}'
+        self.rt_observation_postc_concept_table = f'rt_observation_postc_{ISSUE_NUMBERS[0]}'
+        self.rt_observation_rest_concept_table = f'rt_observation_rest_{ISSUE_NUMBERS[0]}'
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
@@ -105,7 +135,18 @@ class RTObservationPrivacySuppression(BaseCleaningRule):
         df = pd.read_csv(RT_OBSERVATION_PRIVACY_CONCEPTS_PATH)
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
-        table_ref = dataset_ref.table(self.rt_observation_privacy_concept_table)
+        table_ref = dataset_ref.table(self.rt_observation_postc_concept_table)
+        result = client.load_table_from_dataframe(df, table_ref).result()
+
+        if hasattr(result, 'errors') and result.errors:
+            LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
+            raise GoogleCloudError(
+                f"Error running job {result.job_id}: {result.errors}")
+
+        df = pd.read_csv(RT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
+        dataset_ref = bigquery.DatasetReference(self.project_id,
+                                                self.sandbox_dataset_id)
+        table_ref = dataset_ref.table(self.rt_observation_rest_concept_table)
         result = client.load_table_from_dataframe(df, table_ref).result()
 
         if hasattr(result, 'errors') and result.errors:
@@ -115,21 +156,22 @@ class RTObservationPrivacySuppression(BaseCleaningRule):
 
     def get_query_specs(self, *args, **keyword_args):
         """
-                Return a list of dictionary query specifications.
+        Return a list of dictionary query specifications.
 
-                :return:  A list of dictionaries. Each dictionary contains a single query
-                    and a specification for how to execute that query. The specifications
-                    are optional but the query is required.
-                """
+        :return:  A list of dictionaries. Each dictionary contains a single query
+            and a specification for how to execute that query. The specifications
+            are optional but the query is required.
+        """
 
         queries_list = []
         sandbox_query = dict()
-        sandbox_query[cdr_consts.QUERY] = SANDBOX_POSTC_OBS.render(
+        sandbox_query[cdr_consts.QUERY] = SANDBOX_OBS.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_id=self.sandbox_dataset_id,
             sandbox_table=self.sandbox_table_for(OBSERVATION),
-            postc_concept_sup=self.rt_observation_privacy_concept_table,
+            postc_concept_sup=self.rt_observation_postc_concept_table,
+            rest_concept_sup=self.rt_observation_rest_concept_table,
         )
         queries_list.append(sandbox_query)
 
