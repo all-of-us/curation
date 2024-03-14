@@ -466,11 +466,14 @@ class ValidationMainTest(TestCase):
         mock_hpo_bucket = mock.MagicMock()
         mock_drc_bucket = mock.MagicMock()
         mock_source_blob = mock.MagicMock()
+        mock_dest_blob = mock.MagicMock()
 
         type(mock_hpo_bucket).name = mock.PropertyMock(
             return_value='fake_prefix')
         mock_hpo_bucket.get_blob.return_value = mock_source_blob
-        mock_hpo_bucket.copy_blob.return_value = mock_source_blob
+
+        mock_drc_bucket.blob.return_value = mock_dest_blob
+        mock_dest_blob.rewrite.return_value = False, mock.MagicMock(), mock.MagicMock()
 
         mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
         mock_client.get_drc_bucket.return_value = mock_drc_bucket
@@ -499,7 +502,7 @@ class ValidationMainTest(TestCase):
 
         # make sure get/copy was never called for participant directories
         mock_hpo_bucket.get_blob.assert_not_called()
-        mock_hpo_bucket.copy_blob.assert_not_called()
+        mock_dest_blob.rewrite.assert_not_called()
 
     @mock.patch('api_util.check_cron')
     def test_copy_files_accept_all(self, mock_check_cron):
@@ -519,11 +522,13 @@ class ValidationMainTest(TestCase):
         mock_hpo_bucket = mock.MagicMock()
         mock_drc_bucket = mock.MagicMock()
         mock_source_blob = mock.MagicMock()
+        mock_dest_blob = mock.MagicMock()
 
         type(mock_hpo_bucket).name = mock.PropertyMock(
             return_value='fake_prefix')
         mock_hpo_bucket.get_blob.return_value = mock_source_blob
-        mock_hpo_bucket.copy_blob.return_value = mock_source_blob
+        mock_drc_bucket.blob.return_value = mock_dest_blob
+        mock_dest_blob.rewrite.return_value = False, mock.MagicMock(), mock.MagicMock()
 
         mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
         mock_client.get_drc_bucket.return_value = mock_drc_bucket
@@ -548,15 +553,13 @@ class ValidationMainTest(TestCase):
         mock_client.get_bucket_items_metadata.assert_called()
 
         expected: list = [
-            mock.call(mock_source_blob, mock_drc_bucket,
-                      'fake_hpo_id/fake_prefix/submission/person.csv'),
-            mock.call(mock_source_blob, mock_drc_bucket,
-                      'fake_hpo_id/fake_prefix/SUBMISSION/measurement.csv')
+            mock.call(mock_source_blob, token=False),
+            mock.call(mock_source_blob, token=False),
         ]
         # make sure copy is called for submission directories
         self.assertEqual(mock_hpo_bucket.get_blob.call_count, 2)
-        self.assertEqual(mock_hpo_bucket.copy_blob.call_count, 2)
-        mock_hpo_bucket.copy_blob.assert_has_calls(expected, any_order=True)
+        self.assertEqual(mock_dest_blob.rewrite.call_count, 2)
+        mock_dest_blob.rewrite.assert_has_calls(expected, any_order=True)
 
     @mock.patch('validation.main.process_hpo_copy')
     @mock.patch('api_util.check_cron')

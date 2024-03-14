@@ -1015,10 +1015,10 @@ def process_hpo_copy(hpo_id):
             rewrite_token = False
             while True:
                 rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
-                        hpo_blob, token=rewrite_token
-                    )
+                    hpo_blob, token=rewrite_token)
                 logging.info(
-                    f"{full_name}: Copied: {bytes_rewritten}/{bytes_to_rewrite} bytes.")
+                    f"{full_name}: Copied: {bytes_rewritten}/{bytes_to_rewrite} bytes."
+                )
 
                 if not rewrite_token:
                     break
