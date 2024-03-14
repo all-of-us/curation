@@ -473,7 +473,8 @@ class ValidationMainTest(TestCase):
         mock_hpo_bucket.get_blob.return_value = mock_source_blob
 
         mock_drc_bucket.blob.return_value = mock_dest_blob
-        mock_dest_blob.rewrite.return_value = False, mock.MagicMock(), mock.MagicMock()
+        mock_dest_blob.rewrite.return_value = False, mock.MagicMock(
+        ), mock.MagicMock()
 
         mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
         mock_client.get_drc_bucket.return_value = mock_drc_bucket
@@ -528,7 +529,8 @@ class ValidationMainTest(TestCase):
             return_value='fake_prefix')
         mock_hpo_bucket.get_blob.return_value = mock_source_blob
         mock_drc_bucket.blob.return_value = mock_dest_blob
-        mock_dest_blob.rewrite.return_value = False, mock.MagicMock(), mock.MagicMock()
+        mock_dest_blob.rewrite.return_value = False, mock.MagicMock(
+        ), mock.MagicMock()
 
         mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
         mock_client.get_drc_bucket.return_value = mock_drc_bucket
