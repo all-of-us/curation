@@ -21,6 +21,11 @@ from resources import cdm_fields_path
 
 LOGGER = logging.getLogger(__name__)
 
+SANDBOX_QUERY = JINJA_ENV.from_string("""
+CREATE TABLE `{{project_id}}.{{dataset_id}}.{{sandbox_table_name}}` AS
+SELECT * FROM `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`
+""")
+
 DELETION_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`
 WHERE TRUE
@@ -283,7 +288,7 @@ class CreateDerivedTables(BaseCleaningRule):
             self.ehr_cutoff_date = validate_date_string(ehr_cutoff_date)
         except (TypeError, ValueError):
             # otherwise, default to using today's date as the date string
-            self.cutoff_date = str(datetime.now().date())
+            self.ehr_cutoff_date = str(datetime.now().date())
 
         super().__init__(issue_numbers=['DC3729'],
                          description=desc,
@@ -304,10 +309,23 @@ class CreateDerivedTables(BaseCleaningRule):
         :return: a list of SQL strings to run
         """
         create_derived_table_list = []
+        create_sandbox_table_list = []
         derived_path = os.path.join(cdm_fields_path, 'derived')
         schema_result = dict()
 
-        for table in [OBSERVATION_PERIOD, DRUG_ERA, CONDITION_ERA]:
+        for table in [
+                OBSERVATION_PERIOD, f'{OBSERVATION_PERIOD}_ext', DRUG_ERA,
+                f'{DRUG_ERA}_ext', CONDITION_ERA, f'{CONDITION_ERA}_ext'
+        ]:
+            # Sandbox data for table
+            create_derived_table_list.append({
+                cdr_consts.QUERY:
+                    SANDBOX_QUERY.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        storage_table_name=table,
+                        sandbox_table_name=self.sandbox_table_for(table))
+            })
             # Delete data for Table
             create_derived_table_list.append({
                 cdr_consts.QUERY:
