@@ -22,7 +22,7 @@ from resources import cdm_fields_path
 LOGGER = logging.getLogger(__name__)
 
 SANDBOX_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{{project_id}}.{{dataset_id}}.{{sandbox_table_name}}` AS
+CREATE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_name}}` AS
 SELECT * FROM `{{project_id}}.{{dataset_id}}.{{storage_table_name}}`
 """)
 
@@ -323,6 +323,7 @@ class CreateDerivedTables(BaseCleaningRule):
                     SANDBOX_QUERY.render(
                         project_id=self.project_id,
                         dataset_id=self.dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
                         storage_table_name=table,
                         sandbox_table_name=self.sandbox_table_for(table))
             })
