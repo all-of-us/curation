@@ -666,3 +666,7 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 46270374,29231000119109,military_operations,snomed,2024-03-08
 46270374,29231000119109,assault/homicide,snomed,2024-03-08
 46271794,710045002,assault/homicide,snomed,2024-03-08
+44822579,E868.2,motor vehicle accident,icd9cm,2024-03-08
+4072665,242119003,motor vehicle accident,snomed,2024-03-08
+442041,216836004,motor vehicle accident,snomed,2024-03-08
+45561474,X82.0XXA,motor vehicle accident,icd10cm,2024-03-08
