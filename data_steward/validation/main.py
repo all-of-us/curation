@@ -1009,19 +1009,11 @@ def process_hpo_copy(hpo_id):
         else:
             name: str = item['name']
             full_name: str = f'{hpo_id}/{hpo_bucket.name}/{name}'
-            hpo_blob = hpo_bucket.get_blob(name)
-            dest_blob = drc_bucket.blob(full_name)
 
-            rewrite_token = False
-            while True:
-                rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
-                    hpo_blob, token=rewrite_token)
-                logging.info(
-                    f"{full_name}: Copied: {bytes_rewritten}/{bytes_to_rewrite} bytes."
-                )
-
-                if not rewrite_token:
-                    break
+            storage_client.copy_file(src_bucket=hpo_bucket,
+                                     dest_bucket=drc_bucket,
+                                     src_path=name,
+                                     dest_path=full_name)
 
     logging.info(
         f"Ignoring {ignored_count} of {len(bucket_items)} items in bucket "
