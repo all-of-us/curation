@@ -1,0 +1,24 @@
+concept_id,concept_code,privacy_rule,vocabulary_id,date_added
+3005917,21842-0,location,loinc,2024-03-12
+4170582,42035005,sexual_orientation,snomed,2024-03-12
+4230492,89217008,"demographics (race/ethnicity, gender)",snomed,2024-03-12
+4230492,89217008,gender/sex,snomed,2024-03-12
+4230492,89217008,sexual_orientation,snomed,2024-03-12
+4328364,76102007,"demographics (race/ethnicity, gender)",snomed,2024-03-12
+4328364,76102007,gender/sex,snomed,2024-03-12
+4328364,76102007,sexual_orientation,snomed,2024-03-12
+45876350,LA4168-6,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45877398,LA10601-5,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45877442,LA6155-1,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45877987,LA4457-3,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45878240,LA10611-4,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45878463,LA3-6,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45879207,LA14509-6,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45879439,LA6156-9,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45880669,LA2-8,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45882242,LA3969-8,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45882243,LA4595-0,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45884422,LA14045-1,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+45885214,LA4300-5,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+46237778,LA14042-8,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+46273637,32570691000036108,gender/sex,snomed,2024-03-12

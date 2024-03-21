@@ -20,20 +20,16 @@ class AbstractConceptSuppression(BaseCleaningRule):
     """
 
     SUPPRESSION_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
-    SELECT
-      d.*
-    FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
-    LEFT JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS s
-    {% if domain_table == 'death' %}
-        ON d.person_id = s.person_id
-        WHERE s.person_id IS NULL
+    DELETE
+    FROM `{{project}}.{{dataset}}.{{domain_table}}`
+    WHERE {% if domain_table == 'death' %}
+        person_id IN (SELECT person_id
     {% elif domain_table == 'aou_death' %}
-        ON d.aou_death_id = s.aou_death_id
-        WHERE s.aou_death_id IS NULL
+        aou_death_id IN (SELECT aou_death_id 
     {% else %}
-        ON d.{{domain_table}}_id = s.{{domain_table}}_id
-        WHERE s.{{domain_table}}_id IS NULL
+        {{domain_table}}_id IN (SELECT {{domain_table}}_id
     {% endif %}
+    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)
     """)
 
     def __init__(self,
@@ -108,12 +104,7 @@ class AbstractConceptSuppression(BaseCleaningRule):
             domain_table=table_name,
             sandbox_table=self.sandbox_table_for(table_name))
 
-        return {
-            cdr_consts.QUERY: suppression_record_query,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-            cdr_consts.DESTINATION_TABLE: table_name
-        }
+        return {cdr_consts.QUERY: suppression_record_query}
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         # Queries for sandboxing the records

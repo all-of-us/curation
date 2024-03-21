@@ -19,6 +19,9 @@ from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
+from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import CTAdditionalPrivacyConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.rt_additional_privacy_suppression import RTAdditionalPrivacyConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.rt_observation_privacy_suppression import RTObservationPrivacySuppression
 from cdr_cleaner.cleaning_rules.domain_alignment import DomainAlignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
@@ -301,6 +304,8 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (RegisteredCopeSurveyQuestionsSuppression,),
     (ExplicitIdentifierSuppression,),
     (CancerConceptSuppression,),
+    (RTAdditionalPrivacyConceptSuppression,),
+    (RTObservationPrivacySuppression,),
     (StringFieldsSuppression,),
     (FreeTextSurveyResponseSuppression,),
     (DropOrphanedSurveyConductIds,),
@@ -364,6 +369,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (IDFieldSuppression,),  # Should run after any data remapping
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (SectionParticipationConceptSuppression,),
+    (CTAdditionalPrivacyConceptSuppression,),
     (StringFieldsSuppression,),
     (AggregateZipCodes,),
     (DeidentifyAIANZip3Values,),
