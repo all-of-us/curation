@@ -25,7 +25,7 @@ from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
 from google.cloud.exceptions import GoogleCloudError
 
 LOGGER = logging.getLogger(__name__)
-ISSUE_NUMBERS = ['DC3749']
+ISSUE_NUMBERS = ['dc3749']
 
 
 class CTAdditionalPrivacyConceptSuppression(

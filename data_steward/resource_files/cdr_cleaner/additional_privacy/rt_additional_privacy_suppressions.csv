@@ -190,7 +190,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 3026646,21838-8,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 3038482,52531-1,location,loinc,2024-03-12
 3041797,52532-9,location,loinc,2024-03-12
-3043579,45401-7,location,loinc,2024-03-12
 3046965,46098-0,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 3046965,46098-0,gender/sex,loinc,2024-03-12
 3050381,46463-6,"demographics (race/ethnicity, gender)",loinc,2024-03-12
