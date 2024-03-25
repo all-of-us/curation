@@ -117,8 +117,8 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
         """
         desc = f'Any record with an concept_id equal to any of the values in ' \
                f'{ISSUE_NUMBERS} will be sandboxed and dropped from the domain tables'
-        self.rt_observation_postc_concept_table = f'rt_observation_postc_{ISSUE_NUMBERS[0]}'
-        self.rt_observation_rest_concept_table = f'rt_observation_rest_{ISSUE_NUMBERS[0]}'
+        self.ct_observation_postc_concept_table = f'ct_observation_postc_{ISSUE_NUMBERS[0]}'
+        self.ct_observation_rest_concept_table = f'ct_observation_rest_{ISSUE_NUMBERS[0]}'
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
@@ -136,7 +136,7 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
         df = pd.read_csv(CT_OBSERVATION_PRIVACY_CONCEPTS_PATH)
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
-        table_ref = dataset_ref.table(self.rt_observation_postc_concept_table)
+        table_ref = dataset_ref.table(self.ct_observation_postc_concept_table)
         result = client.load_table_from_dataframe(df, table_ref).result()
 
         if hasattr(result, 'errors') and result.errors:
@@ -149,7 +149,7 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
         df = pd.concat([df_all, df_pr], ignore_index=True)
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
-        table_ref = dataset_ref.table(self.rt_observation_rest_concept_table)
+        table_ref = dataset_ref.table(self.ct_observation_rest_concept_table)
         result = client.load_table_from_dataframe(df, table_ref).result()
 
         if hasattr(result, 'errors') and result.errors:
@@ -173,8 +173,8 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
             dataset_id=self.dataset_id,
             sandbox_id=self.sandbox_dataset_id,
             sandbox_table=self.sandbox_table_for(OBSERVATION),
-            postc_concept_sup=self.rt_observation_postc_concept_table,
-            rest_concept_sup=self.rt_observation_rest_concept_table,
+            postc_concept_sup=self.ct_observation_postc_concept_table,
+            rest_concept_sup=self.ct_observation_rest_concept_table,
         )
         queries_list.append(sandbox_query)
 

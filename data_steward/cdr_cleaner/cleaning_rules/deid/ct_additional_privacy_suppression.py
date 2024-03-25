@@ -17,7 +17,7 @@ from resources import (CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH,
                        CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH,
                        CT_OBSERVATION_PRIVACY_CONCEPTS_PATH)
 from gcloud.bq import bigquery
-from common import AOU_DEATH, CDM_TABLES, PERSON
+from common import AOU_DEATH, CDM_TABLES, PERSON, OBSERVATION
 from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
@@ -55,7 +55,8 @@ class CTAdditionalPrivacyConceptSuppression(
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            affected_tables=list(set(CDM_TABLES + [AOU_DEATH]) - {PERSON}),
+            affected_tables=list(
+                set(CDM_TABLES + [AOU_DEATH]) - {PERSON, OBSERVATION}),
             concept_suppression_lookup_table=ct_additional_privacy_concept_table,
             table_namer=table_namer)
 
