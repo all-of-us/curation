@@ -16,7 +16,9 @@ import logging
 import pandas as pd
 
 # Project imports
-from resources import RT_ADDITIONAL_PRIVACY_CONCEPTS_PATH, RT_OBSERVATION_PRIVACY_CONCEPTS_PATH
+from resources import (RT_ADDITIONAL_PRIVACY_CONCEPTS_PATH,
+                       CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH,
+                       RT_OBSERVATION_PRIVACY_CONCEPTS_PATH)
 from gcloud.bq import bigquery
 from common import AOU_DEATH, CDM_TABLES, PERSON, OBSERVATION
 from utils import pipeline_logging
@@ -64,7 +66,8 @@ class RTAdditionalPrivacyConceptSuppression(
     def create_suppression_lookup_table(self, client):
         df_all = pd.read_csv(RT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
         df_postc = pd.read_csv(RT_OBSERVATION_PRIVACY_CONCEPTS_PATH)
-        df = pd.concat([df_all, df_postc], ignore_index=True)
+        df_pr = pd.read_csv(CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH)
+        df = pd.concat([df_all, df_postc, df_pr], ignore_index=True)
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
         table_ref = dataset_ref.table(self.concept_suppression_lookup_table)
