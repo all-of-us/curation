@@ -17,7 +17,8 @@ import pandas as pd
 
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 # Project imports
-from resources import CT_OBSERVATION_PRIVACY_CONCEPTS_PATH, CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH
+from resources import CT_OBSERVATION_PRIVACY_CONCEPTS_PATH, CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH, \
+    CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH
 from gcloud.bq import bigquery
 from common import OBSERVATION, JINJA_ENV
 from utils import pipeline_logging
@@ -143,7 +144,9 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
             raise GoogleCloudError(
                 f"Error running job {result.job_id}: {result.errors}")
 
-        df = pd.read_csv(CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
+        df_all = pd.read_csv(CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
+        df_pr = pd.read_csv(CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH)
+        df = pd.concat([df_all, df_pr], ignore_index=True)
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
         table_ref = dataset_ref.table(self.rt_observation_rest_concept_table)
