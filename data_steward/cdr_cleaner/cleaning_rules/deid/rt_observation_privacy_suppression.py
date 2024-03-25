@@ -1,5 +1,5 @@
 """
-Ensures that all the newly identified concepts as of 02/29/2024 in vocabulary are being suppressed
+Ensures that all the newly identified concepts in vocabulary are being suppressed
 in the Registered tier dataset and sandboxed in the sandbox dataset
 
 For observation table, we need to ensure PPI concepts that are post-coordinated are not suppressed by this CR

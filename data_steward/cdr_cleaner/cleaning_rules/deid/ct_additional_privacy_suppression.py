@@ -1,5 +1,5 @@
 """
-Ensures that all the newly identified concepts as of 02/29/2024 in vocabulary are being suppressed
+Ensures that all the newly identified concepts in vocabulary are being suppressed
 in the Controlled tier dataset and sandboxed in the sandbox dataset
 
 
