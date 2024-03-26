@@ -1009,8 +1009,11 @@ def process_hpo_copy(hpo_id):
         else:
             name: str = item['name']
             full_name: str = f'{hpo_id}/{hpo_bucket.name}/{name}'
-            hpo_blob = hpo_bucket.get_blob(name)
-            hpo_bucket.copy_blob(hpo_blob, drc_bucket, full_name)
+
+            storage_client.copy_file(src_bucket=hpo_bucket,
+                                     dest_bucket=drc_bucket,
+                                     src_path=name,
+                                     dest_path=full_name)
 
     logging.info(
         f"Ignoring {ignored_count} of {len(bucket_items)} items in bucket "

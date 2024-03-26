@@ -2,6 +2,7 @@
 Interact with Google Cloud Storage (GCS)
 """
 # Python stl imports
+import logging
 import os
 from typing import Union
 
@@ -181,3 +182,27 @@ class StorageClient(Client):
             return 'None'
 
         return result_df['bucket_name'].iloc[0]
+
+    def copy_file(self, src_bucket: Bucket, dest_bucket: Bucket, src_path: str,
+                  dest_path: str):
+        """
+        Copy a file from one bucket to another. Blob.rewrite is used here
+        instead of Bucket.copy_blob to avoid timeout error.
+        :param src_bucket: Bucket where the file to copy is in
+        :param dest_bucket: Bucket where to copy the file to
+        :param src_path: Full path of the source file
+        :param dest_path: Full path of the target file
+        """
+        src_blob = src_bucket.get_blob(src_path)
+        dest_blob = dest_bucket.blob(dest_path)
+
+        rewrite_token = False
+        while True:
+            rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
+                src_blob, token=rewrite_token)
+            logging.info(
+                f"{dest_path}: Copied: {bytes_rewritten}/{bytes_to_rewrite} bytes."
+            )
+
+            if not rewrite_token:
+                break
