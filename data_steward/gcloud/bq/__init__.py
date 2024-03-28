@@ -17,10 +17,6 @@ from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition, QueryJobC
 from google.auth import default
 from google.api_core.exceptions import GoogleAPIError, BadRequest, Conflict
 from google.cloud.exceptions import NotFound
-from opentelemetry import trace
-from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 # Project imports
 from utils import auth
@@ -30,9 +26,6 @@ from constants.utils import bq as consts
 from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 from resources import get_bq_col_type
 
-tracer_provider = TracerProvider()
-trace.set_tracer_provider(tracer_provider)
-tracer = trace.get_tracer(__name__)
 
 BIGQUERY_DATA_TYPES = {
     'integer': 'INT64',
@@ -62,16 +55,11 @@ class BigQueryClient(Client):
 
         :return:  A BigQueryClient instance
         """
-        cloud_trace_exporter = CloudTraceSpanExporter(project_id=project_id)
-        tracer_provider.add_span_processor(
-            BatchSpanProcessor(cloud_trace_exporter))
-        # TODO create counter to keep track of multiple client instances
-        with tracer.start_as_current_span(project_id):
-            if scopes:
-                credentials, project_id = default()
-                credentials = auth.delegated_credentials(credentials,
-                                                         scopes=scopes)
-            super().__init__(project=project_id, credentials=credentials)
+        if scopes:
+            credentials, project_id = default()
+            credentials = auth.delegated_credentials(credentials,
+                                                     scopes=scopes)
+        super().__init__(project=project_id, credentials=credentials)
 
     def get_table_schema(self, table_name: str, fields=None) -> list:
         """
