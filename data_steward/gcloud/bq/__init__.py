@@ -476,7 +476,11 @@ class BigQueryClient(Client):
             if schema_list:
                 sc_list = []
                 for item in schema_list:
-                    field_cast = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
+                    # NPH does not provide AOU-specific fields, select them as NULL
+                    if item.name in ['value_source_concept_id', 'value_source_value', 'questionnaire_response_id']:
+                        field_cast = f'CAST(NULL AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
+                    else:
+                        field_cast = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
                     sc_list.append(field_cast)
 
                 fields_name_str = ',\n'.join(sc_list)
