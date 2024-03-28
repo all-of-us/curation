@@ -16,7 +16,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import JINJA_ENV, AOU_REQUIRED
 from constants import bq_utils as bq_consts
 from utils import pipeline_logging
-from resources import fields_for
+from resources import fields_for, validate_date_string
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
@@ -188,23 +188,6 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
         for table in self.affected_tables:
             sandbox_tables.append(self.sandbox_table_for(table))
         return sandbox_tables
-
-
-def validate_date_string(date_string):
-    """
-    Validates the date string is a valid date in the YYYY-MM-DD format.
-
-    If the string is valid, it returns the string.  Otherwise, it raises either
-    a ValueError or TypeError.
-
-    :param date_string: The string to validate
-
-    :return:  a valid date string
-    :raises:  A ValueError if the date string is not a valid date or
-        doesn't conform to the specified format.
-    """
-    datetime.strptime(date_string, '%Y-%m-%d')
-    return date_string
 
 
 if __name__ == '__main__':

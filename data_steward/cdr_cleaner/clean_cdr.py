@@ -152,6 +152,7 @@ from cdr_cleaner.cleaning_rules.generate_research_device_ids import GenerateRese
 from cdr_cleaner.cleaning_rules.deid.fitbit_device_id import DeidFitbitDeviceId
 from cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct import DropViaSurveyConduct
 from cdr_cleaner.cleaning_rules.generate_wear_study_table import GenerateWearStudyTable
+from cdr_cleaner.cleaning_rules.generate_derived_tables import CreateDerivedTables
 
 # Third party imports
 
@@ -320,6 +321,7 @@ REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
     (RepopulatePersonPostDeid,),
     (DateUnShiftCopeResponses,),
+    (CreateDerivedTables,),
     (CreatePersonExtTable,),
     (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -334,6 +336,7 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
+    (CreateDerivedTables,),
     (CalculatePrimaryDeathRecord,),
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -386,6 +389,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
     (RepopulatePersonControlledTier,),
+    (CreateDerivedTables,),
     (CreatePersonExtTable,),
     (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -397,6 +401,7 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
+    (CreateDerivedTables,),
     (CalculatePrimaryDeathRecord,),
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
