@@ -1,0 +1,11 @@
+[{
+    "type": "integer",
+    "name": "condition_era_id",
+    "mode": "nullable",
+    "description": "The condition_era_id used in the condition_era table."
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The provenance of the data associated with the condition_era_id."
+}]
