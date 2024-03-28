@@ -98,6 +98,9 @@ OTHER_CDM_TABLES = [
 
 CDM_TABLES = AOU_REQUIRED + OTHER_CDM_TABLES
 NPH_TABLES = [MEASUREMENT, OBSERVATION, VISIT_OCCURRENCE, VISIT_DETAIL]
+NPH_VOCABULARY_TABLES = ["concept", "concept_ancestor", "concept_relationship", "vocabulary",
+                         # "concept_class", "concept_synonym", "domain", "drug_strength", "relationship" # Release 2
+                         ]
 # AoU custom tables
 AOU_DEATH = 'aou_death'
 AOU_CUSTOM_TABLES = [AOU_DEATH]
