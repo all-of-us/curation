@@ -23,7 +23,8 @@ from utils import auth
 from resources import fields_for, get_and_validate_schema_fields, replace_special_characters_for_labels, \
     is_rdr_dataset, is_mapping_table
 from constants.utils import bq as consts
-from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
+from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH, PIPELINE_TABLES, SITE_MASKING_TABLE_ID, NPH_TABLES, \
+    NPH_VOCABULARY_TABLES
 from resources import get_bq_col_type
 
 
@@ -454,6 +455,10 @@ class BigQueryClient(Client):
             created with valid schemas before inserting data.
         """
         table_list = self.list_tables(src_dataset)
+
+        tables_to_copy = NPH_VOCABULARY_TABLES + NPH_TABLES
+
+        table_list = [table_item for table_item in table_list if table_item.table_id in tables_to_copy]
 
         for table_item in table_list:
             # create empty schemaed table with client object
