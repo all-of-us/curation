@@ -1,0 +1,11 @@
+[{
+    "type": "integer",
+    "name": "procedure_occurrence_id",
+    "mode": "nullable",
+    "description": "The procedure_occurrence_id used in the procedure_occurrence table."
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The provenance of the data associated with the procedure_occurrence_id."
+}]

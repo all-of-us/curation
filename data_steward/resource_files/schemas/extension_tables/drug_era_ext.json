@@ -1,0 +1,11 @@
+[{
+    "type": "integer",
+    "name": "drug_era_id",
+    "mode": "nullable",
+    "description": "The drug_era_id used in the drug_era table."
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The provenance of the data associated with the drug_era_id."
+}]

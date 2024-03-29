@@ -1,0 +1,11 @@
+[{
+    "type": "integer",
+    "name": "visit_occurrence_id",
+    "mode": "nullable",
+    "description": "The visit_occurrence_id used in the visit_occurrence table."
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The provenance of the data associated with the visit_occurrence_id."
+}]

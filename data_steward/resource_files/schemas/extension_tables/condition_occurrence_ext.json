@@ -1,0 +1,11 @@
+[{
+    "type": "integer",
+    "name": "condition_occurrence_id",
+    "mode": "nullable",
+    "description": "The condition_occurrence_id used in the condition_occurrence table."
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The provenance of the data associated with the condition_occurrence_id."
+}]
