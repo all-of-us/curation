@@ -46,13 +46,15 @@ class EhrSubmissionDataCutoffTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = EhrSubmissionDataCutoff(project_id, dataset_id,
                                                     sandbox_id)
 
-        for table_name in common.VISIT_OCCURRENCE:
+        for table_name in [common.VISIT_OCCURRENCE, common.AOU_DEATH]:
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
 
         cls.fq_table_names.append(
             f'{cls.project_id}.{cls.dataset_id}.{common.VISIT_OCCURRENCE}')
+        cls.fq_table_names.append(
+            f'{cls.project_id}.{cls.dataset_id}.{common.AOU_DEATH}')
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -82,8 +84,10 @@ class EhrSubmissionDataCutoffTest(BaseTest.CleaningRulesTestBase):
         statements and the tables_and_counts variable.
         """
         # mocks the return value of get_affected_tables as we only want to loop through the
-        # visit_occurrence not all of the CDM tables
-        mock_get_affected_tables.return_value = [common.VISIT_OCCURRENCE]
+        # visit_occurrence and aou_death, not all of the CDM tables
+        mock_get_affected_tables.return_value = [
+            common.VISIT_OCCURRENCE, common.AOU_DEATH
+        ]
 
         queries = []
         visit_occurrence_tmpl = self.jinja_env.from_string("""
@@ -104,6 +108,19 @@ class EhrSubmissionDataCutoffTest(BaseTest.CleaningRulesTestBase):
             """).render(fq_dataset_name=self.fq_dataset_name,
                         cdm_table=common.VISIT_OCCURRENCE)
         queries.append(visit_occurrence_tmpl)
+
+        aou_death_tmpl = self.jinja_env.from_string("""
+        INSERT INTO `{{project}}.{{dataset}}.aou_death`
+            (aou_death_id, person_id, death_date, death_datetime, death_type_concept_id,
+             src_id, primary_death_record)
+        VALUES
+            ('a1', 1, '2020-01-01', NULL, 0, 'hpo_a', False),
+            ('h1', 1, '2010-01-01', '2010-01-01 00:00:00', 0, 'healthpro', True),
+            ('a2', 2, '2020-01-01', '2020-01-01 00:00:00', 0, 'hpo_a', False),
+            ('b2', 2, '2024-01-01', '2024-01-01 00:00:00', 0, 'hpo_b', True),
+            ('h3', 3, NULL, NULL, 0, 'Staff Portal: HealthPro', False)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+        queries.append(aou_death_tmpl)
 
         self.load_test_data(queries)
 
@@ -130,6 +147,16 @@ class EhrSubmissionDataCutoffTest(BaseTest.CleaningRulesTestBase):
                  parse('2020-03-06 11:00:00 UTC'), parse('2020-03-07').date(),
                  parse('2020-03-07 11:00:00 UTC'), 4)
             ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, 'aou_death']),
+            'fq_sandbox_table_name':
+                f'{self.fq_sandbox_name}.{self.rule_instance.sandbox_table_for(common.AOU_DEATH)}',
+            'loaded_ids': ['a1', 'h1', 'a2', 'b2', 'h3'],
+            'sandboxed_ids': ['b2'],
+            'fields': ['aou_death_id', 'person_id', 'primary_death_record'],
+            'cleaned_values': [('a1', 1, False), ('h1', 1, True),
+                               ('a2', 2, False), ('h3', 3, False)]
         }]
 
         self.default_test(table_and_counts)
