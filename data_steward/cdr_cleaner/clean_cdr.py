@@ -20,6 +20,7 @@ from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import Con
 from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
 from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import CTAdditionalPrivacyConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.ct_observation_privacy_suppression import CTObservationPrivacySuppression
 from cdr_cleaner.cleaning_rules.deid.rt_additional_privacy_suppression import RTAdditionalPrivacyConceptSuppression
 from cdr_cleaner.cleaning_rules.deid.rt_observation_privacy_suppression import RTObservationPrivacySuppression
 from cdr_cleaner.cleaning_rules.domain_alignment import DomainAlignment
@@ -373,6 +374,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (SectionParticipationConceptSuppression,),
     (CTAdditionalPrivacyConceptSuppression,),
+    (CTObservationPrivacySuppression,),
     (StringFieldsSuppression,),
     (AggregateZipCodes,),
     (DeidentifyAIANZip3Values,),

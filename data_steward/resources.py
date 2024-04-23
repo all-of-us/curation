@@ -70,6 +70,12 @@ ADDITIONAL_PRIVACY_CONCEPTS_PATH = os.path.join(CDR_CLEANER_PATH,
                                                 'additional_privacy')
 CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH = os.path.join(
     ADDITIONAL_PRIVACY_CONCEPTS_PATH, 'ct_additional_privacy_suppressions.csv')
+CT_OBSERVATION_PRIVACY_CONCEPTS_PATH = os.path.join(
+    ADDITIONAL_PRIVACY_CONCEPTS_PATH,
+    'ct_observation_postcoordinated_suppressions.csv')
+CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH = os.path.join(
+    ADDITIONAL_PRIVACY_CONCEPTS_PATH,
+    'ct_rt_publicly_reportable_suppressions.csv')
 RT_ADDITIONAL_PRIVACY_CONCEPTS_PATH = os.path.join(
     ADDITIONAL_PRIVACY_CONCEPTS_PATH, 'rt_additional_privacy_suppressions.csv')
 RT_OBSERVATION_PRIVACY_CONCEPTS_PATH = os.path.join(

@@ -1,12 +1,6 @@
 concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 3005917,21842-0,location,loinc,2024-03-12
-4170582,42035005,sexual_orientation,snomed,2024-03-12
-4230492,89217008,"demographics (race/ethnicity, gender)",snomed,2024-03-12
-4230492,89217008,gender/sex,snomed,2024-03-12
-4230492,89217008,sexual_orientation,snomed,2024-03-12
-4328364,76102007,"demographics (race/ethnicity, gender)",snomed,2024-03-12
-4328364,76102007,gender/sex,snomed,2024-03-12
-4328364,76102007,sexual_orientation,snomed,2024-03-12
+3043579,45401-7,location,loinc,2024-03-12
 45876350,LA4168-6,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 45877398,LA10601-5,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 45877442,LA6155-1,"demographics (race/ethnicity, gender)",loinc,2024-03-12
@@ -21,4 +15,15 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45884422,LA14045-1,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 45885214,LA4300-5,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 46237778,LA14042-8,"demographics (race/ethnicity, gender)",loinc,2024-03-12
+3052558,46499-0,location,loinc,2024-03-25
+40766229,63501-1,location,loinc,2024-03-25
+45877496,LA15581-4,sexual_orientation,loinc,2024-03-25
+45883294,LA15575-6,"demographics (race/ethnicity, gender)",loinc,2024-03-25
+4170582,42035005,sexual_orientation,snomed,2024-03-12
+4230492,89217008,"demographics (race/ethnicity, gender)",snomed,2024-03-12
+4328364,76102007,"demographics (race/ethnicity, gender)",snomed,2024-03-12
 46273637,32570691000036108,gender/sex,snomed,2024-03-12
+443584,418362005,death cause,snomed,2024-03-25
+4147554,310207003,location,snomed,2024-03-25
+4160280,430283008,death cause,snomed,2024-03-25
+4299535,77386006,liveborn_infants,snomed,2024-03-25
