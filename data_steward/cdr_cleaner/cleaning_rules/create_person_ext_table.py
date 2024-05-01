@@ -16,6 +16,10 @@ sex_at_birth_concept_id: value_as_concept_id in observation where observation_so
 sex_at_birth_source_concept_id: value_source_concept_id in observation where observation_source_concept_id = 1585845
 sex_at_birth_source_value: concept_code in the concept table where joining from observation where 
 observation_source_concept_id = 1585845
+self_reported_population_concept_id: value_as_concept_id in observation where observation_source_concept_id = 1586140
+self_reported_population_source_concept_id: value_source_concept_id in observation where observation_source_concept_id = 1586140
+self_reported_population_source_value: concept_code in the concept table where joining from observation where
+observation_source_concept_id = 1586140
 """
 import logging
 
@@ -35,7 +39,10 @@ SET
   t.state_of_residence_source_value = c.concept_name,
   t.sex_at_birth_concept_id = COALESCE(os.value_as_concept_id, 0),
   t.sex_at_birth_source_concept_id = COALESCE(os.value_source_concept_id, 0),
-  t.sex_at_birth_source_value = COALESCE(sc.concept_code, 'No matching concept')
+  t.sex_at_birth_source_value = COALESCE(sc.concept_code, 'No matching concept'),
+  t.self_reported_population_concept_id = COALESCE(srp.value_as_concept_id, 0),
+  t.self_reported_population_source_concept_id = COALESCE(srp.value_source_concept_id, 0),
+  t.self_reported_population_source_value = COALESCE(srp.value_source_value, 'No matching concept')
 FROM
   `{{project}}.{{dataset}}.person` p
 LEFT JOIN
@@ -53,6 +60,29 @@ LEFT JOIN
 ON
   o.observation_id = e.observation_id
   AND o.observation_source_concept_id = 1585249
+LEFT JOIN
+  (SELECT person_id,
+    CASE WHEN num_ans = 1
+      THEN value_as_concept_id ELSE 2000000008
+      END AS value_as_concept_id,
+    CASE WHEN num_ans = 1
+      THEN value_source_concept_id ELSE 2000000008
+      END AS value_source_concept_id,
+    CASE WHEN num_ans = 1
+      THEN co.concept_code ELSE "WhatRaceEthnicity_GeneralizedMultPopulations"
+      END AS value_source_value
+  FROM (SELECT person_id,
+      MIN(value_source_concept_id) value_source_concept_id,
+      MIN(value_as_concept_id) value_as_concept_id,
+      COUNT(value_source_concept_id) num_ans
+    FROM (SELECT person_id, value_as_concept_id, value_source_concept_id
+      FROM `{{project}}.{{dataset}}.observation`
+      WHERE observation_source_concept_id = 1586140)
+  GROUP BY 1) up
+    JOIN `{{project}}.{{dataset}}.concept` co
+    ON up.value_source_concept_id = co.concept_id) srp
+ON
+  p.person_id = srp.person_id
 LEFT JOIN
   (SELECT DISTINCT person_id, observation_source_concept_id, value_as_concept_id, value_source_concept_id
    FROM `{{project}}.{{dataset}}.observation`) os
@@ -90,7 +120,7 @@ class CreatePersonExtTable(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = ('Create person_ext table')
-        super().__init__(issue_numbers=['DC1012', 'DC1514', 'DC3260'],
+        super().__init__(issue_numbers=['DC1012', 'DC1514', 'DC3260', 'DC3786'],
                          description=desc,
                          affected_datasets=[
                              cdr_consts.REGISTERED_TIER_DEID_BASE,
