@@ -1,5 +1,5 @@
 """
-Original Issues: DC-1012, DC-1514, DC-3260
+Original Issues: DC-1012, DC-1514, DC-3260, DC-3786
 
 Background
 In order to avoid further changes to the standard OMOP person table, five non-standard fields will be housed in a
