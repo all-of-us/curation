@@ -393,6 +393,84 @@ else:
         ignore_index=True)
 df1
 
+# Query 2.5 "Race Ethnicity: person_ext self reported population DC-3787"
+# Verify that the person_ext self_reported_population fields are populated correctly. 
+
+# has to be deid_base
+query = JINJA_ENV.from_string("""
+WITH multi_select as ( -- participants answered the question with multiple selections
+  SELECT o1.person_id, o1.value_source_value as primary_answer,o2.value_source_value as secondary_answer
+  FROM (SELECT person_id, value_source_value FROM `{{project_id}}.{{deid_base_cdr}}.observation` WHERE observation_source_concept_id = 1586140 AND value_source_value NOT LIKE '%ispanic') o1
+  JOIN (SELECT person_id, value_source_value FROM `{{project_id}}.{{deid_base_cdr}}.observation` WHERE observation_source_concept_id = 1586140) o2
+  USING (person_id)
+  WHERE o1.value_source_value <> o2.value_source_value
+)
+
+, single_select as ( -- participants answered the question with only one selection
+ SELECT person_id, value_source_value as primary_answer, 'None' as secondary_answer
+ FROM `{{project_id}}.{{deid_base_cdr}}.observation` 
+ WHERE observation_source_concept_id = 1586140
+ AND person_id NOT IN (SELECT person_id FROM multi_select)
+)
+
+, all_selections_transformations as (
+(SELECT person_id, 
+  CASE 
+  WHEN primary_answer = 'WhatRaceEthnicity_Hispanic' THEN 'AoUDRC_NoneIndicated' -- only selected hispanic 
+  ELSE primary_answer END AS 
+primary_answer,
+  CASE 
+  WHEN primary_answer = 'PMI_PreferNotToAnswer' THEN 'PMI_PreferNotToAnswer'
+  WHEN primary_answer = 'PMI_Skip' THEN 'PMI_Skip'
+  WHEN primary_answer = 'WhatRaceEthnicity_Hispanic' THEN 'Hispanic' -- only selected hispanic
+  WHEN primary_answer = 'WhatRaceEthnicity_RaceEthnicityNoneOfThese' THEN 'WhatRaceEthnicity_RaceEthnicityNoneOfThese'
+  ELSE 'Not Hispanic' END AS 
+secondary_answer,
+primary_answer as self_reported_population
+FROM single_select)
+UNION ALL
+(SELECT person_id, primary_answer,
+'Hispanic' secondary_answer,
+'WhatRaceEthnicity_GeneralizedMultPopulations' AS self_reported_population
+
+FROM multi_select)
+)
+
+SELECT DISTINCT primary_answer, secondary_answer, race_source_value, ethnicity_source_value, COUNT(person_id) as n_persons
+FROM all_selections_transformations
+LEFT JOIN `{{project_id}}.{{deid_base_cdr}}.person`
+USING (person_id)
+LEFT JOIN `{{project_id}}.{{deid_base_cdr}}.person_ext`
+USING (person_id)
+WHERE primary_answer != race_source_value
+OR secondary_answer != ethnicity_source_value
+OR self_reported_population != self_reported_population_concept_id
+GROUP BY 1,2,3,4
+ORDER BY 1,2
+""")
+q = query.render(project_id=project_id,
+                 deid_base_cdr=deid_base_cdr)
+df1 = execute(client, q)
+if df1.eq(0).any().any():
+    df = df.append(
+        {
+            'query':
+                'Query 2.5 Population of person_ext self reported population field',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                'Query 2.5 Population of person_ext self reported population field',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
+df1
+
 # # Query 3.0 Gender Generalization Rule
 #
 # objective: Account for new gender identify response option (DC-654)
