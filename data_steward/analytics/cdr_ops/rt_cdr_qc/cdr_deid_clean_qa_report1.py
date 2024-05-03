@@ -292,7 +292,7 @@ Verify that the person_ext self_reported_population fields are populated correct
 
 # has to be deid_clean
 query = JINJA_ENV.from_string("""
-WITH multi_select as ( -- participants answered the question with multiple selections
+WITH multi_select as ( -- participants answered the question with multiple selections --
   SELECT o1.person_id, o1.value_source_value as primary_answer,o2.value_source_value as secondary_answer
   FROM (SELECT person_id, value_source_value FROM `{{project_id}}.{{deid_clean_cdr}}.observation` WHERE observation_source_concept_id = 1586140 AND value_source_value NOT LIKE '%ispanic') o1
   JOIN (SELECT person_id, value_source_value FROM `{{project_id}}.{{deid_clean_cdr}}.observation` WHERE observation_source_concept_id = 1586140) o2
@@ -300,7 +300,7 @@ WITH multi_select as ( -- participants answered the question with multiple selec
   WHERE o1.value_source_value <> o2.value_source_value
 )
 
-, single_select as ( -- participants answered the question with only one selection
+, single_select as ( -- participants answered the question with only one selection --
  SELECT person_id, value_source_value as primary_answer, 'None' as secondary_answer
  FROM `{{project_id}}.{{deid_clean_cdr}}.observation` 
  WHERE observation_source_concept_id = 1586140
@@ -310,13 +310,13 @@ WITH multi_select as ( -- participants answered the question with multiple selec
 , all_selections_transformations as (
 (SELECT person_id, 
   CASE 
-  WHEN primary_answer = 'WhatRaceEthnicity_Hispanic' THEN 'AoUDRC_NoneIndicated' -- only selected hispanic 
+  WHEN primary_answer = 'WhatRaceEthnicity_Hispanic' THEN 'AoUDRC_NoneIndicated' -- only selected hispanic --
   ELSE primary_answer END AS 
 primary_answer,
   CASE 
   WHEN primary_answer = 'PMI_PreferNotToAnswer' THEN 'PMI_PreferNotToAnswer'
   WHEN primary_answer = 'PMI_Skip' THEN 'PMI_Skip'
-  WHEN primary_answer = 'WhatRaceEthnicity_Hispanic' THEN 'Hispanic' -- only selected hispanic
+  WHEN primary_answer = 'WhatRaceEthnicity_Hispanic' THEN 'Hispanic' -- only selected hispanic --
   WHEN primary_answer = 'WhatRaceEthnicity_RaceEthnicityNoneOfThese' THEN 'WhatRaceEthnicity_RaceEthnicityNoneOfThese'
   ELSE 'Not Hispanic' END AS 
 secondary_answer,
@@ -345,7 +345,7 @@ ORDER BY 1,2
 q = query.render(project_id=project_id, deid_clean_cdr=deid_clean_cdr)
 df1 = execute(client, q)
 if df1.eq(0).any().any():
-    df = df.append(
+    summary = summary.append(
         {
             'query':
                 'Query 9 Race Ethnicity: person_ext self reported population',
@@ -354,7 +354,7 @@ if df1.eq(0).any().any():
         },
         ignore_index=True)
 else:
-    df = df.append(
+    summary = summary.append(
         {
             'query':
                 'Query 9 Race Ethnicity: person_ext self reported population',
