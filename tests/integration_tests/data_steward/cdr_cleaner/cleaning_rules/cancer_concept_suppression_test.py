@@ -19,7 +19,8 @@ from dateutil import parser
 
 #Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
+from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression, \
+SUPPRESSION_RULE_CONCEPT_TABLE
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import CONCEPT, OBSERVATION
 
@@ -51,6 +52,9 @@ class CancerConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         cls.fq_sandbox_table_names.append(
             f'{cls.project_id}.{cls.sandbox_id}.{sb_table_names}')
+        cls.fq_sandbox_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{SUPPRESSION_RULE_CONCEPT_TABLE}'
+        )
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{OBSERVATION}',

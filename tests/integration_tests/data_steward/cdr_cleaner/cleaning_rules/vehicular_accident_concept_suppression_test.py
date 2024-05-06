@@ -9,7 +9,8 @@ import os
 
 #Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression
+from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression, \
+SUPPRESSION_RULE_CONCEPT_TABLE
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import JINJA_ENV, CONDITION_OCCURRENCE, CONCEPT, CONCEPT_RELATIONSHIP, CONCEPT_ANCESTOR
 
@@ -49,6 +50,9 @@ class VehicularAccidentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         cls.fq_sandbox_table_names.append(
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(CONDITION_OCCURRENCE)}'
+        )
+        cls.fq_sandbox_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{SUPPRESSION_RULE_CONCEPT_TABLE}'
         )
 
         # call super to set up the client, create datasets, and create
