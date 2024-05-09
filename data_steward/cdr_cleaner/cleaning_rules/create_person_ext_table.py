@@ -62,14 +62,16 @@ ON
   AND o.observation_source_concept_id = 1585249
 LEFT JOIN
   (SELECT person_id,
-    CASE WHEN num_ans = 1
-      THEN value_as_concept_id ELSE 2000000008
+    CASE WHEN num_ans = 1 THEN (
+      CASE WHEN value_as_concept_id = 1586143 THEN 8516 /*black/aa*/
+        WHEN value_as_concept_id = 45877987 THEN 8527 /*white*/
+        WHEN value_as_concept_id = 45879439 THEN 8515 /*asian*/
+        ELSE value_as_concept_id END
+      ) ELSE 2000000008
       END AS value_as_concept_id,
-    CASE WHEN num_ans = 1
-      THEN value_source_concept_id ELSE 2000000008
+    CASE WHEN num_ans = 1 THEN value_source_concept_id ELSE 2000000008
       END AS value_source_concept_id,
-    CASE WHEN num_ans = 1
-      THEN co.concept_code ELSE "WhatRaceEthnicity_GeneralizedMultPopulations"
+    CASE WHEN num_ans = 1 THEN co.concept_code ELSE "WhatRaceEthnicity_GeneralizedMultPopulations"
       END AS value_source_value
   FROM (SELECT person_id,
       MIN(value_source_concept_id) value_source_concept_id,
