@@ -66,6 +66,9 @@ LEFT JOIN
       CASE WHEN value_as_concept_id = 1586143 THEN 8516 /*black/aa*/
         WHEN value_as_concept_id = 45877987 THEN 8527 /*white*/
         WHEN value_as_concept_id = 45879439 THEN 8515 /*asian*/
+        WHEN value_as_concept_id = 45877442 THEN 8657 /*aian*/
+        WHEN value_as_concept_id = 45878240 THEN 8557 /*nhpi*/
+        WHEN value_as_concept_id = 1586144 THEN 38003615 /*mena*/
         ELSE value_as_concept_id END
       ) ELSE 2000000008
       END AS value_as_concept_id,
