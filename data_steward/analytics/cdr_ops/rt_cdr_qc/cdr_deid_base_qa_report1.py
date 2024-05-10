@@ -398,55 +398,48 @@ df1
 
 # has to be deid_base
 query = JINJA_ENV.from_string("""
-WITH multi_select as ( -- participants answered the question with multiple selections --
-  SELECT o1.person_id, o1.value_source_value as primary_answer,o2.value_source_value as secondary_answer
-  FROM (SELECT person_id, value_source_value FROM `{{project_id}}.{{deid_base_cdr}}.observation` WHERE observation_source_concept_id = 1586140 AND value_source_value NOT LIKE '%ispanic') o1
-  JOIN (SELECT person_id, value_source_value FROM `{{project_id}}.{{deid_base_cdr}}.observation` WHERE observation_source_concept_id = 1586140) o2
-  USING (person_id)
-  WHERE o1.value_source_value <> o2.value_source_value
-)
+WITH obs as 
+(SELECT person_id, races, c_races 
+    FROM (
+      SELECT person_id, ARRAY_TO_STRING(ARRAY_AGG(CAST(value_source_concept_id AS STRING)), '|') races, ARRAY_TO_STRING(ARRAY_AGG(CAST(value_as_concept_id AS STRING)), '|') c_races
+      FROM (
+        SELECT person_id, value_as_concept_id, value_source_concept_id
+        FROM `{{project_id}}.{{deid_base_cdr}}.observation`
+        WHERE observation_source_concept_id = 1586140
+        ORDER BY person_id, value_source_concept_id)
+      GROUP BY 1))
 
-, single_select as ( -- participants answered the question with only one selection --
- SELECT person_id, value_source_value as primary_answer, 'None' as secondary_answer
- FROM `{{project_id}}.{{deid_base_cdr}}.observation` 
- WHERE observation_source_concept_id = 1586140
- AND person_id NOT IN (SELECT person_id FROM multi_select)
-)
-
-, all_selections_transformations as (
-(SELECT person_id, 
-  CASE 
-  WHEN primary_answer = 'WhatRaceEthnicity_Hispanic' THEN 'AoUDRC_NoneIndicated' -- only selected hispanic  --
-  ELSE primary_answer END AS 
-primary_answer,
-  CASE 
-  WHEN primary_answer = 'PMI_PreferNotToAnswer' THEN 'PMI_PreferNotToAnswer'
-  WHEN primary_answer = 'PMI_Skip' THEN 'PMI_Skip'
-  WHEN primary_answer = 'WhatRaceEthnicity_Hispanic' THEN 'Hispanic' -- only selected hispanic --
-  WHEN primary_answer = 'WhatRaceEthnicity_RaceEthnicityNoneOfThese' THEN 'WhatRaceEthnicity_RaceEthnicityNoneOfThese'
-  ELSE 'Not Hispanic' END AS 
-secondary_answer,
-primary_answer as self_reported_population
-FROM single_select)
-UNION ALL
-(SELECT person_id, primary_answer,
-'Hispanic' secondary_answer,
-'WhatRaceEthnicity_GeneralizedMultPopulations' AS self_reported_population
-
-FROM multi_select)
-)
-
-SELECT DISTINCT primary_answer, secondary_answer, race_source_value, ethnicity_source_value, COUNT(person_id) as n_persons
-FROM all_selections_transformations
+SELECT DISTINCT races, c_races, race_source_value, ethnicity_source_value,  race_source_concept_id, race_concept_id, self_reported_population_source_value,  self_reported_population_source_concept_id, self_reported_population_concept_id
+FROM obs
 LEFT JOIN `{{project_id}}.{{deid_base_cdr}}.person`
 USING (person_id)
 LEFT JOIN `{{project_id}}.{{deid_base_cdr}}.person_ext`
 USING (person_id)
-WHERE primary_answer != race_source_value
-OR secondary_answer != ethnicity_source_value
-OR self_reported_population != self_reported_population_concept_id
-GROUP BY 1,2,3,4
+WHERE 
+-- check srp column multi pop --
+  (REGEXP_CONTAINS(obs.c_races,  r'\|')  AND self_reported_population_source_value != 'WhatRaceEthnicity_GeneralizedMultPopulations' )
+-- check srp column single pop not hispanic--
+  OR (NOT (REGEXP_CONTAINS(obs.c_races,  r'\|') )) AND (race_source_value != self_reported_population_source_value AND (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_population_source_value != 'WhatRaceEthnicity_Hispanic'))
+-- check srp column single pop hispanic--
+  OR (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_population_source_value != 'WhatRaceEthnicity_Hispanic')
+-- check only expected srpsv exist --
+  OR (self_reported_population_source_value NOT IN ('WhatRaceEthnicity_GeneralizedMultPopulations','WhatRaceEthnicity_GeneralizedPopulation', 'WhatRaceEthnicity_Black','WhatRaceEthnicity_White','WhatRaceEthnicity_Asian' ,'WhatRaceEthnicity_Hispanic','PMI_PreferNotToAnswer', 'PMI_Skip', 'WhatRaceEthnicity_RaceEthnicityNoneOfThese','WhatRaceEthnicity_AIAN',
+'WhatRaceEthnicity_MENA','WhatRaceEthnicity_NHPI'))
+-- check for expected concept_ids per srpsv --
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_GeneralizedMultPopulations' AND (self_reported_population_concept_id != 2000000008 OR self_reported_population_source_concept_id != 2000000008))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_GeneralizedPopulation' AND (self_reported_population_concept_id != 2000000001 OR self_reported_population_source_concept_id != 2000000001))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_Black' AND (self_reported_population_concept_id != 8516 OR self_reported_population_source_concept_id != 1586143))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_White' AND (self_reported_population_concept_id != 8527 OR self_reported_population_source_concept_id != 1586146))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_Asian' AND (self_reported_population_concept_id != 8515 OR self_reported_population_source_concept_id != 1586142))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_Hispanic' AND (self_reported_population_concept_id != 1586147 OR self_reported_population_source_concept_id != 1586147))
+  OR (self_reported_population_source_value = 'PMI_PreferNotToAnswer' AND (self_reported_population_concept_id != 1177221 OR self_reported_population_source_concept_id != 903079))
+  OR (self_reported_population_source_value = 'PMI_Skip' AND (self_reported_population_concept_id != 903096 OR self_reported_population_source_concept_id != 903096))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_RaceEthnicityNoneOfThese' AND (self_reported_population_concept_id != 45882607 OR self_reported_population_source_concept_id != 1586148))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_AIAN' AND (self_reported_population_concept_id != 8657 OR self_reported_population_source_concept_id != 1586141)) -- ct only --
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_MENA' AND (self_reported_population_concept_id != 38003615 OR self_reported_population_source_concept_id != 1586144)) -- ct only --
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_NHPI' AND (self_reported_population_concept_id != 8557 OR self_reported_population_source_concept_id != 1586145)) -- ct only --
 ORDER BY 1,2
+
 """)
 q = query.render(project_id=project_id,
                  deid_base_cdr=deid_base_cdr)
