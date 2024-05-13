@@ -254,7 +254,7 @@ UNION ALL
 SELECT
 'self_reported_population_source_value_check' AS check
 ,CASE
-    WHEN c.ne_self_reported_population_source_value > 0
+    WHEN c.ne_nulls_self_reported_population_source_value > 0
       THEN 'FAILED'
       ELSE 'passed'
       END AS result
@@ -449,7 +449,7 @@ UNION ALL
 SELECT
 'self_reported_population_source_value_check' AS check
 ,CASE
-    WHEN c.ne_self_reported_population_source_value > 0
+    WHEN c.ne_nulls_self_reported_population_source_value > 0
       THEN 'FAILED'
       ELSE 'passed'
       END AS result
