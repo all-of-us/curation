@@ -37,8 +37,8 @@ class NPHConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
 
-        cls.rule_instance = CTNPHObservationPrivacySuppression(project_id, dataset_id,
-                                                     sandbox_id)
+        cls.rule_instance = CTNPHObservationPrivacySuppression(
+            project_id, dataset_id, sandbox_id)
 
         sb_table_names = cls.rule_instance.sandbox_table_for(OBSERVATION)
 
@@ -102,15 +102,14 @@ class NPHConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         self.load_test_data(queries)
 
         tables_and_counts = [{
-            'fq_table_name':
-                '.'.join([self.fq_dataset_name, 'observation']),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[0],
-            'loaded_ids': [1,2,3],
-            'sandboxed_ids': [1,2],
+            'fq_table_name': '.'.join([self.fq_dataset_name, 'observation']),
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
+            'loaded_ids': [1, 2, 3],
+            'sandboxed_ids': [1, 2],
             'fields': [
-                'observation_id', 'person_id', 'observation_concept_id', 'observation_source_value',
-                'observation_date', 'observation_type_concept_id'
+                'observation_id', 'person_id', 'observation_concept_id',
+                'observation_source_value', 'observation_date',
+                'observation_type_concept_id'
             ],
             'cleaned_values': [(3, 1, 333, 'some text', self.date, 1),
                                ]

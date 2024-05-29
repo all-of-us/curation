@@ -87,7 +87,8 @@ class CTNPHObservationPrivacySuppression(BaseCleaningRule):
         df = pd.read_csv(CT_NPH_OBSERVATION_PRIVACY_CONCEPTS_PATH)
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
-        table_ref = dataset_ref.table(self.ct_nph_observation_suppressions_table)
+        table_ref = dataset_ref.table(
+            self.ct_nph_observation_suppressions_table)
         result = client.load_table_from_dataframe(df, table_ref).result()
 
         if hasattr(result, 'errors') and result.errors:
@@ -111,8 +112,7 @@ class CTNPHObservationPrivacySuppression(BaseCleaningRule):
             dataset_id=self.dataset_id,
             sandbox_id=self.sandbox_dataset_id,
             sandbox_table=self.sandbox_table_for(OBSERVATION),
-            concept_sup_lookup=self.ct_nph_observation_suppressions_table
-        )
+            concept_sup_lookup=self.ct_nph_observation_suppressions_table)
         queries_list.append(sandbox_query)
 
         suppress_query = dict()
