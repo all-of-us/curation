@@ -111,8 +111,7 @@ class NPHConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                 'observation_source_value', 'observation_date',
                 'observation_type_concept_id'
             ],
-            'cleaned_values': [(3, 1, 333, 'some text', self.date, 1),
-                               ]
+            'cleaned_values': [(3, 1, 333, 'some text', self.date, 1),]
         }]
 
         self.default_test(tables_and_counts)
