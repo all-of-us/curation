@@ -376,7 +376,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (SectionParticipationConceptSuppression,),
     (CTAdditionalPrivacyConceptSuppression,),
     (CTObservationPrivacySuppression,),
-    # (CTNPHObservationPrivacySuppression,), # Applies only to NPH data
+    (CTNPHObservationPrivacySuppression,),  # Applies only to NPH data
     (
         StringFieldsSuppression,),
     (AggregateZipCodes,),
