@@ -107,7 +107,8 @@ def get_string_fields(domain_table):
     else:
         fields = [
             field for field in resources.fields_for(domain_table)
-            if field['type'] == 'string'
+            if field['type'] == 'string' and
+            field['name'] not in ['form_name']  # NPH release includes form_name
         ]
 
     return fields
