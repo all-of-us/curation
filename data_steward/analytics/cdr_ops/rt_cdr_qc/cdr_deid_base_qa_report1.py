@@ -393,6 +393,77 @@ else:
         ignore_index=True)
 df1
 
+# Query 2.5 "Race Ethnicity: person_ext self reported population DC-3787"
+# Verify that the person_ext self_reported_population fields are populated correctly. 
+
+# has to be deid_base
+query = JINJA_ENV.from_string("""
+WITH obs as 
+(SELECT person_id, races, c_races 
+    FROM (
+      SELECT person_id, ARRAY_TO_STRING(ARRAY_AGG(CAST(value_source_concept_id AS STRING)), '|') races, ARRAY_TO_STRING(ARRAY_AGG(CAST(value_as_concept_id AS STRING)), '|') c_races
+      FROM (
+        SELECT person_id, value_as_concept_id, value_source_concept_id
+        FROM `{{project_id}}.{{deid_base_cdr}}.observation`
+        WHERE observation_source_concept_id = 1586140
+        ORDER BY person_id, value_source_concept_id)
+      GROUP BY 1))
+
+SELECT DISTINCT races, c_races, race_source_value, ethnicity_source_value,  race_source_concept_id, race_concept_id, self_reported_population_source_value,  self_reported_population_source_concept_id, self_reported_population_concept_id
+FROM obs
+LEFT JOIN `{{project_id}}.{{deid_base_cdr}}.person`
+USING (person_id)
+LEFT JOIN `{{project_id}}.{{deid_base_cdr}}.person_ext`
+USING (person_id)
+WHERE 
+-- check srp column multi pop --
+  (REGEXP_CONTAINS(obs.c_races,  r'\|')  AND self_reported_population_source_value != 'WhatRaceEthnicity_GeneralizedMultPopulations' )
+-- check srp column single pop not hispanic--
+  OR (NOT (REGEXP_CONTAINS(obs.c_races,  r'\|') )) AND (race_source_value != self_reported_population_source_value AND (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_population_source_value != 'WhatRaceEthnicity_Hispanic'))
+-- check srp column single pop hispanic--
+  OR (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_population_source_value != 'WhatRaceEthnicity_Hispanic')
+-- check only expected srpsv exist --
+  OR (self_reported_population_source_value NOT IN ('WhatRaceEthnicity_GeneralizedMultPopulations','WhatRaceEthnicity_GeneralizedPopulation', 'WhatRaceEthnicity_Black','WhatRaceEthnicity_White','WhatRaceEthnicity_Asian' ,'WhatRaceEthnicity_Hispanic','PMI_PreferNotToAnswer', 'PMI_Skip', 'WhatRaceEthnicity_RaceEthnicityNoneOfThese','WhatRaceEthnicity_AIAN',
+'WhatRaceEthnicity_MENA','WhatRaceEthnicity_NHPI'))
+-- check for expected concept_ids per srpsv --
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_GeneralizedMultPopulations' AND (self_reported_population_concept_id != 2000000008 OR self_reported_population_source_concept_id != 2000000008))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_GeneralizedPopulation' AND (self_reported_population_concept_id != 2000000001 OR self_reported_population_source_concept_id != 2000000001))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_Black' AND (self_reported_population_concept_id != 8516 OR self_reported_population_source_concept_id != 1586143))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_White' AND (self_reported_population_concept_id != 8527 OR self_reported_population_source_concept_id != 1586146))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_Asian' AND (self_reported_population_concept_id != 8515 OR self_reported_population_source_concept_id != 1586142))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_Hispanic' AND (self_reported_population_concept_id != 1586147 OR self_reported_population_source_concept_id != 1586147))
+  OR (self_reported_population_source_value = 'PMI_PreferNotToAnswer' AND (self_reported_population_concept_id != 1177221 OR self_reported_population_source_concept_id != 903079))
+  OR (self_reported_population_source_value = 'PMI_Skip' AND (self_reported_population_concept_id != 903096 OR self_reported_population_source_concept_id != 903096))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_RaceEthnicityNoneOfThese' AND (self_reported_population_concept_id != 45882607 OR self_reported_population_source_concept_id != 1586148))
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_AIAN' AND (self_reported_population_concept_id != 8657 OR self_reported_population_source_concept_id != 1586141)) -- ct only --
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_MENA' AND (self_reported_population_concept_id != 38003615 OR self_reported_population_source_concept_id != 1586144)) -- ct only --
+  OR (self_reported_population_source_value = 'WhatRaceEthnicity_NHPI' AND (self_reported_population_concept_id != 8557 OR self_reported_population_source_concept_id != 1586145)) -- ct only --
+ORDER BY 1,2
+
+""")
+q = query.render(project_id=project_id,
+                 deid_base_cdr=deid_base_cdr)
+df1 = execute(client, q)
+if df1.eq(0).any().any():
+    df = df.append(
+        {
+            'query':
+                'Query 2.5 Population of person_ext self reported population field',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                'Query 2.5 Population of person_ext self reported population field',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
+df1
+
 # # Query 3.0 Gender Generalization Rule
 #
 # objective: Account for new gender identify response option (DC-654)
