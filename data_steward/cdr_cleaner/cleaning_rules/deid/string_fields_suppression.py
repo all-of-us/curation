@@ -254,12 +254,6 @@ class StringFieldsSuppression(BaseCleaningRule):
                 field_name=OBSERVATION_SOURCE_CONCEPT_ID,
                 field_value=2200003578,  # scr_studyid
                 restore_fields=[VALUE_AS_STRING]),
-            SuppressionException(
-                domain_table=OBSERVATION,
-                sandbox_table=self.sandbox_table_for(OBSERVATION),
-                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
-                field_value=2200003802,  # geo_curr_hmcountry
-                restore_fields=[VALUE_AS_STRING]),
         ]
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
