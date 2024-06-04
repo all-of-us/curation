@@ -211,7 +211,49 @@ class StringFieldsSuppression(BaseCleaningRule):
                 sandbox_table=self.sandbox_table_for(OBSERVATION),
                 field_name=OBSERVATION_SOURCE_CONCEPT_ID,
                 field_value=APPROXIMATE_DATE_OF_SYMPTOMS,
-                restore_fields=[VALUE_AS_STRING])
+                restore_fields=[VALUE_AS_STRING]),
+            SuppressionException(
+                domain_table=OBSERVATION,
+                sandbox_table=self.sandbox_table_for(OBSERVATION),
+                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
+                field_value=2200001122,  # cgm_dev_given_id
+                restore_fields=[VALUE_AS_STRING]),
+            SuppressionException(
+                domain_table=OBSERVATION,
+                sandbox_table=self.sandbox_table_for(OBSERVATION),
+                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
+                field_value=2200001180,  # device_notcollected
+                restore_fields=[VALUE_AS_STRING]),
+            SuppressionException(
+                domain_table=OBSERVATION,
+                sandbox_table=self.sandbox_table_for(OBSERVATION),
+                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
+                field_value=2200001476,  # geo_curr_hmzipcode
+                restore_fields=[VALUE_AS_STRING]),
+            SuppressionException(
+                domain_table=OBSERVATION,
+                sandbox_table=self.sandbox_table_for(OBSERVATION),
+                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
+                field_value=2200002254,  # polar_id
+                restore_fields=[VALUE_AS_STRING]),
+            SuppressionException(
+                domain_table=OBSERVATION,
+                sandbox_table=self.sandbox_table_for(OBSERVATION),
+                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
+                field_value=2200002265,  # poloar_actigraph_pair_id
+                restore_fields=[VALUE_AS_STRING]),
+            SuppressionException(
+                domain_table=OBSERVATION,
+                sandbox_table=self.sandbox_table_for(OBSERVATION),
+                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
+                field_value=2200003562,  # profile_zipcode
+                restore_fields=[VALUE_AS_STRING]),
+            SuppressionException(
+                domain_table=OBSERVATION,
+                sandbox_table=self.sandbox_table_for(OBSERVATION),
+                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
+                field_value=2200003578,  # scr_studyid
+                restore_fields=[VALUE_AS_STRING]),
         ]
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
