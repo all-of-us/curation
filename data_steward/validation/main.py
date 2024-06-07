@@ -274,19 +274,26 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
 
     # Create all tables first to simplify downstream processes
     # (e.g. ehr_union doesn't have to check if tables exist)
-    for file_name in resources.CDM_CSV_FILES + common.PII_FILES:
+    expected_tables = []
+    for file_name in resources.CDM_CSV_FILES + common.PII_CSV_FILES:
         table_name = file_name.split('.')[0]
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
+        expected_tables.append(table_id)
         bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
 
+    found_tables = []
     found_csv_files, found_parquet_files, found_jsonl_files = [], [], []
-    for found_file in found_cdm_files:
+    found_csv_tables, found_parquet_tables, found_jsonl_tables = [], [], []
+    for found_file in found_cdm_files + found_pii_files:
         if found_file.endswith('.csv'):
             found_csv_files.append(found_file)
+            found_csv_tables.append(found_file.split('.')[0])
         elif found_file.endswith('.parquet'):
             found_parquet_files.append(found_file)
+            found_parquet_tables.append(found_file.split('.')[0])
         elif found_file.endswith('.jsonl'):
             found_jsonl_files.append(found_file)
+            found_jsonl_tables.append(found_file.split('.')[0])
         else:
             logging.info(f"Ignoring unexpected file type: {found_file}")
 
@@ -294,46 +301,41 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
     found_csv_files = [
         csv_file for csv_file in found_csv_files
         if csv_file.split('.')[0] in list(
-            set([csv_file.split('.')[0] for csv_file in found_csv_files]) -
-            set([jsonl_file.split('.')[0]
-                 for jsonl_file in found_jsonl_files]) - set([
-                     parquet_file.split('.')[0]
-                     for parquet_file in found_parquet_files
-                 ]))
+            set(found_csv_tables) - set(found_jsonl_tables) -
+            set(found_parquet_tables))
     ]
 
     # Remove any jsonl files that have corresponding parquet files
     found_jsonl_files = [
         jsonl_file for jsonl_file in found_jsonl_files
         if jsonl_file.split('.')[0] in list(
-            set([jsonl_file.split('.')[0]
-                 for jsonl_file in found_jsonl_files]) - set([
-                     parquet_file.split('.')[0]
-                     for parquet_file in found_parquet_files
-                 ]))
+            set(found_jsonl_tables) - set(found_parquet_tables))
     ]
 
-    for cdm_file_name in sorted(resources.CDM_PARQUET_FILES):
-        file_results, file_errors = perform_validation_on_file(
-            cdm_file_name, found_parquet_files, hpo_id, folder_prefix, bucket)
-        results.extend(file_results)
-        errors.extend(file_errors)
+    for cdm_file_name in sorted(resources.CDM_PARQUET_FILES) + sorted(
+            common.PII_PARQUET_FILES):
+        if cdm_file_name in found_parquet_files:
+            file_results, file_errors = perform_validation_on_file(
+                cdm_file_name, found_parquet_files, hpo_id, folder_prefix,
+                bucket)
+            results.extend(file_results)
+            errors.extend(file_errors)
 
-    for cdm_file_name in sorted(resources.CDM_JSONL_FILES):
-        file_results, file_errors = perform_validation_on_file(
-            cdm_file_name, found_jsonl_files, hpo_id, folder_prefix, bucket)
-        results.extend(file_results)
-        errors.extend(file_errors)
+    for cdm_file_name in sorted(resources.CDM_JSONL_FILES) + sorted(
+            common.PII_JSONL_FILES):
+        if cdm_file_name in found_jsonl_files:
+            file_results, file_errors = perform_validation_on_file(
+                cdm_file_name, found_jsonl_files, hpo_id, folder_prefix, bucket)
+            results.extend(file_results)
+            errors.extend(file_errors)
 
-    for cdm_file_name in sorted(resources.CDM_CSV_FILES):
+    for cdm_file_name in sorted(resources.CDM_CSV_FILES) + sorted(
+            common.PII_CSV_FILES):
+        # Skip if the table has already been processed
+        if cdm_file_name.split('.')[0] in found_tables:
+            continue
         file_results, file_errors = perform_validation_on_file(
             cdm_file_name, found_csv_files, hpo_id, folder_prefix, bucket)
-        results.extend(file_results)
-        errors.extend(file_errors)
-
-    for pii_file_name in sorted(common.PII_FILES):
-        file_results, file_errors = perform_validation_on_file(
-            pii_file_name, found_pii_files, hpo_id, folder_prefix, bucket)
         results.extend(file_results)
         errors.extend(file_errors)
 
@@ -838,7 +840,7 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
             logging.error(message)
             raise InternalValidationError(message)
 
-    if file_name in common.SUBMISSION_FILES:
+    if file_name in common.SUBMISSION_CSV_FILES:
         results.append((file_name, found, parsed, loaded))
 
     return results, errors
@@ -1008,7 +1010,7 @@ def _is_cdm_file(gcs_file_name):
 
 
 def _is_pii_file(gcs_file_name):
-    return gcs_file_name.lower() in common.PII_FILES
+    return gcs_file_name.lower() in common.PII_CSV_FILES
 
 
 def _is_known_file(gcs_file_name):

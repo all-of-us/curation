@@ -58,7 +58,7 @@ class ValidationMainTest(TestCase):
                                    file_exclusions=[],
                                    folder="2018-09-01"):
         bucket_items = []
-        for file_name in common.AOU_REQUIRED_FILES:
+        for file_name in common.AOU_REQUIRED_CSV_FILES:
             if file_name not in file_exclusions:
                 bucket_items.append({
                     'name': f'{folder}/{file_name}',
@@ -263,9 +263,12 @@ class ValidationMainTest(TestCase):
         expected_results = []
         expected_errors = []
         expected_warnings = [('invalid_file.csv', 'Unknown file')]
-        for file_name in sorted(resources.CDM_CSV_FILES) + [
-                common.NOTE_JSONL
-        ] + sorted(common.PII_FILES):
+        for file_name in sorted(resources.CDM_CSV_FILES) + sorted(
+                resources.CDM_JSONL_FILES) + sorted(
+                    resources.CDM_PARQUET_FILES) + sorted(
+                        common.PII_CSV_FILES) + sorted(
+                            common.PII_JSONL_FILES) + sorted(
+                                common.PII_PARQUET_FILES):
             result = []
             errors = []
             found = 0
@@ -279,14 +282,11 @@ class ValidationMainTest(TestCase):
                 found = 1
                 error = (file_name, 'Fake parsing error')
                 errors.append(error)
-            elif file_name == 'note.jsonl':
-                result.append((file_name, found, parsed, loaded))
-                perform_validation_on_file_returns[file_name] = result, errors
-                continue
             result.append((file_name, found, parsed, loaded))
             perform_validation_on_file_returns[file_name] = result, errors
-            expected_results += result
-            expected_errors += errors
+            if file_name.endswith('.csv'):
+                expected_results += result
+                expected_errors += errors
 
         def perform_validation_on_file(cdm_file_name, found_cdm_files, hpo_id,
                                        folder_prefix, bucket):
@@ -338,11 +338,11 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.is_valid_rdr')
     def test_process_hpo_ignore_dirs(
-            self, mock_valid_rdr, mock_first_validation,
-            mock_has_all_required_files, mock_folder_items, mock_validation,
-            mock_get_hpo_name, mock_get_duplicate_counts_query, mock_query_rows,
-            mock_all_required_files_loaded, mock_run_achilles, mock_export,
-            mock_valid_folder_name, mock_query):
+        self, mock_valid_rdr, mock_first_validation,
+        mock_has_all_required_files, mock_folder_items, mock_validation,
+        mock_get_hpo_name, mock_get_duplicate_counts_query, mock_query_rows,
+        mock_all_required_files_loaded, mock_run_achilles, mock_export,
+        mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
