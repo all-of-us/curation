@@ -294,19 +294,23 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
     found_csv_files = [
         csv_file for csv_file in found_csv_files
         if csv_file.split('.')[0] in list(
-            set([csv_file.split[0] for csv_file in found_csv_files]) -
-            set([jsonl_file.split[0] for jsonl_file in found_jsonl_files]) -
-            set([parquet_file.split[0]
-                 for parquet_file in found_parquet_files]))
+            set([csv_file.split('.')[0] for csv_file in found_csv_files]) -
+            set([jsonl_file.split('.')[0]
+                 for jsonl_file in found_jsonl_files]) - set([
+                     parquet_file.split('.')[0]
+                     for parquet_file in found_parquet_files
+                 ]))
     ]
 
     # Remove any jsonl files that have corresponding parquet files
     found_jsonl_files = [
         jsonl_file for jsonl_file in found_jsonl_files
         if jsonl_file.split('.')[0] in list(
-            set([jsonl_file.split[0] for jsonl_file in found_jsonl_files]) -
-            set([parquet_file.split[0]
-                 for parquet_file in found_parquet_files]))
+            set([jsonl_file.split('.')[0]
+                 for jsonl_file in found_jsonl_files]) - set([
+                     parquet_file.split('.')[0]
+                     for parquet_file in found_parquet_files
+                 ]))
     ]
 
     for cdm_file_name in sorted(resources.CDM_PARQUET_FILES):
@@ -761,7 +765,7 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
 
             bq_client = BigQueryClient(app_id)
 
-            if table_name not in resources.CDM_TABLES:
+            if table_name not in resources.CDM_TABLES + common.PII_TABLES:
                 raise ValueError(f'{table_name} is not a valid table to load')
 
             dataset_id: str = BIGQUERY_DATASET_ID
