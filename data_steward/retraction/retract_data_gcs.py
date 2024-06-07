@@ -156,7 +156,7 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
     for file_name in found_files:
         table_name, extension = file_name.split(".")
         # TODO retract from JSONL files
-        if extension.upper() in ['JSON', 'JSONL']:
+        if extension.upper() in ['JSON', 'JSONL', 'PARQUET']:
             continue
         lines_removed = 0
         file_gcs_path = f'{bucket.name}/{folder_prefix}{file_name}'
