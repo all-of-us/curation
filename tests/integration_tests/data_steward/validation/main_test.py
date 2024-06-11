@@ -115,7 +115,9 @@ class ValidationMainTest(unittest.TestCase):
             self.hpo_bucket)
         folder_items: list = main.get_folder_items(item_metadata,
                                                    self.folder_prefix)
-        expected_results: list = [(f, 1, 0, 0) for f in common.SUBMISSION_CSV_FILES]
+        expected_results: list = [
+            (f, 1, 0, 0) for f in common.SUBMISSION_CSV_FILES
+        ]
         actual: list = main.validate_submission(self.hpo_id, self.hpo_bucket,
                                                 folder_items,
                                                 self.folder_prefix)
@@ -337,7 +339,7 @@ class ValidationMainTest(unittest.TestCase):
             test_client.get(test_util.VALIDATE_HPO_FILES_URL)
             actual_result = self.hpo_bucket.get_blob(
                 f'{self.folder_prefix}{common.RESULTS_HTML}').download_as_text(
-            )
+                )
 
         # ensure emails are not sent
         items_metadata: list = self.storage_client.get_bucket_items_metadata(
