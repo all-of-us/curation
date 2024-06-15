@@ -352,32 +352,48 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
     (FitbitDateShiftRule,),
 ]
 
-CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
-    # (RtCtPIDtoRID,),
+NPH_CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
+    (CleanPPINumericFieldsUsingParameters,),
     (ControlledTierReplacedConceptSuppression,),
     (GeneralizeZipCodes,),  # Should run after any data remapping rules
-    # (RaceEthnicityRecordSuppression,),  # Should run after any data remapping rules
+    (RaceEthnicityRecordSuppression,),  # Should run after any data remapping rules
     (
         MotorVehicleAccidentSuppression,),
     (VehicularAccidentConceptSuppression,),
     (ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
     (BirthInformationSuppression,),
-
-    # removed because lack of person table causes failure
-    # see https://precisionmedicineinitiative.atlassian.net/browse/DL-176?focusedCommentId=194193
-    # (YearOfBirthRecordsSuppression,),
-
-
     (IDFieldSuppression,),  # Should run after any data remapping
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (SectionParticipationConceptSuppression,),
-    (CTNPHObservationPrivacySuppression,),  # Applies only to NPH data
+    (CTNPHObservationPrivacySuppression,),  # Applies only to NPH data.  will be dealt with in 2.0 when handling row suppressions
     (
         StringFieldsSuppression,),
     (AggregateZipCodes,),
     (DeidentifyAIANZip3Values,),
-    (FreeTextSurveyResponseSuppression,)]
+    (FreeTextSurveyResponseSuppression,),
+    (FillSourceValueTextFields,),
+    ]
+
+CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
+    (RtCtPIDtoRID,),
+    (ControlledTierReplacedConceptSuppression,),
+    (GeneralizeZipCodes,),  # Should run after any data remapping rules
+    (RaceEthnicityRecordSuppression,),  # Should run after any data remapping rules
+    (MotorVehicleAccidentSuppression,),
+    (VehicularAccidentConceptSuppression,),
+    (ExplicitIdentifierSuppression,),
+    (GeoLocationConceptSuppression,),
+    (BirthInformationSuppression,),
+    (YearOfBirthRecordsSuppression,),
+    (IDFieldSuppression,),  # Should run after any data remapping
+    (CancerConceptSuppression,),  # Should run after any data remapping rules
+    (SectionParticipationConceptSuppression,),
+    (StringFieldsSuppression,),
+    (AggregateZipCodes,),
+    (DeidentifyAIANZip3Values,),
+    (FreeTextSurveyResponseSuppression,)
+    ]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
@@ -439,6 +455,8 @@ DATA_STAGE_RULES_MAPPING = {
         REGISTERED_TIER_FITBIT_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID.value:
         CONTROLLED_TIER_DEID_CLEANING_CLASSES,
+    DataStage.NPH_CONTROLLED_TIER_DEID.value: 
+        NPH_CONTROLLED_TIER_DEID_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID_BASE.value:
         CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID_CLEAN.value:

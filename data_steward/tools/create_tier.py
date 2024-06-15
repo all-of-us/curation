@@ -19,7 +19,7 @@ from utils.parameter_validators import validate_release_tag_param
 
 LOGGER = logging.getLogger(__name__)
 
-TIER_LIST = ['controlled', 'registered']
+TIER_LIST = ['nph_controlled', 'controlled', 'registered']
 DEID_STAGE_LIST = ['deid', 'deid_base', 'deid_clean', 'fitbit_deid']
 
 
@@ -79,7 +79,7 @@ def get_dataset_name(tier, release_tag, deid_stage):
     # validate parameters
     validate_create_tier_args(tier, deid_stage, release_tag)
 
-    tier = tier[0].upper()
+    tier = 'C' if 'controlled' in tier else 'R'
 
     dataset_name = f"{tier}{release_tag}_{deid_stage}"
 
@@ -224,7 +224,7 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
             qa_handoff_date, '--etl_version', versions[0]
         ])
 
-        if tier == 'controlled':
+        if 'controlled' in tier:
             bq_client.copy_table(
                 f'{project_id}.{PIPELINE_TABLES}.{ZIP3_SES_MAP}',
                 f'{project_id}.{datasets[consts.STAGING]}.{ZIP3_SES_MAP}')
