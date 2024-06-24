@@ -22,11 +22,11 @@ ADD COLUMN IF NOT EXISTS sex_at_birth_source_concept_id INT64
     OPTIONS(description="[All of Us OMOP extension] A foreign key to the biological sex at birth source concept."),
 ADD COLUMN IF NOT EXISTS sex_at_birth_source_value STRING
     OPTIONS(description="[All of Us OMOP extension] The source code for the biological sex at birth."),
-ADD COLUMN IF NOT EXISTS self_reported_population_concept_id INT64
+ADD COLUMN IF NOT EXISTS self_reported_category_concept_id INT64
     OPTIONS(description="[All of Us OMOP extension] A foreign key to the participant's self-reported population concept."),
-ADD COLUMN IF NOT EXISTS self_reported_population_source_concept_id INT64
+ADD COLUMN IF NOT EXISTS self_reported_category_source_concept_id INT64
     OPTIONS(description="[All of Us OMOP extension] A foreign key to the participant's self-reported population source concept."),
-ADD COLUMN IF NOT EXISTS self_reported_population_source_value STRING
+ADD COLUMN IF NOT EXISTS self_reported_category_source_value STRING
     OPTIONS(description="[All of Us OMOP extension] The source code for the participant's self reported population.")
 """)
 
@@ -38,9 +38,9 @@ SET
     sex_at_birth_concept_id = ext.sex_at_birth_concept_id,
     sex_at_birth_source_concept_id = ext.sex_at_birth_source_concept_id,
     sex_at_birth_source_value = ext.sex_at_birth_source_value,
-    self_reported_population_concept_id = ext.self_reported_population_concept_id,
-    self_reported_population_source_concept_id = ext.self_reported_population_source_concept_id,
-    self_reported_population_source_value = ext.self_reported_population_source_value
+    self_reported_category_concept_id = ext.self_reported_category_concept_id,
+    self_reported_category_source_concept_id = ext.self_reported_category_source_concept_id,
+    self_reported_category_source_value = ext.self_reported_category_source_value
 FROM
     `{{person_ext.project}}.{{person_ext.dataset_id}}.{{person_ext.table_id}}` ext
 WHERE p.person_id = ext.person_id

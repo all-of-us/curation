@@ -16,9 +16,9 @@ sex_at_birth_concept_id: value_as_concept_id in observation where observation_so
 sex_at_birth_source_concept_id: value_source_concept_id in observation where observation_source_concept_id = 1585845
 sex_at_birth_source_value: concept_code in the concept table where joining from observation where 
 observation_source_concept_id = 1585845
-self_reported_population_concept_id: value_as_concept_id in observation where observation_source_concept_id = 1586140
-self_reported_population_source_concept_id: value_source_concept_id in observation where observation_source_concept_id = 1586140
-self_reported_population_source_value: concept_code in the concept table where joining from observation where
+self_reported_category_concept_id: value_as_concept_id in observation where observation_source_concept_id = 1586140
+self_reported_category_source_concept_id: value_source_concept_id in observation where observation_source_concept_id = 1586140
+self_reported_category_source_value: concept_code in the concept table where joining from observation where
 observation_source_concept_id = 1586140
 """
 import logging
@@ -40,9 +40,9 @@ SET
   t.sex_at_birth_concept_id = COALESCE(os.value_as_concept_id, 0),
   t.sex_at_birth_source_concept_id = COALESCE(os.value_source_concept_id, 0),
   t.sex_at_birth_source_value = COALESCE(sc.concept_code, 'No matching concept'),
-  t.self_reported_population_concept_id = COALESCE(srp.value_as_concept_id, 0),
-  t.self_reported_population_source_concept_id = COALESCE(srp.value_source_concept_id, 0),
-  t.self_reported_population_source_value = COALESCE(srp.value_source_value, 'No matching concept')
+  t.self_reported_category_concept_id = COALESCE(srp.value_as_concept_id, 0),
+  t.self_reported_category_source_concept_id = COALESCE(srp.value_source_concept_id, 0),
+  t.self_reported_category_source_value = COALESCE(srp.value_source_value, 'No matching concept')
 FROM
   `{{project}}.{{dataset}}.person` p
 LEFT JOIN

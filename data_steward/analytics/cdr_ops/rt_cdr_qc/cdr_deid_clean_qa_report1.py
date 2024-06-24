@@ -22,6 +22,7 @@ from common import JINJA_ENV
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+
 pd.options.display.max_rows = 120
 
 # + papermill={"duration": 0.023643, "end_time": "2021-02-02T22:30:31.880820", "exception": false, "start_time": "2021-02-02T22:30:31.857177", "status": "completed"} tags=["parameters"]
@@ -62,13 +63,13 @@ if result.loc[0].sum() == 0:
         'query': 'Query1 observation',
         'result': 'PASS'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 else:
-    summary = summary.append({
-        'query': 'Query1 observation',
-        'result': 'Failure'
-    },
-                   ignore_index=True)
+    summary = summary.append(
+        {
+            'query': 'Query1 observation',
+            'result': 'Failure'
+        }, ignore_index=True)
 result.T
 
 # + [markdown] papermill={"duration": 0.023633, "end_time": "2021-02-02T22:30:36.860798", "exception": false, "start_time": "2021-02-02T22:30:36.837165", "status": "completed"} tags=[]
@@ -95,13 +96,13 @@ if result.loc[0].sum() == 0:
         'query': 'Query2 condition',
         'result': 'PASS'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 else:
     summary = summary.append({
         'query': 'Query2 condition',
         'result': 'Failure'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 result.T
 
 # # 3  Verify that in procedure_occurrence table if procedure_occurrence_source_concept_id AND the procedure_occurrence_concept_id both of those fields are null OR zero, the row should be removed.
@@ -123,13 +124,13 @@ if result.loc[0].sum() == 0:
         'query': 'Query3 procedure',
         'result': 'PASS'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 else:
     summary = summary.append({
         'query': 'Query3 procedure',
         'result': 'Failure'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 result.T
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
@@ -152,15 +153,14 @@ if result.loc[0].sum() == 0:
         'query': 'Query4 visit',
         'result': 'PASS'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 else:
     summary = summary.append({
         'query': 'Query4 visit',
         'result': 'Failure'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 result.T
-
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 5 Verify that in drug_exposure table if drug_exposure_source_concept_id AND the drug_exposure_concept_id both of those fields are null OR zero, the row should be removed.
@@ -182,13 +182,14 @@ if result.loc[0].sum() == 0:
         'query': 'Query5 drug_exposure',
         'result': 'PASS'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 else:
-    summary = summary.append({
-        'query': 'Query5 drug_exposure',
-        'result': 'Failure'
-    },
-                   ignore_index=True)
+    summary = summary.append(
+        {
+            'query': 'Query5 drug_exposure',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 result.T
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
@@ -211,13 +212,13 @@ if result.loc[0].sum() == 0:
         'query': 'Query6 device',
         'result': 'PASS'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 else:
     summary = summary.append({
         'query': 'Query6 device',
         'result': 'Failure'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 result.T
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
@@ -240,13 +241,14 @@ if result.loc[0].sum() == 0:
         'query': 'Query7 measurement',
         'result': 'PASS'
     },
-                   ignore_index=True)
+                             ignore_index=True)
 else:
-    summary = summary.append({
-        'query': 'Query7, measurement',
-        'result': 'Failure'
-    },
-                   ignore_index=True)
+    summary = summary.append(
+        {
+            'query': 'Query7, measurement',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 result.T
 # -
 
@@ -287,8 +289,8 @@ else:
 result
 # -
 
-Query9 "Race Ethnicity: person_ext self reported population DC-3789"
-Verify that the person_ext self_reported_population fields are populated correctly. 
+# Query9 "Race Ethnicity: person_ext self reported population DC-3789"
+# Verify that the person_ext self_reported_category fields are populated correctly.
 
 # has to be deid_clean
 query = JINJA_ENV.from_string("""
@@ -303,7 +305,7 @@ WITH obs as
         ORDER BY person_id, value_source_concept_id)
       GROUP BY 1))
 
-SELECT DISTINCT races, c_races, race_source_value, ethnicity_source_value,  race_source_concept_id, race_concept_id, self_reported_population_source_value,  self_reported_population_source_concept_id, self_reported_population_concept_id
+SELECT DISTINCT races, c_races, race_source_value, ethnicity_source_value,  race_source_concept_id, race_concept_id, self_reported_category_source_value,  self_reported_category_source_concept_id, self_reported_category_concept_id
 FROM obs
 LEFT JOIN `{{project_id}}.{{deid_clean_cdr}}.person`
 USING (person_id)
@@ -311,27 +313,27 @@ LEFT JOIN `{{project_id}}.{{deid_clean_cdr}}.person_ext`
 USING (person_id)
 WHERE 
 -- check srp column multi pop --
-  (REGEXP_CONTAINS(obs.c_races,  r'\|')  AND self_reported_population_source_value != 'WhatRaceEthnicity_GeneralizedMultPopulations' )
+  (REGEXP_CONTAINS(obs.c_races,  r'\|')  AND self_reported_category_source_value != 'WhatRaceEthnicity_GeneralizedMultPopulations' )
 -- check srp column single pop not hispanic--
-  OR (NOT (REGEXP_CONTAINS(obs.c_races,  r'\|') )) AND (race_source_value != self_reported_population_source_value AND (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_population_source_value != 'WhatRaceEthnicity_Hispanic'))
+  OR (NOT (REGEXP_CONTAINS(obs.c_races,  r'\|') )) AND (race_source_value != self_reported_category_source_value AND (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_category_source_value != 'WhatRaceEthnicity_Hispanic'))
 -- check srp column single pop hispanic--
-  OR (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_population_source_value != 'WhatRaceEthnicity_Hispanic')
+  OR (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_category_source_value != 'WhatRaceEthnicity_Hispanic')
 -- check only expected srpsv exist --
-  OR (self_reported_population_source_value NOT IN ('WhatRaceEthnicity_GeneralizedMultPopulations','WhatRaceEthnicity_GeneralizedPopulation', 'WhatRaceEthnicity_Black','WhatRaceEthnicity_White','WhatRaceEthnicity_Asian' ,'WhatRaceEthnicity_Hispanic','PMI_PreferNotToAnswer', 'PMI_Skip', 'WhatRaceEthnicity_RaceEthnicityNoneOfThese','WhatRaceEthnicity_AIAN',
+  OR (self_reported_category_source_value NOT IN ('WhatRaceEthnicity_GeneralizedMultPopulations','WhatRaceEthnicity_GeneralizedPopulation', 'WhatRaceEthnicity_Black','WhatRaceEthnicity_White','WhatRaceEthnicity_Asian' ,'WhatRaceEthnicity_Hispanic','PMI_PreferNotToAnswer', 'PMI_Skip', 'WhatRaceEthnicity_RaceEthnicityNoneOfThese','WhatRaceEthnicity_AIAN',
 'WhatRaceEthnicity_MENA','WhatRaceEthnicity_NHPI'))
 -- check for expected concept_ids per srpsv --
-  OR (self_reported_population_source_value = 'WhatRaceEthnicity_GeneralizedMultPopulations' AND (self_reported_population_concept_id != 2000000008 OR self_reported_population_source_concept_id != 2000000008))
-  OR (self_reported_population_source_value = 'WhatRaceEthnicity_GeneralizedPopulation' AND (self_reported_population_concept_id != 2000000001 OR self_reported_population_source_concept_id != 2000000001))
-  OR (self_reported_population_source_value = 'WhatRaceEthnicity_Black' AND (self_reported_population_concept_id != 8516 OR self_reported_population_source_concept_id != 1586143))
-  OR (self_reported_population_source_value = 'WhatRaceEthnicity_White' AND (self_reported_population_concept_id != 8527 OR self_reported_population_source_concept_id != 1586146))
-  OR (self_reported_population_source_value = 'WhatRaceEthnicity_Asian' AND (self_reported_population_concept_id != 8515 OR self_reported_population_source_concept_id != 1586142))
-  OR (self_reported_population_source_value = 'WhatRaceEthnicity_Hispanic' AND (self_reported_population_concept_id != 1586147 OR self_reported_population_source_concept_id != 1586147))
-  OR (self_reported_population_source_value = 'PMI_PreferNotToAnswer' AND (self_reported_population_concept_id != 1177221 OR self_reported_population_source_concept_id != 903079))
-  OR (self_reported_population_source_value = 'PMI_Skip' AND (self_reported_population_concept_id != 903096 OR self_reported_population_source_concept_id != 903096))
-  OR (self_reported_population_source_value = 'WhatRaceEthnicity_RaceEthnicityNoneOfThese' AND (self_reported_population_concept_id != 45882607 OR self_reported_population_source_concept_id != 1586148))
-  OR (self_reported_population_source_value = 'WhatRaceEthnicity_AIAN' AND (self_reported_population_concept_id != 8657 OR self_reported_population_source_concept_id != 1586141)) -- ct only --
-  OR (self_reported_population_source_value = 'WhatRaceEthnicity_MENA' AND (self_reported_population_concept_id != 38003615 OR self_reported_population_source_concept_id != 1586144)) -- ct only --
-  OR (self_reported_population_source_value = 'WhatRaceEthnicity_NHPI' AND (self_reported_population_concept_id != 8557 OR self_reported_population_source_concept_id != 1586145)) -- ct only --
+  OR (self_reported_category_source_value = 'WhatRaceEthnicity_GeneralizedMultPopulations' AND (self_reported_category_concept_id != 2000000008 OR self_reported_category_source_concept_id != 2000000008))
+  OR (self_reported_category_source_value = 'WhatRaceEthnicity_GeneralizedPopulation' AND (self_reported_category_concept_id != 2000000001 OR self_reported_category_source_concept_id != 2000000001))
+  OR (self_reported_category_source_value = 'WhatRaceEthnicity_Black' AND (self_reported_category_concept_id != 8516 OR self_reported_category_source_concept_id != 1586143))
+  OR (self_reported_category_source_value = 'WhatRaceEthnicity_White' AND (self_reported_category_concept_id != 8527 OR self_reported_category_source_concept_id != 1586146))
+  OR (self_reported_category_source_value = 'WhatRaceEthnicity_Asian' AND (self_reported_category_concept_id != 8515 OR self_reported_category_source_concept_id != 1586142))
+  OR (self_reported_category_source_value = 'WhatRaceEthnicity_Hispanic' AND (self_reported_category_concept_id != 1586147 OR self_reported_category_source_concept_id != 1586147))
+  OR (self_reported_category_source_value = 'PMI_PreferNotToAnswer' AND (self_reported_category_concept_id != 1177221 OR self_reported_category_source_concept_id != 903079))
+  OR (self_reported_category_source_value = 'PMI_Skip' AND (self_reported_category_concept_id != 903096 OR self_reported_category_source_concept_id != 903096))
+  OR (self_reported_category_source_value = 'WhatRaceEthnicity_RaceEthnicityNoneOfThese' AND (self_reported_category_concept_id != 45882607 OR self_reported_category_source_concept_id != 1586148))
+  OR (self_reported_category_source_value = 'WhatRaceEthnicity_AIAN' AND (self_reported_category_concept_id != 8657 OR self_reported_category_source_concept_id != 1586141)) -- ct only --
+  OR (self_reported_category_source_value = 'WhatRaceEthnicity_MENA' AND (self_reported_category_concept_id != 38003615 OR self_reported_category_source_concept_id != 1586144)) -- ct only --
+  OR (self_reported_category_source_value = 'WhatRaceEthnicity_NHPI' AND (self_reported_category_concept_id != 8557 OR self_reported_category_source_concept_id != 1586145)) -- ct only --
 ORDER BY 1,2
 
 """)
