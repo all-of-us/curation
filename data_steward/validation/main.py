@@ -35,7 +35,9 @@ import constants.global_variables
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, BIGQUERY_DATASET_ID, UNIONED_DATASET_ID
+from common import (ACHILLES_EXPORT_PREFIX_STRING,
+                    ACHILLES_EXPORT_DATASOURCES_JSON, BIGQUERY_DATASET_ID,
+                    UNIONED_DATASET_ID)
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from retraction import retract_data_bq, retract_data_gcs
@@ -281,7 +283,6 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
         expected_tables.append(table_id)
         bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
 
-    found_tables = []
     found_csv_files, found_parquet_files, found_jsonl_files = [], [], []
     found_csv_tables, found_parquet_tables, found_jsonl_tables = [], [], []
     for found_file in found_cdm_files + found_pii_files:
@@ -289,8 +290,10 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
             found_csv_files.append(found_file)
             found_csv_tables.append(found_file.split('.')[0])
         elif found_file.endswith('.parquet'):
-            found_parquet_files.append(found_file)
-            found_parquet_tables.append(found_file.split('.')[0])
+            # Read split files named cdm_table-part-001.parquet as cdm_table.parquet
+            found_parquet_files.append(
+                f"{found_file.split('.')[0].split('-')[0]}.parquet")
+            found_parquet_tables.append(found_file.split('.')[0].split('-')[0])
         elif found_file.endswith('.jsonl'):
             found_jsonl_files.append(found_file)
             found_jsonl_tables.append(found_file.split('.')[0])
@@ -331,13 +334,18 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
 
     for cdm_file_name in sorted(resources.CDM_CSV_FILES) + sorted(
             common.PII_CSV_FILES):
-        # Skip if the table has already been processed
-        if cdm_file_name.split('.')[0] in found_tables:
+        # Skip if table in list of found parquet/jsonl tables
+        if cdm_file_name.split(
+                '.')[0] in found_parquet_tables + found_jsonl_tables:
             continue
         file_results, file_errors = perform_validation_on_file(
             cdm_file_name, found_csv_files, hpo_id, folder_prefix, bucket)
         results.extend(file_results)
         errors.extend(file_errors)
+
+    # Order results by file name and keep pii/participant separate
+    results.sort(key=lambda x: (x[0].startswith(
+        (common.PII, common.PARTICIPANT_MATCH)), x[0]))
 
     # (filename, message) for each unknown file
     warnings = [
@@ -749,6 +757,8 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
     results = []
     found = parsed = loaded = 0
     table_name, extension = file_name.split('.')
+    # remove any parts from the table name, assuming cdm_table-part-001.parquet
+    table_name = table_name.split('-')[0]
 
     source_format_dict = {
         'PARQUET': bigquery.SourceFormat.PARQUET,
@@ -772,9 +782,11 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
 
             dataset_id: str = BIGQUERY_DATASET_ID
 
+            # Caution: this will load note and note_nlp tables into note_nlp table if note_nlp is uploaded
+            # Works for now since note_nlp is not submitted by sites and we are not expecting it
             gcs_object_path: str = (f'gs://{hpo_bucket.name}/'
                                     f'{folder_prefix}'
-                                    f'{table_name}.{extension}')
+                                    f'{table_name}*.{extension}')
             table_id = resources.get_table_id(table_name, hpo_id)
             fq_table_id = f'{bq_client.project}.{dataset_id}.{table_id}'
 
@@ -878,9 +890,11 @@ def list_submitted_bucket_items(folder_bucketitems):
     utc_today = datetime.datetime.now(tz=None)
 
     # If any required file missing, stop submission
-    folder_bucketitems_table_names = [
-        basename(file_name).split('.')[0] for file_name in folder_bucketitems
-    ]
+    folder_bucketitems_table_names = list(
+        set([
+            basename(file_name).split('.')[0].split('-')[0]
+            for file_name in folder_bucketitems
+        ]))
 
     to_process_items = [
         item for item in folder_bucketitems
@@ -1004,13 +1018,14 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
 
 def _is_cdm_file(gcs_file_name):
     return gcs_file_name.lower(
-    ) in resources.CDM_CSV_FILES or gcs_file_name.lower(
-    ) in resources.CDM_JSONL_FILES or gcs_file_name.lower(
-    ) in resources.CDM_PARQUET_FILES
+    ) in resources.CDM_CSV_FILES + resources.CDM_JSONL_FILES + resources.CDM_PARQUET_FILES or gcs_file_name.lower(
+    ).startswith(tuple(resources.CDM_TABLES))
 
 
 def _is_pii_file(gcs_file_name):
-    return gcs_file_name.lower() in common.PII_CSV_FILES
+    return gcs_file_name.lower(
+    ) in common.PII_CSV_FILES + common.PII_JSONL_FILES + common.PII_PARQUET_FILES or gcs_file_name.lower(
+    ).startswith((common.PII, common.PARTICIPANT_MATCH))
 
 
 def _is_known_file(gcs_file_name):
