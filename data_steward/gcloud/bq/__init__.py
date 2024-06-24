@@ -476,7 +476,7 @@ class BigQueryClient(Client):
             if schema_list:
                 sc_list = []
                 for item in schema_list:
-                    # NPH does not provide AOU-specific fields, select them as NULL
+                    # NPH does not provide AOU-specific fields, skip them
                     if item.name in ['questionnaire_response_id']:
                         continue
                     else:

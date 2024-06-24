@@ -31,7 +31,7 @@ SELECT
 FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
 LEFT JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS s
     ON d.{{domain_table}}_id = s.{{domain_table}}_id
-WHERE d.{{field_name}} = {{field_value}} and s.{{domain_table}}_id IS NULL
+WHERE d.{{field_name}} in ({{field_value}}) and s.{{domain_table}}_id IS NULL
 """)
 
 STRING_FIELD_SUPPRESSION_QUERY_TEMPLATE = JINJA_ENV.from_string("""
@@ -56,7 +56,7 @@ UPDATE `{{project}}.{{dataset}}.{{domain_table}}` AS d
 {% endfor %}
 FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS s
 WHERE d.{{domain_table}}_id = s.{{domain_table}}_id 
-    AND s.{{field_name}} = {{field_value}}
+    AND s.{{field_name}} in ({{field_value}})
 """)
 
 VALIDATION_QUERY_TEMPLATE = JINJA_ENV.from_string("""
@@ -216,44 +216,11 @@ class StringFieldsSuppression(BaseCleaningRule):
                 domain_table=OBSERVATION,
                 sandbox_table=self.sandbox_table_for(OBSERVATION),
                 field_name=OBSERVATION_SOURCE_CONCEPT_ID,
-                field_value=2200001122,  # cgm_dev_given_id
-                restore_fields=[VALUE_AS_STRING]),
-            SuppressionException(
-                domain_table=OBSERVATION,
-                sandbox_table=self.sandbox_table_for(OBSERVATION),
-                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
-                field_value=2200001180,  # device_notcollected
-                restore_fields=[VALUE_AS_STRING]),
-            SuppressionException(
-                domain_table=OBSERVATION,
-                sandbox_table=self.sandbox_table_for(OBSERVATION),
-                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
-                field_value=2200001476,  # geo_curr_hmzipcode
-                restore_fields=[VALUE_AS_STRING]),
-            SuppressionException(
-                domain_table=OBSERVATION,
-                sandbox_table=self.sandbox_table_for(OBSERVATION),
-                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
-                field_value=2200002254,  # polar_id
-                restore_fields=[VALUE_AS_STRING]),
-            SuppressionException(
-                domain_table=OBSERVATION,
-                sandbox_table=self.sandbox_table_for(OBSERVATION),
-                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
-                field_value=2200002265,  # poloar_actigraph_pair_id
-                restore_fields=[VALUE_AS_STRING]),
-            SuppressionException(
-                domain_table=OBSERVATION,
-                sandbox_table=self.sandbox_table_for(OBSERVATION),
-                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
-                field_value=2200003562,  # profile_zipcode
-                restore_fields=[VALUE_AS_STRING]),
-            SuppressionException(
-                domain_table=OBSERVATION,
-                sandbox_table=self.sandbox_table_for(OBSERVATION),
-                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
-                field_value=2200003578,  # scr_studyid
-                restore_fields=[VALUE_AS_STRING]),
+                field_value=(f"SELECT concept_id "
+                             f"FROM `{self.project_id}.{self.dataset_id}.concept` "
+                             f"WHERE concept_code in ('cgm_dev_given_id', 'polar_id', 'poloar_actigraph_pair_id', 'device_notcollected', 'scr_studyid', 'profile_zipcode', 'geo_curr_hmzipcode', 'geo_curr_hmcountry')"),
+                restore_fields=[VALUE_AS_STRING]
+            )
         ]
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
