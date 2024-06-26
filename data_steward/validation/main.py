@@ -1018,14 +1018,17 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
 
 def _is_cdm_file(gcs_file_name):
     return gcs_file_name.lower(
-    ) in resources.CDM_CSV_FILES + resources.CDM_JSONL_FILES + resources.CDM_PARQUET_FILES or gcs_file_name.lower(
-    ).startswith(tuple(resources.CDM_TABLES))
+    ) in resources.CDM_CSV_FILES + resources.CDM_JSONL_FILES + resources.CDM_PARQUET_FILES or (
+        gcs_file_name.lower().startswith(tuple(resources.CDM_TABLES)) and
+        gcs_file_name.lower().endswith('parquet'))
 
 
 def _is_pii_file(gcs_file_name):
     return gcs_file_name.lower(
-    ) in common.PII_CSV_FILES + common.PII_JSONL_FILES + common.PII_PARQUET_FILES or gcs_file_name.lower(
-    ).startswith((common.PII, common.PARTICIPANT_MATCH))
+    ) in common.PII_CSV_FILES + common.PII_JSONL_FILES + common.PII_PARQUET_FILES or (
+        gcs_file_name.lower().startswith(
+            (common.PII, common.PARTICIPANT_MATCH)) and
+        gcs_file_name.lower().endswith('parquet'))
 
 
 def _is_known_file(gcs_file_name):
