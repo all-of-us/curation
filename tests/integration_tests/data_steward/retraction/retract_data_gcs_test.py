@@ -50,7 +50,7 @@ class RetractDataGcsTest(TestCase):
 
     @patch('retraction.retract_data_gcs.extract_pids_from_table')
     def test_integration_five_person_data_retraction_skip(
-            self, mock_extract_pids):
+        self, mock_extract_pids):
         """
         Test for GCS bucket retraction.
         When PIDs to retract are not in the CSV file, no records will be deleted
@@ -60,7 +60,7 @@ class RetractDataGcsTest(TestCase):
         lines_to_remove = {}
         expected_lines_post = {}
         # Exclude jsonl and parquet file until accounted for
-        for file_path in test_util.FIVE_PERSONS_FILES[:-3]:
+        for file_path in test_util.FIVE_PERSONS_FILES[:-4]:
             # generate results files
             file_name = file_path.split('/')[-1]
             lines_to_remove[file_name] = 0
@@ -96,7 +96,7 @@ class RetractDataGcsTest(TestCase):
 
         total_lines_post = {}
         # Exclude jsonl and parquet file until accounted for
-        for file_path in test_util.FIVE_PERSONS_FILES[:-3]:
+        for file_path in test_util.FIVE_PERSONS_FILES[:-4]:
             file_name = file_path.split('/')[-1]
             blob = self.gcs_bucket.blob(f'{self.folder_prefix_1}{file_name}')
 
@@ -124,7 +124,7 @@ class RetractDataGcsTest(TestCase):
         mock_extract_pids.return_value = self.pids
         expected_lines_post = {}
         # Exclude jsonl and parquet files until accounted for
-        for file_path in test_util.FIVE_PERSONS_FILES[:-3]:
+        for file_path in test_util.FIVE_PERSONS_FILES[:-4]:
             # generate results files
             file_name = file_path.split('/')[-1]
             table_name = file_name.split('.')[0]
@@ -165,7 +165,7 @@ class RetractDataGcsTest(TestCase):
 
         total_lines_post = {}
         # Exclude jsonl and parquet file until accounted for
-        for file_path in test_util.FIVE_PERSONS_FILES[:-3]:
+        for file_path in test_util.FIVE_PERSONS_FILES[:-4]:
             file_name = file_path.split('/')[-1]
             blob = self.gcs_bucket.blob(f'{self.folder_prefix_1}{file_name}')
             actual_result_contents = blob.download_as_string().split(b'\n')

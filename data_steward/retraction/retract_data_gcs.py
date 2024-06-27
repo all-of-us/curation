@@ -155,7 +155,7 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
     """
     for file_name in found_files:
         table_name, extension = file_name.split(".")
-        # TODO retract from JSONL files
+        # TODO retract from JSONL and PARQUET files
         if extension.upper() in ['JSON', 'JSONL', 'PARQUET']:
             continue
         lines_removed = 0
@@ -226,7 +226,7 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
                     f"Not updating file {file_gcs_path} since pids {pids} not found"
                 )
         elif response.lower() == "n":
-            logging.info(f"Skipping file {file_gcs_path}")
+            logging.info(f"Skipping file {file_gcs_path} due to user input")
     return
 
 
