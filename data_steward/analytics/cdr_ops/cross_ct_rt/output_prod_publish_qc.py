@@ -91,9 +91,9 @@ execute(client, query)
 # 3. sex_at_birth_source_value
 # 4. state_of_residence_concept_id
 # 5. state_of_residence_source_value
-# 6. self_reported_population_concept_id
-# 7. self_reported_population_source_value
-# 8. self_reported_population_source_concept_id<br>
+# 6. self_reported_category_concept_id
+# 7. self_reported_category_source_value
+# 8. self_reported_category_source_concept_id<br>
 #
 #
 # Investigate any failed output.
@@ -119,12 +119,12 @@ SELECT
   ,COUNTIF((p.sex_at_birth_source_value IS NULL AND pe.sex_at_birth_source_value IS NOT NULL)
       OR (p.sex_at_birth_source_value IS NOT NULL AND pe.sex_at_birth_source_value IS NULL)) as ne_nulls_sex_at_birth_source_value
 -- check self reported population columns --
-  ,COUNTIF((p.self_reported_population_concept_id IS NULL AND pe.self_reported_population_concept_id IS NOT NULL)
-      OR (p.self_reported_population_concept_id IS NOT NULL AND pe.self_reported_population_concept_id IS NULL)) as ne_nulls_self_reported_population_concept_id
-  ,COUNTIF((p.self_reported_population_source_value IS NULL AND pe.self_reported_population_source_value IS NOT NULL)
-      OR (p.self_reported_population_source_value IS NOT NULL AND pe.self_reported_population_source_value IS NULL)) as ne_nulls_self_reported_population_source_value
-  ,COUNTIF((p.self_reported_population_source_concept_id IS NULL AND pe.self_reported_population_source_concept_id IS NOT NULL)
-      OR (p.self_reported_population_source_concept_id IS NOT NULL AND pe.self_reported_population_source_concept_id IS NULL)) as ne_nulls_self_reported_population_source_concept_id
+  ,COUNTIF((p.self_reported_category_concept_id IS NULL AND pe.self_reported_category_concept_id IS NOT NULL)
+      OR (p.self_reported_category_concept_id IS NOT NULL AND pe.self_reported_category_concept_id IS NULL)) as ne_nulls_self_reported_category_concept_id
+  ,COUNTIF((p.self_reported_category_source_value IS NULL AND pe.self_reported_category_source_value IS NOT NULL)
+      OR (p.self_reported_category_source_value IS NOT NULL AND pe.self_reported_category_source_value IS NULL)) as ne_nulls_self_reported_category_source_value
+  ,COUNTIF((p.self_reported_category_source_concept_id IS NULL AND pe.self_reported_category_source_concept_id IS NOT NULL)
+      OR (p.self_reported_category_source_concept_id IS NOT NULL AND pe.self_reported_category_source_concept_id IS NULL)) as ne_nulls_self_reported_category_source_concept_id
 FROM `{{dest_project_id}}.{{dest_dataset_id}}.person` p
 JOIN `{{dest_project_id}}.{{dest_dataset_id}}.person_ext` pe
 USING (person_id)
@@ -241,9 +241,9 @@ FROM calculation AS c
 UNION ALL 
 
 SELECT
-'nulls_self_reported_population_concept_id_check' AS check
+'nulls_self_reported_category_concept_id_check' AS check
 ,CASE
-    WHEN c.ne_nulls_self_reported_population_concept_id > 0
+    WHEN c.ne_nulls_self_reported_category_concept_id > 0
       THEN 'FAILED'
       ELSE 'passed'
       END AS result
@@ -252,9 +252,9 @@ FROM calculation AS c
 UNION ALL
 
 SELECT
-'self_reported_population_source_value_check' AS check
+'self_reported_category_source_value_check' AS check
 ,CASE
-    WHEN c.ne_nulls_self_reported_population_source_value > 0
+    WHEN c.ne_nulls_self_reported_category_source_value > 0
       THEN 'FAILED'
       ELSE 'passed'
       END AS result
@@ -263,9 +263,9 @@ FROM calculation AS c
 UNION ALL 
 
 SELECT
-'null_self_reported_population_source_concept_id_check' AS check
+'null_self_reported_category_source_concept_id_check' AS check
 ,CASE
-    WHEN c.ne_nulls_self_reported_population_source_concept_id > 0
+    WHEN c.ne_nulls_self_reported_category_source_concept_id > 0
       THEN 'FAILED'
       ELSE 'passed'
       END AS result
@@ -285,9 +285,9 @@ execute(client, query)
 # 3. sex_at_birth_source_value
 # 4. state_of_residence_concept_id
 # 5. state_of_residence_source_value
-# 6. self_reported_population_concept_id
-# 7. self_reported_population_source_value
-# 8. self_reported_population_source_concept_id<br>
+# 6. self_reported_category_concept_id
+# 7. self_reported_category_source_value
+# 8. self_reported_category_source_concept_id<br>
 #
 # Investigate any failed output.
 
@@ -312,12 +312,12 @@ SELECT
     ,COUNTIF((p.sex_at_birth_source_value IS NULL AND pe.sex_at_birth_source_value IS NOT NULL)
         OR(p.sex_at_birth_source_value IS NOT NULL AND pe.sex_at_birth_source_value IS NULL)) AS ne_nulls_sex_at_birth_source_value
 -- check self reported population columns --
-  ,COUNTIF((p.self_reported_population_concept_id IS NULL AND pe.self_reported_population_concept_id IS NOT NULL)
-      OR (p.self_reported_population_concept_id IS NOT NULL AND pe.self_reported_population_concept_id IS NULL)) as ne_nulls_self_reported_population_concept_id
-  ,COUNTIF((p.self_reported_population_source_value IS NULL AND pe.self_reported_population_source_value IS NOT NULL)
-      OR (p.self_reported_population_source_value IS NOT NULL AND pe.self_reported_population_source_value IS NULL)) as ne_nulls_self_reported_population_source_value
-  ,COUNTIF((p.self_reported_population_source_concept_id IS NULL AND pe.self_reported_population_source_concept_id IS NOT NULL)
-      OR (p.self_reported_population_source_concept_id IS NOT NULL AND pe.self_reported_population_source_concept_id IS NULL)) as ne_nulls_self_reported_population_source_concept_id
+  ,COUNTIF((p.self_reported_category_concept_id IS NULL AND pe.self_reported_category_concept_id IS NOT NULL)
+      OR (p.self_reported_category_concept_id IS NOT NULL AND pe.self_reported_category_concept_id IS NULL)) as ne_nulls_self_reported_category_concept_id
+  ,COUNTIF((p.self_reported_category_source_value IS NULL AND pe.self_reported_category_source_value IS NOT NULL)
+      OR (p.self_reported_category_source_value IS NOT NULL AND pe.self_reported_category_source_value IS NULL)) as ne_nulls_self_reported_category_source_value
+  ,COUNTIF((p.self_reported_category_source_concept_id IS NULL AND pe.self_reported_category_source_concept_id IS NOT NULL)
+      OR (p.self_reported_category_source_concept_id IS NOT NULL AND pe.self_reported_category_source_concept_id IS NULL)) as ne_nulls_self_reported_category_source_concept_id
 FROM `{{dest_project_id}}.{{dest_dataset_id}}.person` p
 JOIN `{{src_project_id}}.{{src_dataset_id}}.person_ext` pe
 USING(person_id))
@@ -436,9 +436,9 @@ FROM calculation as c
 UNION ALL 
 
 SELECT
-'nulls_self_reported_population_concept_id_check' AS check
+'nulls_self_reported_category_concept_id_check' AS check
 ,CASE
-    WHEN c.ne_nulls_self_reported_population_concept_id > 0
+    WHEN c.ne_nulls_self_reported_category_concept_id > 0
       THEN 'FAILED'
       ELSE 'passed'
       END AS result
@@ -447,9 +447,9 @@ FROM calculation AS c
 UNION ALL
 
 SELECT
-'self_reported_population_source_value_check' AS check
+'self_reported_category_source_value_check' AS check
 ,CASE
-    WHEN c.ne_nulls_self_reported_population_source_value > 0
+    WHEN c.ne_nulls_self_reported_category_source_value > 0
       THEN 'FAILED'
       ELSE 'passed'
       END AS result
@@ -458,9 +458,9 @@ FROM calculation AS c
 UNION ALL 
 
 SELECT
-'null_self_reported_population_source_concept_id_check' AS check
+'null_self_reported_category_source_concept_id_check' AS check
 ,CASE
-    WHEN c.ne_nulls_self_reported_population_source_concept_id > 0
+    WHEN c.ne_nulls_self_reported_category_source_concept_id > 0
       THEN 'FAILED'
       ELSE 'passed'
       END AS result
