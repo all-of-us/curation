@@ -9,6 +9,7 @@ from constants.bq_utils import VALIDATION_DATASET_REGEX
 from constants.validation.participants.identity_match import REPORT_DIRECTORY_REGEX
 
 # AOU required PII tables
+PII = 'pii'
 PII_WILDCARD = 'pii*'
 PII_NAME = 'pii_name'
 PII_EMAIL = 'pii_email'
@@ -102,10 +103,14 @@ CDM_TABLES = AOU_REQUIRED + OTHER_CDM_TABLES
 AOU_DEATH = 'aou_death'
 AOU_CUSTOM_TABLES = [AOU_DEATH]
 
-AOU_REQUIRED_FILES = [f'{table}.csv' for table in AOU_REQUIRED]
-PII_FILES = [f'{table}.csv' for table in PII_TABLES]
+AOU_REQUIRED_CSV_FILES = [f'{table}.csv' for table in AOU_REQUIRED]
+PII_CSV_FILES = [f'{table}.csv' for table in PII_TABLES]
+AOU_REQUIRED_JSONL_FILES = [f'{table}.jsonl' for table in AOU_REQUIRED]
+PII_JSONL_FILES = [f'{table}.jsonl' for table in PII_TABLES]
 NOTE_JSONL = 'note.jsonl'
-SUBMISSION_FILES = AOU_REQUIRED_FILES + PII_FILES
+AOU_REQUIRED_PARQUET_FILES = [f'{table}.parquet' for table in AOU_REQUIRED]
+PII_PARQUET_FILES = [f'{table}.parquet' for table in PII_TABLES]
+SUBMISSION_CSV_FILES = AOU_REQUIRED_CSV_FILES + PII_CSV_FILES
 RESULTS_HTML = 'results.html'
 PROCESSED_TXT = 'processed.txt'
 LOG_JSON = 'log.json'

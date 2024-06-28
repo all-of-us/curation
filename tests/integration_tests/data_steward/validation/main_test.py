@@ -107,7 +107,7 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
-        for cdm_table in common.SUBMISSION_FILES:
+        for cdm_table in common.SUBMISSION_CSV_FILES:
             cdm_blob = self.hpo_bucket.blob(f'{self.folder_prefix}{cdm_table}')
             cdm_blob.upload_from_string('.\n .')
 
@@ -115,7 +115,9 @@ class ValidationMainTest(unittest.TestCase):
             self.hpo_bucket)
         folder_items: list = main.get_folder_items(item_metadata,
                                                    self.folder_prefix)
-        expected_results: list = [(f, 1, 0, 0) for f in common.SUBMISSION_FILES]
+        expected_results: list = [
+            (f, 1, 0, 0) for f in common.SUBMISSION_CSV_FILES
+        ]
         actual: list = main.validate_submission(self.hpo_id, self.hpo_bucket,
                                                 folder_items,
                                                 self.folder_prefix)
@@ -152,7 +154,7 @@ class ValidationMainTest(unittest.TestCase):
             os.path.basename(f) for f in test_util.FIVE_PERSONS_FILES
         ]
 
-        for cdm_filename in common.SUBMISSION_FILES:
+        for cdm_filename in common.SUBMISSION_CSV_FILES:
             if cdm_filename in test_file_names:
                 expected_result: tuple = (cdm_filename, 1, 1, 1)
                 test_filepath: str = os.path.join(test_util.FIVE_PERSONS_PATH,
@@ -185,7 +187,7 @@ class ValidationMainTest(unittest.TestCase):
 
     def test_check_processed(self):
 
-        for fname in common.AOU_REQUIRED_FILES:
+        for fname in common.AOU_REQUIRED_CSV_FILES:
             blob_name: str = f'{self.folder_prefix}{fname}'
             test_blob = self.hpo_bucket.blob(blob_name)
             test_blob.upload_from_string('\n')
@@ -285,7 +287,7 @@ class ValidationMainTest(unittest.TestCase):
         expected_results: list = [(r['file_name'], int(r['found']),
                                    int(r['parsed']), int(r['loaded']))
                                   for r in rs]
-        for f in common.SUBMISSION_FILES:
+        for f in common.SUBMISSION_CSV_FILES:
             if f not in test_file_names:
                 expected_result: tuple = (f, 0, 0, 0)
                 expected_results.append(expected_result)

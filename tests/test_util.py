@@ -52,12 +52,20 @@ FIVE_PERSONS_PII_NAME_CSV = os.path.join(FIVE_PERSONS_PATH, 'pii_name.csv')
 FIVE_PERSONS_PARTICIPANT_MATCH_CSV = os.path.join(FIVE_PERSONS_PATH,
                                                   'participant_match.csv')
 FIVE_PERSONS_NOTE_JSONL = os.path.join(FIVE_PERSONS_PATH, 'note.jsonl')
+FIVE_PERSONS_SPECIMEN_PARQUET_1 = os.path.join(FIVE_PERSONS_PATH,
+                                               'specimen-part-001.parquet')
+FIVE_PERSONS_SPECIMEN_PARQUET_2 = os.path.join(FIVE_PERSONS_PATH,
+                                               'specimen-part-002.parquet')
+FIVE_PERSONS_PII_PHONE_NUMBER_PARQUET = os.path.join(
+    FIVE_PERSONS_PATH, 'pii_phone_number.parquet')
 FIVE_PERSONS_FILES = [
     FIVE_PERSONS_PERSON_CSV, FIVE_PERSONS_VISIT_OCCURRENCE_CSV,
     FIVE_PERSONS_CONDITION_OCCURRENCE_CSV,
     FIVE_PERSONS_PROCEDURE_OCCURRENCE_CSV, FIVE_PERSONS_DRUG_EXPOSURE_CSV,
     FIVE_PERSONS_MEASUREMENT_CSV, FIVE_PERSONS_PII_NAME_CSV,
-    FIVE_PERSONS_PARTICIPANT_MATCH_CSV, FIVE_PERSONS_NOTE_JSONL
+    FIVE_PERSONS_PARTICIPANT_MATCH_CSV, FIVE_PERSONS_NOTE_JSONL,
+    FIVE_PERSONS_SPECIMEN_PARQUET_1, FIVE_PERSONS_SPECIMEN_PARQUET_2,
+    FIVE_PERSONS_PII_PHONE_NUMBER_PARQUET
 ]
 
 FIVE_PERSONS_SUCCESS_RESULT_CSV = os.path.join(
@@ -220,7 +228,7 @@ def get_table_counts(dataset_id, table_ids=None, where=''):
 def normalize_field_payload(field):
     """
     Standardize schema field payload so it is easy to compare in tests
-    
+
     :param field: a field from a table/query's schema
     :return: the normalized field
     """
@@ -369,7 +377,7 @@ def setup_hpo_id_bucket_name_table(client, dataset_id):
 def drop_hpo_id_bucket_name_table(client, dataset_id):
     """
     Drops `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
-    
+
     :param client: a BigQueryClient
     :param dataset_id: dataset id where the lookup table is located
     """

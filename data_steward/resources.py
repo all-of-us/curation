@@ -477,6 +477,7 @@ MAPPING_TABLES = list(mapping_schemas().keys())
 ACHILLES_INDEX_FILES = achilles_index_files()
 CDM_CSV_FILES = [f'{table}.csv' for table in CDM_TABLES]
 CDM_JSONL_FILES = [f'{table}.jsonl' for table in CDM_TABLES]
+CDM_PARQUET_FILES = [f'{table}.parquet' for table in CDM_TABLES]
 ALL_ACHILLES_INDEX_FILES = [
     name.split(resource_files_path + os.sep)[1].strip()
     for name in ACHILLES_INDEX_FILES

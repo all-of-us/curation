@@ -35,7 +35,9 @@ import constants.global_variables
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, BIGQUERY_DATASET_ID, UNIONED_DATASET_ID
+from common import (ACHILLES_EXPORT_PREFIX_STRING,
+                    ACHILLES_EXPORT_DATASOURCES_JSON, BIGQUERY_DATASET_ID,
+                    UNIONED_DATASET_ID)
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from retraction import retract_data_bq, retract_data_gcs
@@ -274,35 +276,76 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
 
     # Create all tables first to simplify downstream processes
     # (e.g. ehr_union doesn't have to check if tables exist)
-    for file_name in resources.CDM_CSV_FILES + common.PII_FILES:
+    expected_tables = []
+    for file_name in resources.CDM_CSV_FILES + common.PII_CSV_FILES:
         table_name = file_name.split('.')[0]
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
+        expected_tables.append(table_id)
         bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
 
-    for cdm_file_name in sorted(resources.CDM_CSV_FILES):
-        file_results, file_errors = perform_validation_on_file(
-            cdm_file_name, found_cdm_files, hpo_id, folder_prefix, bucket)
-        results.extend(file_results)
-        errors.extend(file_errors)
+    found_csv_files, found_parquet_files, found_jsonl_files = [], [], []
+    found_csv_tables, found_parquet_tables, found_jsonl_tables = [], [], []
+    for found_file in found_cdm_files + found_pii_files:
+        if found_file.endswith('.csv'):
+            found_csv_files.append(found_file)
+            found_csv_tables.append(found_file.split('.')[0])
+        elif found_file.endswith('.parquet'):
+            # Read split files named cdm_table-part-001.parquet as cdm_table.parquet
+            found_parquet_files.append(
+                f"{found_file.split('.')[0].split('-')[0]}.parquet")
+            found_parquet_tables.append(found_file.split('.')[0].split('-')[0])
+        elif found_file.endswith('.jsonl'):
+            found_jsonl_files.append(found_file)
+            found_jsonl_tables.append(found_file.split('.')[0])
+        else:
+            logging.info(f"Ignoring unexpected file type: {found_file}")
 
-    # TODO use sorted(resources.CDM_JSONL_FILES) in the future
-    for cdm_file_name in [f'{common.NOTE}.jsonl']:
-        file_results, file_errors = perform_validation_on_file(
-            cdm_file_name, found_cdm_files, hpo_id, folder_prefix, bucket)
-        # If JSONL file found, remove note.csv and add note.jsonl instead
-        if file_results[0][1]:
-            results = [
-                result for result in results
-                if not result[0].startswith(f'{common.NOTE}')
-            ]
+    # Remove any csv files that have corresponding parquet or jsonl files
+    found_csv_files = [
+        csv_file for csv_file in found_csv_files
+        if csv_file.split('.')[0] in list(
+            set(found_csv_tables) - set(found_jsonl_tables) -
+            set(found_parquet_tables))
+    ]
+
+    # Remove any jsonl files that have corresponding parquet files
+    found_jsonl_files = [
+        jsonl_file for jsonl_file in found_jsonl_files
+        if jsonl_file.split('.')[0] in list(
+            set(found_jsonl_tables) - set(found_parquet_tables))
+    ]
+
+    for cdm_file_name in sorted(resources.CDM_PARQUET_FILES) + sorted(
+            common.PII_PARQUET_FILES):
+        if cdm_file_name in found_parquet_files:
+            file_results, file_errors = perform_validation_on_file(
+                cdm_file_name, found_parquet_files, hpo_id, folder_prefix,
+                bucket)
             results.extend(file_results)
             errors.extend(file_errors)
 
-    for pii_file_name in sorted(common.PII_FILES):
+    for cdm_file_name in sorted(resources.CDM_JSONL_FILES) + sorted(
+            common.PII_JSONL_FILES):
+        if cdm_file_name in found_jsonl_files:
+            file_results, file_errors = perform_validation_on_file(
+                cdm_file_name, found_jsonl_files, hpo_id, folder_prefix, bucket)
+            results.extend(file_results)
+            errors.extend(file_errors)
+
+    for cdm_file_name in sorted(resources.CDM_CSV_FILES) + sorted(
+            common.PII_CSV_FILES):
+        # Skip if table in list of found parquet/jsonl tables
+        if cdm_file_name.split(
+                '.')[0] in found_parquet_tables + found_jsonl_tables:
+            continue
         file_results, file_errors = perform_validation_on_file(
-            pii_file_name, found_pii_files, hpo_id, folder_prefix, bucket)
+            cdm_file_name, found_csv_files, hpo_id, folder_prefix, bucket)
         results.extend(file_results)
         errors.extend(file_errors)
+
+    # Order results by file name and keep pii/participant separate
+    results.sort(key=lambda x: (x[0].startswith(
+        (common.PII, common.PARTICIPANT_MATCH)), x[0]))
 
     # (filename, message) for each unknown file
     warnings = [
@@ -699,7 +742,7 @@ def get_hpo_missing_pii_query(hpo_id):
 def perform_validation_on_file(file_name: str, found_file_names: list,
                                hpo_id: str, folder_prefix, bucket):
     """
-    Attempts to load a csv file into BigQuery
+    Attempts to load a Parquet/JSONL/csv file into BigQuery
 
     :param file_name: name of the file to validate
     :param found_file_names: files found in the submission folder
@@ -714,8 +757,17 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
     results = []
     found = parsed = loaded = 0
     table_name, extension = file_name.split('.')
-    if extension.upper() == 'JSONL':
-        logging.info(f"Validating JSONL file '{file_name}' if found")
+    # remove any parts from the table name, assuming cdm_table-part-001.parquet
+    table_name = table_name.split('-')[0]
+
+    source_format_dict = {
+        'PARQUET': bigquery.SourceFormat.PARQUET,
+        'JSONL': bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+    }
+
+    if extension.upper() in ['JSONL', 'PARQUET']:
+        logging.info(
+            f"Validating {extension.upper()} file '{file_name}' if found")
         if file_name in found_file_names:
             logging.info(f"Found file '{file_name}'")
             found = 1
@@ -725,21 +777,22 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
 
             bq_client = BigQueryClient(app_id)
 
-            if table_name not in resources.CDM_TABLES:
+            if table_name not in resources.CDM_TABLES + common.PII_TABLES:
                 raise ValueError(f'{table_name} is not a valid table to load')
 
             dataset_id: str = BIGQUERY_DATASET_ID
 
+            # Caution: this will load note and note_nlp tables into note_nlp table if note_nlp is uploaded
+            # Works for now since note_nlp is not submitted by sites and we are not expecting it
             gcs_object_path: str = (f'gs://{hpo_bucket.name}/'
                                     f'{folder_prefix}'
-                                    f'{table_name}.{extension}')
+                                    f'{table_name}*.{extension}')
             table_id = resources.get_table_id(table_name, hpo_id)
             fq_table_id = f'{bq_client.project}.{dataset_id}.{table_id}'
 
             job_config = bigquery.LoadJobConfig(
                 schema=bq_client.get_table_schema(table_name),
-                source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
-            )
+                source_format=source_format_dict[extension.upper()])
 
             load_job = bq_client.load_table_from_uri(
                 gcs_object_path,
@@ -799,7 +852,7 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
             logging.error(message)
             raise InternalValidationError(message)
 
-    if file_name in common.SUBMISSION_FILES:
+    if file_name in common.SUBMISSION_CSV_FILES:
         results.append((file_name, found, parsed, loaded))
 
     return results, errors
@@ -837,9 +890,11 @@ def list_submitted_bucket_items(folder_bucketitems):
     utc_today = datetime.datetime.now(tz=None)
 
     # If any required file missing, stop submission
-    folder_bucketitems_table_names = [
-        basename(file_name).split('.')[0] for file_name in folder_bucketitems
-    ]
+    folder_bucketitems_table_names = list(
+        set([
+            basename(file_name).split('.')[0].split('-')[0]
+            for file_name in folder_bucketitems
+        ]))
 
     to_process_items = [
         item for item in folder_bucketitems
@@ -963,12 +1018,17 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
 
 def _is_cdm_file(gcs_file_name):
     return gcs_file_name.lower(
-    ) in resources.CDM_CSV_FILES or gcs_file_name.lower(
-    ) in resources.CDM_JSONL_FILES
+    ) in resources.CDM_CSV_FILES + resources.CDM_JSONL_FILES + resources.CDM_PARQUET_FILES or (
+        gcs_file_name.lower().startswith(tuple(resources.CDM_TABLES)) and
+        gcs_file_name.lower().endswith('parquet'))
 
 
 def _is_pii_file(gcs_file_name):
-    return gcs_file_name.lower() in common.PII_FILES
+    return gcs_file_name.lower(
+    ) in common.PII_CSV_FILES + common.PII_JSONL_FILES + common.PII_PARQUET_FILES or (
+        gcs_file_name.lower().startswith(
+            (common.PII, common.PARTICIPANT_MATCH)) and
+        gcs_file_name.lower().endswith('parquet'))
 
 
 def _is_known_file(gcs_file_name):
