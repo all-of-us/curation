@@ -135,6 +135,8 @@ from cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts import Generalize
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.deid.recent_concept_suppression import RecentConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.ct_retroactive_privacy_suppression import CTRetroactivePrivacyConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.rt_retroactive_privacy_suppression import RTRetroactivePrivacyConceptSuppression
 from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
 from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
 from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
@@ -155,6 +157,7 @@ from cdr_cleaner.cleaning_rules.deid.fitbit_device_id import DeidFitbitDeviceId
 from cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct import DropViaSurveyConduct
 from cdr_cleaner.cleaning_rules.generate_wear_study_table import GenerateWearStudyTable
 from cdr_cleaner.cleaning_rules.generate_derived_tables import CreateDerivedTables
+
 
 # Third party imports
 
@@ -326,6 +329,7 @@ REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (CreateDerivedTables,),
     (CreatePersonExtTable,),
     (CalculatePrimaryDeathRecord,),
+    (RTRetroactivePrivacyConceptSuppression,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -341,6 +345,7 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (CreateDerivedTables,),
     (CalculatePrimaryDeathRecord,),
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
+    (RTRetroactivePrivacyConceptSuppression,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -397,6 +402,7 @@ CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (CreateDerivedTables,),
     (CreatePersonExtTable,),
     (CalculatePrimaryDeathRecord,),
+    (CTRetroactivePrivacyConceptSuppression,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -409,6 +415,7 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (CreateDerivedTables,),
     (CalculatePrimaryDeathRecord,),
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
+    (CTRetroactivePrivacyConceptSuppression,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
