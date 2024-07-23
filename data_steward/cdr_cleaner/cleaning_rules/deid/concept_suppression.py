@@ -19,17 +19,35 @@ class AbstractConceptSuppression(BaseCleaningRule):
     Abstract class for creating concept suppression rules
     """
 
-    SUPPRESSION_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+    SUPPRESSION_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""                                                       
     DELETE
     FROM `{{project}}.{{dataset}}.{{domain_table}}`
     WHERE {% if domain_table == 'death' %}
-        person_id IN (SELECT person_id
+        person_id IN (
+            SELECT person_id
+            FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+            WHERE {% if dataset.startswith('C') %}
+                concept_id != '44823861'
+            {% endif %}
+        )
     {% elif domain_table == 'aou_death' %}
-        aou_death_id IN (SELECT aou_death_id 
+        aou_death_id IN (
+            SELECT aou_death_id 
+            FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+            WHERE {% if dataset.startswith('C') %}
+                concept_id != '44823861'
+            {% endif %}
+        )
     {% else %}
-        {{domain_table}}_id IN (SELECT {{domain_table}}_id
+        {{domain_table}}_id IN (
+            SELECT {{domain_table}}_id
+            FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+            WHERE {% if dataset.startswith('C') %}
+                concept_id != '44823861'
+            {% endif %}
+        )
     {% endif %}
-    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)
+
     """)
 
     def __init__(self,
@@ -136,7 +154,13 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
       d.*
     FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
     {% for concept_field in concept_fields %}
-    LEFT JOIN `{{project}}.{{sandbox_dataset}}.{{suppression_concept}}` AS s{{loop.index}}
+    LEFT JOIN(
+        SELECT concept_id
+        FROM `{{project}}.{{sandbox_dataset}}.{{suppression_concept}}`
+            {% if dataset.startswith('C') %}
+            concept_id != '44823861'
+        {% endif %}
+        ) AS s{{loop.index}}
       ON d.{{concept_field}} = s{{loop.index}}.concept_id 
     {% endfor %}
     WHERE COALESCE(
