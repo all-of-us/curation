@@ -158,7 +158,6 @@ from cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct import DropV
 from cdr_cleaner.cleaning_rules.generate_wear_study_table import GenerateWearStudyTable
 from cdr_cleaner.cleaning_rules.generate_derived_tables import CreateDerivedTables
 
-
 # Third party imports
 
 LOGGER = logging.getLogger(__name__)

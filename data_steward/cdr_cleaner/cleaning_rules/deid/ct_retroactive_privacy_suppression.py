@@ -25,8 +25,8 @@ from google.cloud.exceptions import GoogleCloudError
 LOGGER = logging.getLogger(__name__)
 ISSUE_NUMBERS = ['dc3812']
 
-PRIVACY_CONCEPTS_PATH = os.path.join( ADDITIONAL_PRIVACY_CONCEPTS_PATH,
-    'ct_retroactive_privacy_suppression.csv')
+PRIVACY_CONCEPTS_PATH = os.path.join(ADDITIONAL_PRIVACY_CONCEPTS_PATH,
+                                     'ct_retroactive_privacy_suppression.csv')
 
 
 class CTRetroactivePrivacyConceptSuppression(
@@ -47,21 +47,23 @@ class CTRetroactivePrivacyConceptSuppression(
         desc = f'Any record with an concept_id equal to any of the values in ' \
                f'{ISSUE_NUMBERS} will be sandboxed and dropped from the domain tables'
         privacy_concept_table = f'privacy_suppression_concepts_{ISSUE_NUMBERS[0]}'
-        super().__init__(
-            issue_numbers=ISSUE_NUMBERS,
-            description=desc,
-            affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID_BASE,cdr_consts.CONTROLLED_TIER_DEID_CLEAN,
-                             cdr_consts.REGISTERED_TIER_DEID_BASE, cdr_consts.REGISTERED_TIER_DEID_CLEAN],
-            project_id=project_id,
-            dataset_id=dataset_id,
-            sandbox_dataset_id=sandbox_dataset_id,
-            affected_tables=list(
-                set(CDM_TABLES + [AOU_DEATH])),
-            concept_suppression_lookup_table=privacy_concept_table,
-            table_namer=table_namer)
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[
+                             cdr_consts.CONTROLLED_TIER_DEID_BASE,
+                             cdr_consts.CONTROLLED_TIER_DEID_CLEAN,
+                             cdr_consts.REGISTERED_TIER_DEID_BASE,
+                             cdr_consts.REGISTERED_TIER_DEID_CLEAN
+                         ],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=list(set(CDM_TABLES + [AOU_DEATH])),
+                         concept_suppression_lookup_table=privacy_concept_table,
+                         table_namer=table_namer)
 
     def create_suppression_lookup_table(self, client):
-        df= pd.read_csv(PRIVACY_CONCEPTS_PATH)
+        df = pd.read_csv(PRIVACY_CONCEPTS_PATH)
 
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
