@@ -14,7 +14,7 @@ import logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, OBSERVATION
+from common import JINJA_ENV, OBSERVATION, AIAN_LIST
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -31,10 +31,7 @@ WHERE
   SELECT
     person_id
   FROM
-    `{{project}}.{{dataset}}.observation` o
-  WHERE
-    observation_source_concept_id = 1586140
-    AND value_source_concept_id = 1586141)
+    `{{project}}.{{sandbox_id}}.{{aian_list}}`)
     -- Filter to identify State and zip records for AI/AN participants --
   AND observation_source_concept_id IN (1585250,
     1585249)
@@ -64,8 +61,6 @@ WHERE
     person_id
   FROM
     `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`)
-  AND observation_source_concept_id IN (1585250,
-    1585249)
 """)
 
 
@@ -115,6 +110,7 @@ class DeidentifyAIANZip3Values(BaseCleaningRule):
             project=self.project_id,
             sandbox_id=self.sandbox_dataset_id,
             sandbox_table=self.sandbox_table_for(OBSERVATION),
+            aian_list=AIAN_LIST,
             dataset=self.dataset_id)
 
         deidentification_query = dict()
