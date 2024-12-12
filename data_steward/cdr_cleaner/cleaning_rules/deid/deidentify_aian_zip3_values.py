@@ -31,7 +31,7 @@ WHERE
   SELECT
     person_id
   FROM
-    `{{project}}.{{sandbox_id}}.{{aian_list}}`)
+    `{{project}}.{{rdr_sandbox_id}}.{{aian_list}}`)
     -- Filter to identify State and zip records for AI/AN participants --
   AND observation_source_concept_id IN (1585250,
     1585249)
@@ -70,6 +70,7 @@ class DeidentifyAIANZip3Values(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
+                 rdr_sandbox_id,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -88,6 +89,8 @@ class DeidentifyAIANZip3Values(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
+
+        self.rdr_sandbox_id = rdr_sandbox_id
 
     def get_sandbox_tablenames(self):
         """
@@ -110,6 +113,7 @@ class DeidentifyAIANZip3Values(BaseCleaningRule):
             project=self.project_id,
             sandbox_id=self.sandbox_dataset_id,
             sandbox_table=self.sandbox_table_for(OBSERVATION),
+            rdr_sandbox_id=self.rdr_sandbox_id,
             aian_list=AIAN_LIST,
             dataset=self.dataset_id)
 
@@ -173,20 +177,31 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.parse_args()
+    ext_parser = parser.get_argument_parser()
+
+    ext_parser.add_argument('--rdr_sandbox_id',
+                            dest='rdr_sandbox_id',
+                            action='store',
+                            help='RDR sandbox dataset id containing aian_list',
+                            required=True)
+
+    ARGS = ext_parser.parse_args()
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(DeidentifyAIANZip3Values,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(DeidentifyAIANZip3Values,)],
+            rdr_sandbox_id=ARGS.rdr_sandbox_id)
 
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(DeidentifyAIANZip3Values,)])
+                                   [(DeidentifyAIANZip3Values,)],
+                                   rdr_sandbox_id=ARGS.rdr_sandbox_id)
