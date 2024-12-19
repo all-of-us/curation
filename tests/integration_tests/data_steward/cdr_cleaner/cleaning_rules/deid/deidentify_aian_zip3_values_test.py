@@ -5,13 +5,46 @@ Original Issue: DC-2706
 """
 # Python Imports
 import os
+from unittest import mock
+
+# Third party imports
+from google.cloud.bigquery import Table
 
 # Project Imports
-from common import OBSERVATION
+from common import OBSERVATION, AIAN_LIST, PRIMARY_PID_RID_MAPPING
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
+
+AIAN_LIST_SCHEMA = [{
+    "type": "integer",
+    "name": "person_id",
+    "mode": "nullable"
+}]
+
+PID_RID_SCHEMA = [
+    {
+        "type": "integer",
+        "name": "person_id",
+        "mode": "nullable"
+    },
+    {
+        "type": "integer",
+        "name": "research_id",
+        "mode": "nullable"
+    },
+    {
+        "type": "integer",
+        "name": "shift",
+        "mode": "nullable"
+    },
+    {
+        "type": "date",
+        "name": "import_date",
+        "mode": "nullable"
+    },
+]
 
 
 class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
@@ -31,9 +64,13 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
+        cls.rdr_sandbox_id = os.environ.get('RDR_DATASET_ID')
+        cls.kwargs = {'rdr_sandbox_id': cls.rdr_sandbox_id}
+
         cls.rule_instance = DeidentifyAIANZip3Values(cls.project_id,
                                                      cls.dataset_id,
-                                                     cls.sandbox_id)
+                                                     cls.sandbox_id,
+                                                     **cls.kwargs)
 
         # Generates list of fully qualified table names
         cls.fq_table_names.append(
@@ -95,9 +132,45 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
         insert_observation_query = observation_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        # Load test data
-        self.load_test_data([f'''{insert_observation_query};'''])
+        aian_list_name = f'{self.project_id}.{self.rdr_sandbox_id}.{AIAN_LIST}'
+        self.client.create_table(Table(aian_list_name, AIAN_LIST_SCHEMA))
+        self.fq_table_names.append(aian_list_name)
 
+        # Load the test data
+        aian_template = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}.aian_list`
+            (person_id)
+            VALUES
+              (50),
+              (34)
+            """)
+
+        insert_aian_query = aian_template.render(project_id=self.project_id,
+                                                 dataset_id=self.rdr_sandbox_id)
+
+        pid_list_name = f'{self.project_id}.{self.rdr_sandbox_id}.{PRIMARY_PID_RID_MAPPING}'
+        self.client.create_table(Table(pid_list_name, PID_RID_SCHEMA))
+        self.fq_table_names.append(pid_list_name)
+
+        # Load the test data
+        pid_template = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}.primary_pid_rid_mapping`
+            (person_id, research_id, shift, import_date)
+            VALUES
+              (50, 1, 200, "2020-01-01"),
+              (34, 3, 95, "2022-10-10")
+            """)
+
+        insert_pid_query = pid_template.render(project_id=self.project_id,
+                                               dataset_id=self.rdr_sandbox_id)
+
+        # Load test data
+        self.load_test_data(
+            [insert_observation_query, insert_aian_query, insert_pid_query])
+
+    @mock.patch(
+        "cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values.PIPELINE_TABLES",
+        os.environ.get('RDR_DATASET_ID'))
     def test_deidentify_aian_zip3_values(self):
         # Expected results list
         tables_and_counts = [{
