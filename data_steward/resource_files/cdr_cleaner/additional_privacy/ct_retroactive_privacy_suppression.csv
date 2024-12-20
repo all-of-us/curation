@@ -79,7 +79,6 @@ concept_id,concept_name,concept_code,privacy_rule,vocabulary_id,date_added
 44837886,Other suspected maternal and fetal condition not found,V89.09,Perinatal (including birth trauma),ICD9CM,1994
 44821263,Apparent life threatening event in infant,799.82,Liveborn infants,ICD9CM,1994
 35207225,dual role transvestism,F64.1,Gender/Sex,ICD10CM,1994
-1333016,What type of household do you live in?,cu_covid,Free Text,PPI,1994
 44823801,"Low birth weight status, 1000-1499 grams",V21.33,Liveborn infants,ICD9CM,1994
 44837786,"Pregnant state, incidental",V22.2,Perinatal (including birth trauma),ICD9CM,1994
 44837802,Unspecified antenatal screening,V28.9,Perinatal (including birth trauma),ICD9CM,1994
