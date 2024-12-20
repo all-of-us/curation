@@ -5,6 +5,8 @@ This cleaning rule will generalize zipcode for AI/AN participants to
 and value_as_string to null.
 
 Original Issues: DC-2706
+
+DC-3856 indicated that state info does not need to be generalized
 """
 
 # Python imports
@@ -44,13 +46,6 @@ SET
   ELSE
   value_as_string
 END
-  ,
-  value_as_concept_id =
-  CASE
-    WHEN observation_source_concept_id = 1585249 THEN 2000000011
-  ELSE
-  value_as_concept_id
-END
 WHERE
   person_id IN (
   SELECT
@@ -76,7 +71,7 @@ class DeidentifyAIANZip3Values(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = "Alters fields to generalize zipcode, and state observations for AI/AN participants"
-        super().__init__(issue_numbers=['DC2706'],
+        super().__init__(issue_numbers=['DC2706', 'DC3856'],
                          description=desc,
                          affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
                          affected_tables=[OBSERVATION],
