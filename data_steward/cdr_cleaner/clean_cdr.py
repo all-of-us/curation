@@ -30,6 +30,7 @@ from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeas
 from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutAnyBasics
 from cdr_cleaner.cleaning_rules.clean_survey_conduct_recurring_surveys import CleanSurveyConductRecurringSurveys
+from cdr_cleaner.cleaning_rules.move_nlp_to_domains import MoveNLPtoDomains
 from cdr_cleaner.cleaning_rules.update_survey_source_concept_id import UpdateSurveySourceConceptId
 from cdr_cleaner.cleaning_rules.drop_unverified_survey_data import DropUnverifiedSurveyData
 from cdr_cleaner.cleaning_rules.drug_refills_days_supply import DrugRefillsDaysSupply
@@ -235,6 +236,8 @@ RDR_CLEANING_CLASSES = [
 ]
 
 COMBINED_CLEANING_CLASSES = [
+    (GenerateExtTables,),
+    (MoveNLPtoDomains,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
@@ -263,7 +266,6 @@ COMBINED_CLEANING_CLASSES = [
     (ReplaceFreeTextNotes,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
-    (GenerateExtTables,),
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (PopulateSurveyConductExt,),
@@ -288,7 +290,8 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     # TODO: Uncomment rule after date-shift removed from deid module
     # (SurveyConductDateShiftRule,),
     (
-        QRIDtoRID,),  # Should run before any row suppression rules
+        MoveNLPtoDomains,),
+    (QRIDtoRID,),  # Should run before any row suppression rules
 
     # Data generalizations
     ####################################
@@ -322,6 +325,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
 ]
 
 REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
+    (MoveNLPtoDomains,),
     (FillSourceValueTextFields,),
     (RepopulatePersonPostDeid,),
     (DateUnShiftCopeResponses,),
@@ -336,7 +340,8 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     # TODO: uncomment when pid-rid logic is removed from legacy deid
     # (RtCtPIDtoRID,),
     (
-        MeasurementRecordsSuppression,),
+        MoveNLPtoDomains,),
+    (MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
@@ -359,6 +364,7 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
 ]
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
+    (MoveNLPtoDomains,),
     (RtCtPIDtoRID,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (TruncateEraTables,),
@@ -396,6 +402,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
 ]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
+    (MoveNLPtoDomains,),
     (FillSourceValueTextFields,),
     (RepopulatePersonControlledTier,),
     (CreateDerivedTables,),
@@ -406,6 +413,7 @@ CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
 ]
 
 CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
+    (MoveNLPtoDomains,),
     (MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
