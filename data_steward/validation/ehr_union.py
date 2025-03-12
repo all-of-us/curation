@@ -99,9 +99,10 @@ from common import (AOU_DEATH, CARE_SITE, DEATH, FACT_RELATIONSHIP,
                     ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION, MAPPING_PREFIX,
                     MEASUREMENT_DOMAIN_CONCEPT_ID, OBSERVATION, PERSON,
                     PERSON_DOMAIN_CONCEPT_ID, SURVEY_CONDUCT, UNIONED_EHR,
-                    VISIT_DETAIL, VISIT_OCCURRENCE, BIGQUERY_DATASET_ID)
+                    VISIT_DETAIL, VISIT_OCCURRENCE, BIGQUERY_DATASET_ID,
+                    CDR_SCOPES)
 from constants.validation import ehr_union as eu_constants
-from utils import pipeline_logging
+from utils import pipeline_logging, auth
 from gcloud.bq import BigQueryClient
 from resources import (fields_for, get_table_id, has_primary_key,
                        validate_date_string, CDM_TABLES)
@@ -918,6 +919,7 @@ def create_load_aou_death(bq_client, project_id, input_dataset_id,
 def main(input_dataset_id,
          output_dataset_id,
          project_id,
+         run_as,
          hpo_ids_ex=None,
          ehr_cutoff_date=None):
     """
@@ -926,11 +928,13 @@ def main(input_dataset_id,
     :param input_dataset_id identifies a dataset containing multiple CDMs, one for each HPO submission
     :param output_dataset_id identifies the dataset to store the new CDM in
     :param project_id: project containing the datasets
+    :param run_as: impersonation email address
     :param hpo_ids_ex: (optional) list that identifies HPOs not to process, by default process all
     :param ehr_cutoff_date: (optional) cutoff date for ehr data(same as CDR cutoff date)
     :returns: list of tables generated successfully
     """
-    bq_client = BigQueryClient(project_id)
+    credentials = auth.get_impersonation_credentials(run_as, CDR_SCOPES)
+    bq_client = BigQueryClient(project_id=project_id, credentials=credentials)
 
     logging.info('EHR union started')
     # NOTE hpo_ids here includes HPO sites without any submissions. Those may not
@@ -1033,6 +1037,11 @@ if __name__ == '__main__':
         help=
         "Date to set for observation table rows transferred from person table",
         type=validate_date_string)
+    parser.add_argument('--run_as',
+                        action='store',
+                        dest='run_as_email',
+                        help='Service account email address to impersonate',
+                        required=True)
 
     # HPOs to exclude. If nothing given, exclude nothing.
     args = parser.parse_args()
@@ -1040,5 +1049,6 @@ if __name__ == '__main__':
         main(args.input_dataset_id,
              args.output_dataset_id,
              args.project_id,
+             args.run_as_email,
              hpo_ids_ex=args.hpo_id_ex,
              ehr_cutoff_date=args.ehr_cutoff_date)
