@@ -25,7 +25,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}
 """)
 
 SUPPRESS_NOTE_QUERY = JINJA_ENV.from_string("""
-UPDATE TABLE `{{project_id}}.{{dataset_id}}.note`
+UPDATE `{{project_id}}.{{dataset_id}}.note`
 SET note_title = "",
 note_text = "",
 provider_id = NULL,
@@ -93,9 +93,7 @@ class SuppressNoteFields(BaseCleaningRule):
         suppress_query = dict()
         suppress_query[cdr_consts.QUERY] = SUPPRESS_NOTE_QUERY.render(
             project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            sandbox_dataset_id=self.sandbox_dataset_id,
-            sandbox_table=self.get_sandbox_tablenames()[0])
+            dataset_id=self.dataset_id)
         queries_list.append(suppress_query)
 
         return queries_list
