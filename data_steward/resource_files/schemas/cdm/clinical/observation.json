@@ -124,5 +124,11 @@
     "name": "questionnaire_response_id",
     "mode": "nullable",
     "description": "An ID for a questionnaire response that produced this observation. This is applicable to AllOfUs questionnaire answers only. All answers with the same questionnaire response ID were submitted in the same response."
+  },
+  {
+    "type": "string",
+    "name": "form_name",
+    "mode": "nullable",
+    "description": ""
   }
 ]

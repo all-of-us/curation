@@ -74,7 +74,10 @@ FIELD_REPLACE_QUERY = JINJA_ENV.from_string("""select {{columns}}
 
 
 def get_affected_tables():
-    return resources.CDM_TABLES + [AOU_DEATH]
+    # return resources.CDM_TABLES + [AOU_DEATH]
+    # this needs to be fixed for the 1.0 CDR execution.  This only impacts
+    # observation for the NPH data
+    return [OBSERVATION]
 
 
 def get_fields_dict(table_name, fields):
@@ -138,7 +141,7 @@ def get_fields_dict(table_name, fields):
     return fields_to_replace
 
 
-def get_modified_columns(fields, fields_to_replace, table=None):
+def get_modified_columns(fields, fields_to_replace, table=None, project_id=None, dataset_id=None):
     """
 
     This method updates the columns by adding prefix to each column if the column is being replaced and
@@ -154,14 +157,24 @@ def get_modified_columns(fields, fields_to_replace, table=None):
         if field in fields_to_replace:
             if table == OBSERVATION and field == 'value_as_string':
                 col_expr = """
-                    IF(observation_source_concept_id = 1585250 AND REGEXP_CONTAINS(value_as_string, r'\*\*$'),
+                    IF((observation_source_concept_id = 1585250 AND REGEXP_CONTAINS(value_as_string, r'\*\*$'))
+                    OR (observation_source_concept_id in (
+                        SELECT concept_id
+                        FROM `{project_id}.{dataset_id}.concept`
+                        WHERE lower(concept_code) IN ('cgm_dev_given_id', 'polar_id', 'poloar_actigraph_pair_id', 'device_notcollected', 'scr_studyid', 'profile_zipcode', 'geo_curr_hmzipcode', 'geo_curr_hmcountry'))),
                         {name}, {prefix}.concept_code) as {name}
                 """.format(prefix=fields_to_replace[field]['prefix'],
-                           name=fields_to_replace[field]['name'])
+                           name=fields_to_replace[field]['name'],
+                           project_id=project_id,
+                           dataset_id=dataset_id)
             else:
                 col_expr = '{prefix}.concept_code as {name}'.format(
                     prefix=fields_to_replace[field]['prefix'],
                     name=fields_to_replace[field]['name'])
+        elif field == "questionnaire_response_id":
+            # this needs to be programmatically removed as it will ignore this field in the CDR
+            # if another 1.0 execution is run
+            continue
         else:
             col_expr = field
         col_exprs.append(col_expr)
@@ -209,7 +222,8 @@ class FillSourceValueTextFields(BaseCleaningRule):
                          description=desc,
                          affected_datasets=[
                              cdr_consts.REGISTERED_TIER_DEID_BASE,
-                             cdr_consts.CONTROLLED_TIER_DEID_BASE
+                             cdr_consts.CONTROLLED_TIER_DEID_BASE,
+                             cdr_consts.NPH_CONTROLLED_TIER_DEID
                          ],
                          affected_tables=get_affected_tables(),
                          depends_on=[StringFieldsSuppression],
@@ -233,7 +247,9 @@ class FillSourceValueTextFields(BaseCleaningRule):
             if fields_to_replace:
                 cols = get_modified_columns(fields,
                                             fields_to_replace,
-                                            table=table)
+                                            table=table,
+                                            project_id=self.project_id,
+                                            dataset_id=self.dataset_id)
 
                 full_join_expression = get_full_join_expression(
                     self.dataset_id, self.project_id, fields_to_replace)

@@ -117,5 +117,11 @@
     "name": "value_source_value",
     "mode": "nullable",
     "description": "The source value associated with the content of the value_as_number or value_as_concept_id as stored in the source data."
+  },
+  {
+    "type": "string",
+    "name": "form_name",
+    "mode": "nullable",
+    "description": ""
   }
 ]

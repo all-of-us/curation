@@ -128,7 +128,9 @@ END AS
     END AS
     value_source_concept_id,
     value_source_value,
-    questionnaire_response_id
+    -- questionnaire_response_id --
+    -- an NPH specific changes that needs to be addressed before 1.0 executions are run again. --
+    form_name
 FROM
     {{project}}.{{dataset}}.observation""")
 
@@ -159,7 +161,7 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
             'DC1058', 'DC1061', 'DC827', 'DC502', 'DC487', 'DC2475', 'DC2649'
         ],
                          description=desc,
-                         affected_datasets=[cdr_consts.RDR],
+                         affected_datasets=[cdr_consts.RDR, cdr_consts.NPH_CONTROLLED_TIER_DEID],
                          affected_tables=['observation'],
                          project_id=project_id,
                          dataset_id=dataset_id,

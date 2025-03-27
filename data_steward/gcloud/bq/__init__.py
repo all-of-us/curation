@@ -17,22 +17,16 @@ from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition, QueryJobC
 from google.auth import default
 from google.api_core.exceptions import GoogleAPIError, BadRequest, Conflict
 from google.cloud.exceptions import NotFound
-from opentelemetry import trace
-from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 # Project imports
 from utils import auth
 from resources import fields_for, get_and_validate_schema_fields, replace_special_characters_for_labels, \
     is_rdr_dataset, is_mapping_table
 from constants.utils import bq as consts
-from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
+from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH, PIPELINE_TABLES, SITE_MASKING_TABLE_ID, NPH_TABLES, \
+    NPH_VOCABULARY_TABLES
 from resources import get_bq_col_type
 
-tracer_provider = TracerProvider()
-trace.set_tracer_provider(tracer_provider)
-tracer = trace.get_tracer(__name__)
 
 BIGQUERY_DATA_TYPES = {
     'integer': 'INT64',
@@ -62,16 +56,11 @@ class BigQueryClient(Client):
 
         :return:  A BigQueryClient instance
         """
-        cloud_trace_exporter = CloudTraceSpanExporter(project_id=project_id)
-        tracer_provider.add_span_processor(
-            BatchSpanProcessor(cloud_trace_exporter))
-        # TODO create counter to keep track of multiple client instances
-        with tracer.start_as_current_span(project_id):
-            if scopes:
-                credentials, project_id = default()
-                credentials = auth.delegated_credentials(credentials,
-                                                         scopes=scopes)
-            super().__init__(project=project_id, credentials=credentials)
+        if scopes:
+            credentials, project_id = default()
+            credentials = auth.delegated_credentials(credentials,
+                                                     scopes=scopes)
+        super().__init__(project=project_id, credentials=credentials)
 
     def get_table_schema(self, table_name: str, fields=None) -> list:
         """
@@ -214,7 +203,7 @@ class BigQueryClient(Client):
         dataset = bigquery.Dataset(dataset_id)
         dataset.description = description
         dataset.labels = label_or_tag
-        dataset.location = "US"
+        dataset.location = "us-central1"
 
         return dataset
 
@@ -467,6 +456,10 @@ class BigQueryClient(Client):
         """
         table_list = self.list_tables(src_dataset)
 
+        tables_to_copy = NPH_VOCABULARY_TABLES + NPH_TABLES
+
+        table_list = [table_item for table_item in table_list if table_item.table_id in tables_to_copy]
+
         for table_item in table_list:
             # create empty schemaed table with client object
             try:
@@ -483,7 +476,11 @@ class BigQueryClient(Client):
             if schema_list:
                 sc_list = []
                 for item in schema_list:
-                    field_cast = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
+                    # NPH does not provide AOU-specific fields, skip them
+                    if item.name in ['questionnaire_response_id']:
+                        continue
+                    else:
+                        field_cast = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
                     sc_list.append(field_cast)
 
                 fields_name_str = ',\n'.join(sc_list)
