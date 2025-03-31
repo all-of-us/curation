@@ -20,13 +20,23 @@ JIRA_ISSUE_NUMBERS = ['DC3867']
 SANDBOX_NOTE_TABLE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
   SELECT * FROM `{{project_id}}.{{dataset_id}}.note`
-  WHERE note_id NOT IN (SELECT note_id FROM `{{project_id}}.{{dataset_id}}.note_nlp`)
-)
+  WHERE note_id NOT IN (
+    SELECT smp.note_id FROM `{{project_id}}.2024q3r6_combined_staging.note_nlp` as snnlp
+    JOIN `{{project_id}}.2024q3r3_unioned_ehr._mapping_note` as uehrmp
+    ON uehrmp.src_note_id = snnlp.note_id
+    JOIN `{{project_id}}.2024q3r6_combined_backup._mapping_note` as smp
+    ON smp.src_note_id = uehrmp.note_id)
+    )
 """)
 
 SUPPRESS_NOTE_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.note`
-WHERE note_id NOT IN (SELECT note_id FROM `{{project_id}}.{{dataset_id}}.note_nlp`)
+WHERE note_id NOT IN (
+    SELECT smp.note_id FROM `{{project_id}}.2024q3r6_combined_staging.note_nlp` as snnlp
+    JOIN `{{project_id}}.2024q3r3_unioned_ehr._mapping_note` as uehrmp
+    ON uehrmp.src_note_id = snnlp.note_id
+    JOIN `{{project_id}}.2024q3r6_combined_backup._mapping_note` as smp
+    ON smp.src_note_id = uehrmp.note_id)
 """)
 
 
