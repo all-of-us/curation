@@ -16,7 +16,7 @@ import app_identity
 import common
 from gcloud.gcs import StorageClient
 import resources
-from constants import bq_utils as bq_consts
+from constants import curation_bq_utils as bq_consts
 
 socket.setdefaulttimeout(bq_consts.SOCKET_TIMEOUT)
 
@@ -579,8 +579,8 @@ def list_tables(dataset_id=None,
           print table['id']
     """
     warnings.warn(
-        "Function bq_utils.list_tables is deprecated and will be removed in a future version. "
-        "Use `utils.bq.list_tables` if needed.",
+        "Function curation_bq_utils.list_tables is deprecated and will be removed in a future version. "
+        "Use `curation_utils.bq.list_tables` if needed.",
         PendingDeprecationWarning,
         stacklevel=2,
     )

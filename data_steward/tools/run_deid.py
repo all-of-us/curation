@@ -15,7 +15,7 @@ import google
 
 # Project imports
 import app_identity
-import bq_utils
+import curation_bq_utils
 import deid.aou as aou
 from deid.parser import odataset_name_verification
 from resources import fields_for, fields_path, DEID_PATH
@@ -28,11 +28,12 @@ DEID_TABLES = [
     'person', 'observation', 'visit_occurrence', 'visit_detail',
     'condition_occurrence', 'drug_exposure', 'procedure_occurrence',
     'device_exposure', 'death', 'measurement', 'location', 'care_site',
-    'specimen', 'observation_period', 'provider', 'survey_conduct', 'aou_death'
+    'specimen', 'observation_period', 'provider', 'survey_conduct', 'aou_death',
+    'note', 'note_nlp'
 ]
 # these tables will be suppressed.  This means an empty table with the same schema will
 # exist.  It overrides the DEID_TABLES list
-SUPPRESSED_TABLES = ['note', 'note_nlp', 'location', 'care_site', 'provider']
+SUPPRESSED_TABLES = ['location', 'care_site', 'provider']
 VOCABULARY_TABLES = [
     'concept', 'vocabulary', 'domain', 'concept_class', 'concept_relationship',
     'relationship', 'concept_synonym', 'concept_ancestor',
@@ -155,7 +156,7 @@ def copy_suppressed_table_schemas(known_tables, dest_dataset):
         if table in known_tables:
             field_list = fields_for(table)
             # create a table schema only.
-            bq_utils.create_table(table,
+            curation_bq_utils.create_table(table,
                                   field_list,
                                   drop_existing=True,
                                   dataset_id=dest_dataset)

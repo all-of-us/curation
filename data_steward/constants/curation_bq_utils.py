@@ -1,4 +1,4 @@
-# bq_utils default values
+# curation_bq_utils default values
 SOCKET_TIMEOUT = 600000
 BQ_DEFAULT_RETRY_COUNT = 10
 MAX_POLL_INTERVAL = 500

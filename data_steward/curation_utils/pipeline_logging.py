@@ -145,7 +145,7 @@ def configure(level=logging.INFO, add_console_handler=False):
     :param add_console_handler: If set to True a console log handler is 
                                 added to the root logger otherwise it is not.
     :example:
-    >>> from utils import pipeline_logging
+    >>> from curation_utils import pipeline_logging
     >>> 
     >>> LOGGER = logging.getLogger(__name__)
     >>>

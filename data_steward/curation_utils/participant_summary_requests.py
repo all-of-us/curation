@@ -34,7 +34,7 @@ from google.cloud.bigquery import (LoadJobConfig, Table, TimePartitioning,
 # Project imports
 from common import DIGITAL_HEALTH_SHARING_STATUS
 from gcloud.bq import BigQueryClient
-from utils import auth
+from curation_utils import auth
 
 LOGGER = logging.getLogger(__name__)
 

@@ -15,8 +15,8 @@ from google.auth import default
 from deprecated import deprecated
 
 # Project Imports
-from utils import auth
-from constants.utils import bq as consts
+from curation_utils import auth
+from constants.curation_utils import bq as consts
 from resources import fields_for, get_bq_col_type
 from common import JINJA_ENV
 
@@ -310,7 +310,7 @@ def query(q, project_id=None, use_cache=False):
     :return: the results as a dataframe
     """
     warnings.warn(
-        "Function utils.bq.query is deprecated and will be removed in a future version. "
+        "Function curation_utils.bq.query is deprecated and will be removed in a future version. "
         "Use `bigquery.Client` object directly and its `to_dataframe()` method if needed.",
         PendingDeprecationWarning,
         stacklevel=2,
