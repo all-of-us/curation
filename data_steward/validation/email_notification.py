@@ -7,8 +7,9 @@ from io import BytesIO
 # Third party imports
 from common import CDR_SCOPES
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import (Mail, Email, Attachment, FileContent, FileName, Content,
-                                  FileType, FileContent, FileName, Disposition, ContentId, To, Cc)
+from sendgrid.helpers.mail import (Mail, Email, Attachment, FileContent,
+                                   FileName, Content, FileType, FileContent,
+                                   FileName, Disposition, ContentId, To, Cc)
 from jinja2 import Template
 from matplotlib import image as mpimg
 from google.cloud import bigquery
@@ -168,12 +169,10 @@ def generate_email_message(hpo_id, results_html, folder_uri, report_data):
     content = Content("text/html", html_body)
 
     # Create SendGrid message
-    message = Mail(
-        from_email=from_email,
-        to_emails=to_emails,
-        subject=email_subject,
-        html_content=content
-    )
+    message = Mail(from_email=from_email,
+                   to_emails=to_emails,
+                   subject=email_subject,
+                   html_content=content)
 
     # Add CC recipients
     for cc in cc_emails:
@@ -212,7 +211,8 @@ def send_email(email_message):
     try:
         smc = SecretManager()
         api_key = smc.get_secret_from_secret_manager(
-            consts.SENDGRID_TOKEN_SECRET_ID)  # Update constant name to reflect SendGrid
+            consts.SENDGRID_TOKEN_SECRET_ID
+        )  # Update constant name to reflect SendGrid
 
         sg = SendGridAPIClient(api_key)
         response = sg.send(email_message)
@@ -221,7 +221,8 @@ def send_email(email_message):
             "body": response.body,
             "headers": dict(response.headers)
         }
-        LOGGER.info(f"Email sent successfully with status code: {response.status_code}")
+        LOGGER.info(
+            f"Email sent successfully with status code: {response.status_code}")
     except HTTPError as e:
         # SendGrid errors are thrown as exceptions
         msg = f"A SendGrid error occurred: {e.to_dict}\n{e.__class__}\n{e}"
