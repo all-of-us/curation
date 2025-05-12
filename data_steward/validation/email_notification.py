@@ -5,10 +5,14 @@ import base64
 from io import BytesIO
 
 # Third party imports
-import mandrill
+from common import CDR_SCOPES
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import (Mail, Email, Attachment, FileContent, FileName, Content,
+                                  FileType, FileContent, FileName, Disposition, ContentId, To, Cc)
 from jinja2 import Template
 from matplotlib import image as mpimg
 from google.cloud import bigquery
+from python_http_client import HTTPError
 
 # Project imports
 import app_identity
@@ -60,14 +64,15 @@ def create_recipients_list(hpo_id):
     Generates list of recipients for a hpo site
 
     :param hpo_id: identifies the hpo site
-    :return: list of dicts with keys hpo_id, site_name and dict mail_to, with keys email and type
+    :return: dict with keys hpo_id, site_name, to_emails, and cc_emails
     """
     hpo_recipients = {
         'hpo_id': hpo_id,
         consts.SITE_NAME: '',
-        consts.MAIL_TO: []
+        consts.TO_EMAILS: [],
+        consts.CC_EMAILS: []
     }
-    mail_to = []
+
     project_id = app_identity.get_application_id()
     hpo_contact_dict = get_hpo_contact_info(project_id).get(hpo_id, None)
     if hpo_contact_dict is None:
@@ -89,13 +94,13 @@ def create_recipients_list(hpo_id):
     ]
     for hpo_email_address in hpo_emails:
         if '@' in hpo_email_address:
-            recipient_email_dict = {'email': hpo_email_address, 'type': 'to'}
-            mail_to.append(recipient_email_dict)
-    if len(mail_to) == 0:
+            hpo_recipients[consts.TO_EMAILS].append(hpo_email_address)
+
+    if len(hpo_recipients[consts.TO_EMAILS]) == 0:
         LOGGER.info(f"No valid email addresses for {hpo_id} in contact list")
         return hpo_recipients
-    mail_to.append({'email': consts.DATA_CURATION_LISTSERV, 'type': 'cc'})
-    hpo_recipients[consts.MAIL_TO] = mail_to
+
+    hpo_recipients[consts.CC_EMAILS] = [consts.DATA_CURATION_LISTSERV]
     LOGGER.info(f"Successfully fetched emails for {hpo_id}")
     return hpo_recipients
 
@@ -132,67 +137,97 @@ def get_aou_logo_b64():
 
 def generate_email_message(hpo_id, results_html, folder_uri, report_data):
     """
-    Generates Mandrill API message dict
+    Generates SendGrid email message
 
     :param hpo_id: identifies the hpo site
     :param results_html: hpo report html file in string format
     :param folder_uri: gcs path to submission folder in bucket
     :param report_data: dict containing report info for submission
-    :return: Message dict formatted for Mandrill API
+    :return: SendGrid Mail object ready to be sent
     """
     LOGGER.info(f"Retrieving email ids for {hpo_id}")
     hpo_recipients = create_recipients_list(hpo_id)
     site_name = hpo_recipients.get(consts.SITE_NAME, '')
-    mail_to = hpo_recipients.get(consts.MAIL_TO, [])
-    if len(site_name) == 0 or len(mail_to) == 0:
+    to_emails = hpo_recipients.get(consts.TO_EMAILS, [])
+    cc_emails = hpo_recipients.get(consts.CC_EMAILS, [])
+
+    if len(site_name) == 0 or len(to_emails) == 0:
         LOGGER.info(
             f"No email ids found for {hpo_id}. Please update contact list.")
         return None
-    results_html_b64 = base64.b64encode(results_html.encode())
-    html_body = generate_html_body(site_name, folder_uri, report_data)
-    aou_logo_b64 = get_aou_logo_b64()
+
     email_subject = f"EHR Data Submission Report for {site_name}"
-    email_message = {
-        'attachments': [{
-            'content': results_html_b64,
-            'name': 'results.html',
-            'type': 'text/html'
-        }],
-        'auto_html': True,
-        'from_email': consts.NO_REPLY_ADDRESS,
-        'from_name': consts.EHR_OPERATIONS,
-        'headers': {},
-        'html': html_body,
-        'images': [{
-            'content': aou_logo_b64,
-            'name': consts.AOU_LOGO,
-            'type': 'image/png'
-        }],
-        'important': False,
-        'preserve_recipients': True,
-        'subject': email_subject,
-        'tags': [hpo_id],
-        'to': mail_to
-    }
-    return email_message
+    html_body = generate_html_body(site_name, folder_uri, report_data)
+
+    # From and recipients
+    from_email = Email(consts.NO_REPLY_ADDRESS, consts.EHR_OPERATIONS)
+    to_emails = [To(to_email) for to_email in to_emails]
+    cc_emails = [Cc(cc_email) for cc_email in cc_emails]
+
+    # Email body
+    content = Content("text/html", html_body)
+
+    # Create SendGrid message
+    message = Mail(
+        from_email=from_email,
+        to_emails=to_emails,
+        subject=email_subject,
+        html_content=content
+    )
+
+    # Add CC recipients
+    for cc in cc_emails:
+        message.add_cc(cc)
+
+    # Add HTML attachment
+    encoded_file = base64.b64encode(results_html.encode()).decode()
+    attachment = Attachment()
+    attachment.file_content = FileContent(encoded_file)
+    attachment.file_name = FileName('results.html')
+    attachment.file_type = FileType('text/html')
+    attachment.disposition = Disposition('attachment')
+    message.attachment = attachment
+
+    # Add AOU logo as inline image
+    aou_logo_b64 = get_aou_logo_b64()
+    logo_inline_image = Attachment()
+    logo_inline_image.file_content = FileContent(aou_logo_b64)
+    logo_inline_image.file_name = FileName(consts.AOU_LOGO)
+    logo_inline_image.file_type = FileType('image/png')
+    logo_inline_image.disposition = Disposition('attachment')
+    logo_inline_image.content_id = ContentId(consts.AOU_LOGO)
+    message.add_attachment(logo_inline_image)
+
+    return message
 
 
 def send_email(email_message):
     """
-    Send email using Mandrill API
+    Send email using SendGrid API
 
-    :param email_message: Mandrill API message dict to send
-    :return: result from Mandrill API
+    :param email_message: SendGrid Mail object to send
+    :return: SendGrid API response
     """
     result = None
     try:
         smc = SecretManager()
         api_key = smc.get_secret_from_secret_manager(
-            consts.MANDRILL_TOKEN_SECRET_ID)
-        mandrill_client = mandrill.Mandrill(api_key)
-        result = mandrill_client.messages.send(message=email_message)
-    except mandrill.Error as e:
-        # Mandrill errors are thrown as exceptions
-        msg = f"A mandrill error occurred: {e.__class__} - {e}"
-        LOGGER.exception(msg, exec_info=True)
+            consts.SENDGRID_TOKEN_SECRET_ID)  # Update constant name to reflect SendGrid
+
+        sg = SendGridAPIClient(api_key)
+        response = sg.send(email_message)
+        result = {
+            "status_code": response.status_code,
+            "body": response.body,
+            "headers": dict(response.headers)
+        }
+        LOGGER.info(f"Email sent successfully with status code: {response.status_code}")
+    except HTTPError as e:
+        # SendGrid errors are thrown as exceptions
+        msg = f"A SendGrid error occurred: {e.to_dict}\n{e.__class__}\n{e}"
+        LOGGER.exception(msg, exc_info=True)
+    except Exception as e:
+        msg = f"A SendGrid/GCP error occurred: {e.__class__}\n{e}"
+        LOGGER.exception(msg, exc_info=True)
+
     return result
