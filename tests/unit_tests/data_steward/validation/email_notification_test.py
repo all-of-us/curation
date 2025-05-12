@@ -40,16 +40,6 @@ class EmailNotificationUnitTest(TestCase):
             'timestamp': get_eastern_time(),
             'submission_error': False
         }
-        self.expected_mail_to_1 = [{
-            'email': self.email_1[0],
-            'type': 'to'
-        }, {
-            'email': self.email_1[1],
-            'type': 'to'
-        }, {
-            'email': consts.DATA_CURATION_LISTSERV,
-            'type': 'cc'
-        }]
 
     @mock.patch('validation.email_notification.get_hpo_contact_info')
     def test_create_recipients_list(self, mock_contact_info):
@@ -87,14 +77,15 @@ class EmailNotificationUnitTest(TestCase):
         self.assertIn('test', self.project_id)
         hpo_dict = en.create_recipients_list(self.hpo_id_1)
         self.assertEqual(hpo_dict[consts.SITE_NAME], self.site_name_1)
-        self.assertCountEqual(hpo_dict[consts.MAIL_TO], self.expected_mail_to_1)
+        expected_mail_to = self.email_1
+        self.assertCountEqual(hpo_dict[consts.TO_EMAILS], expected_mail_to)
 
         hpo_dict = en.create_recipients_list(self.hpo_id_2)
-        self.assertEqual(len(hpo_dict[consts.MAIL_TO]), 0)
+        self.assertEqual(len(hpo_dict[consts.TO_EMAILS]), 0)
 
         hpo_dict = en.create_recipients_list(self.hpo_id_3)
-        for email_dict in hpo_dict[consts.MAIL_TO]:
-            self.assertTrue(email_dict['email'].islower())
+        for email_dict in hpo_dict[consts.TO_EMAILS]:
+            self.assertTrue(email_dict.islower())
 
         hpo_dict = en.create_recipients_list(self.hpo_id_4)
         self.assertEqual(len(hpo_dict[consts.SITE_NAME]), 0)
@@ -149,21 +140,46 @@ class EmailNotificationUnitTest(TestCase):
         email_msg = en.generate_email_message(self.hpo_id_1, results_html_str,
                                               self.fake_html_path,
                                               self.report_data)
-        expected_attachment = {'name': 'results.html', 'type': 'text/html'}
-        expected_image = {'name': 'aou_logo', 'type': 'image/png'}
-        email_msg['attachments'][0].pop('content')
-        email_msg['images'][0].pop('content')
-        self.assertDictEqual(email_msg['attachments'][0], expected_attachment)
-        self.assertDictEqual(email_msg['images'][0], expected_image)
-        self.assertTrue(email_msg['auto_html'])
-        self.assertEqual(email_msg['from_email'], consts.NO_REPLY_ADDRESS)
-        self.assertEqual(email_msg['from_name'], consts.EHR_OPERATIONS)
-        self.assertFalse(email_msg['important'])
-        self.assertTrue(email_msg['preserve_recipients'])
-        self.assertEqual(email_msg['subject'],
+        expected_attachment = {
+            'filename': 'results.html',
+            'type': 'text/html',
+            'disposition': 'attachment'
+        }
+        expected_image = {
+            'filename': 'aou_logo',
+            'type': 'image/png',
+            'disposition': 'attachment',
+            'content_id': 'aou_logo'
+        }
+        email_dict = email_msg.get()
+        expected_email_personalizations = [{
+            'to': [{
+                'email': self.email_1[0]
+            }, {
+                'email': self.email_1[1]
+            }],
+            'cc': [{
+                'email': consts.DATA_CURATION_LISTSERV
+            }]
+        }]
+        actual_attachment = {
+            k: v
+            for k, v in email_msg.attachments[1].get().items()
+            if k != 'content'
+        }
+        actual_image = {
+            k: v
+            for k, v in email_msg.attachments[0].get().items()
+            if k != 'content'
+        }
+        self.assertDictEqual(actual_attachment, expected_attachment)
+        self.assertDictEqual(actual_image, expected_image)
+        self.assertEqual(email_dict['from']['email'], consts.NO_REPLY_ADDRESS)
+        self.assertEqual(email_dict['from']['name'], consts.EHR_OPERATIONS)
+        self.assertEqual(email_dict['subject'],
                          f"EHR Data Submission Report for {self.site_name_1}")
-        self.assertListEqual(email_msg['tags'], [self.hpo_id_1])
-        self.assertCountEqual(email_msg['to'], self.expected_mail_to_1)
+        self.assertCountEqual(email_dict['personalizations'],
+                              expected_email_personalizations)
 
         email_msg = en.generate_email_message(self.hpo_id_2, results_html_str,
                                               self.fake_html_path,

@@ -1,5 +1,5 @@
-MANDRILL_TOKEN_SECRET_ID = 'mandrill_token'
-UNSET_MANDRILL_SECRET_MSG = f"Mandrill secret: `{MANDRILL_TOKEN_SECRET_ID}` is not set in secret manager"
+SENDGRID_TOKEN_SECRET_ID = 'warehouseSendAPIKey'
+UNSET_SENDGRID_SECRET_MSG = f"sendgrid_token secret: `{SENDGRID_TOKEN_SECRET_ID}` is not set in secret manager"
 
 CONTACT_LIST_QUERY = """
 SELECT *
@@ -9,7 +9,7 @@ FROM `{{project}}.{{dataset}}.{{contact_table}}`
 EHR_OPERATIONS = 'EHR Ops'
 EHR_OPS_ZENDESK = 'support@aou-ehr-ops.zendesk.com'
 DATA_CURATION_LISTSERV = 'curation@aou-ehr-ops.zendesk.com'
-NO_REPLY_ADDRESS = 'noreply@researchallofus.org'
+NO_REPLY_ADDRESS = 'noreply@pmi-ops.org'
 NO_DATA_STEWARD = 'no data steward'
 
 # HPO contact list table columns
@@ -17,8 +17,9 @@ SITE_NAME = 'site_name'
 HPO_ID = 'hpo_id'
 SITE_POINT_OF_CONTACT = 'site_point_of_contact'
 
-# Mandrill API constants
-MAIL_TO = 'mail_to'
+# SendGrid API constants
+TO_EMAILS = 'to_emails'
+CC_EMAILS = 'cc_emails'
 
 TRANSFER_DATA_DRC_URL = 'https://aou-ehr-ops.zendesk.com/hc/en-us/articles/1500012461721-Transferring-Data-to-the-DRC'
 
