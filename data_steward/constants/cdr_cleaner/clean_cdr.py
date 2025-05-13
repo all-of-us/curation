@@ -7,6 +7,9 @@ RDR = 'rdr'
 COMBINED = 'combined'
 FITBIT = 'fitbit'
 
+# pre deid Registered tier datasets
+REGISTERED_TIER_PRE_DEID = 'registered_tier_pre_deid'
+
 # post deid Registered tier datasets
 REGISTERED_TIER_DEID = 'registered_tier_deid'
 REGISTERED_TIER_DEID_BASE = 'registered_tier_deid_base'
