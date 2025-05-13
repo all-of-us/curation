@@ -92,14 +92,15 @@ class MoveNLPtoDomains(BaseCleaningRule):
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.COMBINED,
-                                            cdr_consts.CONTROLLED_TIER_DEID,
-                                            cdr_consts.REGISTERED_TIER_PRE_DEID,
-                                            cdr_consts.REGISTERED_TIER_DEID_BASE,
-                                            cdr_consts.CONTROLLED_TIER_DEID_BASE,
-                                            cdr_consts.REGISTERED_TIER_DEID_CLEAN,
-                                            cdr_consts.CONTROLLED_TIER_DEID_CLEAN
-                                            ],
+                         affected_datasets=[
+                             cdr_consts.COMBINED,
+                             cdr_consts.CONTROLLED_TIER_DEID,
+                             cdr_consts.REGISTERED_TIER_PRE_DEID,
+                             cdr_consts.REGISTERED_TIER_DEID_BASE,
+                             cdr_consts.CONTROLLED_TIER_DEID_BASE,
+                             cdr_consts.REGISTERED_TIER_DEID_CLEAN,
+                             cdr_consts.CONTROLLED_TIER_DEID_CLEAN
+                         ],
                          affected_tables=[NOTE_NLP],
                          project_id=project_id,
                          dataset_id=dataset_id,
