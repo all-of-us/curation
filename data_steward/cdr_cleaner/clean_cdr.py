@@ -236,8 +236,6 @@ RDR_CLEANING_CLASSES = [
 ]
 
 COMBINED_CLEANING_CLASSES = [
-    (GenerateExtTables,),
-    (MoveNLPtoDomains,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
@@ -245,6 +243,8 @@ COMBINED_CLEANING_CLASSES = [
         ReplaceWithStandardConceptId,),
     (MissingConceptRecordSuppression,),
     (DomainAlignment,),
+    (GenerateExtTables,),
+    (MoveNLPtoDomains,),
     (NegativeAges,),
     # Valid Death dates needs to be applied before no data after death as running no data after death is
     # wiping out the needed consent related data for cleaning.
@@ -290,8 +290,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     # TODO: Uncomment rule after date-shift removed from deid module
     # (SurveyConductDateShiftRule,),
     (
-        MoveNLPtoDomains,),
-    (QRIDtoRID,),  # Should run before any row suppression rules
+        QRIDtoRID,),  # Should run before any row suppression rules
 
     # Data generalizations
     ####################################

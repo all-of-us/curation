@@ -13,7 +13,7 @@ import logging
 from gcloud.bq import BigQueryClient
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from common import JINJA_ENV, NOTE
+from common import JINJA_ENV, NOTE_NLP
 
 LOGGER = logging.getLogger(__name__)
 
@@ -92,8 +92,15 @@ class MoveNLPtoDomains(BaseCleaningRule):
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
-                         affected_tables=[NOTE],
+                         affected_datasets=[cdr_consts.COMBINED,
+                                            cdr_consts.CONTROLLED_TIER_DEID,
+                                            cdr_consts.REGISTERED_TIER_PRE_DEID,
+                                            cdr_consts.REGISTERED_TIER_DEID_BASE,
+                                            cdr_consts.CONTROLLED_TIER_DEID_BASE,
+                                            cdr_consts.REGISTERED_TIER_DEID_CLEAN,
+                                            cdr_consts.CONTROLLED_TIER_DEID_CLEAN
+                                            ],
+                         affected_tables=[NOTE_NLP],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
