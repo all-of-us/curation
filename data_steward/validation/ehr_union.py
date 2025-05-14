@@ -95,9 +95,9 @@ import bq_utils
 import cdm
 import cdr_cleaner.clean_cdr_engine as clean_engine
 from cdr_cleaner.cleaning_rules.drop_race_ethnicity_gender_observation import DropRaceEthnicityGenderObservation
-from common import (AOU_DEATH, CARE_SITE, DEATH, FACT_RELATIONSHIP,
+from common import (AOU_DEATH, CARE_SITE, DEATH, FACT_RELATIONSHIP, NOTE_NLP,
                     ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION, MAPPING_PREFIX,
-                    MEASUREMENT_DOMAIN_CONCEPT_ID, OBSERVATION, PERSON,
+                    MEASUREMENT_DOMAIN_CONCEPT_ID, OBSERVATION, PERSON, NOTE,
                     PERSON_DOMAIN_CONCEPT_ID, SURVEY_CONDUCT, UNIONED_EHR,
                     VISIT_DETAIL, VISIT_OCCURRENCE, BIGQUERY_DATASET_ID)
 from constants.validation import ehr_union as eu_constants
@@ -404,6 +404,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         has_visit_detail_parent_id = False
         has_care_site_id = False
         has_location_id = False
+        has_note_id = False
         id_col = f'{table_name}_id'
         col_exprs = []
 
@@ -455,6 +456,14 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                 # Note: This is only reached when table_name != location
                 col_expr = f'loc.{eu_constants.LOCATION_ID}'
                 has_location_id = True
+            elif field_name == eu_constants.NOTE_ID:
+                # Replace with mapped note_id
+                # ni is an alias that should resolve to the mapping note table
+                # Note: This is only reached when table_name != note
+                col_expr = f'ni.{eu_constants.NOTE_ID}'
+                has_note_id = True
+            elif field_name in ('snippet', 'offset') and table_name == NOTE_NLP:
+                col_expr = f'CAST({field_name} AS STRING) AS {field_name}'
             else:
                 col_expr = field_name
             col_exprs.append(col_expr)
@@ -468,6 +477,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         location_join_expr = ''
         care_site_join_expr = ''
         visit_detail_filter_expr = ''
+        note_join_expr = ''
 
         if has_visit_occurrence_id:
             # Include a join to mapping visit occurrence table
@@ -551,6 +561,17 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                 AND loc.src_table_id = '{src_location_table_id}'
             '''
 
+        if has_note_id:
+            # Include a join to mapping note table
+            # Note: Using left join in order to keep records that aren't mapped to note
+            ni = mapping_table_for(NOTE)
+            src_note_table_id = get_table_id(NOTE, hpo_id=hpo_id)
+            note_join_expr = f'''
+            LEFT JOIN `{output_dataset_id}.{ni}` ni
+                ON t.note_id = ni.src_note_id
+                AND ni.src_table_id = '{src_note_table_id}'
+            '''
+
         if table_name == PERSON:
             return f'''
                     SELECT {cols} 
@@ -588,6 +609,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         {preceding_visit_detail_join_expr}
         {visit_detail_parent_join_expr}
         {location_join_expr}
+        {note_join_expr}
         WHERE
             row_num = 1
         {visit_detail_filter_expr}
