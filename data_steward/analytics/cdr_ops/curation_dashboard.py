@@ -30,13 +30,23 @@ UNIONED = ''
 VOCABULARY = ''
 COMBINED = ''
 RT_DATASET = ''
+RTB_DATASET = ''
+RTC_DATASET = ''
 CT_DATASET = ''
+CTB_DATASET = ''
+CTC_DATASET = ''
 
 ALL_RDR = []
 ALL_UNIONED = []
 ALL_COMBINED = []
 ALL_RT_DATASET = []
+ALL_RTB_DATASET = []
+ALL_RTC_DATASET = []
 ALL_CT_DATASET = []
+ALL_CTB_DATASET = []
+ALL_CTC_DATASET = []
+
+
 # -
 
 
@@ -69,27 +79,31 @@ rdr_df = rdr_df.pivot(index='table_id',
                       values='row_count')
 rdr_df.to_csv('%s.csv' % 'rdr_diff')
 
-# # EHR data volume over time
+# # RT/CT data volume over time
 
-unioned_df = row_counts(ALL_UNIONED + [UNIONED])
-unioned_df = unioned_df.pivot(index='table_id',
-                              columns='dataset_id',
-                              values='row_count')
-unioned_df.to_csv('%s.csv' % 'unioned_diff')
+RTB_df = row_counts(ALL_RTB_DATASET + [RTB_DATASET])
+RTB_df = RTB_df.pivot(index='table_id',
+                      columns='dataset_id',
+                      values='row_count')
+RTB_df.to_csv('%s.csv' % 'rtb_diff')
 
-# ## Combined data volume over time
+RTC_df = row_counts(ALL_RTC_DATASET + [RTC_DATASET])
+RTC_df = RTC_df.pivot(index='table_id',
+                      columns='dataset_id',
+                      values='row_count')
+RTC_df.to_csv('%s.csv' % 'rtc_diff')
 
-combined_df = row_counts(ALL_COMBINED + [COMBINED])
-combined_df = combined_df.pivot(index='table_id',
-                                columns='dataset_id',
-                                values='row_count')
-combined_df.to_csv('%s.csv' % 'combined_diff')
+ctb_df = row_counts(ALL_CTB_DATASET + [CTB_DATASET])
+ctb_df = ctb_df.pivot(index='table_id',
+                      columns='dataset_id',
+                      values='row_count')
+ctb_df.to_csv('%s.csv' % 'ctb_diff')
 
-ct_df = row_counts(ALL_CT_DATASET + [CT_DATASET])
-ct_df = ct_df.pivot(index='table_id',
-                                columns='dataset_id',
-                                values='row_count')
-ct_df.to_csv('%s.csv' % 'ct_diff')
+ctc_df = row_counts(ALL_CTC_DATASET + [CTC_DATASET])
+ctc_df = ctc_df.pivot(index='table_id',
+                      columns='dataset_id',
+                      values='row_count')
+ctc_df.to_csv('%s.csv' % 'ctc_diff')
 
 # # Characterization of EHR data
 

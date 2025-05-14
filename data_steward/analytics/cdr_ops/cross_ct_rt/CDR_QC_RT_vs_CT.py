@@ -122,14 +122,14 @@ SET person_tables = Array(
     SELECT table_name
     FROM `{{project_id}}.{{rt_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where lower(column_name) = 'person_id'
-    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)|(wear)|(_ext)')
+    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)|(wear)|(_ext)|(sleep)|(steps)|(heart)|(device)|(activity_summary)')
 
     UNION DISTINCT 
 
     SELECT table_name
     FROM `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where lower(column_name) = 'person_id'
-    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)|(wear)|(_ext)')
+    AND not REGEXP_CONTAINS(table_name, r'(?i)(death)|(copy)|(wear)|(_ext)|(sleep)|(steps)|(heart)|(device)|(activity_summary)')
 
 );
 
@@ -208,14 +208,14 @@ SET ext_tables = Array(
     SELECT table_name, column_name
     FROM `{{project_id}}.{{rt_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where REGEXP_CONTAINS(table_name, r'(?i)(_ext)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)|(language)|(sex)|(state)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)|(language)|(sex)|(state)|(self_reported)')
 
     UNION DISTINCT 
 
     SELECT table_name, column_name
     FROM `{{project_id}}.{{ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`
     where REGEXP_CONTAINS(table_name, r'(?i)(_ext)')
-    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)|(language)|(sex)|(state)')
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(src_id)|(survey_version_concept_id)|(language)|(sex)|(state)|(self_reported)')
 )
 SELECT AS STRUCT table_name, column_name
 FROM data

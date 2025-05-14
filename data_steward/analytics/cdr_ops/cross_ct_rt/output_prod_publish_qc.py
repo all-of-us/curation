@@ -566,14 +566,14 @@ WITH qc_aou_death AS (
                     src_id ASC -- EHR site that alphabetically comes first is chosen --
             ) = 1   
         ) THEN TRUE ELSE FALSE END AS primary_death_record
-    FROM `{{project}}.{{dataset}}.aou_death`    
+    FROM `{{project_id}}.{{dataset_id}}.aou_death`    
 )
 SELECT ad.aou_death_id
-FROM `{{project_id}}.{{dataset}}.aou_death` ad
+FROM `{{project_id}}.{{dataset_id}}.aou_death` ad
 LEFT JOIN qc_aou_death qad
 ON ad.aou_death_id = qad.aou_death_id
 WHERE ad.primary_death_record != qad.primary_death_record
-""").render(project_id=dest_project_id, dataset=dest_dataset_id)
+""").render(project_id=dest_project_id, dataset_id=dest_dataset_id)
 df = execute(client, query)
 
 success_msg = 'All death records have the correct `primary_death_record` values.'

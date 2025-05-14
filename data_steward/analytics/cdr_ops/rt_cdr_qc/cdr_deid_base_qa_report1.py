@@ -417,9 +417,9 @@ LEFT JOIN `{{project_id}}.{{deid_base_cdr}}.person_ext`
 USING (person_id)
 WHERE 
 -- check srp column multi pop --
-  (REGEXP_CONTAINS(obs.c_races,  r'\|')  AND self_reported_category_source_value != 'WhatRaceEthnicity_GeneralizedMultPopulations' )
+  (REGEXP_CONTAINS(obs.c_races,  r'|')  AND self_reported_category_source_value != 'WhatRaceEthnicity_GeneralizedMultPopulations' )
 -- check srp column single pop not hispanic--
-  OR (NOT (REGEXP_CONTAINS(obs.c_races,  r'\|') )) AND (race_source_value != self_reported_category_source_value AND (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_category_source_value != 'WhatRaceEthnicity_Hispanic'))
+  OR (NOT (REGEXP_CONTAINS(obs.c_races,  r'|') )) AND (race_source_value != self_reported_category_source_value AND (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_category_source_value != 'WhatRaceEthnicity_Hispanic'))
 -- check srp column single pop hispanic--
   OR (race_source_value = 'AoUDRC_NoneIndicated' AND self_reported_category_source_value != 'WhatRaceEthnicity_Hispanic')
 -- check only expected srpsv exist --
