@@ -1,0 +1,14 @@
+[
+    {
+        "type": "integer",
+        "name": "note_nlp_id",
+        "mode": "nullable",
+        "description": "The note_nlp_id used in the note_nlp table."
+    },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "nullable",
+        "description": "The provenance of the data associated with the note_nlp_id."
+    }
+]
