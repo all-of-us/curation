@@ -26,7 +26,7 @@ questionnaire_response_dataset: str = ""  # ID of the dataset containing questio
 import pandas as pd
 from analytics.cdr_ops.controlled_tier_qc.code.controlled_tier_qc import run_qc, display_check_summary_by_rule, display_check_detail_of_rule
 
-pd.set_option('display.max_colwidth', -1)
+pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', None)
 
 #  If you want to ignore specific QC rule(s): Remove those rules from to_include
