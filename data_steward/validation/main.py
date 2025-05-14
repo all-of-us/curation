@@ -550,14 +550,10 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix,
             result = en.send_email(email_msg)
             if result is None:
                 logging.info(
-                    'Mandrill error occurred. Please check logs for more details'
+                    'SendGrid error occurred. Please check logs for more details'
                 )
             else:
-                result_ids = ', '.join(
-                    [result_item['_id'] for result_item in result])
-                logging.info(
-                    f"Sending emails for hpo_id {hpo_id} with Mandrill tracking ids: {result_ids}"
-                )
+                logging.info(f"Sent emails for hpo_id {hpo_id} with SendGrid")
     logging.info(f"Reporting complete")
     return
 

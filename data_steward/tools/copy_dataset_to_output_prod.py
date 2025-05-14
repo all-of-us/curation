@@ -220,7 +220,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     #Set up pipeline logging
-    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
+    pipeline_logging.configure(add_console_handler=True)
 
     # Execute function based on selected mode
     args.func(args)
