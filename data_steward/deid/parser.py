@@ -145,12 +145,11 @@ def parse_args(raw_args=None):
                         dest='idataset',
                         help='Name of the input dataset',
                         required=True)
-    parser.add_argument(
-        '--odataset',
-        action='store',
-        dest='odataset',
-        help='Name of the output dataset must contain deid',
-        required=True)
+    parser.add_argument('--odataset',
+                        action='store',
+                        dest='odataset',
+                        help='Name of the output dataset must contain deid',
+                        required=True)
     parser.add_argument('--private_key',
                         dest='private_key',
                         action='store',

@@ -86,7 +86,12 @@ def get_dataset_name(tier, release_tag, deid_stage):
     return dataset_name
 
 
-def create_datasets(client, name, input_dataset, tier, release_tag, backup=False):
+def create_datasets(client,
+                    name,
+                    input_dataset,
+                    tier,
+                    release_tag,
+                    backup=False):
     """
     Creates backup, staging, sandbox, and final datasets with the proper descriptions
     and tag/labels applied
