@@ -284,6 +284,10 @@ FITBIT_CLEANING_CLASSES = [
     (GenerateResearchDeviceIds,),
 ]
 
+REGISTERED_TIER_PRE_DEID_CLEANING_CLASSES = [
+    (MoveNLPtoDomains,),
+]
+
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     # Data mappings/re-mappings
     ####################################
@@ -454,6 +458,8 @@ DATA_STAGE_RULES_MAPPING = {
         COMBINED_CLEANING_CLASSES,
     DataStage.FITBIT.value:
         FITBIT_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_PRE_DEID.value:
+        REGISTERED_TIER_PRE_DEID_CLEANING_CLASSES,
     DataStage.REGISTERED_TIER_DEID.value:
         REGISTERED_TIER_DEID_CLEANING_CLASSES,
     DataStage.REGISTERED_TIER_DEID_BASE.value:
