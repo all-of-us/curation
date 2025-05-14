@@ -119,12 +119,18 @@ def main(raw_args=None):
     client = BigQueryClient(project_id, credentials=impersonation_creds)
 
     # Create datasets using helper function
-    final_dataset_name = get_dataset_name(args.tier, args.release_tag, args.deid_stage)
-    datasets = create_datasets(client, final_dataset_name, args.idataset,
-                               args.tier, args.release_tag, backup=True)
+    final_dataset_name = get_dataset_name(args.tier, args.release_tag,
+                                          args.deid_stage)
+    datasets = create_datasets(client,
+                               final_dataset_name,
+                               args.idataset,
+                               args.tier,
+                               args.release_tag,
+                               backup=True)
 
     # Copy tables from combined dataset
-    LOGGER.info(f"Copying tables from combined dataset to {datasets[consts.BACKUP]}")
+    LOGGER.info(
+        f"Copying tables from combined dataset to {datasets[consts.BACKUP]}")
     client.copy_dataset(args.idataset, datasets[consts.BACKUP])
 
     # Copy and setup vocabulary
@@ -145,9 +151,10 @@ def main(raw_args=None):
     # Run de-identification
     LOGGER.info('Running de-identification process...')
     deid_args = [
-        '-i', datasets[consts.BACKUP], '--run_as', args.run_as_email, '-p', args.key_file,
-        '-o', datasets[consts.STAGING], '-a', 'submit', '--interactive',
-        '-c', '-m', str(args.deid_max_age)
+        '-i', datasets[consts.BACKUP], '--run_as', args.run_as_email, '-p',
+        args.key_file, '-o', datasets[consts.STAGING], '-a', 'submit',
+        '--interactive', '-c', '-m',
+        str(args.deid_max_age)
     ]
     deid_main(raw_args=deid_args)
 
@@ -157,9 +164,11 @@ def main(raw_args=None):
                       f'{project_id}.{datasets[consts.STAGING]}.{NOTE_NLP}')
 
     for vocab_table in VOCABULARY_TABLES:
-        LOGGER.info(f'Copying {vocab_table} table to {datasets[consts.STAGING]}...')
-        client.copy_table(f'{project_id}.{datasets[consts.BACKUP]}.{vocab_table}',
-                          f'{project_id}.{datasets[consts.STAGING]}.{vocab_table}')
+        LOGGER.info(
+            f'Copying {vocab_table} table to {datasets[consts.STAGING]}...')
+        client.copy_table(
+            f'{project_id}.{datasets[consts.BACKUP]}.{vocab_table}',
+            f'{project_id}.{datasets[consts.STAGING]}.{vocab_table}')
 
     # Create empty tables for Other_additional_tables
     for additional_table in ALL_ADDITIONAL_TABLES:
@@ -184,8 +193,11 @@ def main(raw_args=None):
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
     clean_cdr.main(args=all_cleaning_args)
 
-    LOGGER.info(f'Copying Cleaned tables from Staging to Clean {datasets[consts.CLEAN]}')
-    client.build_and_copy_contents(datasets[consts.STAGING], datasets[consts.CLEAN])
+    LOGGER.info(
+        f'Copying Cleaned tables from Staging to Clean {datasets[consts.CLEAN]}'
+    )
+    client.build_and_copy_contents(datasets[consts.STAGING],
+                                   datasets[consts.CLEAN])
 
     # Handle CDR metadata
     LOGGER.info(f'Adding cdr_metadata table to {datasets[consts.CLEAN]}')
@@ -215,7 +227,8 @@ def main(raw_args=None):
     ],
                           bq_client=client)
 
-    LOGGER.info(f'De-identification process complete for {datasets[consts.CLEAN]}')
+    LOGGER.info(
+        f'De-identification process complete for {datasets[consts.CLEAN]}')
 
 
 if __name__ == '__main__':
