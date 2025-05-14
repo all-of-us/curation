@@ -510,6 +510,9 @@ class BigQueryClient(Client):
             job_id = (f'schemaed_copy_{table_item.table_id.lower()}_'
                       f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
             job = self.query(sql, job_config=job_config, job_id=job_id)
+            logging.info(
+                f"Waiting on job {job_id} for table {table_item.table_id} to complete"
+            )
             job.result()  # Wait for the job to complete.
 
     def table_exists(self, table_id: str, dataset_id: str = None) -> bool:
