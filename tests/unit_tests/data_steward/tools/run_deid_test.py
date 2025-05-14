@@ -195,7 +195,7 @@ class RunDeidTest(unittest.TestCase):
     @patch('tools.run_deid.bq_utils')
     def test_copy_suppressed_table_schemas(self, mock_bq_utils, mock_fields):
         # pre-conditions
-        known_tables = ['note', 'camper', 'observation']
+        known_tables = ['note', 'camper', 'observation', 'location']
         dest_dataset = 'foo'
         fields_list = [{"name": "foo_id", "mode": "nullable", "type": "string"}]
         mock_fields.return_value = fields_list
@@ -206,7 +206,7 @@ class RunDeidTest(unittest.TestCase):
         # post conditions
         self.assertEqual(
             mock_bq_utils.create_table.assert_called_once_with(
-                'note',
+                'location',
                 fields_list,
                 drop_existing=True,
                 dataset_id=dest_dataset), None)

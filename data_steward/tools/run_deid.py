@@ -28,11 +28,12 @@ DEID_TABLES = [
     'person', 'observation', 'visit_occurrence', 'visit_detail',
     'condition_occurrence', 'drug_exposure', 'procedure_occurrence',
     'device_exposure', 'death', 'measurement', 'location', 'care_site',
-    'specimen', 'observation_period', 'provider', 'survey_conduct', 'aou_death'
+    'specimen', 'observation_period', 'provider', 'survey_conduct', 'aou_death',
+    'note'
 ]
 # these tables will be suppressed.  This means an empty table with the same schema will
 # exist.  It overrides the DEID_TABLES list
-SUPPRESSED_TABLES = ['note', 'note_nlp', 'location', 'care_site', 'provider']
+SUPPRESSED_TABLES = ['location', 'care_site', 'provider']
 VOCABULARY_TABLES = [
     'concept', 'vocabulary', 'domain', 'concept_class', 'concept_relationship',
     'relationship', 'concept_synonym', 'concept_ancestor',
