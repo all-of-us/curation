@@ -197,8 +197,7 @@ def parse_args(raw_args=None):
                         '--odataset',
                         action='store',
                         dest='odataset',
-                        type=odataset_name_verification,
-                        help='Name of the output dataset must end with _deid ',
+                        help='Name of the output dataset must contain deid ',
                         required=True)
     parser.add_argument(
         '-a',
@@ -242,7 +241,6 @@ def parse_args(raw_args=None):
                         action='store_true',
                         required=False,
                         help='Log to the console as well as to a file.')
-    parser.add_argument('--version', action='version', version='deid-02')
     parser.add_argument('-m',
                         '--age_limit',
                         dest='age_limit',
