@@ -1,0 +1,20 @@
+{
+     "suppress": [
+         {
+             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for note_type_concept_id",
+             "on": " exists (select * from `:idataset.note` as record2 where note.note_id = record2.note_id and note_type_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+         },
+         {
+             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for note_class_concept_id",
+             "on": " exists (select * from `:idataset.note` as record2 where note.note_id = record2.note_id and note_class_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+         },
+         {
+             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for encoding_concept_id",
+             "on": " exists (select * from `:idataset.note` as record2 where note.note_id = record2.note_id and encoding_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+         },
+         {
+             "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for language_concept_id",
+             "on": " exists (select * from `:idataset.note` as record2 where note.note_id = record2.note_id and language_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+         }
+     ]
+ }
