@@ -86,7 +86,7 @@ def get_dataset_name(tier, release_tag, deid_stage):
     return dataset_name
 
 
-def create_datasets(client, name, input_dataset, tier, release_tag):
+def create_datasets(client, name, input_dataset, tier, release_tag, backup=False):
     """
     Creates backup, staging, sandbox, and final datasets with the proper descriptions
     and tag/labels applied
@@ -96,6 +96,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
     :param input_dataset: name of the input dataset
     :param tier: tier parameter passed through from either a list or command line argument
     :param release_tag: release tag parameter passed through either the command line arguments
+    :param backup: flag to create backup dataset of the given input_dataset name
     :return: tuple of created dataset names
     """
 
@@ -124,6 +125,10 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
         consts.STAGING: staging_dataset_id,
         consts.SANDBOX: sandbox_dataset_id
     }
+
+    if backup:
+        backup_dataset_id = f'{name}_{consts.BACKUP}'
+        datasets[consts.BACKUP] = backup_dataset_id
 
     deid_datasets = [final_dataset_id, staging_dataset_id]
 
