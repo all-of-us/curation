@@ -1,7 +1,8 @@
 from pathlib import Path
 
-CSV_FOLDER = Path('analytics/cdr_ops/controlled_tier_qc/csv')
-SQL_FOLDER = Path('analytics/cdr_ops/controlled_tier_qc/sql')
+current_path = Path(__file__)
+code_path = current_path.parent
+controlled_tier_qc_path = code_path.parent
 
 CHECK_LIST_CSV_FILE = "Controlled_Tier_Check_Description.csv"
 CONCEPT_CSV_FILE = "Controlled_Tier_Concept_Level.csv"
