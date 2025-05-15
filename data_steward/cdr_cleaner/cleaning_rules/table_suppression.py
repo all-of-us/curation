@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 
 JIRA_ISSUE_NUMBERS = ['DC1360']
 
-tables = [common.NOTE, common.LOCATION, common.PROVIDER, common.CARE_SITE]
+tables = [common.LOCATION, common.PROVIDER, common.CARE_SITE]
 
 # query to delete all rows from table
 TABLE_SUPPRESSION_QUERY = JINJA_ENV.from_string("""
