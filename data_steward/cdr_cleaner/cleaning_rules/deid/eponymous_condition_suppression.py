@@ -12,7 +12,7 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from curation_utils import pipeline_logging
+from utils import pipeline_logging
 from common import JINJA_ENV, NOTE_NLP
 
 LOGGER = logging.getLogger(__name__)
