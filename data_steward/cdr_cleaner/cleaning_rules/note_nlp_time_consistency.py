@@ -42,7 +42,9 @@ class NoteNLPTimeConsistency(BaseCleaningRule):
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.UNIONED, cdr_consts.REGISTERED_TIER_DEID],
+                         affected_datasets=[
+                             cdr_consts.UNIONED, cdr_consts.REGISTERED_TIER_DEID
+                         ],
                          affected_tables=[NOTE_NLP],
                          project_id=project_id,
                          dataset_id=dataset_id,
