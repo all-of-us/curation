@@ -338,8 +338,8 @@ REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (CreateDerivedTables,),
     (CreatePersonExtTable,),
     (CalculatePrimaryDeathRecord,),
-    (FilterNLPfromDomains,),
     (RTRetroactivePrivacyConceptSuppression,),
+    (FilterNLPfromDomains,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -356,8 +356,8 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (CreateDerivedTables,),
     (CalculatePrimaryDeathRecord,),
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
-    (FilterNLPfromDomains,),
     (RTRetroactivePrivacyConceptSuppression,),
+    (FilterNLPfromDomains,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -417,8 +417,8 @@ CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (CreateDerivedTables,),
     (CreatePersonExtTable,),
     (CalculatePrimaryDeathRecord,),
-    (FilterNLPfromDomains,),
     (CTRetroactivePrivacyConceptSuppression,),
+    (FilterNLPfromDomains,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
