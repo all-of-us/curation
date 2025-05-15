@@ -407,7 +407,6 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CalculatePrimaryDeathRecord,),
     (FilterNLPfromDomains,),
-    (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -434,6 +433,7 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (CalculatePrimaryDeathRecord,),
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (CTRetroactivePrivacyConceptSuppression,),
+    (FilterNLPfromDomains,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
