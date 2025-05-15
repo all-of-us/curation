@@ -168,13 +168,13 @@ EHR_CLEANING_CLASSES = [
 ]
 
 UNIONED_EHR_CLEANING_CLASSES = [
-    (EhrSubmissionDataCutoff,
-    ),  # should run before EnsureDateDatetimeConsistency
     (DeduplicateIdColumn,),
     (CleanByBirthYear,),
     (EnsureDateDatetimeConsistency,),
     (RemoveRecordsWithWrongDate,),
     (RemoveInvalidProcedureSourceRecords,),
+    (EhrSubmissionDataCutoff,
+    ),  # should run before EnsureDateDatetimeConsistency
     (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
