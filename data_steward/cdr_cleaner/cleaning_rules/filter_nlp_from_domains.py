@@ -67,11 +67,11 @@ class FilterNLPfromDomains(BaseCleaningRule):
                          description=desc,
                          affected_datasets=[
                              cdr_consts.COMBINED,
-                             cdr_consts.CONTROLLED_TIER_DEID,
                              cdr_consts.REGISTERED_TIER_DEID,
                              cdr_consts.REGISTERED_TIER_DEID_BASE,
-                             cdr_consts.CONTROLLED_TIER_DEID_BASE,
                              cdr_consts.REGISTERED_TIER_DEID_CLEAN,
+                             cdr_consts.CONTROLLED_TIER_DEID,
+                             cdr_consts.CONTROLLED_TIER_DEID_BASE,
                              cdr_consts.CONTROLLED_TIER_DEID_CLEAN
                          ],
                          affected_tables=[NOTE_NLP],
