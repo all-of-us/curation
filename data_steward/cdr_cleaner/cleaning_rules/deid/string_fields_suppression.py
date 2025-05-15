@@ -5,7 +5,7 @@ from google.api_core.exceptions import GoogleAPIError
 from google.cloud.exceptions import GoogleCloudError, NotFound
 
 import resources
-from common import AOU_DEATH, CDM_TABLES, OBSERVATION, JINJA_ENV
+from common import AOU_DEATH, CDM_TABLES, OBSERVATION, JINJA_ENV, NOTE_NLP
 from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
@@ -70,6 +70,9 @@ WHERE
 {% endfor %}
 """)
 
+NLP_SYSTEM = 'nlp_system'
+TERM_EXISTS = 'term_exists'
+
 
 class SuppressionException(NamedTuple):
     """
@@ -102,7 +105,7 @@ def get_string_fields(domain_table):
         fields = [
             field for field in resources.fields_for(domain_table)
             if field['type'] == 'string' and
-            field['name'] not in ['aou_death_id', 'src_id']
+               field['name'] not in ['aou_death_id', 'src_id']
         ]
     else:
         fields = [
@@ -210,7 +213,25 @@ class StringFieldsSuppression(BaseCleaningRule):
                 sandbox_table=self.sandbox_table_for(OBSERVATION),
                 field_name=OBSERVATION_SOURCE_CONCEPT_ID,
                 field_value=APPROXIMATE_DATE_OF_SYMPTOMS,
-                restore_fields=[VALUE_AS_STRING])
+                restore_fields=[VALUE_AS_STRING]),
+            SuppressionException(
+                domain_table=NOTE_NLP,
+                sandbox_table=self.sandbox_table_for(NOTE_NLP),
+                field_name=NLP_SYSTEM,
+                field_value="'CLAMP 1.7.6'",
+                restore_fields=[NLP_SYSTEM]),
+            SuppressionException(
+                domain_table=NOTE_NLP,
+                sandbox_table=self.sandbox_table_for(NOTE_NLP),
+                field_name=TERM_EXISTS,
+                field_value="'true'",
+                restore_fields=[TERM_EXISTS]),
+            SuppressionException(
+                domain_table=NOTE_NLP,
+                sandbox_table=self.sandbox_table_for(NOTE_NLP),
+                field_name=TERM_EXISTS,
+                field_value="'false'",
+                restore_fields=[TERM_EXISTS])
         ]
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
