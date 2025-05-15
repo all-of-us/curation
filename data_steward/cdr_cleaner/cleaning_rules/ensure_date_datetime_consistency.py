@@ -49,6 +49,9 @@ TABLE_DATES = {
     common.NOTE: {
         'note_datetime': 'note_date'
     },
+    common.NOTE_NLP: {
+        'nlp_datetime': 'nlp_date'
+    },
     common.SPECIMEN: {
         'specimen_datetime': 'specimen_date'
     },
@@ -123,7 +126,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                 common.PROCEDURE_OCCURRENCE, common.SPECIMEN,
                 common.SURVEY_CONDUCT, common.DEATH, common.NOTE,
                 common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE,
-                common.VISIT_DETAIL
+                common.VISIT_DETAIL, common.NOTE_NLP
             ])
 
     def get_cols(self, table):
