@@ -35,6 +35,7 @@ FACT_RELATIONSHIP = 'fact_relationship'
 LOCATION = 'location'
 MEASUREMENT = 'measurement'
 NOTE = 'note'
+NOTE_NLP = 'note_nlp'
 OBSERVATION = 'observation'
 PERSON = 'person'
 PROCEDURE_OCCURRENCE = 'procedure_occurrence'
@@ -60,7 +61,7 @@ QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO = 'questionnaire_response_additional_info
 MAPPED_CLINICAL_DATA_TABLES = [
     VISIT_OCCURRENCE, CONDITION_OCCURRENCE, DRUG_EXPOSURE, MEASUREMENT,
     PROCEDURE_OCCURRENCE, OBSERVATION, DEVICE_EXPOSURE, SPECIMEN,
-    SURVEY_CONDUCT, VISIT_DETAIL
+    SURVEY_CONDUCT, VISIT_DETAIL, NOTE, NOTE_NLP
 ]
 # Clinical tables which do not have a corresponding mapping table.
 UNMAPPED_CLINICAL_DATA_TABLES = [DEATH]
@@ -97,8 +98,21 @@ OTHER_CDM_TABLES = [
     METADATA
 ] + OTHER_CLINICAL_TABLES
 
-CDM_TABLES = AOU_REQUIRED + OTHER_CDM_TABLES
+ALL_ADDITIONAL_TABLES = [
+    ATTRIBUTE_DEFINITION, COHORT_DEFINITION, CONDITION_ERA, DRUG_ERA, DOSE_ERA,
+    DRUG_COST, VISIT_COST, DEVICE_COST, PROCEDURE_COST, PAYER_PLAN_PERIOD, COST,
+    METADATA, COHORT, COHORT_ATTRIBUTE, CDM_SOURCE
+]
 
+CDM_TABLES = AOU_REQUIRED + OTHER_CDM_TABLES
+NPH_TABLES = [OBSERVATION]
+NPH_VOCABULARY_TABLES = [
+    "concept",
+    "concept_ancestor",
+    "concept_relationship",
+    "vocabulary",
+    # "concept_class", "concept_synonym", "domain", "drug_strength", "relationship" # Release 2
+]
 # AoU custom tables
 AOU_DEATH = 'aou_death'
 AOU_CUSTOM_TABLES = [AOU_DEATH]

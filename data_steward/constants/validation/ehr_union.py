@@ -5,6 +5,7 @@ VISIT_DETAIL_ID = 'visit_detail_id'
 CARE_SITE_ID = 'care_site_id'
 PERSON_ID = 'person_id'
 LOCATION_ID = 'location_id'
+NOTE_ID = 'note_id'
 
 CONCEPT_CONSTANT_FACTOR = int(1e14)
 HPO_CONSTANT_FACTOR = int(1e11)
