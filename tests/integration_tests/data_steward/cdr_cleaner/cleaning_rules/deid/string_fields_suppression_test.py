@@ -243,13 +243,10 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1, 2, 3, 4, 5, 6],
             'sandboxed_ids': [],
             'fields': [
-                'note_nlp_id',
-                'note_id',
-                'lexical_variant',
-                'note_nlp_concept_id',
-                'note_nlp_source_concept_id',
-                'nlp_system',
-                'term_exists',
+                'note_nlp_id', 'note_id', 'snippet', 'offset',
+                'lexical_variant', 'note_nlp_concept_id',
+                'note_nlp_source_concept_id', 'nlp_system', 'term_exists',
+                'term_temporal', 'term_modifiers'
             ],
             'cleaned_values': [(1, 1, None, None, '', 1585250, 1585250,
                                 'CLAMP 1.7.6', 'true', None, None),
