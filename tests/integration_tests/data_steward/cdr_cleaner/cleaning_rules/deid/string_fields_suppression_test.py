@@ -245,14 +245,13 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                 'nlp_system',
                 'term_exists',
             ],
-            'cleaned_values': [
-                (1, 1, '', 1585250, 1585250, 'CLAMP 1.7.6', 'true'),
-                (2, 1, '', 0, 352341, 'CLAMP 1.7.6', 'false'),
-                (3, 1, '', 0, 352341, 'CLAMP 1.7.6', None),
-                (4, 1, '', 0, 352341, None, 'true'),
-                (5, 1, '', 0, 352341, 'CLAMP 1.7.6', None),
-                (6, 1, '', 715711, 4262234, 'CLAMP 1.7.6', None)
-            ]
+            'cleaned_values': [(1, 1, '', 1585250, 1585250, 'CLAMP 1.7.6',
+                                'true'),
+                               (2, 1, '', 0, 352341, 'CLAMP 1.7.6', 'false'),
+                               (3, 1, '', 0, 352341, 'CLAMP 1.7.6', None),
+                               (4, 1, '', 0, 352341, None, 'true'),
+                               (5, 1, '', 0, 352341, 'CLAMP 1.7.6', None),
+                               (6, 1, '', 715711, 4262234, 'CLAMP 1.7.6', None)]
         }, {
             'fq_table_name': f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
             'loaded_ids': ['a1', 'a2'],
