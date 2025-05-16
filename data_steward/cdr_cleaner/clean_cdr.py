@@ -34,6 +34,7 @@ from cdr_cleaner.cleaning_rules.suppress_note_fields import SuppressNoteFields
 from cdr_cleaner.cleaning_rules.move_nlp_to_domains import MoveNLPtoDomains
 from cdr_cleaner.cleaning_rules.filter_nlp_from_domains import FilterNLPfromDomains
 from cdr_cleaner.cleaning_rules.update_survey_source_concept_id import UpdateSurveySourceConceptId
+from cdr_cleaner.cleaning_rules.remove_nlp_using_note import RemoveNoteUsingNLP
 from cdr_cleaner.cleaning_rules.drop_unverified_survey_data import DropUnverifiedSurveyData
 from cdr_cleaner.cleaning_rules.drug_refills_days_supply import DrugRefillsDaysSupply
 from cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update import MapsToValuePpiVocabUpdate
@@ -278,6 +279,7 @@ COMBINED_CLEANING_CLASSES = [
     (PopulateSurveyConductExt,),
     (FilterNLPfromDomains,),
     (CalculatePrimaryDeathRecord,),
+    (RemoveNoteUsingNLP,),
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -333,6 +335,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (CalculatePrimaryDeathRecord,),
     (FilterNLPfromDomains,),
     (GenerateWearStudyTable,),
+    (RemoveNoteUsingNLP,),
     (DropViaSurveyConduct,),  # should run after wear study table creation
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -347,6 +350,7 @@ REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (CalculatePrimaryDeathRecord,),
     (RTRetroactivePrivacyConceptSuppression,),
     (FilterNLPfromDomains,),
+    (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -365,6 +369,7 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (RTRetroactivePrivacyConceptSuppression,),
     (FilterNLPfromDomains,),
+    (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -414,6 +419,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CalculatePrimaryDeathRecord,),
     (FilterNLPfromDomains,),
+    (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -426,6 +432,7 @@ CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (CalculatePrimaryDeathRecord,),
     (CTRetroactivePrivacyConceptSuppression,),
     (FilterNLPfromDomains,),
+    (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -441,6 +448,7 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
     (CTRetroactivePrivacyConceptSuppression,),
     (FilterNLPfromDomains,),
+    (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 

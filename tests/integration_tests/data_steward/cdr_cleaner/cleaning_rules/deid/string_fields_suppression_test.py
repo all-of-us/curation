@@ -9,7 +9,7 @@ The intent is to null all STRING type fields in all OMOP common data model table
 import os
 
 # Project Imports
-from common import AOU_DEATH, CONDITION_OCCURRENCE, OBSERVATION
+from common import AOU_DEATH, CONDITION_OCCURRENCE, OBSERVATION, NOTE_NLP
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
@@ -138,6 +138,58 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             FROM w, UNNEST(w.col))
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
+        insert_note_nlp = self.jinja_env.from_string("""
+            CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.note_nlp`
+            (
+                note_nlp_id int64,
+                note_id int64,
+                snippet STRING,
+                offset STRING,
+                lexical_variant STRING,
+                note_nlp_concept_id int64,
+                note_nlp_source_concept_id int64,
+                nlp_system STRING,
+                term_exists STRING,
+                term_temporal STRING,
+                term_modifiers STRING
+            )
+            AS (
+            WITH w AS (
+              SELECT ARRAY<STRUCT<
+                    note_nlp_id int64,
+                    note_id int64,
+                    snippet STRING,
+                    offset STRING,
+                    lexical_variant STRING,
+                    note_nlp_concept_id int64,
+                    note_nlp_source_concept_id int64,
+                    nlp_system STRING,
+                    term_exists STRING,
+                    term_temporal STRING,
+                    term_modifiers STRING
+                    >>
+                  [(1, 1, 'test_snippet', 'offset', '', 1585250, 1585250, 'CLAMP 1.7.6', 'true', 'hour=5', 'value=65'),
+                   (2, 1, 'test_string', 'test_offset', '', 0, 352341, 'CLAMP 1.7.6', 'false', 'time', 'test=3'),
+                   (3, 1, 'test', '123-533', '', 0, 352341, 'CLAMP 1.7.6', 'none', 'day=2', 'sample'),
+                   (4, 1, 'test_snippet', '255-134', '', 0, 352341, 'CLAMP 1.7.7', 'true', 'before', 'modifier'),
+                   (5, 1, 'snippet', '5523', '', 0, 352341, 'CLAMP 1.7.6', 'other', '2024-01-01', 'present=true'),
+                   (6, 1, 'string', '423', '', 715711, 4262234, 'CLAMP 1.7.6', 'null', 'noon', '')] col
+            )
+            SELECT 
+                note_nlp_id,
+                note_id,
+                snippet,
+                offset,
+                lexical_variant,
+                note_nlp_concept_id,
+                note_nlp_source_concept_id,
+                nlp_system,
+                term_exists,
+                term_temporal,
+                term_modifiers
+            FROM w, UNNEST(w.col))
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
+
         insert_aou_death = self.jinja_env.from_string("""
         INSERT INTO `{{project_id}}.{{dataset_id}}.aou_death`
             (aou_death_id, person_id, death_date, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id, src_id, primary_death_record)
@@ -146,8 +198,10 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             ('a2', 1, date('2021-05-05'), 0, 0, NULL, 0, 'hpo_a', True)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        self.load_test_data(
-            [insert_condition_occurrence, insert_observation, insert_aou_death])
+        self.load_test_data([
+            insert_condition_occurrence, insert_observation, insert_aou_death,
+            insert_note_nlp
+        ])
 
     def test_string_suppression(self):
 
@@ -187,6 +241,29 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                 (5, 1, 0, 0, None, None, None, None, None),
                 (6, 1, 0, 715711, 'foo_date', None, None, None, None)
             ]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{NOTE_NLP}',
+            'loaded_ids': [1, 2, 3, 4, 5, 6],
+            'sandboxed_ids': [],
+            'fields': [
+                'note_nlp_id', 'note_id', 'snippet', 'offset',
+                'lexical_variant', 'note_nlp_concept_id',
+                'note_nlp_source_concept_id', 'nlp_system', 'term_exists',
+                'term_temporal', 'term_modifiers'
+            ],
+            'cleaned_values': [(1, 1, None, None, '', 1585250, 1585250,
+                                'CLAMP 1.7.6', 'true', None, None),
+                               (2, 1, None, None, '', 0, 352341, 'CLAMP 1.7.6',
+                                'false', None, None),
+                               (3, 1, None, None, '', 0, 352341, 'CLAMP 1.7.6',
+                                None, None, None),
+                               (4, 1, None, None, '', 0, 352341, None, 'true',
+                                None, None),
+                               (5, 1, None, None, '', 0,
+                                352341, 'CLAMP 1.7.6', None, None, None),
+                               (6, 1, None, None, '', 715711, 4262234,
+                                'CLAMP 1.7.6', None, None, None)]
         }, {
             'fq_table_name': f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
             'loaded_ids': ['a1', 'a2'],
