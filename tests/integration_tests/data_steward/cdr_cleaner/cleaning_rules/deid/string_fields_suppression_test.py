@@ -178,11 +178,15 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             SELECT 
                 note_nlp_id,
                 note_id,
+                snippet,
+                offset,
                 lexical_variant,
                 note_nlp_concept_id,
                 note_nlp_source_concept_id,
                 nlp_system,
-                term_exists
+                term_exists,
+                term_temporal,
+                term_modifiers
             FROM w, UNNEST(w.col))
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
