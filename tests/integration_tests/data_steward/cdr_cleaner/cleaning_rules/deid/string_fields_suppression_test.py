@@ -168,15 +168,13 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                    (6, 1, '', 715711, 4262234, 'CLAMP 1.7.6', 'null')] col
             )
             SELECT 
-                observation_id,
-                person_id,
-                observation_concept_id,
-                observation_source_concept_id,
-                value_as_string, 
-                observation_source_value,
-                unit_source_value,
-                qualifier_source_value,
-                value_source_value 
+                note_nlp_id,
+                note_id,
+                lexical_variant,
+                note_nlp_concept_id,
+                note_nlp_source_concept_id,
+                nlp_system,
+                term_exists
             FROM w, UNNEST(w.col))
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
