@@ -1,3 +1,4 @@
+# coding=utf-8
 import logging
 from typing import NamedTuple, Union, List
 from google.cloud.bigquery.client import Table
