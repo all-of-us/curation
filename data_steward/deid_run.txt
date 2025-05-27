@@ -1,0 +1,995 @@
+INFO - root - Loading primary_pid_rid_mapping table...
+INFO - root - copied participants younger than 89 to the table aou-res-curation-prod.reg_2024q3r6_combined._deid_map
+INFO - root - Loaded primary_pid_rid_mapping table.
+INFO - root - Copying ext tables from reg_2024q3r6_combined dataset to R2024q3r6_deid dataset...
+INFO - root - Waiting on jobs ['1de25b30-5b23-4c65-b50b-5680be936dde'] to complete
+INFO - root - Finished copying ext tables.
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/aou_death.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	aou_death
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 778.89it/s]
+INFO - pandas_gbq.gbq - Total time taken 14.76 s.
+Finished at 2025-04-10 13:23:09.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['death_date'], 'rules': '@shift.date'}, {'fields': ['death_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['aou_death_id', 'person_id', 'death_date', 'death_datetime', 'death_type_concept_id', 'cause_concept_id', 'cause_source_value', 'cause_source_concept_id', 'src_id', 'primary_death_record']
+INFO - deid.press - table:	reg_2024q3r6_combined.aou_death		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.aou_death		fields:	['aou_death_id', 'person_id', 'death_date', 'death_datetime', 'death_type_concept_id', 'cause_concept_id', 'cause_source_value', 'cause_source_concept_id', 'src_id', 'primary_death_record']
+INFO - deid.press - creating SQL for field:	cause_concept_id		with:	NULL AS cause_concept_id
+INFO - deid.press - creating SQL for field:	cause_source_value		with:	FORMAT('%i', NULL) AS cause_source_value
+INFO - deid.press - creating SQL for field:	cause_source_concept_id		with:	NULL AS cause_source_concept_id
+INFO - deid.press - creating SQL for field:	death_date		with:	DATE_SUB( CAST(death_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = aou_death.person_id) DAY) AS death_date
+INFO - deid.press - creating SQL for field:	death_datetime		with:	TIMESTAMP_SUB( CAST(death_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = aou_death.person_id) DAY) AS death_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = aou_death.person_id) as person_id
+INFO - deid.aou - creating new table:	aou_death
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.aou_death		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.aou_death		status:	'pending'		value:	64ec9748-7d66-4f6b-abfb-643ad41173a4
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.aou_death		job_id:	64ec9748-7d66-4f6b-abfb-643ad41173a4
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	aou_death
+INFO - __main__ - Successfully executed deid on table: aou_death
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/condition_occurrence.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	condition_occurrence
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 2434.30it/s]
+INFO - pandas_gbq.gbq - Total time taken 15.61 s.
+Finished at 2025-04-10 13:23:49.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['condition_start_date', 'condition_end_date'], 'rules': '@shift.date'}, {'fields': ['condition_start_datetime', 'condition_end_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['condition_occurrence_id', 'person_id', 'condition_concept_id', 'condition_start_date', 'condition_start_datetime', 'condition_end_date', 'condition_end_datetime', 'condition_type_concept_id', 'condition_status_concept_id', 'stop_reason', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'condition_source_value', 'condition_source_concept_id', 'condition_status_source_value']
+INFO - deid.press - table:	reg_2024q3r6_combined.condition_occurrence		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.condition_occurrence		fields:	['condition_occurrence_id', 'person_id', 'condition_concept_id', 'condition_start_date', 'condition_start_datetime', 'condition_end_date', 'condition_end_datetime', 'condition_type_concept_id', 'condition_status_concept_id', 'stop_reason', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'condition_source_value', 'condition_source_concept_id', 'condition_status_source_value']
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	condition_start_date		with:	DATE_SUB( CAST(condition_start_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = condition_occurrence.person_id) DAY) AS condition_start_date
+INFO - deid.press - creating SQL for field:	condition_end_date		with:	DATE_SUB( CAST(condition_end_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = condition_occurrence.person_id) DAY) AS condition_end_date
+INFO - deid.press - creating SQL for field:	condition_start_datetime		with:	TIMESTAMP_SUB( CAST(condition_start_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = condition_occurrence.person_id) DAY) AS condition_start_datetime
+INFO - deid.press - creating SQL for field:	condition_end_datetime		with:	TIMESTAMP_SUB( CAST(condition_end_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = condition_occurrence.person_id) DAY) AS condition_end_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = condition_occurrence.person_id) as person_id
+INFO - deid.aou - creating new table:	condition_occurrence
+INFO - root - Deleting R2024q3r6_deid.condition_occurrence
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.condition_occurrence		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.condition_occurrence		status:	'pending'		value:	acc54a31-260d-4f37-8ef8-10590da50bdc
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.condition_occurrence		job_id:	acc54a31-260d-4f37-8ef8-10590da50bdc
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	condition_occurrence
+INFO - __main__ - Successfully executed deid on table: condition_occurrence
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/death.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	death
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 1866.62it/s]
+INFO - pandas_gbq.gbq - Total time taken 12.76 s.
+Finished at 2025-04-10 13:24:51.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['death_date'], 'rules': '@shift.date'}, {'fields': ['death_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['person_id', 'death_date', 'death_datetime', 'death_type_concept_id', 'cause_concept_id', 'cause_source_value', 'cause_source_concept_id']
+INFO - deid.press - table:	reg_2024q3r6_combined.death		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.death		fields:	['person_id', 'death_date', 'death_datetime', 'death_type_concept_id', 'cause_concept_id', 'cause_source_value', 'cause_source_concept_id']
+INFO - deid.press - creating SQL for field:	cause_concept_id		with:	NULL AS cause_concept_id
+INFO - deid.press - creating SQL for field:	cause_source_value		with:	FORMAT('%i', NULL) AS cause_source_value
+INFO - deid.press - creating SQL for field:	cause_source_concept_id		with:	NULL AS cause_source_concept_id
+INFO - deid.press - creating SQL for field:	death_date		with:	DATE_SUB( CAST(death_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = death.person_id) DAY) AS death_date
+INFO - deid.press - creating SQL for field:	death_datetime		with:	TIMESTAMP_SUB( CAST(death_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = death.person_id) DAY) AS death_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = death.person_id) as person_id
+INFO - deid.aou - creating new table:	death
+INFO - root - Deleting R2024q3r6_deid.death
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.death		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.death		status:	'pending'		value:	feb2accb-1524-4185-ab21-3c29284f1d5e
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.death		job_id:	feb2accb-1524-4185-ab21-3c29284f1d5e
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	death
+INFO - __main__ - Successfully executed deid on table: death
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/device_exposure.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	device_exposure
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 1940.91it/s]
+INFO - pandas_gbq.gbq - Total time taken 14.76 s.
+Finished at 2025-04-10 13:25:29.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['device_exposure_start_date', 'device_exposure_end_date'], 'rules': '@shift.date'}, {'fields': ['device_exposure_start_datetime', 'device_exposure_end_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['device_exposure_id', 'person_id', 'device_concept_id', 'device_exposure_start_date', 'device_exposure_start_datetime', 'device_exposure_end_date', 'device_exposure_end_datetime', 'device_type_concept_id', 'unique_device_id', 'quantity', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'device_source_value', 'device_source_concept_id']
+INFO - deid.press - table:	reg_2024q3r6_combined.device_exposure		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.device_exposure		fields:	['device_exposure_id', 'person_id', 'device_concept_id', 'device_exposure_start_date', 'device_exposure_start_datetime', 'device_exposure_end_date', 'device_exposure_end_datetime', 'device_type_concept_id', 'unique_device_id', 'quantity', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'device_source_value', 'device_source_concept_id']
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	device_exposure_start_date		with:	DATE_SUB( CAST(device_exposure_start_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = device_exposure.person_id) DAY) AS device_exposure_start_date
+INFO - deid.press - creating SQL for field:	device_exposure_end_date		with:	DATE_SUB( CAST(device_exposure_end_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = device_exposure.person_id) DAY) AS device_exposure_end_date
+INFO - deid.press - creating SQL for field:	device_exposure_start_datetime		with:	TIMESTAMP_SUB( CAST(device_exposure_start_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = device_exposure.person_id) DAY) AS device_exposure_start_datetime
+INFO - deid.press - creating SQL for field:	device_exposure_end_datetime		with:	TIMESTAMP_SUB( CAST(device_exposure_end_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = device_exposure.person_id) DAY) AS device_exposure_end_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = device_exposure.person_id) as person_id
+INFO - deid.aou - creating new table:	device_exposure
+INFO - root - Deleting R2024q3r6_deid.device_exposure
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.device_exposure		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.device_exposure		status:	'pending'		value:	4c743746-2c5e-4073-b27a-4abc2a96a565
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.device_exposure		job_id:	4c743746-2c5e-4073-b27a-4abc2a96a565
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	device_exposure
+INFO - __main__ - Successfully executed deid on table: device_exposure
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/drug_exposure.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	drug_exposure
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 2150.93it/s]
+INFO - pandas_gbq.gbq - Total time taken 14.03 s.
+Finished at 2025-04-10 13:26:29.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['drug_exposure_start_date', 'drug_exposure_end_date', 'verbatim_end_date'], 'rules': '@shift.date'}, {'fields': ['drug_exposure_start_datetime', 'drug_exposure_end_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['drug_exposure_id', 'person_id', 'drug_concept_id', 'drug_exposure_start_date', 'drug_exposure_start_datetime', 'drug_exposure_end_date', 'drug_exposure_end_datetime', 'verbatim_end_date', 'drug_type_concept_id', 'stop_reason', 'refills', 'quantity', 'days_supply', 'sig', 'route_concept_id', 'lot_number', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'drug_source_value', 'drug_source_concept_id', 'route_source_value', 'dose_unit_source_value']
+INFO - deid.press - table:	reg_2024q3r6_combined.drug_exposure		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.drug_exposure		fields:	['drug_exposure_id', 'person_id', 'drug_concept_id', 'drug_exposure_start_date', 'drug_exposure_start_datetime', 'drug_exposure_end_date', 'drug_exposure_end_datetime', 'verbatim_end_date', 'drug_type_concept_id', 'stop_reason', 'refills', 'quantity', 'days_supply', 'sig', 'route_concept_id', 'lot_number', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'drug_source_value', 'drug_source_concept_id', 'route_source_value', 'dose_unit_source_value']
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	drug_exposure_start_date		with:	DATE_SUB( CAST(drug_exposure_start_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = drug_exposure.person_id) DAY) AS drug_exposure_start_date
+INFO - deid.press - creating SQL for field:	drug_exposure_end_date		with:	DATE_SUB( CAST(drug_exposure_end_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = drug_exposure.person_id) DAY) AS drug_exposure_end_date
+INFO - deid.press - creating SQL for field:	verbatim_end_date		with:	DATE_SUB( CAST(verbatim_end_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = drug_exposure.person_id) DAY) AS verbatim_end_date
+INFO - deid.press - creating SQL for field:	drug_exposure_start_datetime		with:	TIMESTAMP_SUB( CAST(drug_exposure_start_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = drug_exposure.person_id) DAY) AS drug_exposure_start_datetime
+INFO - deid.press - creating SQL for field:	drug_exposure_end_datetime		with:	TIMESTAMP_SUB( CAST(drug_exposure_end_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = drug_exposure.person_id) DAY) AS drug_exposure_end_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = drug_exposure.person_id) as person_id
+INFO - deid.aou - creating new table:	drug_exposure
+INFO - root - Deleting R2024q3r6_deid.drug_exposure
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.drug_exposure		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.drug_exposure		status:	'pending'		value:	2c4a9bc8-a910-4eb7-8213-2bfa0fff398b
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.drug_exposure		job_id:	2c4a9bc8-a910-4eb7-8213-2bfa0fff398b
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	drug_exposure
+INFO - __main__ - Successfully executed deid on table: drug_exposure
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/measurement.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	measurement
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 2003.97it/s]
+INFO - pandas_gbq.gbq - Total time taken 13.1 s.
+Finished at 2025-04-10 13:27:38.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['measurement_date'], 'rules': '@shift.date'}, {'fields': ['measurement_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['measurement_id', 'person_id', 'measurement_concept_id', 'measurement_date', 'measurement_datetime', 'measurement_time', 'measurement_type_concept_id', 'operator_concept_id', 'value_as_number', 'value_as_concept_id', 'unit_concept_id', 'range_low', 'range_high', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'measurement_source_value', 'measurement_source_concept_id', 'unit_source_value', 'value_source_value']
+INFO - deid.press - table:	reg_2024q3r6_combined.measurement		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.measurement		fields:	['measurement_id', 'person_id', 'measurement_concept_id', 'measurement_date', 'measurement_datetime', 'measurement_time', 'measurement_type_concept_id', 'operator_concept_id', 'value_as_number', 'value_as_concept_id', 'unit_concept_id', 'range_low', 'range_high', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'measurement_source_value', 'measurement_source_concept_id', 'unit_source_value', 'value_source_value']
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	value_source_value		with:	FORMAT('%i', NULL) AS value_source_value
+INFO - deid.press - creating SQL for field:	measurement_date		with:	DATE_SUB( CAST(measurement_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = measurement.person_id) DAY) AS measurement_date
+INFO - deid.press - creating SQL for field:	measurement_datetime		with:	TIMESTAMP_SUB( CAST(measurement_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = measurement.person_id) DAY) AS measurement_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = measurement.person_id) as person_id
+INFO - deid.aou - creating new table:	measurement
+INFO - root - Deleting R2024q3r6_deid.measurement
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.measurement		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.measurement		status:	'pending'		value:	e98a2760-da79-41dd-9332-f9cf3498a9a2
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.measurement		job_id:	e98a2760-da79-41dd-9332-f9cf3498a9a2
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	measurement
+INFO - __main__ - Successfully executed deid on table: measurement
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/note.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	note
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 1738.93it/s]
+INFO - pandas_gbq.gbq - Total time taken 13.12 s.
+Finished at 2025-04-10 13:28:51.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['note_date'], 'rules': '@shift.date'}, {'fields': ['note_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['note_id', 'person_id', 'note_date', 'note_datetime', 'note_type_concept_id', 'note_class_concept_id', 'note_title', 'note_text', 'encoding_concept_id', 'language_concept_id', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'note_source_value']
+INFO - deid.press - table:	reg_2024q3r6_combined.note		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.note		fields:	['note_id', 'person_id', 'note_date', 'note_datetime', 'note_type_concept_id', 'note_class_concept_id', 'note_title', 'note_text', 'encoding_concept_id', 'language_concept_id', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'note_source_value']
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	note_date		with:	DATE_SUB( CAST(note_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = note.person_id) DAY) AS note_date
+INFO - deid.press - creating SQL for field:	note_datetime		with:	TIMESTAMP_SUB( CAST(note_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = note.person_id) DAY) AS note_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = note.person_id) as person_id
+INFO - deid.aou - creating new table:	note
+INFO - root - Deleting R2024q3r6_deid.note
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.note		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.note		status:	'pending'		value:	621e5f3c-582a-464c-895e-9516bcd872ee
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.note		job_id:	621e5f3c-582a-464c-895e-9516bcd872ee
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	note
+INFO - __main__ - Successfully executed deid on table: note
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/note_nlp.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	note_nlp
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 1379.71it/s]
+INFO - pandas_gbq.gbq - Total time taken 14.07 s.
+Finished at 2025-04-10 13:29:45.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['nlp_date'], 'rules': '@shift.date'}, {'fields': ['nlp_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['note_nlp_id', 'note_id', 'section_concept_id', 'snippet', 'offset', 'lexical_variant', 'note_nlp_concept_id', 'note_nlp_source_concept_id', 'nlp_system', 'nlp_date', 'nlp_datetime', 'term_exists', 'term_temporal', 'term_modifiers']
+INFO - deid.press - table:	reg_2024q3r6_combined.note_nlp		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.note_nlp		fields:	['note_nlp_id', 'note_id', 'section_concept_id', 'snippet', 'offset', 'lexical_variant', 'note_nlp_concept_id', 'note_nlp_source_concept_id', 'nlp_system', 'nlp_date', 'nlp_datetime', 'term_exists', 'term_temporal', 'term_modifiers']
+INFO - deid.press - creating SQL for field:	nlp_date		with:	DATE_SUB( CAST(nlp_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = note_nlp.person_id) DAY) AS nlp_date
+INFO - deid.press - creating SQL for field:	nlp_datetime		with:	TIMESTAMP_SUB( CAST(nlp_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = note_nlp.person_id) DAY) AS nlp_datetime
+INFO - deid.aou - creating new table:	note_nlp
+INFO - root - Deleting R2024q3r6_deid.note_nlp
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.note_nlp		priority:	INTERACTIVE		partition:	False
+ERROR - deid.aou - dry run query failed for:	reg_2024q3r6_combined.note_nlp
+		SQL:	SELECT note_nlp_id,note_id,section_concept_id,snippet,offset,lexical_variant,note_nlp_concept_id,note_nlp_source_concept_id,nlp_system,DATE_SUB( CAST(nlp_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = note_nlp.person_id) DAY) AS nlp_date,TIMESTAMP_SUB( CAST(nlp_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = note_nlp.person_id) DAY) AS nlp_datetime,term_exists,term_temporal,term_modifiers FROM  reg_2024q3r6_combined.note_nlp WHERE  NOT EXISTS (select * from `reg_2024q3r6_combined.note_nlp` as record2 where note_nlp.note_nlp_id = record2.note_nlp_id and note_nlp_concept_id in (select concept_id from `reg_2024q3r6_combined._concept_ids_suppression`))  AND  NOT EXISTS (select * from `reg_2024q3r6_combined.note_nlp` as record2 where note_nlp.note_nlp_id = record2.note_nlp_id and note_nlp_source_concept_id in (select concept_id from `reg_2024q3r6_combined._concept_ids_suppression`)) 
+		job config:	<google.cloud.bigquery.job.query.QueryJobConfig object at 0x12ab062d0>
+Traceback (most recent call last):
+  File "/Users/aggarwr/vumc/curation/data_steward/deid/aou.py", line 464, in submit
+    response = client.query(sql, location='US', job_config=job)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aggarwr/vumc/curation/venv/lib/python3.12/site-packages/google/cloud/bigquery/client.py", line 3391, in query
+    return _job_helpers.query_jobs_insert(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aggarwr/vumc/curation/venv/lib/python3.12/site-packages/google/cloud/bigquery/_job_helpers.py", line 114, in query_jobs_insert
+    future = do_query()
+             ^^^^^^^^^^
+  File "/Users/aggarwr/vumc/curation/venv/lib/python3.12/site-packages/google/cloud/bigquery/_job_helpers.py", line 91, in do_query
+    query_job._begin(retry=retry, timeout=timeout)
+  File "/Users/aggarwr/vumc/curation/venv/lib/python3.12/site-packages/google/cloud/bigquery/job/query.py", line 1370, in _begin
+    super(QueryJob, self)._begin(client=client, retry=retry, timeout=timeout)
+  File "/Users/aggarwr/vumc/curation/venv/lib/python3.12/site-packages/google/cloud/bigquery/job/base.py", line 693, in _begin
+    api_response = client._call_api(
+                   ^^^^^^^^^^^^^^^^^
+  File "/Users/aggarwr/vumc/curation/venv/lib/python3.12/site-packages/google/cloud/bigquery/client.py", line 808, in _call_api
+    return call()
+           ^^^^^^
+  File "/Users/aggarwr/vumc/curation/venv/lib/python3.12/site-packages/google/api_core/retry.py", line 366, in retry_wrapped_func
+    return retry_target(
+           ^^^^^^^^^^^^^
+  File "/Users/aggarwr/vumc/curation/venv/lib/python3.12/site-packages/google/api_core/retry.py", line 204, in retry_target
+    return target()
+           ^^^^^^^^
+  File "/Users/aggarwr/vumc/curation/venv/lib/python3.12/site-packages/google/cloud/_http/__init__.py", line 494, in api_request
+    raise exceptions.from_http_response(response)
+google.api_core.exceptions.BadRequest: 400 POST https://bigquery.googleapis.com/bigquery/v2/projects/aou-res-curation-prod/jobs?prettyPrint=false: Name person_id not found inside note_nlp at [1:267]
+
+Location: US
+Job ID: 47011f68-d89f-45e6-b113-b0cf3101519b
+
+INFO - deid.press - FINISHED de-identification on table:	note_nlp
+INFO - __main__ - Successfully executed deid on table: note_nlp
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/observation.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	observation
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 1283.45it/s]
+INFO - pandas_gbq.gbq - Total time taken 16.2 s.
+Finished at 2025-04-10 13:30:25.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['observation_date'], 'rules': '@shift.date'}, {'fields': ['observation_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - generalizing with SQL aggregates label:	RACE		on:	value_source_concept_id		type:	SQL		
+INFO - deid.rules - generalizing inline arguments label:	{label.split('.')[1]}		on:	value_source_concept_id		type:	inline
+INFO - deid.rules - generalizing with SQL aggregates label:	SEXUAL-ORIENTATION		on:	value_source_concept_id		type:	COUNT		
+INFO - deid.rules - generalizing inline arguments label:	{label.split('.')[1]}		on:	value_source_concept_id		type:	inline
+INFO - deid.rules - generalizing inline arguments label:	{label.split('.')[1]}		on:	value_source_concept_id		type:	inline
+INFO - deid.rules - generalizing with SQL aggregates label:	GENDER		on:	value_source_concept_id		type:	COUNT		
+INFO - deid.rules - generalizing with SQL aggregates label:	GENDER		on:	value_source_concept_id		type:	SQL		
+INFO - deid.rules - generalizing inline arguments label:	{label.split('.')[1]}		on:	value_source_concept_id		type:	inline
+INFO - deid.rules - generalizing inline arguments label:	{label.split('.')[1]}		on:	value_source_concept_id		type:	inline
+INFO - deid.rules - generalizing inline arguments label:	{label.split('.')[1]}		on:	value_source_concept_id		type:	inline
+INFO - deid.rules - generalizing inline arguments label:	{label.split('.')[1]}		on:	value_source_concept_id		type:	inline
+INFO - deid.rules - generalizing inline arguments label:	{label.split('.')[1]}		on:	value_source_concept_id		type:	inline
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['observation_id', 'person_id', 'observation_concept_id', 'observation_date', 'observation_datetime', 'observation_type_concept_id', 'value_as_number', 'value_as_string', 'value_as_concept_id', 'qualifier_concept_id', 'unit_concept_id', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'observation_source_value', 'observation_source_concept_id', 'unit_source_value', 'qualifier_source_value', 'value_source_concept_id', 'value_source_value', 'questionnaire_response_id']
+INFO - deid.rules - generalized_values causing duplicates: 2000000008, 2000000003, 2000000003, 2000000002, 2000000005, 2000000004    in table:  reg_2024q3r6_combined.observation
+INFO - deid.rules - key_values causing duplicates: 1586140, 1585899, 1585838, 1585952, 1332843    in table:  reg_2024q3r6_combined.observation
+INFO - deid.press - table:	reg_2024q3r6_combined.observation		is a meta table:	True
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.observation		fields:	['observation_id', 'person_id', 'observation_concept_id', 'observation_date', 'observation_datetime', 'observation_type_concept_id', 'value_as_number', 'value_as_string', 'value_as_concept_id', 'qualifier_concept_id', 'unit_concept_id', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'observation_source_value', 'observation_source_concept_id', 'unit_source_value', 'qualifier_source_value', 'value_source_concept_id', 'value_source_value', 'questionnaire_response_id']
+INFO - deid.press - creating SQL for field:	value_source_concept_id		with:	CASE WHEN (SELECT COUNT(obs.person_id)  FROM :idataset.observation AS obs  WHERE obs.person_id = observation.person_id  AND obs.value_source_concept_id IN (1586141, 1586142, 1586143, 1586144, 1586145, 1586146)  GROUP BY obs.person_id )   > 1 AND value_source_concept_id != 1586147  THEN 2000000008 WHEN value_source_concept_id IN (1586141,1586144,1586145) THEN 2000000001 ELSE value_source_concept_id END AS value_source_concept_id
+INFO - deid.press - creating SQL for field:	value_as_concept_id		with:	CASE WHEN (SELECT COUNT(obs.person_id)  FROM :idataset.observation AS obs  WHERE obs.person_id = observation.person_id  AND obs.value_source_concept_id IN (1586141, 1586142, 1586143, 1586144, 1586145, 1586146)  GROUP BY obs.person_id )   > 1 AND value_source_concept_id != 1586147  THEN 2000000008 WHEN value_source_concept_id IN (1586141,1586144,1586145) THEN 2000000001 ELSE value_as_concept_id END AS value_as_concept_id
+INFO - deid.press - creating SQL for field:	value_as_string		with:	FORMAT('%i', NULL) AS value_as_string
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	value_source_value		with:	FORMAT('%i', NULL) AS value_source_value
+INFO - deid.press - creating SQL for field:	observation_date		with:	DATE_SUB( CAST(observation_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_date
+INFO - deid.press - creating SQL for field:	observation_datetime		with:	TIMESTAMP_SUB( CAST(observation_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = observation.person_id) as person_id
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.observation		fields:	['observation_id', 'person_id', 'observation_concept_id', 'observation_date', 'observation_datetime', 'observation_type_concept_id', 'value_as_number', 'value_as_string', 'value_as_concept_id', 'qualifier_concept_id', 'unit_concept_id', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'observation_source_value', 'observation_source_concept_id', 'unit_source_value', 'qualifier_source_value', 'value_source_concept_id', 'value_source_value', 'questionnaire_response_id']
+INFO - deid.press - creating SQL for field:	value_source_concept_id		with:	CASE WHEN ( SELECT COUNT (sexual_orientation.person_id) FROM :idataset.observation AS sexual_orientation WHERE sexual_orientation.person_id=observation.person_id AND observation_source_concept_id in ( 1585899 ) ) > 1 THEN 2000000003 WHEN value_source_concept_id IN (903096,903079,1585901,1585902,1585903,1585904) THEN 2000000003 ELSE value_source_concept_id END AS value_source_concept_id
+INFO - deid.press - creating SQL for field:	value_as_concept_id		with:	CASE WHEN ( SELECT COUNT (sexual_orientation.person_id) FROM :idataset.observation AS sexual_orientation WHERE sexual_orientation.person_id=observation.person_id AND observation_source_concept_id in ( 1585899 ) ) > 1 THEN 2000000003 WHEN value_source_concept_id IN (903096,903079,1585901,1585902,1585903,1585904) THEN 2000000003 ELSE value_as_concept_id END AS value_as_concept_id
+INFO - deid.press - creating SQL for field:	value_as_string		with:	FORMAT('%i', NULL) AS value_as_string
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	value_source_value		with:	FORMAT('%i', NULL) AS value_source_value
+INFO - deid.press - creating SQL for field:	observation_date		with:	DATE_SUB( CAST(observation_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_date
+INFO - deid.press - creating SQL for field:	observation_datetime		with:	TIMESTAMP_SUB( CAST(observation_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = observation.person_id) as person_id
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.observation		fields:	['observation_id', 'person_id', 'observation_concept_id', 'observation_date', 'observation_datetime', 'observation_type_concept_id', 'value_as_number', 'value_as_string', 'value_as_concept_id', 'qualifier_concept_id', 'unit_concept_id', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'observation_source_value', 'observation_source_concept_id', 'unit_source_value', 'qualifier_source_value', 'value_source_concept_id', 'value_source_value', 'questionnaire_response_id']
+INFO - deid.press - creating SQL for field:	value_source_concept_id		with:	CASE WHEN value_source_concept_id IN (903096,903079,1585848,1585849) THEN 2000000009 ELSE value_source_concept_id END AS value_source_concept_id
+INFO - deid.press - creating SQL for field:	value_as_concept_id		with:	CASE WHEN value_source_concept_id IN (903096,903079,1585848,1585849) THEN 2000000009 ELSE value_as_concept_id END AS value_as_concept_id
+INFO - deid.press - creating SQL for field:	value_as_string		with:	FORMAT('%i', NULL) AS value_as_string
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	value_source_value		with:	FORMAT('%i', NULL) AS value_source_value
+INFO - deid.press - creating SQL for field:	observation_date		with:	DATE_SUB( CAST(observation_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_date
+INFO - deid.press - creating SQL for field:	observation_datetime		with:	TIMESTAMP_SUB( CAST(observation_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = observation.person_id) as person_id
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.observation		fields:	['observation_id', 'person_id', 'observation_concept_id', 'observation_date', 'observation_datetime', 'observation_type_concept_id', 'value_as_number', 'value_as_string', 'value_as_concept_id', 'qualifier_concept_id', 'unit_concept_id', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'observation_source_value', 'observation_source_concept_id', 'unit_source_value', 'qualifier_source_value', 'value_source_concept_id', 'value_source_value', 'questionnaire_response_id']
+INFO - deid.press - creating SQL for field:	value_source_concept_id		with:	CASE WHEN ( SELECT COUNT (find_gender.person_id) FROM :idataset.observation AS find_gender WHERE find_gender.person_id=observation.person_id AND observation_source_concept_id in ( 1585838 ) ) > 1 THEN 2000000002 WHEN observation_id IN ( SELECT gender.observation_id  FROM :idataset.observation AS gender  JOIN :idataset.observation AS sex_at_birth  USING (person_id)  WHERE gender.observation_source_concept_id = 1585838  AND ((gender.value_source_concept_id = 1585839 AND sex_at_birth.value_source_concept_id = 1585847)  OR (gender.value_source_concept_id = 1585840 AND sex_at_birth.value_source_concept_id = 1585846)))  THEN 2000000002 WHEN value_source_concept_id IN (903096,903079,1585843,1585841,1585842) THEN 2000000002 ELSE value_source_concept_id END AS value_source_concept_id
+INFO - deid.press - creating SQL for field:	value_as_concept_id		with:	CASE WHEN ( SELECT COUNT (find_gender.person_id) FROM :idataset.observation AS find_gender WHERE find_gender.person_id=observation.person_id AND observation_source_concept_id in ( 1585838 ) ) > 1 THEN 2000000002 WHEN observation_id IN ( SELECT gender.observation_id  FROM :idataset.observation AS gender  JOIN :idataset.observation AS sex_at_birth  USING (person_id)  WHERE gender.observation_source_concept_id = 1585838  AND ((gender.value_source_concept_id = 1585839 AND sex_at_birth.value_source_concept_id = 1585847)  OR (gender.value_source_concept_id = 1585840 AND sex_at_birth.value_source_concept_id = 1585846)))  THEN 2000000002 WHEN value_source_concept_id IN (903096,903079,1585843,1585841,1585842) THEN 2000000002 ELSE value_as_concept_id END AS value_as_concept_id
+INFO - deid.press - creating SQL for field:	value_as_string		with:	FORMAT('%i', NULL) AS value_as_string
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	value_source_value		with:	FORMAT('%i', NULL) AS value_source_value
+INFO - deid.press - creating SQL for field:	observation_date		with:	DATE_SUB( CAST(observation_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_date
+INFO - deid.press - creating SQL for field:	observation_datetime		with:	TIMESTAMP_SUB( CAST(observation_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = observation.person_id) as person_id
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.observation		fields:	['observation_id', 'person_id', 'observation_concept_id', 'observation_date', 'observation_datetime', 'observation_type_concept_id', 'value_as_number', 'value_as_string', 'value_as_concept_id', 'qualifier_concept_id', 'unit_concept_id', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'observation_source_value', 'observation_source_concept_id', 'unit_source_value', 'qualifier_source_value', 'value_source_concept_id', 'value_source_value', 'questionnaire_response_id']
+INFO - deid.press - creating SQL for field:	value_source_concept_id		with:	CASE WHEN value_source_concept_id IN (1585941,1585942,1585943,1585944) THEN 2000000007 WHEN value_source_concept_id IN (1585947,1585948) THEN 2000000006 ELSE value_source_concept_id END AS value_source_concept_id
+INFO - deid.press - creating SQL for field:	value_as_concept_id		with:	CASE WHEN value_source_concept_id IN (1585941,1585942,1585943,1585944) THEN 2000000007 WHEN value_source_concept_id IN (1585947,1585948) THEN 2000000006 ELSE value_as_concept_id END AS value_as_concept_id
+INFO - deid.press - creating SQL for field:	value_as_string		with:	FORMAT('%i', NULL) AS value_as_string
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	value_source_value		with:	FORMAT('%i', NULL) AS value_source_value
+INFO - deid.press - creating SQL for field:	observation_date		with:	DATE_SUB( CAST(observation_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_date
+INFO - deid.press - creating SQL for field:	observation_datetime		with:	TIMESTAMP_SUB( CAST(observation_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = observation.person_id) as person_id
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.observation		fields:	['observation_id', 'person_id', 'observation_concept_id', 'observation_date', 'observation_datetime', 'observation_type_concept_id', 'value_as_number', 'value_as_string', 'value_as_concept_id', 'qualifier_concept_id', 'unit_concept_id', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'observation_source_value', 'observation_source_concept_id', 'unit_source_value', 'qualifier_source_value', 'value_source_concept_id', 'value_source_value', 'questionnaire_response_id']
+INFO - deid.press - creating SQL for field:	value_source_concept_id		with:	CASE WHEN value_source_concept_id IN (1585955,1585956,1585957,1585958,1585959,1585960,1333224,1333132,1332926,1332757,1332716,1333197) THEN 2000000005 WHEN value_source_concept_id IN (1585953,1585954,1333341,1333321) THEN 2000000004 ELSE value_source_concept_id END AS value_source_concept_id
+INFO - deid.press - creating SQL for field:	value_as_concept_id		with:	CASE WHEN value_source_concept_id IN (1585955,1585956,1585957,1585958,1585959,1585960,1333224,1333132,1332926,1332757,1332716,1333197) THEN 2000000005 WHEN value_source_concept_id IN (1585953,1585954,1333341,1333321) THEN 2000000004 ELSE value_as_concept_id END AS value_as_concept_id
+INFO - deid.press - creating SQL for field:	value_as_string		with:	FORMAT('%i', NULL) AS value_as_string
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	value_source_value		with:	FORMAT('%i', NULL) AS value_source_value
+INFO - deid.press - creating SQL for field:	observation_date		with:	DATE_SUB( CAST(observation_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_date
+INFO - deid.press - creating SQL for field:	observation_datetime		with:	TIMESTAMP_SUB( CAST(observation_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = observation.person_id) as person_id
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.observation		fields:	['observation_id', 'person_id', 'observation_concept_id', 'observation_date', 'observation_datetime', 'observation_type_concept_id', 'value_as_number', 'value_as_string', 'value_as_concept_id', 'qualifier_concept_id', 'unit_concept_id', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'observation_source_value', 'observation_source_concept_id', 'unit_source_value', 'qualifier_source_value', 'value_source_concept_id', 'value_source_value', 'questionnaire_response_id']
+INFO - deid.press - creating SQL for field:	value_as_string		with:	FORMAT('%i', NULL) AS value_as_string
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	value_source_value		with:	FORMAT('%i', NULL) AS value_source_value
+INFO - deid.press - creating SQL for field:	observation_date		with:	DATE_SUB( CAST(observation_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_date
+INFO - deid.press - creating SQL for field:	observation_datetime		with:	TIMESTAMP_SUB( CAST(observation_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation.person_id) DAY) AS observation_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = observation.person_id) as person_id
+INFO - deid.press - adding dml statement:  drop_generalized_duplicates
+INFO - deid.aou - creating new table:	observation
+INFO - root - Deleting R2024q3r6_deid.observation
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.observation		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.observation		status:	'pending'		value:	d9fcfbbf-883e-412a-b80c-17e7c8d07679
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.observation		job_id:	d9fcfbbf-883e-412a-b80c-17e7c8d07679
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.aou - appending results to table:	observation
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.observation		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.observation		status:	'pending'		value:	e7622468-dab3-43bc-a47d-f3460e1165f2
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.observation		job_id:	e7622468-dab3-43bc-a47d-f3460e1165f2
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.aou - appending results to table:	observation
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.observation		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.observation		status:	'pending'		value:	aa321708-6d8f-4d5f-a68f-8f7d69a086ca
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.observation		job_id:	aa321708-6d8f-4d5f-a68f-8f7d69a086ca
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.aou - appending results to table:	observation
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.observation		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.observation		status:	'pending'		value:	b6843cbc-6508-4ea3-b638-ce9d01df96e8
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.observation		job_id:	b6843cbc-6508-4ea3-b638-ce9d01df96e8
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.aou - appending results to table:	observation
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.observation		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.observation		status:	'pending'		value:	f0a612a1-2bc6-4bbd-a392-05bb33d83879
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.observation		job_id:	f0a612a1-2bc6-4bbd-a392-05bb33d83879
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.aou - appending results to table:	observation
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.observation		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.observation		status:	'pending'		value:	91539f0c-9e3c-425d-8a20-b8c4ca7dc6c0
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.observation		job_id:	91539f0c-9e3c-425d-8a20-b8c4ca7dc6c0
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.aou - appending results to table:	observation
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.observation		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.observation		status:	'pending'		value:	5c193bde-418e-4800-b559-94e5fe65b670
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.observation		job_id:	5c193bde-418e-4800-b559-94e5fe65b670
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.aou - appending results to table:	observation
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.observation		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.observation		status:	'pending'		value:	6bd9f503-ba7a-4fac-9469-9920c4fe2c92
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.observation		job_id:	6bd9f503-ba7a-4fac-9469-9920c4fe2c92
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	observation
+INFO - __main__ - Successfully executed deid on table: observation
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table observation_period --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	observation_period
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 1156.09it/s]
+INFO - pandas_gbq.gbq - Total time taken 13.24 s.
+Finished at 2025-04-10 13:35:10.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['observation_period_start_date', 'observation_period_end_date'], 'rules': '@shift.date'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['observation_period_id', 'person_id', 'observation_period_start_date', 'observation_period_end_date', 'period_type_concept_id']
+INFO - deid.press - table:	reg_2024q3r6_combined.observation_period		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.observation_period		fields:	['observation_period_id', 'person_id', 'observation_period_start_date', 'observation_period_end_date', 'period_type_concept_id']
+INFO - deid.press - creating SQL for field:	observation_period_start_date		with:	DATE_SUB( CAST(observation_period_start_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation_period.person_id) DAY) AS observation_period_start_date
+INFO - deid.press - creating SQL for field:	observation_period_end_date		with:	DATE_SUB( CAST(observation_period_end_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = observation_period.person_id) DAY) AS observation_period_end_date
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = observation_period.person_id) as person_id
+INFO - deid.aou - creating new table:	observation_period
+INFO - root - Deleting R2024q3r6_deid.observation_period
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.observation_period		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.observation_period		status:	'pending'		value:	febf7a98-403a-4f50-9dfb-fa4e4fea96ca
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.observation_period		job_id:	febf7a98-403a-4f50-9dfb-fa4e4fea96ca
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	observation_period
+INFO - __main__ - Successfully executed deid on table: observation_period
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/person.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	person
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 1090.56it/s]
+INFO - pandas_gbq.gbq - Total time taken 13.74 s.
+Finished at 2025-04-10 13:35:59.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['birth_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['person_id', 'gender_concept_id', 'year_of_birth', 'month_of_birth', 'day_of_birth', 'birth_datetime', 'race_concept_id', 'ethnicity_concept_id', 'location_id', 'provider_id', 'care_site_id', 'person_source_value', 'gender_source_value', 'gender_source_concept_id', 'race_source_value', 'race_source_concept_id', 'ethnicity_source_value', 'ethnicity_source_concept_id']
+INFO - deid.press - table:	reg_2024q3r6_combined.person		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.person		fields:	['person_id', 'gender_concept_id', 'year_of_birth', 'month_of_birth', 'day_of_birth', 'birth_datetime', 'race_concept_id', 'ethnicity_concept_id', 'location_id', 'provider_id', 'care_site_id', 'person_source_value', 'gender_source_value', 'gender_source_concept_id', 'race_source_value', 'race_source_concept_id', 'ethnicity_source_value', 'ethnicity_source_concept_id']
+INFO - deid.press - creating SQL for field:	gender_concept_id		with:	0 AS gender_concept_id
+INFO - deid.press - creating SQL for field:	year_of_birth		with:	NULL AS year_of_birth
+INFO - deid.press - creating SQL for field:	month_of_birth		with:	NULL AS month_of_birth
+INFO - deid.press - creating SQL for field:	day_of_birth		with:	NULL AS day_of_birth
+INFO - deid.press - creating SQL for field:	race_concept_id		with:	0 AS race_concept_id
+INFO - deid.press - creating SQL for field:	ethnicity_concept_id		with:	0 AS ethnicity_concept_id
+INFO - deid.press - creating SQL for field:	location_id		with:	NULL AS location_id
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	care_site_id		with:	NULL AS care_site_id
+INFO - deid.press - creating SQL for field:	person_source_value		with:	FORMAT('%i', NULL) AS person_source_value
+INFO - deid.press - creating SQL for field:	gender_source_value		with:	FORMAT('%i', NULL) AS gender_source_value
+INFO - deid.press - creating SQL for field:	gender_source_concept_id		with:	NULL AS gender_source_concept_id
+INFO - deid.press - creating SQL for field:	race_source_value		with:	FORMAT('%i', NULL) AS race_source_value
+INFO - deid.press - creating SQL for field:	race_source_concept_id		with:	NULL AS race_source_concept_id
+INFO - deid.press - creating SQL for field:	ethnicity_source_value		with:	FORMAT('%i', NULL) AS ethnicity_source_value
+INFO - deid.press - creating SQL for field:	ethnicity_source_concept_id		with:	NULL AS ethnicity_source_concept_id
+INFO - deid.press - creating SQL for field:	birth_datetime		with:	TIMESTAMP_SUB( CAST(birth_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = person.person_id) DAY) AS birth_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = person.person_id) as person_id
+INFO - deid.aou - creating new table:	person
+INFO - root - Deleting R2024q3r6_deid.person
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.person		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.person		status:	'pending'		value:	f06caec3-4a0c-4c9b-a6d5-4398489d406e
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.person		job_id:	f06caec3-4a0c-4c9b-a6d5-4398489d406e
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	person
+INFO - __main__ - Successfully executed deid on table: person
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/procedure_occurrence.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	procedure_occurrence
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 349.64it/s]
+INFO - pandas_gbq.gbq - Total time taken 13.73 s.
+Finished at 2025-04-10 13:36:43.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['procedure_date'], 'rules': '@shift.date'}, {'fields': ['procedure_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['procedure_occurrence_id', 'person_id', 'procedure_concept_id', 'procedure_date', 'procedure_datetime', 'procedure_type_concept_id', 'modifier_concept_id', 'quantity', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'procedure_source_value', 'procedure_source_concept_id', 'modifier_source_value']
+INFO - deid.press - table:	reg_2024q3r6_combined.procedure_occurrence		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.procedure_occurrence		fields:	['procedure_occurrence_id', 'person_id', 'procedure_concept_id', 'procedure_date', 'procedure_datetime', 'procedure_type_concept_id', 'modifier_concept_id', 'quantity', 'provider_id', 'visit_occurrence_id', 'visit_detail_id', 'procedure_source_value', 'procedure_source_concept_id', 'modifier_source_value']
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	procedure_date		with:	DATE_SUB( CAST(procedure_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = procedure_occurrence.person_id) DAY) AS procedure_date
+INFO - deid.press - creating SQL for field:	procedure_datetime		with:	TIMESTAMP_SUB( CAST(procedure_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = procedure_occurrence.person_id) DAY) AS procedure_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = procedure_occurrence.person_id) as person_id
+INFO - deid.aou - creating new table:	procedure_occurrence
+INFO - root - Deleting R2024q3r6_deid.procedure_occurrence
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.procedure_occurrence		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.procedure_occurrence		status:	'pending'		value:	a1ea48c3-1878-4f30-b11b-7a716da1fc71
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.procedure_occurrence		job_id:	a1ea48c3-1878-4f30-b11b-7a716da1fc71
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	procedure_occurrence
+INFO - __main__ - Successfully executed deid on table: procedure_occurrence
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table specimen --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	specimen
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 1321.04it/s]
+INFO - pandas_gbq.gbq - Total time taken 13.37 s.
+Finished at 2025-04-10 13:37:34.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['specimen_date'], 'rules': '@shift.date'}, {'fields': ['specimen_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['specimen_id', 'person_id', 'specimen_concept_id', 'specimen_type_concept_id', 'specimen_date', 'specimen_datetime', 'quantity', 'unit_concept_id', 'anatomic_site_concept_id', 'disease_status_concept_id', 'specimen_source_id', 'specimen_source_value', 'unit_source_value', 'anatomic_site_source_value', 'disease_status_source_value']
+INFO - deid.press - table:	reg_2024q3r6_combined.specimen		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.specimen		fields:	['specimen_id', 'person_id', 'specimen_concept_id', 'specimen_type_concept_id', 'specimen_date', 'specimen_datetime', 'quantity', 'unit_concept_id', 'anatomic_site_concept_id', 'disease_status_concept_id', 'specimen_source_id', 'specimen_source_value', 'unit_source_value', 'anatomic_site_source_value', 'disease_status_source_value']
+INFO - deid.press - creating SQL for field:	specimen_date		with:	DATE_SUB( CAST(specimen_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = specimen.person_id) DAY) AS specimen_date
+INFO - deid.press - creating SQL for field:	specimen_datetime		with:	TIMESTAMP_SUB( CAST(specimen_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = specimen.person_id) DAY) AS specimen_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = specimen.person_id) as person_id
+INFO - deid.aou - creating new table:	specimen
+INFO - root - Deleting R2024q3r6_deid.specimen
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.specimen		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.specimen		status:	'pending'		value:	b06176df-9a2b-4c3a-9d71-1ae1b21b29d6
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.specimen		job_id:	b06176df-9a2b-4c3a-9d71-1ae1b21b29d6
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	specimen
+INFO - __main__ - Successfully executed deid on table: specimen
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table survey_conduct --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	survey_conduct
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 896.79it/s]
+INFO - pandas_gbq.gbq - Total time taken 14.27 s.
+Finished at 2025-04-10 13:39:40.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['survey_start_date', 'survey_end_date'], 'rules': '@shift.date'}, {'fields': ['survey_start_datetime', 'survey_end_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['survey_conduct_id', 'person_id', 'survey_concept_id', 'survey_start_date', 'survey_start_datetime', 'survey_end_date', 'survey_end_datetime', 'provider_id', 'assisted_concept_id', 'respondent_type_concept_id', 'timing_concept_id', 'collection_method_concept_id', 'assisted_source_value', 'respondent_type_source_value', 'timing_source_value', 'collection_method_source_value', 'survey_source_value', 'survey_source_concept_id', 'survey_source_identifier', 'validated_survey_concept_id', 'validated_survey_source_value', 'survey_version_number', 'visit_occurrence_id', 'response_visit_occurrence_id']
+INFO - deid.press - table:	reg_2024q3r6_combined.survey_conduct		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.survey_conduct		fields:	['survey_conduct_id', 'person_id', 'survey_concept_id', 'survey_start_date', 'survey_start_datetime', 'survey_end_date', 'survey_end_datetime', 'provider_id', 'assisted_concept_id', 'respondent_type_concept_id', 'timing_concept_id', 'collection_method_concept_id', 'assisted_source_value', 'respondent_type_source_value', 'timing_source_value', 'collection_method_source_value', 'survey_source_value', 'survey_source_concept_id', 'survey_source_identifier', 'validated_survey_concept_id', 'validated_survey_source_value', 'survey_version_number', 'visit_occurrence_id', 'response_visit_occurrence_id']
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	survey_start_date		with:	DATE_SUB( CAST(survey_start_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = survey_conduct.person_id) DAY) AS survey_start_date
+INFO - deid.press - creating SQL for field:	survey_end_date		with:	DATE_SUB( CAST(survey_end_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = survey_conduct.person_id) DAY) AS survey_end_date
+INFO - deid.press - creating SQL for field:	survey_start_datetime		with:	TIMESTAMP_SUB( CAST(survey_start_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = survey_conduct.person_id) DAY) AS survey_start_datetime
+INFO - deid.press - creating SQL for field:	survey_end_datetime		with:	TIMESTAMP_SUB( CAST(survey_end_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = survey_conduct.person_id) DAY) AS survey_end_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = survey_conduct.person_id) as person_id
+INFO - deid.aou - creating new table:	survey_conduct
+INFO - root - Deleting R2024q3r6_deid.survey_conduct
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.survey_conduct		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.survey_conduct		status:	'pending'		value:	056a5ee2-7510-48e6-8a54-09e83257a402
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.survey_conduct		job_id:	056a5ee2-7510-48e6-8a54-09e83257a402
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	survey_conduct
+INFO - __main__ - Successfully executed deid on table: survey_conduct
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/visit_detail.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	visit_detail
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 1097.41it/s]
+INFO - pandas_gbq.gbq - Total time taken 14.49 s.
+Finished at 2025-04-10 13:40:31.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['visit_detail_start_date', 'visit_detail_end_date'], 'rules': '@shift.date'}, {'fields': ['visit_detail_start_datetime', 'visit_detail_end_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['visit_detail_id', 'person_id', 'visit_detail_concept_id', 'visit_detail_start_date', 'visit_detail_start_datetime', 'visit_detail_end_date', 'visit_detail_end_datetime', 'visit_detail_type_concept_id', 'provider_id', 'care_site_id', 'visit_detail_source_value', 'visit_detail_source_concept_id', 'admitting_source_value', 'admitting_source_concept_id', 'discharge_to_source_value', 'discharge_to_concept_id', 'preceding_visit_detail_id', 'visit_detail_parent_id', 'visit_occurrence_id']
+INFO - deid.press - table:	reg_2024q3r6_combined.visit_detail		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.visit_detail		fields:	['visit_detail_id', 'person_id', 'visit_detail_concept_id', 'visit_detail_start_date', 'visit_detail_start_datetime', 'visit_detail_end_date', 'visit_detail_end_datetime', 'visit_detail_type_concept_id', 'provider_id', 'care_site_id', 'visit_detail_source_value', 'visit_detail_source_concept_id', 'admitting_source_value', 'admitting_source_concept_id', 'discharge_to_source_value', 'discharge_to_concept_id', 'preceding_visit_detail_id', 'visit_detail_parent_id', 'visit_occurrence_id']
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	care_site_id		with:	NULL AS care_site_id
+INFO - deid.press - creating SQL for field:	visit_detail_start_date		with:	DATE_SUB( CAST(visit_detail_start_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = visit_detail.person_id) DAY) AS visit_detail_start_date
+INFO - deid.press - creating SQL for field:	visit_detail_end_date		with:	DATE_SUB( CAST(visit_detail_end_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = visit_detail.person_id) DAY) AS visit_detail_end_date
+INFO - deid.press - creating SQL for field:	visit_detail_start_datetime		with:	TIMESTAMP_SUB( CAST(visit_detail_start_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = visit_detail.person_id) DAY) AS visit_detail_start_datetime
+INFO - deid.press - creating SQL for field:	visit_detail_end_datetime		with:	TIMESTAMP_SUB( CAST(visit_detail_end_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = visit_detail.person_id) DAY) AS visit_detail_end_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = visit_detail.person_id) as person_id
+INFO - deid.aou - creating new table:	visit_detail
+INFO - root - Deleting R2024q3r6_deid.visit_detail
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.visit_detail		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.visit_detail		status:	'pending'		value:	fc1d6be5-5359-48cd-a10c-5d9516bac64b
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.visit_detail		job_id:	fc1d6be5-5359-48cd-a10c-5d9516bac64b
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	visit_detail
+INFO - __main__ - Successfully executed deid on table: visit_detail
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/tables/visit_occurrence.json --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	visit_occurrence
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 839.70it/s]
+INFO - pandas_gbq.gbq - Total time taken 13.02 s.
+Finished at 2025-04-10 13:41:24.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.aou - shifting fields:	[{'fields': ['visit_start_date', 'visit_end_date'], 'rules': '@shift.date'}, {'fields': ['visit_start_datetime', 'visit_end_datetime'], 'rules': '@shift.datetime'}]
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['visit_occurrence_id', 'person_id', 'visit_concept_id', 'visit_start_date', 'visit_start_datetime', 'visit_end_date', 'visit_end_datetime', 'visit_type_concept_id', 'provider_id', 'care_site_id', 'visit_source_value', 'visit_source_concept_id', 'admitting_source_concept_id', 'admitting_source_value', 'discharge_to_concept_id', 'discharge_to_source_value', 'preceding_visit_occurrence_id']
+INFO - deid.press - table:	reg_2024q3r6_combined.visit_occurrence		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.visit_occurrence		fields:	['visit_occurrence_id', 'person_id', 'visit_concept_id', 'visit_start_date', 'visit_start_datetime', 'visit_end_date', 'visit_end_datetime', 'visit_type_concept_id', 'provider_id', 'care_site_id', 'visit_source_value', 'visit_source_concept_id', 'admitting_source_concept_id', 'admitting_source_value', 'discharge_to_concept_id', 'discharge_to_source_value', 'preceding_visit_occurrence_id']
+INFO - deid.press - creating SQL for field:	provider_id		with:	NULL AS provider_id
+INFO - deid.press - creating SQL for field:	care_site_id		with:	NULL AS care_site_id
+INFO - deid.press - creating SQL for field:	visit_start_date		with:	DATE_SUB( CAST(visit_start_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = visit_occurrence.person_id) DAY) AS visit_start_date
+INFO - deid.press - creating SQL for field:	visit_end_date		with:	DATE_SUB( CAST(visit_end_date AS DATE), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = visit_occurrence.person_id) DAY) AS visit_end_date
+INFO - deid.press - creating SQL for field:	visit_start_datetime		with:	TIMESTAMP_SUB( CAST(visit_start_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = visit_occurrence.person_id) DAY) AS visit_start_datetime
+INFO - deid.press - creating SQL for field:	visit_end_datetime		with:	TIMESTAMP_SUB( CAST(visit_end_datetime AS TIMESTAMP), INTERVAL (SELECT shift from reg_2024q3r6_combined._deid_map WHERE _deid_map.person_id = visit_occurrence.person_id) DAY) AS visit_end_datetime
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = visit_occurrence.person_id) as person_id
+INFO - deid.aou - creating new table:	visit_occurrence
+INFO - root - Deleting R2024q3r6_deid.visit_occurrence
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.visit_occurrence		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.visit_occurrence		status:	'pending'		value:	ce6c08e0-abe6-4857-999f-a4ee3ec374cc
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.visit_occurrence		job_id:	ce6c08e0-abe6-4857-999f-a4ee3ec374cc
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	visit_occurrence
+INFO - __main__ - Successfully executed deid on table: visit_occurrence
+INFO - __main__ - Executing deid with:
+	python deid/aou.py --rules /Users/aggarwr/vumc/curation/data_steward/deid/config/ids/config.json --private_key /Users/aggarwr/gcloud-credentials-key.json --table person_ext --action submit --idataset reg_2024q3r6_combined --log LOGS --odataset R2024q3r6_deid --age-limit 89 --run_as cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com --interactive --cluster
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+INFO - deid.aou - BEGINNING de-identification on table:	person_ext
+INFO - deid.aou - Using participant age limit of 89
+INFO - tools.concept_ids_suppression - Processing files in folder to append data to _concept_ids_suppression table
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:90: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  file_data_df.columns = file_data_df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '')\
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:91: FutureWarning: The default value of regex will change from True to False in a future version. In addition, single character regular expressions will *not* be treated as literal strings when regex=True.
+  .str.replace(')', '')
+/Users/aggarwr/vumc/curation/data_steward/tools/concept_ids_suppression.py:94: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  final_csv_data_df = final_csv_data_df.append(file_data_df)
+INFO - tools.concept_ids_suppression - Adding 13399 rows from csv files, to dataframe to create _concept_ids_suppression lookup table
+INFO - tools.concept_ids_suppression - Running queries to append data to _concept_ids_suppression table
+INFO - tools.concept_ids_suppression - Adding 0 rows from queries, to dataframe to create _concept_ids_suppression lookup table
+  0%|          | 0/1 [00:00<?, ?it/s]INFO - pandas_gbq.gbq - 13399 out of 13399 rows loaded.
+100%|██████████| 1/1 [00:00<00:00, 876.19it/s]
+INFO - pandas_gbq.gbq - Total time taken 14.67 s.
+Finished at 2025-04-10 13:42:35.
+INFO - deid.aou - possible patient count is:	626912
+INFO - deid.aou - map table contains 626912 records.
+INFO - deid.aou - added demographics-columns suppression rules
+INFO - deid.rules - rule_id:  generalize not in info
+INFO - deid.rules - suppress fields(columns):	DEMOGRAPHICS-COLUMNS		for:	['person_id', 'src_id', 'state_of_residence_concept_id', 'state_of_residence_source_value', 'sex_at_birth_concept_id', 'sex_at_birth_source_concept_id', 'sex_at_birth_source_value', 'self_reported_category_concept_id', 'self_reported_category_source_concept_id', 'self_reported_category_source_value']
+INFO - deid.rules - rule_id:  shift not in info
+INFO - deid.press - table:	reg_2024q3r6_combined.person_ext		is a meta table:	False
+INFO - deid.press - generating-sql for table:	reg_2024q3r6_combined.person_ext		fields:	['person_id', 'src_id', 'state_of_residence_concept_id', 'state_of_residence_source_value', 'sex_at_birth_concept_id', 'sex_at_birth_source_concept_id', 'sex_at_birth_source_value', 'self_reported_category_concept_id', 'self_reported_category_source_concept_id', 'self_reported_category_source_value']
+INFO - deid.press - creating SQL for field:	person_id		with:	(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = person_ext.person_id) as person_id
+INFO - deid.aou - creating new table:	person_ext
+INFO - root - Deleting R2024q3r6_deid.person_ext
+INFO - deid.aou - submitting a dry-run for:	reg_2024q3r6_combined.person_ext		priority:	INTERACTIVE		partition:	True
+INFO - deid.aou - dry-run passed.  submitting query for execution.
+INFO - deid.aou - submitted a bigquery job for table:	reg_2024q3r6_combined.person_ext		status:	'pending'		value:	9a8bb229-4820-4f29-b004-be43c7abda1c
+INFO - deid.aou - sleeping for table:	reg_2024q3r6_combined.person_ext		job_id:	9a8bb229-4820-4f29-b004-be43c7abda1c
+INFO - deid.aou - awake.  status is:	DONE
+INFO - deid.press - FINISHED de-identification on table:	person_ext
+INFO - __main__ - Successfully executed deid on table: person_ext
+INFO - root - Deleting R2024q3r6_deid.location
+INFO - root - Deleting R2024q3r6_deid.care_site
+INFO - root - Deleting R2024q3r6_deid.provider
+INFO - __main__ - Deid has finished.  Successfully executed on tables: aou_death
+condition_occurrence
+death
+device_exposure
+drug_exposure
+measurement
+note
+note_nlp
+observation
+observation_period
+person
+procedure_occurrence
+specimen
+survey_conduct
+visit_detail
+visit_occurrence
+person_ext

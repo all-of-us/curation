@@ -1,0 +1,1297 @@
+/Users/aggarwr/vumc/curation/data_steward/cdr_cleaner/cleaning_rules/base_cleaning_rule.py:432: SyntaxWarning: invalid escape sequence '\d'
+  self._table_namer = re.sub('\d{4}q\dr\d', '', self.dataset_id)
+/Users/aggarwr/vumc/curation/data_steward/cdr_cleaner/cleaning_rules/fill_source_value_text_fields.py:156: SyntaxWarning: invalid escape sequence '\*'
+  col_expr = """
+/Users/aggarwr/vumc/curation/data_steward/cdr_cleaner/cleaning_rules/deid/motor_vehicle_accident_suppression.py:16: SyntaxWarning: invalid escape sequence '\d'
+  MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY = JINJA_ENV.from_string("""
+/Users/aggarwr/vumc/curation/data_steward/cdr_cleaner/cleaning_rules/update_fields_numbers_as_strings.py:39: SyntaxWarning: invalid escape sequence '\d'
+  SANDBOX_QUERY = JINJA_ENV.from_string("""
+/Users/aggarwr/vumc/curation/data_steward/cdr_cleaner/cleaning_rules/update_fields_numbers_as_strings.py:54: SyntaxWarning: invalid escape sequence '\d'
+  NUMBERS_AS_STRINGS_QUERY = JINJA_ENV.from_string("""
+2025-04-10 15:33:08 - INFO - curation_utils.auth - Using end user account to impersonate: cdr-ops@aou-res-curation-prod.iam.gserviceaccount.com
+2025-04-10 15:33:08 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.move_nlp_to_domains 1/25
+2025-04-10 15:33:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.move_nlp_to_domains.get_query_specs query 1/2"
+2025-04-10 15:33:09 - INFO - cdr_cleaner.clean_cdr_engine - Running move_nlp_t_58fc431d-dd42-4d71-b4dd-6f2faf662b4d
+2025-04-10 15:33:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/2 for cdr_cleaner.cleaning_rules.move_nlp_to_domains with job_id move_nlp_t_58fc431d-dd42-4d71-b4dd-6f2faf662b4d
+2025-04-10 15:33:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.move_nlp_to_domains.get_query_specs query 2/2"
+2025-04-10 15:33:12 - INFO - cdr_cleaner.clean_cdr_engine - Running move_nlp_t_4ef9d1b4-4977-4cca-a1cc-8ce45209917d
+2025-04-10 15:33:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/2 for cdr_cleaner.cleaning_rules.move_nlp_to_domains with job_id move_nlp_t_4ef9d1b4-4977-4cca-a1cc-8ce45209917d
+2025-04-10 15:33:15 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.move_nlp_to_domains, 2 jobs were run successfully for 2 queries
+2025-04-10 15:33:15 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map 2/25
+2025-04-10 15:33:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map.get_query_specs query 1/3"
+2025-04-10 15:33:16 - INFO - cdr_cleaner.clean_cdr_engine - Running questionna_dfc98d9e-81f0-4f69-b852-529a85381112
+2025-04-10 15:33:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map with job_id questionna_dfc98d9e-81f0-4f69-b852-529a85381112
+2025-04-10 15:33:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map.get_query_specs query 2/3"
+2025-04-10 15:33:37 - INFO - cdr_cleaner.clean_cdr_engine - Running questionna_c8e2f3c8-fc67-4ee8-bbc3-0a908a5bdd7c
+2025-04-10 15:33:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map with job_id questionna_c8e2f3c8-fc67-4ee8-bbc3-0a908a5bdd7c
+2025-04-10 15:33:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map.get_query_specs query 3/3"
+2025-04-10 15:33:48 - INFO - cdr_cleaner.clean_cdr_engine - Running questionna_083f7ff4-7745-49ad-a600-94cc503df22f
+2025-04-10 15:33:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map with job_id questionna_083f7ff4-7745-49ad-a600-94cc503df22f
+2025-04-10 15:33:56 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map, 3 jobs were run successfully for 3 queries
+2025-04-10 15:33:56 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization 3/25
+2025-04-10 15:34:18 - INFO - cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization - Created mapping table:	2024q3r6_deid_sandbox.person_src_hpos_lookup_ext
+2025-04-10 15:34:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization.get_query_specs query 1/3"
+2025-04-10 15:34:19 - INFO - cdr_cleaner.clean_cdr_engine - Running conflictin_7325e1af-1a5d-43b2-a454-0ed74eacffa9
+2025-04-10 15:34:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization with job_id conflictin_7325e1af-1a5d-43b2-a454-0ed74eacffa9
+2025-04-10 15:34:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization.get_query_specs query 2/3"
+2025-04-10 15:34:24 - INFO - cdr_cleaner.clean_cdr_engine - Running conflictin_7d00d2e5-c997-4f68-956c-dce41504565e
+2025-04-10 15:34:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization with job_id conflictin_7d00d2e5-c997-4f68-956c-dce41504565e
+2025-04-10 15:34:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization.get_query_specs query 3/3"
+2025-04-10 15:34:27 - INFO - cdr_cleaner.clean_cdr_engine - Running conflictin_b2d73dbb-ce5b-4535-8644-e38e6c949f3a
+2025-04-10 15:34:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization with job_id conflictin_b2d73dbb-ce5b-4535-8644-e38e6c949f3a
+2025-04-10 15:34:40 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization, 3 jobs were run successfully for 3 queries
+2025-04-10 15:34:40 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.generalize_state_by_population 4/25
+2025-04-10 15:34:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.generalize_state_by_population.get_query_specs query 1/1"
+2025-04-10 15:34:41 - INFO - cdr_cleaner.clean_cdr_engine - Running generalize_bba4faf4-4b0e-46fd-b4b1-6e5d59ce6994
+2025-04-10 15:34:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/1 for cdr_cleaner.cleaning_rules.generalize_state_by_population with job_id generalize_bba4faf4-4b0e-46fd-b4b1-6e5d59ce6994
+2025-04-10 15:34:49 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.generalize_state_by_population, 1 jobs were run successfully for 1 queries
+2025-04-10 15:34:49 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers 5/25
+2025-04-10 15:34:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers.get_query_specs query 1/3"
+2025-04-10 15:34:50 - INFO - cdr_cleaner.clean_cdr_engine - Running generalize_4bd7a4b7-9816-40ac-b2f6-0cc05754f817
+2025-04-10 15:34:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers with job_id generalize_4bd7a4b7-9816-40ac-b2f6-0cc05754f817
+2025-04-10 15:34:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers.get_query_specs query 2/3"
+2025-04-10 15:34:53 - INFO - cdr_cleaner.clean_cdr_engine - Running generalize_1a48812a-6270-4e4c-9971-cd10cc64b8a1
+2025-04-10 15:35:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers with job_id generalize_1a48812a-6270-4e4c-9971-cd10cc64b8a1
+2025-04-10 15:35:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers.get_query_specs query 3/3"
+2025-04-10 15:35:07 - INFO - cdr_cleaner.clean_cdr_engine - Running generalize_98b4d545-cabf-4f1f-a6ba-8f96427e0236
+2025-04-10 15:35:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers with job_id generalize_98b4d545-cabf-4f1f-a6ba-8f96427e0236
+2025-04-10 15:35:21 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers, 3 jobs were run successfully for 3 queries
+2025-04-10 15:35:21 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services 6/25
+2025-04-10 15:35:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services.get_query_specs query 1/3"
+2025-04-10 15:35:22 - INFO - cdr_cleaner.clean_cdr_engine - Running generalize_5bc035fb-538f-4225-be58-a07baacf8b37
+2025-04-10 15:35:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services with job_id generalize_5bc035fb-538f-4225-be58-a07baacf8b37
+2025-04-10 15:35:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services.get_query_specs query 2/3"
+2025-04-10 15:35:25 - INFO - cdr_cleaner.clean_cdr_engine - Running generalize_cec03e11-5cde-40b6-826e-83c4235ac679
+2025-04-10 15:35:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services with job_id generalize_cec03e11-5cde-40b6-826e-83c4235ac679
+2025-04-10 15:35:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services.get_query_specs query 3/3"
+2025-04-10 15:35:38 - INFO - cdr_cleaner.clean_cdr_engine - Running generalize_d07e33da-babd-4316-9edc-a566aa9a3c1f
+2025-04-10 15:35:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services with job_id generalize_d07e33da-babd-4316-9edc-a566aa9a3c1f
+2025-04-10 15:35:46 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.generalize_indian_health_services, 3 jobs were run successfully for 3 queries
+2025-04-10 15:35:46 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.concept_suppression 7/25
+2025-04-10 15:35:57 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 1/57"
+2025-04-10 15:35:58 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_3467d173-3d47-4ef3-b259-3d7735c854aa
+2025-04-10 15:36:00 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_3467d173-3d47-4ef3-b259-3d7735c854aa
+2025-04-10 15:36:00 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 2/57"
+2025-04-10 15:36:01 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_772ae8cb-b542-4bab-8202-7030b337f251
+2025-04-10 15:36:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_772ae8cb-b542-4bab-8202-7030b337f251
+2025-04-10 15:36:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 3/57"
+2025-04-10 15:36:03 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_2fa42e27-a71c-4033-bcbc-63c435687411
+2025-04-10 15:36:05 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_2fa42e27-a71c-4033-bcbc-63c435687411
+2025-04-10 15:36:05 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 4/57"
+2025-04-10 15:36:05 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_de11be12-9ccb-4c92-acd9-6d4e26734446
+2025-04-10 15:36:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_de11be12-9ccb-4c92-acd9-6d4e26734446
+2025-04-10 15:36:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 5/57"
+2025-04-10 15:36:08 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_31a14e0a-13bf-40c5-942e-f562508f992e
+2025-04-10 15:36:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 5/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_31a14e0a-13bf-40c5-942e-f562508f992e
+2025-04-10 15:36:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 6/57"
+2025-04-10 15:36:10 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_e6a54406-808a-4cba-a496-97209cb68e51
+2025-04-10 15:36:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 6/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_e6a54406-808a-4cba-a496-97209cb68e51
+2025-04-10 15:36:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 7/57"
+2025-04-10 15:36:14 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_2316ce30-261e-4967-b682-2f806db17c10
+2025-04-10 15:36:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 7/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_2316ce30-261e-4967-b682-2f806db17c10
+2025-04-10 15:36:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 8/57"
+2025-04-10 15:36:16 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_c3340cf1-8a50-4879-9a58-cba02359d321
+2025-04-10 15:36:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 8/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_c3340cf1-8a50-4879-9a58-cba02359d321
+2025-04-10 15:36:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 9/57"
+2025-04-10 15:36:18 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_c2d8d645-0933-471f-a675-5e4ff322d662
+2025-04-10 15:36:20 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 9/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_c2d8d645-0933-471f-a675-5e4ff322d662
+2025-04-10 15:36:20 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 10/57"
+2025-04-10 15:36:21 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_442cfb92-7008-4c1e-90e1-fc45375cc051
+2025-04-10 15:36:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 10/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_442cfb92-7008-4c1e-90e1-fc45375cc051
+2025-04-10 15:36:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 11/57"
+2025-04-10 15:36:24 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_d85cf3cb-581a-45ed-8349-1b2906188207
+2025-04-10 15:36:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 11/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_d85cf3cb-581a-45ed-8349-1b2906188207
+2025-04-10 15:36:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 12/57"
+2025-04-10 15:36:26 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_52b09952-c5eb-47d7-a79f-ec1b9d668fa4
+2025-04-10 15:36:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 12/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_52b09952-c5eb-47d7-a79f-ec1b9d668fa4
+2025-04-10 15:36:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 13/57"
+2025-04-10 15:36:29 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_41b35a4a-02d6-49db-a09f-b1757da405e1
+2025-04-10 15:36:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 13/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_41b35a4a-02d6-49db-a09f-b1757da405e1
+2025-04-10 15:36:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 14/57"
+2025-04-10 15:36:31 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_d4698ea2-19b3-4bde-8153-e52566012242
+2025-04-10 15:36:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 14/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_d4698ea2-19b3-4bde-8153-e52566012242
+2025-04-10 15:36:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 15/57"
+2025-04-10 15:36:34 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_5b63e121-ae40-4310-9c7a-6f6f2854b53b
+2025-04-10 15:36:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 15/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_5b63e121-ae40-4310-9c7a-6f6f2854b53b
+2025-04-10 15:36:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 16/57"
+2025-04-10 15:36:37 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_69d29b7b-bd1e-4344-a619-9c9cf1d87f5f
+2025-04-10 15:36:39 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 16/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_69d29b7b-bd1e-4344-a619-9c9cf1d87f5f
+2025-04-10 15:36:39 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 17/57"
+2025-04-10 15:36:39 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_876ae306-ffad-4ee2-9437-ca6efda17c9a
+2025-04-10 15:36:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 17/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_876ae306-ffad-4ee2-9437-ca6efda17c9a
+2025-04-10 15:36:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 18/57"
+2025-04-10 15:36:42 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_58cf7b50-e360-4e49-a10f-d44b95e330a4
+2025-04-10 15:36:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 18/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_58cf7b50-e360-4e49-a10f-d44b95e330a4
+2025-04-10 15:36:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 19/57"
+2025-04-10 15:36:44 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_023eca7b-7d6d-4aa0-bbcd-03c5d456ad06
+2025-04-10 15:36:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 19/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_023eca7b-7d6d-4aa0-bbcd-03c5d456ad06
+2025-04-10 15:36:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 20/57"
+2025-04-10 15:36:47 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_2c0fd41b-3364-4558-8420-0bfe194de65a
+2025-04-10 15:36:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 20/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_2c0fd41b-3364-4558-8420-0bfe194de65a
+2025-04-10 15:36:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 21/57"
+2025-04-10 15:36:49 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_f667ce01-8698-4ae3-9ec7-59ab60d47355
+2025-04-10 15:36:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 21/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_f667ce01-8698-4ae3-9ec7-59ab60d47355
+2025-04-10 15:36:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 22/57"
+2025-04-10 15:36:52 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_71bc230d-6352-43a7-b029-f7895af013a6
+2025-04-10 15:36:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 22/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_71bc230d-6352-43a7-b029-f7895af013a6
+2025-04-10 15:36:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 23/57"
+2025-04-10 15:36:54 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_30909fc9-86c3-404d-8187-e3ab201f739f
+2025-04-10 15:36:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 23/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_30909fc9-86c3-404d-8187-e3ab201f739f
+2025-04-10 15:36:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 24/57"
+2025-04-10 15:36:57 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_38a35666-7aac-4b27-a643-ea82845a960a
+2025-04-10 15:36:58 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 24/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_38a35666-7aac-4b27-a643-ea82845a960a
+2025-04-10 15:36:58 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 25/57"
+2025-04-10 15:36:59 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_0ae87be4-1056-4fcb-8d64-bd8249f15851
+2025-04-10 15:37:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 25/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_0ae87be4-1056-4fcb-8d64-bd8249f15851
+2025-04-10 15:37:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 26/57"
+2025-04-10 15:37:02 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_65afd50b-3ee9-40ad-a228-54452f6846d2
+2025-04-10 15:37:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 26/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_65afd50b-3ee9-40ad-a228-54452f6846d2
+2025-04-10 15:37:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 27/57"
+2025-04-10 15:37:04 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_54fc0fea-ada2-47f0-801b-49d4ab4cdbb7
+2025-04-10 15:37:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 27/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_54fc0fea-ada2-47f0-801b-49d4ab4cdbb7
+2025-04-10 15:37:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 28/57"
+2025-04-10 15:37:07 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_926cb75c-a4fd-4025-98d3-041186ea819a
+2025-04-10 15:37:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 28/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_926cb75c-a4fd-4025-98d3-041186ea819a
+2025-04-10 15:37:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 29/57"
+2025-04-10 15:37:10 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_8ec6a911-7948-474f-8765-51efbe03d57b
+2025-04-10 15:37:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 29/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_8ec6a911-7948-474f-8765-51efbe03d57b
+2025-04-10 15:37:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 30/57"
+2025-04-10 15:37:13 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_b8b532b0-efc6-4e3e-8c69-5d16bff1a726
+2025-04-10 15:37:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 30/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_b8b532b0-efc6-4e3e-8c69-5d16bff1a726
+2025-04-10 15:37:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 31/57"
+2025-04-10 15:37:16 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_aacfb77f-2a32-4e79-aa6e-1e66e681a428
+2025-04-10 15:37:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 31/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_aacfb77f-2a32-4e79-aa6e-1e66e681a428
+2025-04-10 15:37:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 32/57"
+2025-04-10 15:37:19 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_3b888518-dc94-4f41-9698-1331f3d66456
+2025-04-10 15:37:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 32/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_3b888518-dc94-4f41-9698-1331f3d66456
+2025-04-10 15:37:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 33/57"
+2025-04-10 15:37:21 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_6338a6fe-ec02-445b-8431-8ebf6b45c8a5
+2025-04-10 15:37:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 33/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_6338a6fe-ec02-445b-8431-8ebf6b45c8a5
+2025-04-10 15:37:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 34/57"
+2025-04-10 15:37:24 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_69c608a7-4001-421a-9fc9-03fd279f0108
+2025-04-10 15:37:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 34/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_69c608a7-4001-421a-9fc9-03fd279f0108
+2025-04-10 15:37:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 35/57"
+2025-04-10 15:37:27 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_6695fd21-3b41-4d9c-becd-6d1b4b8729c0
+2025-04-10 15:37:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 35/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_6695fd21-3b41-4d9c-becd-6d1b4b8729c0
+2025-04-10 15:37:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 36/57"
+2025-04-10 15:37:29 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_f29aa0b9-5324-4c3c-87cb-21e56423d75c
+2025-04-10 15:37:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 36/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_f29aa0b9-5324-4c3c-87cb-21e56423d75c
+2025-04-10 15:37:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 37/57"
+2025-04-10 15:37:32 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_0fbf9b44-6310-442b-af99-db2543971bbb
+2025-04-10 15:37:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 37/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_0fbf9b44-6310-442b-af99-db2543971bbb
+2025-04-10 15:37:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 38/57"
+2025-04-10 15:37:34 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_26cba3e1-af12-4c16-a377-5ab9e94d4d79
+2025-04-10 15:37:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 38/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_26cba3e1-af12-4c16-a377-5ab9e94d4d79
+2025-04-10 15:37:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 39/57"
+2025-04-10 15:37:37 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_0d02a5a9-203f-45b0-b742-3bdfe5bbf0e5
+2025-04-10 15:37:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 39/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_0d02a5a9-203f-45b0-b742-3bdfe5bbf0e5
+2025-04-10 15:37:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 40/57"
+2025-04-10 15:37:40 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_48dc4363-ef0c-4baa-8fcd-5be7206534cd
+2025-04-10 15:37:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 40/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_48dc4363-ef0c-4baa-8fcd-5be7206534cd
+2025-04-10 15:37:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 41/57"
+2025-04-10 15:37:42 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_7b32cacb-a3a4-49af-a322-ff57fbef8d1e
+2025-04-10 15:37:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 41/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_7b32cacb-a3a4-49af-a322-ff57fbef8d1e
+2025-04-10 15:37:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 42/57"
+2025-04-10 15:37:45 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_54c50dd0-fa2c-4f3f-8203-c57692ea01f3
+2025-04-10 15:37:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 42/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_54c50dd0-fa2c-4f3f-8203-c57692ea01f3
+2025-04-10 15:37:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 43/57"
+2025-04-10 15:37:48 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_68a2569c-688d-47b9-b267-aeea0d8d30f0
+2025-04-10 15:37:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 43/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_68a2569c-688d-47b9-b267-aeea0d8d30f0
+2025-04-10 15:37:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 44/57"
+2025-04-10 15:37:52 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_8494037e-6ae2-4c8a-b515-4378bc6abc7b
+2025-04-10 15:37:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 44/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_8494037e-6ae2-4c8a-b515-4378bc6abc7b
+2025-04-10 15:37:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 45/57"
+2025-04-10 15:37:54 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_abe9ad8d-be4f-4906-815d-fc7b983d18a0
+2025-04-10 15:37:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 45/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_abe9ad8d-be4f-4906-815d-fc7b983d18a0
+2025-04-10 15:37:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 46/57"
+2025-04-10 15:37:56 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_01c777c3-6ec6-48a1-8686-b42f369e2f6a
+2025-04-10 15:37:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 46/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_01c777c3-6ec6-48a1-8686-b42f369e2f6a
+2025-04-10 15:37:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 47/57"
+2025-04-10 15:38:00 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_fa33d6cb-3652-4cc0-bb22-7c9341cf016a
+2025-04-10 15:38:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 47/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_fa33d6cb-3652-4cc0-bb22-7c9341cf016a
+2025-04-10 15:38:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 48/57"
+2025-04-10 15:38:02 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_197209fb-d77e-43d5-ae81-29ec1be3222e
+2025-04-10 15:38:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 48/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_197209fb-d77e-43d5-ae81-29ec1be3222e
+2025-04-10 15:38:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 49/57"
+2025-04-10 15:38:05 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_a6a6ef06-5b6c-4ee9-98ec-866e80e8b0a1
+2025-04-10 15:38:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 49/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_a6a6ef06-5b6c-4ee9-98ec-866e80e8b0a1
+2025-04-10 15:38:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 50/57"
+2025-04-10 15:38:08 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_be710010-ce24-4cb7-9f4a-914b92b7154c
+2025-04-10 15:38:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 50/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_be710010-ce24-4cb7-9f4a-914b92b7154c
+2025-04-10 15:38:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 51/57"
+2025-04-10 15:38:10 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_85176607-d2c3-49f5-a589-6b078155111f
+2025-04-10 15:38:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 51/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_85176607-d2c3-49f5-a589-6b078155111f
+2025-04-10 15:38:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 52/57"
+2025-04-10 15:38:14 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_0b5d24d3-58ff-4a22-8896-b8096bdf2108
+2025-04-10 15:38:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 52/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_0b5d24d3-58ff-4a22-8896-b8096bdf2108
+2025-04-10 15:38:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 53/57"
+2025-04-10 15:38:17 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_f318192d-edae-4e13-a35c-fd0648a0d60b
+2025-04-10 15:38:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 53/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_f318192d-edae-4e13-a35c-fd0648a0d60b
+2025-04-10 15:38:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 54/57"
+2025-04-10 15:38:19 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_ec8b62d6-9d57-45ec-a17c-de2d2bbf3615
+2025-04-10 15:38:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 54/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_ec8b62d6-9d57-45ec-a17c-de2d2bbf3615
+2025-04-10 15:38:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 55/57"
+2025-04-10 15:38:21 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_a1e3c9a1-604c-4e6d-91cb-93680d30d8ae
+2025-04-10 15:38:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 55/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_a1e3c9a1-604c-4e6d-91cb-93680d30d8ae
+2025-04-10 15:38:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 56/57"
+2025-04-10 15:38:24 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_e746ee72-f9dc-4f63-9db7-57dd398d64a7
+2025-04-10 15:38:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 56/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_e746ee72-f9dc-4f63-9db7-57dd398d64a7
+2025-04-10 15:38:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 57/57"
+2025-04-10 15:38:37 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_36f6c115-7951-4442-aa2d-2138e12800bb
+2025-04-10 15:39:09 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 57/57 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_36f6c115-7951-4442-aa2d-2138e12800bb
+2025-04-10 15:39:09 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression, 57 jobs were run successfully for 57 queries
+2025-04-10 15:39:09 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.concept_suppression 8/25
+2025-04-10 15:39:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 1/3"
+2025-04-10 15:39:14 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_fa5e73e5-3056-4d55-b24f-ed57b2672b29
+2025-04-10 15:39:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_fa5e73e5-3056-4d55-b24f-ed57b2672b29
+2025-04-10 15:39:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 2/3"
+2025-04-10 15:39:17 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_4f283edd-4a9e-4513-8361-fed3ce49f2d8
+2025-04-10 15:39:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_4f283edd-4a9e-4513-8361-fed3ce49f2d8
+2025-04-10 15:39:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 3/3"
+2025-04-10 15:39:24 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_40e526ee-18d1-4ed1-aadf-a4d6240276ad
+2025-04-10 15:39:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_40e526ee-18d1-4ed1-aadf-a4d6240276ad
+2025-04-10 15:39:25 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression, 3 jobs were run successfully for 3 queries
+2025-04-10 15:39:25 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.concept_suppression 9/25
+2025-04-10 15:39:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 1/3"
+2025-04-10 15:39:26 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_2b6197d7-42dc-46c4-a7f7-2c58c1e98b33
+2025-04-10 15:39:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_2b6197d7-42dc-46c4-a7f7-2c58c1e98b33
+2025-04-10 15:39:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 2/3"
+2025-04-10 15:39:29 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_aa8f6bb8-11b7-43eb-8f60-e6affbfeba1a
+2025-04-10 15:39:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_aa8f6bb8-11b7-43eb-8f60-e6affbfeba1a
+2025-04-10 15:39:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 3/3"
+2025-04-10 15:39:40 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_7e45cf3d-4e56-4b46-8d69-43ff0ed4a898
+2025-04-10 15:39:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_7e45cf3d-4e56-4b46-8d69-43ff0ed4a898
+2025-04-10 15:39:41 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression, 3 jobs were run successfully for 3 queries
+2025-04-10 15:39:41 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.concept_suppression 10/25
+2025-04-10 15:39:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 1/3"
+2025-04-10 15:39:45 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_ddab38af-33b9-41e0-bab4-1978db36962f
+2025-04-10 15:39:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_ddab38af-33b9-41e0-bab4-1978db36962f
+2025-04-10 15:39:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 2/3"
+2025-04-10 15:39:49 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_8f86c835-61ea-4e62-8282-32c378c6acb2
+2025-04-10 15:40:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_8f86c835-61ea-4e62-8282-32c378c6acb2
+2025-04-10 15:40:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 3/3"
+2025-04-10 15:40:02 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_b40d61d1-1c42-475a-8072-315d188e7c81
+2025-04-10 15:40:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_b40d61d1-1c42-475a-8072-315d188e7c81
+2025-04-10 15:40:03 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression, 3 jobs were run successfully for 3 queries
+2025-04-10 15:40:03 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.concept_suppression 11/25
+2025-04-10 15:40:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 1/3"
+2025-04-10 15:40:04 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_ed197c37-41e6-46cf-9b8e-504574708306
+2025-04-10 15:40:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_ed197c37-41e6-46cf-9b8e-504574708306
+2025-04-10 15:40:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 2/3"
+2025-04-10 15:40:08 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_662922ef-65c6-4a70-9cbc-259eaaef706e
+2025-04-10 15:40:22 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_662922ef-65c6-4a70-9cbc-259eaaef706e
+2025-04-10 15:40:22 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 3/3"
+2025-04-10 15:40:23 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_71fd50cb-58f0-4f4a-a83e-1b48947ae768
+2025-04-10 15:40:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_71fd50cb-58f0-4f4a-a83e-1b48947ae768
+2025-04-10 15:40:24 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression, 3 jobs were run successfully for 3 queries
+2025-04-10 15:40:24 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.explicit_identifier_suppression 12/25
+2025-04-10 15:40:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.explicit_identifier_suppression.get_query_specs query 1/3"
+2025-04-10 15:40:24 - INFO - cdr_cleaner.clean_cdr_engine - Running explicit_i_de7cedf0-b662-491a-9100-77b81b03fe54
+2025-04-10 15:40:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.explicit_identifier_suppression with job_id explicit_i_de7cedf0-b662-491a-9100-77b81b03fe54
+2025-04-10 15:40:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.explicit_identifier_suppression.get_query_specs query 2/3"
+2025-04-10 15:40:28 - INFO - cdr_cleaner.clean_cdr_engine - Running explicit_i_2f41ce6c-d5bc-47d3-b8f2-370d3ff582dc
+2025-04-10 15:40:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.explicit_identifier_suppression with job_id explicit_i_2f41ce6c-d5bc-47d3-b8f2-370d3ff582dc
+2025-04-10 15:40:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.explicit_identifier_suppression.get_query_specs query 3/3"
+2025-04-10 15:40:31 - INFO - cdr_cleaner.clean_cdr_engine - Running explicit_i_a45c5e5b-328c-43ac-a7e5-73083e899985
+2025-04-10 15:40:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.explicit_identifier_suppression with job_id explicit_i_a45c5e5b-328c-43ac-a7e5-73083e899985
+2025-04-10 15:40:43 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.explicit_identifier_suppression, 3 jobs were run successfully for 3 queries
+2025-04-10 15:40:43 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.concept_suppression 13/25
+2025-04-10 15:40:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 1/3"
+2025-04-10 15:40:47 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_637c4b36-4ff9-4900-abd2-989445e4980b
+2025-04-10 15:40:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_637c4b36-4ff9-4900-abd2-989445e4980b
+2025-04-10 15:40:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 2/3"
+2025-04-10 15:40:51 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_fd3e0369-d586-49c4-9090-78d5e94106f5
+2025-04-10 15:40:53 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_fd3e0369-d586-49c4-9090-78d5e94106f5
+2025-04-10 15:40:53 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 3/3"
+2025-04-10 15:40:53 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_8fa4ee86-fece-45b9-87b5-69cf022ad584
+2025-04-10 15:40:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_8fa4ee86-fece-45b9-87b5-69cf022ad584
+2025-04-10 15:40:55 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression, 3 jobs were run successfully for 3 queries
+2025-04-10 15:40:55 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.concept_suppression 14/25
+2025-04-10 15:40:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 1/53"
+2025-04-10 15:41:00 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_e61a6b72-a284-4cf1-9896-8cb7b7c1520e
+2025-04-10 15:41:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_e61a6b72-a284-4cf1-9896-8cb7b7c1520e
+2025-04-10 15:41:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 2/53"
+2025-04-10 15:41:02 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_ace67f81-9283-4d2b-9563-d43da326ec74
+2025-04-10 15:41:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_ace67f81-9283-4d2b-9563-d43da326ec74
+2025-04-10 15:41:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 3/53"
+2025-04-10 15:41:05 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_45195507-0590-49cb-8ebe-c5276470b03c
+2025-04-10 15:41:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_45195507-0590-49cb-8ebe-c5276470b03c
+2025-04-10 15:41:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 4/53"
+2025-04-10 15:41:07 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_82015be6-527e-4b5a-b114-0d22abf98726
+2025-04-10 15:41:09 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_82015be6-527e-4b5a-b114-0d22abf98726
+2025-04-10 15:41:09 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 5/53"
+2025-04-10 15:41:10 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_492014c9-40bc-4d33-8890-871cf35e983c
+2025-04-10 15:41:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 5/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_492014c9-40bc-4d33-8890-871cf35e983c
+2025-04-10 15:41:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 6/53"
+2025-04-10 15:41:12 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_5c76242d-d2cf-4993-8913-fba30e73cab9
+2025-04-10 15:41:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 6/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_5c76242d-d2cf-4993-8913-fba30e73cab9
+2025-04-10 15:41:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 7/53"
+2025-04-10 15:41:18 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_ffa3f22b-0a2e-4dae-b8ae-cf25d7c4f0c5
+2025-04-10 15:41:20 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 7/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_ffa3f22b-0a2e-4dae-b8ae-cf25d7c4f0c5
+2025-04-10 15:41:20 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 8/53"
+2025-04-10 15:41:20 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_73345196-9046-42ca-8963-df5f8deb48ee
+2025-04-10 15:41:22 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 8/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_73345196-9046-42ca-8963-df5f8deb48ee
+2025-04-10 15:41:22 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 9/53"
+2025-04-10 15:41:22 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_936a6d29-b672-499f-a062-c1e0a21405f8
+2025-04-10 15:41:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 9/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_936a6d29-b672-499f-a062-c1e0a21405f8
+2025-04-10 15:41:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 10/53"
+2025-04-10 15:41:25 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_9e1037d6-503c-4efb-8ae3-020a1e26e696
+2025-04-10 15:41:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 10/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_9e1037d6-503c-4efb-8ae3-020a1e26e696
+2025-04-10 15:41:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 11/53"
+2025-04-10 15:41:27 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_f97b1894-c3fe-4dc0-a8f3-c4207a429073
+2025-04-10 15:41:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 11/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_f97b1894-c3fe-4dc0-a8f3-c4207a429073
+2025-04-10 15:41:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 12/53"
+2025-04-10 15:41:30 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_70be0a64-984d-4f28-b083-9ce28012525a
+2025-04-10 15:41:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 12/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_70be0a64-984d-4f28-b083-9ce28012525a
+2025-04-10 15:41:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 13/53"
+2025-04-10 15:41:32 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_f5480688-5ae8-4043-9365-a7c3e197385b
+2025-04-10 15:41:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 13/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_f5480688-5ae8-4043-9365-a7c3e197385b
+2025-04-10 15:41:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 14/53"
+2025-04-10 15:41:34 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_db292fa8-2fc4-4c79-b0ef-b5b67a46153e
+2025-04-10 15:41:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 14/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_db292fa8-2fc4-4c79-b0ef-b5b67a46153e
+2025-04-10 15:41:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 15/53"
+2025-04-10 15:41:37 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_e89cdb64-2f3e-4fc9-ad80-846e1600476a
+2025-04-10 15:41:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 15/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_e89cdb64-2f3e-4fc9-ad80-846e1600476a
+2025-04-10 15:41:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 16/53"
+2025-04-10 15:41:40 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_9b1cceea-37da-4da0-8e29-cc4042211251
+2025-04-10 15:41:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 16/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_9b1cceea-37da-4da0-8e29-cc4042211251
+2025-04-10 15:41:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 17/53"
+2025-04-10 15:41:43 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_6a98fa14-694a-43c9-ba95-4c4aab158c75
+2025-04-10 15:41:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 17/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_6a98fa14-694a-43c9-ba95-4c4aab158c75
+2025-04-10 15:41:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 18/53"
+2025-04-10 15:41:45 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_c020447c-a84c-40cf-9037-2da08b00c04c
+2025-04-10 15:41:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 18/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_c020447c-a84c-40cf-9037-2da08b00c04c
+2025-04-10 15:41:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 19/53"
+2025-04-10 15:41:47 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_7bc3a38c-9171-4295-afe9-6ea09ee989c7
+2025-04-10 15:41:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 19/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_7bc3a38c-9171-4295-afe9-6ea09ee989c7
+2025-04-10 15:41:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 20/53"
+2025-04-10 15:41:50 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_b345f4fd-226e-41b1-b989-32250d2c7aec
+2025-04-10 15:41:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 20/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_b345f4fd-226e-41b1-b989-32250d2c7aec
+2025-04-10 15:41:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 21/53"
+2025-04-10 15:41:52 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_5cb35f9c-6954-480f-96da-3689d5ee89fe
+2025-04-10 15:41:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 21/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_5cb35f9c-6954-480f-96da-3689d5ee89fe
+2025-04-10 15:41:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 22/53"
+2025-04-10 15:41:55 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_53b2a38d-6e9e-4529-822d-73c7b58a34be
+2025-04-10 15:41:57 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 22/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_53b2a38d-6e9e-4529-822d-73c7b58a34be
+2025-04-10 15:41:57 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 23/53"
+2025-04-10 15:41:57 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_2a70e43b-5733-4054-9f74-4e06fd6142a0
+2025-04-10 15:41:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 23/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_2a70e43b-5733-4054-9f74-4e06fd6142a0
+2025-04-10 15:41:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 24/53"
+2025-04-10 15:42:00 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_365dc193-48f0-438d-800d-4ffc336415b2
+2025-04-10 15:42:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 24/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_365dc193-48f0-438d-800d-4ffc336415b2
+2025-04-10 15:42:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 25/53"
+2025-04-10 15:42:02 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_cc50348b-cb8f-40ba-a86f-e875fed2660f
+2025-04-10 15:42:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 25/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_cc50348b-cb8f-40ba-a86f-e875fed2660f
+2025-04-10 15:42:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 26/53"
+2025-04-10 15:42:04 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_72c529f6-dc06-482b-9adb-f55c815fb840
+2025-04-10 15:42:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 26/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_72c529f6-dc06-482b-9adb-f55c815fb840
+2025-04-10 15:42:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 27/53"
+2025-04-10 15:42:08 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_41dc8450-6a72-4e0a-ab44-5549c537fe18
+2025-04-10 15:42:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 27/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_41dc8450-6a72-4e0a-ab44-5549c537fe18
+2025-04-10 15:42:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 28/53"
+2025-04-10 15:42:11 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_34ebdc27-b631-44a8-933c-f9c32b218371
+2025-04-10 15:42:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 28/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_34ebdc27-b631-44a8-933c-f9c32b218371
+2025-04-10 15:42:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 29/53"
+2025-04-10 15:42:13 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_0358d320-e6f2-436d-a014-fa7f27f67604
+2025-04-10 15:42:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 29/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_0358d320-e6f2-436d-a014-fa7f27f67604
+2025-04-10 15:42:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 30/53"
+2025-04-10 15:42:16 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_ce6396f4-ffec-4bd7-8432-62486651643b
+2025-04-10 15:42:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 30/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_ce6396f4-ffec-4bd7-8432-62486651643b
+2025-04-10 15:42:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 31/53"
+2025-04-10 15:42:18 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_96e51822-b506-4db7-946c-d91824e8ca5f
+2025-04-10 15:42:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 31/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_96e51822-b506-4db7-946c-d91824e8ca5f
+2025-04-10 15:42:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 32/53"
+2025-04-10 15:42:21 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_929d0c78-5a9b-4137-b8f4-5757b745208a
+2025-04-10 15:42:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 32/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_929d0c78-5a9b-4137-b8f4-5757b745208a
+2025-04-10 15:42:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 33/53"
+2025-04-10 15:42:34 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_657a5a9d-0da8-4c86-9636-42c7d9129ff0
+2025-04-10 15:42:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 33/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_657a5a9d-0da8-4c86-9636-42c7d9129ff0
+2025-04-10 15:42:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 34/53"
+2025-04-10 15:42:37 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_dbe6a09e-3dbc-4f9d-9221-9addd4ef5e7d
+2025-04-10 15:42:39 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 34/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_dbe6a09e-3dbc-4f9d-9221-9addd4ef5e7d
+2025-04-10 15:42:39 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 35/53"
+2025-04-10 15:42:40 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_9ad0b6cd-11f1-433c-8d0e-ad71d0a93ed9
+2025-04-10 15:42:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 35/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_9ad0b6cd-11f1-433c-8d0e-ad71d0a93ed9
+2025-04-10 15:42:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 36/53"
+2025-04-10 15:42:42 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_ce6d8eae-1ec3-4dfa-8d79-e5a44580a7ad
+2025-04-10 15:42:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 36/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_ce6d8eae-1ec3-4dfa-8d79-e5a44580a7ad
+2025-04-10 15:42:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 37/53"
+2025-04-10 15:42:45 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_40588947-0622-49ee-b66e-0c78c08d9559
+2025-04-10 15:42:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 37/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_40588947-0622-49ee-b66e-0c78c08d9559
+2025-04-10 15:42:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 38/53"
+2025-04-10 15:42:48 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_6b1fb283-c294-49f0-9c79-5df456aca1e5
+2025-04-10 15:42:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 38/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_6b1fb283-c294-49f0-9c79-5df456aca1e5
+2025-04-10 15:42:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 39/53"
+2025-04-10 15:42:51 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_69e7c6d2-ee18-4d85-ab62-fe4efca739e4
+2025-04-10 15:42:53 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 39/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_69e7c6d2-ee18-4d85-ab62-fe4efca739e4
+2025-04-10 15:42:53 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 40/53"
+2025-04-10 15:42:53 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_70083a80-78c0-48dc-804b-b20e5df4696d
+2025-04-10 15:43:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 40/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_70083a80-78c0-48dc-804b-b20e5df4696d
+2025-04-10 15:43:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 41/53"
+2025-04-10 15:43:03 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_258117b5-c039-4c99-b7b7-1841c3258240
+2025-04-10 15:43:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 41/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_258117b5-c039-4c99-b7b7-1841c3258240
+2025-04-10 15:43:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 42/53"
+2025-04-10 15:43:17 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_126dfbe2-f7bd-46f8-9b91-d9865b8d4d98
+2025-04-10 15:43:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 42/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_126dfbe2-f7bd-46f8-9b91-d9865b8d4d98
+2025-04-10 15:43:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 43/53"
+2025-04-10 15:43:20 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_5ec5b36d-7a35-49de-b6fc-8b6aecc2c1ff
+2025-04-10 15:43:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 43/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_5ec5b36d-7a35-49de-b6fc-8b6aecc2c1ff
+2025-04-10 15:43:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 44/53"
+2025-04-10 15:43:22 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_2df983bf-bd74-429a-af79-9e1baebea263
+2025-04-10 15:43:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 44/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_2df983bf-bd74-429a-af79-9e1baebea263
+2025-04-10 15:43:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 45/53"
+2025-04-10 15:43:25 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_7abb3447-ae27-4c85-b492-bb471a7780f9
+2025-04-10 15:43:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 45/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_7abb3447-ae27-4c85-b492-bb471a7780f9
+2025-04-10 15:43:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 46/53"
+2025-04-10 15:43:28 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_56ff61ac-4dff-4d0d-b103-5487663b2ef2
+2025-04-10 15:43:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 46/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_56ff61ac-4dff-4d0d-b103-5487663b2ef2
+2025-04-10 15:43:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 47/53"
+2025-04-10 15:43:30 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_b7bf4fd8-2a2e-4cb1-84f9-61ac4b091c38
+2025-04-10 15:43:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 47/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_b7bf4fd8-2a2e-4cb1-84f9-61ac4b091c38
+2025-04-10 15:43:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 48/53"
+2025-04-10 15:43:38 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_07b0cec9-54e1-4963-ae59-81895eef5e8a
+2025-04-10 15:43:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 48/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_07b0cec9-54e1-4963-ae59-81895eef5e8a
+2025-04-10 15:43:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 49/53"
+2025-04-10 15:43:40 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_c9136091-3825-4596-b87d-a1d01ac85e1a
+2025-04-10 15:43:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 49/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_c9136091-3825-4596-b87d-a1d01ac85e1a
+2025-04-10 15:43:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 50/53"
+2025-04-10 15:43:43 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_85c1ae70-46a6-4b8f-a890-bbe4c286f56a
+2025-04-10 15:43:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 50/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_85c1ae70-46a6-4b8f-a890-bbe4c286f56a
+2025-04-10 15:43:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 51/53"
+2025-04-10 15:43:45 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_4e6cd672-b9f4-44dd-86dd-79d40c8f58ce
+2025-04-10 15:43:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 51/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_4e6cd672-b9f4-44dd-86dd-79d40c8f58ce
+2025-04-10 15:43:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 52/53"
+2025-04-10 15:43:52 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_0e66bd12-9176-42e1-8b8c-f2ba98f524ba
+2025-04-10 15:44:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 52/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_0e66bd12-9176-42e1-8b8c-f2ba98f524ba
+2025-04-10 15:44:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 53/53"
+2025-04-10 15:44:02 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_58813b3a-13b4-48a6-8feb-9e7d1b5c0c98
+2025-04-10 15:44:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 53/53 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_58813b3a-13b4-48a6-8feb-9e7d1b5c0c98
+2025-04-10 15:44:14 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression, 53 jobs were run successfully for 53 queries
+2025-04-10 15:44:14 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.rt_observation_privacy_suppression 15/25
+2025-04-10 15:44:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.rt_observation_privacy_suppression.get_query_specs query 1/2"
+2025-04-10 15:44:23 - INFO - cdr_cleaner.clean_cdr_engine - Running rt_observa_2961b4ac-ce70-42f4-9d7a-8621eb5e901a
+2025-04-10 15:44:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/2 for cdr_cleaner.cleaning_rules.deid.rt_observation_privacy_suppression with job_id rt_observa_2961b4ac-ce70-42f4-9d7a-8621eb5e901a
+2025-04-10 15:44:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.rt_observation_privacy_suppression.get_query_specs query 2/2"
+2025-04-10 15:44:37 - INFO - cdr_cleaner.clean_cdr_engine - Running rt_observa_0f96233b-a4aa-4ed4-8f53-a65260d86db0
+2025-04-10 15:44:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/2 for cdr_cleaner.cleaning_rules.deid.rt_observation_privacy_suppression with job_id rt_observa_0f96233b-a4aa-4ed4-8f53-a65260d86db0
+2025-04-10 15:44:52 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.rt_observation_privacy_suppression, 2 jobs were run successfully for 2 queries
+2025-04-10 15:44:52 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression 16/25
+2025-04-10 15:44:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 1/27"
+2025-04-10 15:44:54 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_e30ba5d7-d2e5-4670-86cc-7b9a8f76523f
+2025-04-10 15:44:57 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_e30ba5d7-d2e5-4670-86cc-7b9a8f76523f
+2025-04-10 15:44:57 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 2/27"
+2025-04-10 15:44:57 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_91fcc057-4862-4e0d-865c-701695977e19
+2025-04-10 15:44:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_91fcc057-4862-4e0d-865c-701695977e19
+2025-04-10 15:44:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 3/27"
+2025-04-10 15:45:00 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_935fe8b7-ea44-468c-9baa-70e5cc13c51f
+2025-04-10 15:45:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_935fe8b7-ea44-468c-9baa-70e5cc13c51f
+2025-04-10 15:45:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 4/27"
+2025-04-10 15:45:02 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_8e28de17-c79d-4e6d-8d29-703ca3b80c62
+2025-04-10 15:45:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_8e28de17-c79d-4e6d-8d29-703ca3b80c62
+2025-04-10 15:45:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 5/27"
+2025-04-10 15:45:04 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_563c4d1c-70e9-4c39-9455-f58a338b5078
+2025-04-10 15:45:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 5/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_563c4d1c-70e9-4c39-9455-f58a338b5078
+2025-04-10 15:45:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 6/27"
+2025-04-10 15:45:07 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_b5b0b43b-3a98-4ec7-98ab-02b74d766985
+2025-04-10 15:45:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 6/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_b5b0b43b-3a98-4ec7-98ab-02b74d766985
+2025-04-10 15:45:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 7/27"
+2025-04-10 15:45:09 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_06c65ba9-97d9-4e8b-98d9-1372e1575dda
+2025-04-10 15:45:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 7/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_06c65ba9-97d9-4e8b-98d9-1372e1575dda
+2025-04-10 15:45:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 8/27"
+2025-04-10 15:45:17 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_94ba2fcf-ada1-48d5-935c-a681353e2d5e
+2025-04-10 15:45:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 8/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_94ba2fcf-ada1-48d5-935c-a681353e2d5e
+2025-04-10 15:45:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 9/27"
+2025-04-10 15:45:19 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_19d34feb-9c22-439f-be70-fcbd217d3f45
+2025-04-10 15:45:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 9/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_19d34feb-9c22-439f-be70-fcbd217d3f45
+2025-04-10 15:45:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 10/27"
+2025-04-10 15:45:22 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_7e0b0c36-b527-46ac-98e9-567f4e0da6ae
+2025-04-10 15:45:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 10/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_7e0b0c36-b527-46ac-98e9-567f4e0da6ae
+2025-04-10 15:45:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 11/27"
+2025-04-10 15:45:27 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_a41c4dd6-c772-4ab6-b2fb-6c82eaddd310
+2025-04-10 15:45:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 11/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_a41c4dd6-c772-4ab6-b2fb-6c82eaddd310
+2025-04-10 15:45:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 12/27"
+2025-04-10 15:45:35 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_e3ae408b-5106-49fe-9fa6-28837a8f9804
+2025-04-10 15:45:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 12/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_e3ae408b-5106-49fe-9fa6-28837a8f9804
+2025-04-10 15:45:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 13/27"
+2025-04-10 15:45:37 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_436d89c8-1eaa-4da8-996e-fe50a081647b
+2025-04-10 15:45:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 13/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_436d89c8-1eaa-4da8-996e-fe50a081647b
+2025-04-10 15:45:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 14/27"
+2025-04-10 15:45:53 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_c571ca8c-3680-42da-8db7-4855d440690a
+2025-04-10 15:45:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 14/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_c571ca8c-3680-42da-8db7-4855d440690a
+2025-04-10 15:45:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 15/27"
+2025-04-10 15:45:55 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_77f0d342-dee6-4f8b-9b28-2211df2c793b
+2025-04-10 15:45:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 15/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_77f0d342-dee6-4f8b-9b28-2211df2c793b
+2025-04-10 15:45:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 16/27"
+2025-04-10 15:45:59 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_cfe20cf1-56d1-4db0-baed-3bd0d0b51688
+2025-04-10 15:46:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 16/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_cfe20cf1-56d1-4db0-baed-3bd0d0b51688
+2025-04-10 15:46:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 17/27"
+2025-04-10 15:46:02 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_bbe96128-62a8-4205-a9ad-b7738ca3524d
+2025-04-10 15:46:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 17/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_bbe96128-62a8-4205-a9ad-b7738ca3524d
+2025-04-10 15:46:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 18/27"
+2025-04-10 15:46:11 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_9ca84f2d-7e85-4cb2-a72b-25991703b547
+2025-04-10 15:46:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 18/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_9ca84f2d-7e85-4cb2-a72b-25991703b547
+2025-04-10 15:46:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 19/27"
+2025-04-10 15:46:13 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_51b8eea4-1417-4e24-a12c-aaaf9963bd6a
+2025-04-10 15:46:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 19/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_51b8eea4-1417-4e24-a12c-aaaf9963bd6a
+2025-04-10 15:46:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 20/27"
+2025-04-10 15:46:16 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_caa5305d-76e8-4f98-a9ad-48dfab1a7e29
+2025-04-10 15:46:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 20/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_caa5305d-76e8-4f98-a9ad-48dfab1a7e29
+2025-04-10 15:46:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 21/27"
+2025-04-10 15:46:19 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_2b0e9308-6d60-4916-90bb-b80bb29f1dbf
+2025-04-10 15:46:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 21/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_2b0e9308-6d60-4916-90bb-b80bb29f1dbf
+2025-04-10 15:46:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 22/27"
+2025-04-10 15:46:24 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_8c460f8a-c820-497a-b679-42d5308da6d6
+2025-04-10 15:46:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 22/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_8c460f8a-c820-497a-b679-42d5308da6d6
+2025-04-10 15:46:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 23/27"
+2025-04-10 15:46:27 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_bb9a508d-0274-43d7-b845-c99558c876c3
+2025-04-10 15:46:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 23/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_bb9a508d-0274-43d7-b845-c99558c876c3
+2025-04-10 15:46:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 24/27"
+2025-04-10 15:46:31 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_5fc22bef-d6b9-43b1-9d1d-547842d52396
+2025-04-10 15:46:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 24/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_5fc22bef-d6b9-43b1-9d1d-547842d52396
+2025-04-10 15:46:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 25/27"
+2025-04-10 15:46:36 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_381e439e-8eb8-4994-8cca-a77e107ebe23
+2025-04-10 15:46:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 25/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_381e439e-8eb8-4994-8cca-a77e107ebe23
+2025-04-10 15:46:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 26/27"
+2025-04-10 15:46:42 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_df74ce8c-09de-42ee-a545-8ed3510ac665
+2025-04-10 15:46:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 26/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_df74ce8c-09de-42ee-a545-8ed3510ac665
+2025-04-10 15:46:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression.get_query_specs query 27/27"
+2025-04-10 15:46:45 - INFO - cdr_cleaner.clean_cdr_engine - Running string_fie_67cca2fc-b615-4c6f-9d7e-28f2cf0faeac
+2025-04-10 15:46:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 27/27 for cdr_cleaner.cleaning_rules.deid.string_fields_suppression with job_id string_fie_67cca2fc-b615-4c6f-9d7e-28f2cf0faeac
+2025-04-10 15:46:48 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.string_fields_suppression, 27 jobs were run successfully for 27 queries
+2025-04-10 15:46:48 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.deid.concept_suppression 17/25
+2025-04-10 15:46:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 1/3"
+2025-04-10 15:46:52 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_3ea24e04-2824-4288-9d36-0c156a6556f6
+2025-04-10 15:46:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_3ea24e04-2824-4288-9d36-0c156a6556f6
+2025-04-10 15:46:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 2/3"
+2025-04-10 15:46:56 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_2fbb133e-6f6e-4f1a-b154-12fc2b021688
+2025-04-10 15:47:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_2fbb133e-6f6e-4f1a-b154-12fc2b021688
+2025-04-10 15:47:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression.get_query_specs query 3/3"
+2025-04-10 15:47:08 - INFO - cdr_cleaner.clean_cdr_engine - Running concept_su_071b0122-63bf-43d7-95cf-80c70c650ed8
+2025-04-10 15:47:09 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.deid.concept_suppression with job_id concept_su_071b0122-63bf-43d7-95cf-80c70c650ed8
+2025-04-10 15:47:09 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.deid.concept_suppression, 3 jobs were run successfully for 3 queries
+2025-04-10 15:47:09 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids 18/25
+2025-04-10 15:47:09 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids.get_query_specs query 1/2"
+2025-04-10 15:47:09 - INFO - cdr_cleaner.clean_cdr_engine - Running drop_orpha_4c907798-26a8-4eab-bc1f-9bfa1b9c24b5
+2025-04-10 15:47:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/2 for cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids with job_id drop_orpha_4c907798-26a8-4eab-bc1f-9bfa1b9c24b5
+2025-04-10 15:47:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids.get_query_specs query 2/2"
+2025-04-10 15:47:14 - INFO - cdr_cleaner.clean_cdr_engine - Running drop_orpha_74ef203c-2fbb-4d19-bc28-53d043ac290f
+2025-04-10 15:47:20 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/2 for cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids with job_id drop_orpha_74ef203c-2fbb-4d19-bc28-53d043ac290f
+2025-04-10 15:47:20 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids, 2 jobs were run successfully for 2 queries
+2025-04-10 15:47:20 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.drop_orphaned_pids 19/25
+2025-04-10 15:47:20 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.drop_orphaned_pids.get_query_specs query 1/2"
+2025-04-10 15:47:20 - INFO - cdr_cleaner.clean_cdr_engine - Running drop_orpha_93cb39fe-e4a8-4a3a-bb98-2fb9c237d710
+2025-04-10 15:47:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/2 for cdr_cleaner.cleaning_rules.drop_orphaned_pids with job_id drop_orpha_93cb39fe-e4a8-4a3a-bb98-2fb9c237d710
+2025-04-10 15:47:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.drop_orphaned_pids.get_query_specs query 2/2"
+2025-04-10 15:47:26 - INFO - cdr_cleaner.clean_cdr_engine - Running drop_orpha_153f6ca8-ba98-4d9e-b3ec-fbf6479f0382
+2025-04-10 15:47:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/2 for cdr_cleaner.cleaning_rules.drop_orphaned_pids with job_id drop_orpha_153f6ca8-ba98-4d9e-b3ec-fbf6479f0382
+2025-04-10 15:47:28 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.drop_orphaned_pids, 2 jobs were run successfully for 2 queries
+2025-04-10 15:47:28 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.calculate_primary_death_record 20/25
+2025-04-10 15:47:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.calculate_primary_death_record.get_query_specs query 1/2"
+2025-04-10 15:47:29 - INFO - cdr_cleaner.clean_cdr_engine - Running calculate__97fa0e49-4bfe-499f-90a6-a2eeb17b1d90
+2025-04-10 15:47:32 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/2 for cdr_cleaner.cleaning_rules.calculate_primary_death_record with job_id calculate__97fa0e49-4bfe-499f-90a6-a2eeb17b1d90
+2025-04-10 15:47:32 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.calculate_primary_death_record.get_query_specs query 2/2"
+2025-04-10 15:47:32 - INFO - cdr_cleaner.clean_cdr_engine - Running calculate__ad73abbf-e1a6-4455-a481-b895a17d1d23
+2025-04-10 15:47:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/2 for cdr_cleaner.cleaning_rules.calculate_primary_death_record with job_id calculate__ad73abbf-e1a6-4455-a481-b895a17d1d23
+2025-04-10 15:47:37 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.calculate_primary_death_record, 2 jobs were run successfully for 2 queries
+2025-04-10 15:47:37 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.generate_wear_study_table 21/25
+2025-04-10 15:47:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.generate_wear_study_table.get_query_specs query 1/1"
+2025-04-10 15:47:37 - INFO - cdr_cleaner.clean_cdr_engine - Running generate_w_020b8875-b53c-4a63-a42c-612971b3162d
+2025-04-10 15:47:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/1 for cdr_cleaner.cleaning_rules.generate_wear_study_table with job_id generate_w_020b8875-b53c-4a63-a42c-612971b3162d
+2025-04-10 15:47:40 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.generate_wear_study_table, 1 jobs were run successfully for 1 queries
+2025-04-10 15:47:40 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.filter_nlp_from_domains 22/25
+2025-04-10 15:47:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.filter_nlp_from_domains.get_query_specs query 1/3"
+2025-04-10 15:47:41 - INFO - cdr_cleaner.clean_cdr_engine - Running filter_nlp_106e7129-dcf6-47fa-9eb5-2f4cacafa5d4
+2025-04-10 15:47:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/3 for cdr_cleaner.cleaning_rules.filter_nlp_from_domains with job_id filter_nlp_106e7129-dcf6-47fa-9eb5-2f4cacafa5d4
+2025-04-10 15:47:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.filter_nlp_from_domains.get_query_specs query 2/3"
+2025-04-10 15:47:44 - INFO - cdr_cleaner.clean_cdr_engine - Running filter_nlp_580b1111-cda0-414c-9c41-13298580ff99
+2025-04-10 15:47:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/3 for cdr_cleaner.cleaning_rules.filter_nlp_from_domains with job_id filter_nlp_580b1111-cda0-414c-9c41-13298580ff99
+2025-04-10 15:47:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.filter_nlp_from_domains.get_query_specs query 3/3"
+2025-04-10 15:47:48 - INFO - cdr_cleaner.clean_cdr_engine - Running filter_nlp_fff82d8b-e791-4a82-bd5a-921ee0258730
+2025-04-10 15:47:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/3 for cdr_cleaner.cleaning_rules.filter_nlp_from_domains with job_id filter_nlp_fff82d8b-e791-4a82-bd5a-921ee0258730
+2025-04-10 15:47:50 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.filter_nlp_from_domains, 3 jobs were run successfully for 3 queries
+2025-04-10 15:47:50 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.remove_nlp_using_note 23/25
+2025-04-10 15:47:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_nlp_using_note.get_query_specs query 1/2"
+2025-04-10 15:47:51 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_nlp_6279d0cc-e1e6-4203-8f53-0206948fb75d
+2025-04-10 15:47:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/2 for cdr_cleaner.cleaning_rules.remove_nlp_using_note with job_id remove_nlp_6279d0cc-e1e6-4203-8f53-0206948fb75d
+2025-04-10 15:47:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_nlp_using_note.get_query_specs query 2/2"
+2025-04-10 15:47:57 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_nlp_6b393882-f66d-4ace-8555-67619b7aa5a7
+2025-04-10 15:48:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/2 for cdr_cleaner.cleaning_rules.remove_nlp_using_note with job_id remove_nlp_6b393882-f66d-4ace-8555-67619b7aa5a7
+2025-04-10 15:48:03 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.remove_nlp_using_note, 2 jobs were run successfully for 2 queries
+2025-04-10 15:48:03 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct 24/25
+2025-04-10 15:48:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct.get_query_specs query 1/4"
+2025-04-10 15:48:03 - INFO - cdr_cleaner.clean_cdr_engine - Running drop_surve_cb1aa33e-f77f-4c4e-b07e-9e2ed9bc731e
+2025-04-10 15:48:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/4 for cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct with job_id drop_surve_cb1aa33e-f77f-4c4e-b07e-9e2ed9bc731e
+2025-04-10 15:48:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct.get_query_specs query 2/4"
+2025-04-10 15:48:09 - INFO - cdr_cleaner.clean_cdr_engine - Running drop_surve_04842383-0ecb-4010-9fcc-37a20466e288
+2025-04-10 15:48:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/4 for cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct with job_id drop_surve_04842383-0ecb-4010-9fcc-37a20466e288
+2025-04-10 15:48:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct.get_query_specs query 3/4"
+2025-04-10 15:48:11 - INFO - cdr_cleaner.clean_cdr_engine - Running drop_surve_fd3d0669-f291-441b-91e5-51db069069f6
+2025-04-10 15:48:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/4 for cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct with job_id drop_surve_fd3d0669-f291-441b-91e5-51db069069f6
+2025-04-10 15:48:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct.get_query_specs query 4/4"
+2025-04-10 15:48:24 - INFO - cdr_cleaner.clean_cdr_engine - Running drop_surve_b56e14c8-46fe-4216-b077-adb84ac3efdd
+2025-04-10 15:48:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/4 for cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct with job_id drop_surve_b56e14c8-46fe-4216-b077-adb84ac3efdd
+2025-04-10 15:48:29 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.drop_survey_data_via_survey_conduct, 4 jobs were run successfully for 4 queries
+2025-04-10 15:48:29 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.clean_mapping 25/25
+2025-04-10 15:48:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 1/56"
+2025-04-10 15:48:41 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_ed2dd25f-3785-4898-b935-97bf6e7940ee
+2025-04-10 15:48:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_ed2dd25f-3785-4898-b935-97bf6e7940ee
+2025-04-10 15:48:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 2/56"
+2025-04-10 15:48:43 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_40f66182-94c7-420c-a8fa-67ebf2df10c9
+2025-04-10 15:48:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_40f66182-94c7-420c-a8fa-67ebf2df10c9
+2025-04-10 15:48:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 3/56"
+2025-04-10 15:48:46 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_b7ab24bb-b5d7-4956-9f97-833c47a316fd
+2025-04-10 15:48:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_b7ab24bb-b5d7-4956-9f97-833c47a316fd
+2025-04-10 15:48:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 4/56"
+2025-04-10 15:48:51 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_574cb42f-584c-497b-abd0-61a5ba28dd88
+2025-04-10 15:48:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_574cb42f-584c-497b-abd0-61a5ba28dd88
+2025-04-10 15:48:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 5/56"
+2025-04-10 15:48:56 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_cf33b81f-f0eb-4759-a823-415f6fed7881
+2025-04-10 15:48:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 5/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_cf33b81f-f0eb-4759-a823-415f6fed7881
+2025-04-10 15:48:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 6/56"
+2025-04-10 15:49:00 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_119f00a5-0f48-4c43-81d8-eabdcdfe37ca
+2025-04-10 15:49:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 6/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_119f00a5-0f48-4c43-81d8-eabdcdfe37ca
+2025-04-10 15:49:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 7/56"
+2025-04-10 15:49:04 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_e62ab40d-4381-4aa5-85dc-5637fcdb9b3d
+2025-04-10 15:49:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 7/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_e62ab40d-4381-4aa5-85dc-5637fcdb9b3d
+2025-04-10 15:49:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 8/56"
+2025-04-10 15:49:10 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_43d9afa0-8cd8-4045-8cde-6125abb7ea33
+2025-04-10 15:49:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 8/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_43d9afa0-8cd8-4045-8cde-6125abb7ea33
+2025-04-10 15:49:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 9/56"
+2025-04-10 15:49:18 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_a1f88847-6fc8-4af5-9c05-0ca266830fdc
+2025-04-10 15:49:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 9/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_a1f88847-6fc8-4af5-9c05-0ca266830fdc
+2025-04-10 15:49:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 10/56"
+2025-04-10 15:49:21 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_90c225d7-be89-446e-ba87-bbe1aac0de8c
+2025-04-10 15:49:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 10/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_90c225d7-be89-446e-ba87-bbe1aac0de8c
+2025-04-10 15:49:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 11/56"
+2025-04-10 15:49:23 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_462c78a7-a727-4f47-bdaa-cd7ec1fc162a
+2025-04-10 15:49:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 11/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_462c78a7-a727-4f47-bdaa-cd7ec1fc162a
+2025-04-10 15:49:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 12/56"
+2025-04-10 15:49:28 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_7e7676ce-2998-4786-a0f5-d6ca7e18699a
+2025-04-10 15:49:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 12/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_7e7676ce-2998-4786-a0f5-d6ca7e18699a
+2025-04-10 15:49:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 13/56"
+2025-04-10 15:49:35 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_93bbcfd0-3119-4c65-b1c3-bb075674485c
+2025-04-10 15:49:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 13/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_93bbcfd0-3119-4c65-b1c3-bb075674485c
+2025-04-10 15:49:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 14/56"
+2025-04-10 15:49:38 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_2c53e7be-ec73-4519-bb5d-5955ab804064
+2025-04-10 15:49:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 14/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_2c53e7be-ec73-4519-bb5d-5955ab804064
+2025-04-10 15:49:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 15/56"
+2025-04-10 15:49:40 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_ebdd1b52-9d93-4dac-b945-e0796d376c72
+2025-04-10 15:49:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 15/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_ebdd1b52-9d93-4dac-b945-e0796d376c72
+2025-04-10 15:49:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 16/56"
+2025-04-10 15:49:43 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_d0187dfc-5b9a-4241-ae4b-36f43a4be69b
+2025-04-10 15:49:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 16/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_d0187dfc-5b9a-4241-ae4b-36f43a4be69b
+2025-04-10 15:49:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 17/56"
+2025-04-10 15:49:46 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_c07fff59-686b-4189-88ae-914c57c69b34
+2025-04-10 15:49:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 17/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_c07fff59-686b-4189-88ae-914c57c69b34
+2025-04-10 15:49:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 18/56"
+2025-04-10 15:49:49 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_94063a52-a15f-4773-9cb1-2aaaff585258
+2025-04-10 15:49:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 18/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_94063a52-a15f-4773-9cb1-2aaaff585258
+2025-04-10 15:49:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 19/56"
+2025-04-10 15:49:51 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_69d4ed0f-547e-43de-a082-a64629365235
+2025-04-10 15:49:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 19/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_69d4ed0f-547e-43de-a082-a64629365235
+2025-04-10 15:49:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 20/56"
+2025-04-10 15:49:56 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_36e5774c-a61c-4917-a96c-9411566bfd0b
+2025-04-10 15:50:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 20/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_36e5774c-a61c-4917-a96c-9411566bfd0b
+2025-04-10 15:50:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 21/56"
+2025-04-10 15:50:02 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_26bf2f28-f810-43f8-9859-af3ea4fa0a28
+2025-04-10 15:50:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 21/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_26bf2f28-f810-43f8-9859-af3ea4fa0a28
+2025-04-10 15:50:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 22/56"
+2025-04-10 15:50:07 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_2b870d0b-f50a-4b2e-946c-769a3f07fe4a
+2025-04-10 15:50:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 22/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_2b870d0b-f50a-4b2e-946c-769a3f07fe4a
+2025-04-10 15:50:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 23/56"
+2025-04-10 15:50:15 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_c2db1ffb-31b7-4d00-a091-f83487280252
+2025-04-10 15:50:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 23/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_c2db1ffb-31b7-4d00-a091-f83487280252
+2025-04-10 15:50:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 24/56"
+2025-04-10 15:50:20 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_cc26281b-5ca9-4d47-b9c5-762f2312d22f
+2025-04-10 15:50:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 24/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_cc26281b-5ca9-4d47-b9c5-762f2312d22f
+2025-04-10 15:50:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 25/56"
+2025-04-10 15:50:25 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_d948bf14-8e6d-4664-b788-eebb14df76d0
+2025-04-10 15:50:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 25/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_d948bf14-8e6d-4664-b788-eebb14df76d0
+2025-04-10 15:50:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 26/56"
+2025-04-10 15:50:28 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_16ca21a6-82db-4661-97b6-da55fd9fc53d
+2025-04-10 15:50:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 26/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_16ca21a6-82db-4661-97b6-da55fd9fc53d
+2025-04-10 15:50:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 27/56"
+2025-04-10 15:50:31 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_b13aca5d-d38e-4cfd-ac26-9c0470025d48
+2025-04-10 15:50:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 27/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_b13aca5d-d38e-4cfd-ac26-9c0470025d48
+2025-04-10 15:50:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 28/56"
+2025-04-10 15:50:35 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_ada9885c-1a27-4343-9a5f-6fee0ab41f44
+2025-04-10 15:50:39 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 28/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_ada9885c-1a27-4343-9a5f-6fee0ab41f44
+2025-04-10 15:50:39 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 29/56"
+2025-04-10 15:50:40 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_c06d4798-e2af-4810-8896-97b1a90c42cf
+2025-04-10 15:50:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 29/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_c06d4798-e2af-4810-8896-97b1a90c42cf
+2025-04-10 15:50:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 30/56"
+2025-04-10 15:50:42 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_5702e48f-e236-4b16-b4bf-42f5a152cb77
+2025-04-10 15:50:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 30/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_5702e48f-e236-4b16-b4bf-42f5a152cb77
+2025-04-10 15:50:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 31/56"
+2025-04-10 15:50:45 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_dc487950-a312-403e-8af1-968ad40fd805
+2025-04-10 15:50:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 31/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_dc487950-a312-403e-8af1-968ad40fd805
+2025-04-10 15:50:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 32/56"
+2025-04-10 15:50:47 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_d960bcf0-13fb-4d67-85a9-596f025447cf
+2025-04-10 15:50:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 32/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_d960bcf0-13fb-4d67-85a9-596f025447cf
+2025-04-10 15:50:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 33/56"
+2025-04-10 15:50:50 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_9b23bfae-1205-4e25-8ec1-9b67e1ff24a6
+2025-04-10 15:50:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 33/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_9b23bfae-1205-4e25-8ec1-9b67e1ff24a6
+2025-04-10 15:50:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 34/56"
+2025-04-10 15:50:54 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_1a213ebe-6a8d-4b44-af54-b9b4d9ac11a7
+2025-04-10 15:50:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 34/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_1a213ebe-6a8d-4b44-af54-b9b4d9ac11a7
+2025-04-10 15:50:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 35/56"
+2025-04-10 15:50:59 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_0767347e-4fa7-4daa-9db7-93e3899502c1
+2025-04-10 15:51:05 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 35/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_0767347e-4fa7-4daa-9db7-93e3899502c1
+2025-04-10 15:51:05 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 36/56"
+2025-04-10 15:51:05 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_0e2d7e5b-87c7-4ed6-9ac1-72a63cfa6679
+2025-04-10 15:51:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 36/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_0e2d7e5b-87c7-4ed6-9ac1-72a63cfa6679
+2025-04-10 15:51:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 37/56"
+2025-04-10 15:51:14 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_d3a7bb07-564e-4df7-a565-5e5d0dd2012d
+2025-04-10 15:51:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 37/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_d3a7bb07-564e-4df7-a565-5e5d0dd2012d
+2025-04-10 15:51:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 38/56"
+2025-04-10 15:51:18 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_980039b9-f292-4c6c-ad17-7d825e520e3b
+2025-04-10 15:51:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 38/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_980039b9-f292-4c6c-ad17-7d825e520e3b
+2025-04-10 15:51:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 39/56"
+2025-04-10 15:51:24 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_3db67a4d-4f90-4da7-b986-e305d69d9670
+2025-04-10 15:51:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 39/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_3db67a4d-4f90-4da7-b986-e305d69d9670
+2025-04-10 15:51:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 40/56"
+2025-04-10 15:51:26 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_cc92d72f-1822-4dad-aea7-193c9d596436
+2025-04-10 15:51:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 40/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_cc92d72f-1822-4dad-aea7-193c9d596436
+2025-04-10 15:51:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 41/56"
+2025-04-10 15:51:28 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_635df1e2-6dde-4ce4-b841-46b02f1da0ec
+2025-04-10 15:51:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 41/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_635df1e2-6dde-4ce4-b841-46b02f1da0ec
+2025-04-10 15:51:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 42/56"
+2025-04-10 15:51:36 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_8b503bac-acbc-41af-bbde-d9ecb24a7414
+2025-04-10 15:51:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 42/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_8b503bac-acbc-41af-bbde-d9ecb24a7414
+2025-04-10 15:51:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 43/56"
+2025-04-10 15:51:45 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_5dc94cb9-04ee-498d-a705-dd06beb1636d
+2025-04-10 15:51:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 43/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_5dc94cb9-04ee-498d-a705-dd06beb1636d
+2025-04-10 15:51:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 44/56"
+2025-04-10 15:51:52 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_ff2c0030-f703-4dc0-8921-19dd4d9e3542
+2025-04-10 15:52:00 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 44/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_ff2c0030-f703-4dc0-8921-19dd4d9e3542
+2025-04-10 15:52:00 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 45/56"
+2025-04-10 15:52:00 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_94aebf4a-bd0e-41c8-bc71-93a1bc4276fb
+2025-04-10 15:52:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 45/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_94aebf4a-bd0e-41c8-bc71-93a1bc4276fb
+2025-04-10 15:52:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 46/56"
+2025-04-10 15:52:05 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_0da2fc0f-8e15-4f4e-9662-bfc7a6950c17
+2025-04-10 15:52:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 46/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_0da2fc0f-8e15-4f4e-9662-bfc7a6950c17
+2025-04-10 15:52:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 47/56"
+2025-04-10 15:52:11 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_4a6fc816-e037-4ea3-9cb1-83c0e320d93d
+2025-04-10 15:52:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 47/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_4a6fc816-e037-4ea3-9cb1-83c0e320d93d
+2025-04-10 15:52:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 48/56"
+2025-04-10 15:52:16 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_080b7c91-1dd1-4ad6-93bb-1a194c1b78aa
+2025-04-10 15:52:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 48/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_080b7c91-1dd1-4ad6-93bb-1a194c1b78aa
+2025-04-10 15:52:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 49/56"
+2025-04-10 15:52:21 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_9e621a76-ae20-45dd-b126-2730e8390a90
+2025-04-10 15:52:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 49/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_9e621a76-ae20-45dd-b126-2730e8390a90
+2025-04-10 15:52:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 50/56"
+2025-04-10 15:52:27 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_ea8c5836-2fbf-4549-a45f-f4e05dd2a187
+2025-04-10 15:52:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 50/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_ea8c5836-2fbf-4549-a45f-f4e05dd2a187
+2025-04-10 15:52:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 51/56"
+2025-04-10 15:52:33 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_0e527071-0bac-451a-ada5-6bdeda08e7a1
+2025-04-10 15:52:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 51/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_0e527071-0bac-451a-ada5-6bdeda08e7a1
+2025-04-10 15:52:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 52/56"
+2025-04-10 15:52:41 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_bbbebcbd-e09a-41ea-af2f-1321dc8a7649
+2025-04-10 15:52:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 52/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_bbbebcbd-e09a-41ea-af2f-1321dc8a7649
+2025-04-10 15:52:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 53/56"
+2025-04-10 15:52:51 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_be0894c5-564f-4958-b392-8f6df245dbab
+2025-04-10 15:53:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 53/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_be0894c5-564f-4958-b392-8f6df245dbab
+2025-04-10 15:53:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 54/56"
+2025-04-10 15:53:03 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_fd6672df-53b3-43af-bfab-237055875020
+2025-04-10 15:53:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 54/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_fd6672df-53b3-43af-bfab-237055875020
+2025-04-10 15:53:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 55/56"
+2025-04-10 15:53:16 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_f234835e-a177-4b62-b70f-4f1da15f6b61
+2025-04-10 15:53:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 55/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_f234835e-a177-4b62-b70f-4f1da15f6b61
+2025-04-10 15:53:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 56/56"
+2025-04-10 15:53:25 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_6ce8e016-d1cc-4117-b776-df3e87c5ea83
+2025-04-10 15:53:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 56/56 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_6ce8e016-d1cc-4117-b776-df3e87c5ea83
+2025-04-10 15:53:40 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.clean_mapping, 56 jobs were run successfully for 56 queries

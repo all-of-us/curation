@@ -1,0 +1,1115 @@
+2023-10-23 17:28:30 - INFO - utils.auth - Using end user account to impersonate: aou-res-curation-prod@appspot.gserviceaccount.com
+2023-10-23 17:28:32 - WARNING - cdr_cleaner.clean_cdr_engine - EhrSubmissionDataCutoff does not accept the `table_namer` property yet.
+2023-10-23 17:28:32 - INFO - cdr_cleaner.cleaning_rules.base_cleaning_rule - 'table_namer' was not set.  Using default value of `_unioned_ehr_staging`.
+2023-10-23 17:28:32 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff 1/8
+2023-10-23 17:28:32 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 1/22"
+2023-10-23 17:28:34 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_45ac9096-d940-4949-8ad2-051fd278f2ef
+2023-10-23 17:28:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_45ac9096-d940-4949-8ad2-051fd278f2ef
+2023-10-23 17:28:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 2/22"
+2023-10-23 17:28:38 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_96c4be5f-f43a-4b3c-9aaf-275663cffa94
+2023-10-23 17:28:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_96c4be5f-f43a-4b3c-9aaf-275663cffa94
+2023-10-23 17:28:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 3/22"
+2023-10-23 17:28:41 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_3358603f-5ff5-405c-9019-7c352ff32c55
+2023-10-23 17:28:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_3358603f-5ff5-405c-9019-7c352ff32c55
+2023-10-23 17:28:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 4/22"
+2023-10-23 17:28:43 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_0b0c6356-2ecb-410f-bf42-bf5e70d1a4d5
+2023-10-23 17:28:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_0b0c6356-2ecb-410f-bf42-bf5e70d1a4d5
+2023-10-23 17:28:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 5/22"
+2023-10-23 17:28:50 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_9252ed05-cf7a-4881-b9be-a3e42205b5d5
+2023-10-23 17:28:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 5/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_9252ed05-cf7a-4881-b9be-a3e42205b5d5
+2023-10-23 17:28:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 6/22"
+2023-10-23 17:28:56 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_4539d5a6-786a-4395-aa82-7caf6e8d8828
+2023-10-23 17:28:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 6/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_4539d5a6-786a-4395-aa82-7caf6e8d8828
+2023-10-23 17:28:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 7/22"
+2023-10-23 17:29:00 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_c750f4d6-89a2-4150-9571-624d7e68677e
+2023-10-23 17:29:05 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 7/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_c750f4d6-89a2-4150-9571-624d7e68677e
+2023-10-23 17:29:05 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 8/22"
+2023-10-23 17:29:05 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_f2f58522-5902-4acb-a5d7-ead6b8853153
+2023-10-23 17:29:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 8/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_f2f58522-5902-4acb-a5d7-ead6b8853153
+2023-10-23 17:29:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 9/22"
+2023-10-23 17:29:09 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_8bf8ec79-0b53-41d5-826e-314ee427990b
+2023-10-23 17:29:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 9/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_8bf8ec79-0b53-41d5-826e-314ee427990b
+2023-10-23 17:29:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 10/22"
+2023-10-23 17:29:12 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_12e6a8de-58a4-4cf3-b817-0524f28185a4
+2023-10-23 17:29:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 10/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_12e6a8de-58a4-4cf3-b817-0524f28185a4
+2023-10-23 17:29:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 11/22"
+2023-10-23 17:29:16 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_1461cf38-48d2-464b-825f-8518be42830e
+2023-10-23 17:29:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 11/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_1461cf38-48d2-464b-825f-8518be42830e
+2023-10-23 17:29:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 12/22"
+2023-10-23 17:29:19 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_8d3ce399-c7ae-4e77-86c9-1dec980d949b
+2023-10-23 17:29:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 12/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_8d3ce399-c7ae-4e77-86c9-1dec980d949b
+2023-10-23 17:29:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 13/22"
+2023-10-23 17:29:35 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_450ce627-87cc-4a28-936f-e911202b255e
+2023-10-23 17:29:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 13/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_450ce627-87cc-4a28-936f-e911202b255e
+2023-10-23 17:29:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 14/22"
+2023-10-23 17:29:38 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_2c26c2df-41b3-4fc1-9d5d-9598fe1ad565
+2023-10-23 17:29:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 14/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_2c26c2df-41b3-4fc1-9d5d-9598fe1ad565
+2023-10-23 17:29:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 15/22"
+2023-10-23 17:29:48 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_c19409d2-ca44-4cb3-8c3f-007a2b32eb72
+2023-10-23 17:30:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 15/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_c19409d2-ca44-4cb3-8c3f-007a2b32eb72
+2023-10-23 17:30:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 16/22"
+2023-10-23 17:30:10 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_4c4b4729-5c05-4de6-a518-4d20e0948097
+2023-10-23 17:30:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 16/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_4c4b4729-5c05-4de6-a518-4d20e0948097
+2023-10-23 17:30:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 17/22"
+2023-10-23 17:30:41 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_37f7cd5a-ac0d-45ee-991c-d858542254d9
+2023-10-23 17:30:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 17/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_37f7cd5a-ac0d-45ee-991c-d858542254d9
+2023-10-23 17:30:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 18/22"
+2023-10-23 17:31:00 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_16841ebe-1e78-471a-91fe-78b8f7e2fc13
+2023-10-23 17:31:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 18/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_16841ebe-1e78-471a-91fe-78b8f7e2fc13
+2023-10-23 17:31:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 19/22"
+2023-10-23 17:31:18 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_c3a3d976-ba79-4436-ad13-5a6793ae90a9
+2023-10-23 17:31:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 19/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_c3a3d976-ba79-4436-ad13-5a6793ae90a9
+2023-10-23 17:31:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 20/22"
+2023-10-23 17:31:31 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_567751c6-90b7-4811-bc4b-6a89e3b3288a
+2023-10-23 17:31:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 20/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_567751c6-90b7-4811-bc4b-6a89e3b3288a
+2023-10-23 17:31:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 21/22"
+2023-10-23 17:31:42 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_e3c9ed2b-a94f-4fc5-acf8-9bd31fff43c9
+2023-10-23 17:31:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 21/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_e3c9ed2b-a94f-4fc5-acf8-9bd31fff43c9
+2023-10-23 17:31:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff.get_query_specs query 22/22"
+2023-10-23 17:31:57 - INFO - cdr_cleaner.clean_cdr_engine - Running ehr_submis_23f9dc84-8c60-4a44-96c5-0ad0f5f09b7d
+2023-10-23 17:32:09 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 22/22 for cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff with job_id ehr_submis_23f9dc84-8c60-4a44-96c5-0ad0f5f09b7d
+2023-10-23 17:32:09 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff, 22 jobs were run successfully for 22 queries
+2023-10-23 17:32:09 - WARNING - cdr_cleaner.clean_cdr_engine - DeduplicateIdColumn does not accept the `table_namer` property yet.
+2023-10-23 17:32:10 - INFO - cdr_cleaner.cleaning_rules.base_cleaning_rule - 'table_namer' was not set.  Using default value of `_unioned_ehr_staging`.
+2023-10-23 17:32:10 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.id_deduplicate 2/8
+2023-10-23 17:32:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 1/54"
+2023-10-23 17:32:11 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_b66a0e2d-b9a0-4d39-94d0-15fc6d7b408a
+2023-10-23 17:32:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_b66a0e2d-b9a0-4d39-94d0-15fc6d7b408a
+2023-10-23 17:32:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 2/54"
+2023-10-23 17:32:14 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_aba1eea3-9057-4ae9-b1d3-b5d180cbe2a0
+2023-10-23 17:32:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_aba1eea3-9057-4ae9-b1d3-b5d180cbe2a0
+2023-10-23 17:32:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 3/54"
+2023-10-23 17:32:18 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_01f97948-dfaa-4618-b9e1-94e31bd8da7b
+2023-10-23 17:32:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_01f97948-dfaa-4618-b9e1-94e31bd8da7b
+2023-10-23 17:32:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 4/54"
+2023-10-23 17:32:21 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_5ac87b01-91cf-46ce-90a5-f89ef2d1d96a
+2023-10-23 17:32:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_5ac87b01-91cf-46ce-90a5-f89ef2d1d96a
+2023-10-23 17:32:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 5/54"
+2023-10-23 17:32:25 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_778611a0-30ec-4437-aec0-34ae166c813b
+2023-10-23 17:32:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 5/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_778611a0-30ec-4437-aec0-34ae166c813b
+2023-10-23 17:32:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 6/54"
+2023-10-23 17:32:34 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_f8697c3f-004f-43f4-a7ff-47dd35387727
+2023-10-23 17:32:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 6/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_f8697c3f-004f-43f4-a7ff-47dd35387727
+2023-10-23 17:32:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 7/54"
+2023-10-23 17:32:36 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_9864db02-07a4-4610-a3dd-56f555c5e3f5
+2023-10-23 17:32:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 7/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_9864db02-07a4-4610-a3dd-56f555c5e3f5
+2023-10-23 17:32:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 8/54"
+2023-10-23 17:32:39 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_5fda67e8-2b92-45e3-98a7-880e1554e353
+2023-10-23 17:32:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 8/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_5fda67e8-2b92-45e3-98a7-880e1554e353
+2023-10-23 17:32:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 9/54"
+2023-10-23 17:32:44 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_04510d5b-f6c0-4727-94fa-b659c9e808f9
+2023-10-23 17:32:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 9/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_04510d5b-f6c0-4727-94fa-b659c9e808f9
+2023-10-23 17:32:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 10/54"
+2023-10-23 17:32:46 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_21771a05-c3ee-4d35-82b7-e56a0799dd8a
+2023-10-23 17:32:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 10/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_21771a05-c3ee-4d35-82b7-e56a0799dd8a
+2023-10-23 17:32:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 11/54"
+2023-10-23 17:32:48 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_997748db-e944-45b6-813c-e991be70e746
+2023-10-23 17:32:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 11/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_997748db-e944-45b6-813c-e991be70e746
+2023-10-23 17:32:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 12/54"
+2023-10-23 17:32:53 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_45a7f376-4e6a-47c6-b540-b0d738abd4b8
+2023-10-23 17:33:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 12/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_45a7f376-4e6a-47c6-b540-b0d738abd4b8
+2023-10-23 17:33:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 13/54"
+2023-10-23 17:33:06 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_36af419a-9e44-4996-b39c-17f941032abe
+2023-10-23 17:33:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 13/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_36af419a-9e44-4996-b39c-17f941032abe
+2023-10-23 17:33:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 14/54"
+2023-10-23 17:33:11 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_e7d2368a-73b6-4bc8-9d25-445b8ca4ec82
+2023-10-23 17:33:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 14/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_e7d2368a-73b6-4bc8-9d25-445b8ca4ec82
+2023-10-23 17:33:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 15/54"
+2023-10-23 17:33:26 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_e24a4913-153e-41f0-9451-c5803c1ca0e0
+2023-10-23 17:33:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 15/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_e24a4913-153e-41f0-9451-c5803c1ca0e0
+2023-10-23 17:33:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 16/54"
+2023-10-23 17:33:33 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_22619c71-1ff4-44e3-86ae-27fde90d180f
+2023-10-23 17:33:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 16/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_22619c71-1ff4-44e3-86ae-27fde90d180f
+2023-10-23 17:33:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 17/54"
+2023-10-23 17:33:36 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_37abdd89-caf9-4ba9-ab88-7575be5b54c9
+2023-10-23 17:33:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 17/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_37abdd89-caf9-4ba9-ab88-7575be5b54c9
+2023-10-23 17:33:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 18/54"
+2023-10-23 17:33:43 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_4beb16f8-a4a3-412d-9208-2abea95e9167
+2023-10-23 17:33:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 18/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_4beb16f8-a4a3-412d-9208-2abea95e9167
+2023-10-23 17:33:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 19/54"
+2023-10-23 17:33:48 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_a871d136-20d5-402d-8b0b-4e2cd0139b3d
+2023-10-23 17:33:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 19/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_a871d136-20d5-402d-8b0b-4e2cd0139b3d
+2023-10-23 17:33:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 20/54"
+2023-10-23 17:33:50 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_fd659ba2-c5f2-439c-94ae-6eb477061e6b
+2023-10-23 17:33:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 20/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_fd659ba2-c5f2-439c-94ae-6eb477061e6b
+2023-10-23 17:33:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 21/54"
+2023-10-23 17:33:53 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_9cdc15f5-2008-4295-a924-143dc859710c
+2023-10-23 17:33:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 21/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_9cdc15f5-2008-4295-a924-143dc859710c
+2023-10-23 17:33:59 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 22/54"
+2023-10-23 17:34:00 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_cac1c5f1-6200-4902-ac81-064a4de73a0b
+2023-10-23 17:34:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 22/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_cac1c5f1-6200-4902-ac81-064a4de73a0b
+2023-10-23 17:34:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 23/54"
+2023-10-23 17:34:06 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_7da7e880-b7ee-4df5-ad0e-eac6c4704a21
+2023-10-23 17:34:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 23/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_7da7e880-b7ee-4df5-ad0e-eac6c4704a21
+2023-10-23 17:34:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 24/54"
+2023-10-23 17:34:12 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_b7feb9eb-71a0-485c-a561-a51040a8880a
+2023-10-23 17:34:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 24/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_b7feb9eb-71a0-485c-a561-a51040a8880a
+2023-10-23 17:34:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 25/54"
+2023-10-23 17:34:15 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_732d64ba-b694-4774-962e-258bc842228f
+2023-10-23 17:34:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 25/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_732d64ba-b694-4774-962e-258bc842228f
+2023-10-23 17:34:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 26/54"
+2023-10-23 17:34:17 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_0ba69c76-ff89-41cf-9b91-124a2dfe621b
+2023-10-23 17:34:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 26/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_0ba69c76-ff89-41cf-9b91-124a2dfe621b
+2023-10-23 17:34:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 27/54"
+2023-10-23 17:34:24 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_990e3bc0-93e0-4593-add7-01a8e6a72c6a
+2023-10-23 17:34:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 27/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_990e3bc0-93e0-4593-add7-01a8e6a72c6a
+2023-10-23 17:34:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 28/54"
+2023-10-23 17:34:31 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_338e2c84-9c83-43ca-9ef4-1161651c1d67
+2023-10-23 17:34:32 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 28/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_338e2c84-9c83-43ca-9ef4-1161651c1d67
+2023-10-23 17:34:32 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 29/54"
+2023-10-23 17:34:33 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_3cc5a840-b940-49fb-9994-bb81e5635caf
+2023-10-23 17:34:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 29/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_3cc5a840-b940-49fb-9994-bb81e5635caf
+2023-10-23 17:34:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 30/54"
+2023-10-23 17:34:37 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_77061505-94b8-4592-b199-f8ecc3b93701
+2023-10-23 17:34:39 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 30/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_77061505-94b8-4592-b199-f8ecc3b93701
+2023-10-23 17:34:39 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 31/54"
+2023-10-23 17:34:40 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_99f3c39e-888a-4b31-b5c7-3a318613baff
+2023-10-23 17:34:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 31/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_99f3c39e-888a-4b31-b5c7-3a318613baff
+2023-10-23 17:34:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 32/54"
+2023-10-23 17:34:45 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_2614256f-25ee-4109-a64e-651386058166
+2023-10-23 17:35:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 32/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_2614256f-25ee-4109-a64e-651386058166
+2023-10-23 17:35:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 33/54"
+2023-10-23 17:35:01 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_39710fd3-b135-44ca-9723-586c61a4b2a1
+2023-10-23 17:35:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 33/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_39710fd3-b135-44ca-9723-586c61a4b2a1
+2023-10-23 17:35:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 34/54"
+2023-10-23 17:35:04 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_7238affe-6c6c-4288-802c-b34095f06b04
+2023-10-23 17:35:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 34/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_7238affe-6c6c-4288-802c-b34095f06b04
+2023-10-23 17:35:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 35/54"
+2023-10-23 17:35:06 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_1d8e09e6-a984-4c29-a0d1-d7136746b1ae
+2023-10-23 17:35:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 35/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_1d8e09e6-a984-4c29-a0d1-d7136746b1ae
+2023-10-23 17:35:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 36/54"
+2023-10-23 17:35:12 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_58fc0248-16de-4f1d-b527-b29100c7efc6
+2023-10-23 17:35:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 36/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_58fc0248-16de-4f1d-b527-b29100c7efc6
+2023-10-23 17:35:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 37/54"
+2023-10-23 17:35:15 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_298c23d4-f124-4c0b-a850-4751283e1efc
+2023-10-23 17:35:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 37/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_298c23d4-f124-4c0b-a850-4751283e1efc
+2023-10-23 17:35:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 38/54"
+2023-10-23 17:35:18 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_fb1abce8-9a74-40c2-89c8-43e6085ab8e3
+2023-10-23 17:35:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 38/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_fb1abce8-9a74-40c2-89c8-43e6085ab8e3
+2023-10-23 17:35:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 39/54"
+2023-10-23 17:35:22 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_ea5b8f5a-fb30-4670-ab66-f9052506b659
+2023-10-23 17:35:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 39/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_ea5b8f5a-fb30-4670-ab66-f9052506b659
+2023-10-23 17:35:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 40/54"
+2023-10-23 17:35:44 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_2a0cbb50-b2a0-4b3a-bb54-6a95605ec700
+2023-10-23 17:35:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 40/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_2a0cbb50-b2a0-4b3a-bb54-6a95605ec700
+2023-10-23 17:35:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 41/54"
+2023-10-23 17:35:51 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_e666c0d3-7973-4071-9686-e28639ff474d
+2023-10-23 17:36:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 41/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_e666c0d3-7973-4071-9686-e28639ff474d
+2023-10-23 17:36:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 42/54"
+2023-10-23 17:36:17 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_e1f5b513-fb3f-4c0c-b955-b7b9d46ae6f2
+2023-10-23 17:36:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 42/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_e1f5b513-fb3f-4c0c-b955-b7b9d46ae6f2
+2023-10-23 17:36:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 43/54"
+2023-10-23 17:36:32 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_e1c206fb-c38e-49f8-a735-ceaaf8a0723d
+2023-10-23 17:36:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 43/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_e1c206fb-c38e-49f8-a735-ceaaf8a0723d
+2023-10-23 17:36:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 44/54"
+2023-10-23 17:36:34 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_39cb8aed-a1ab-42a9-801c-fcfcdc37df79
+2023-10-23 17:36:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 44/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_39cb8aed-a1ab-42a9-801c-fcfcdc37df79
+2023-10-23 17:36:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 45/54"
+2023-10-23 17:36:47 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_df464b6c-bace-41ff-a3f2-4852c5bd36d9
+2023-10-23 17:36:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 45/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_df464b6c-bace-41ff-a3f2-4852c5bd36d9
+2023-10-23 17:36:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 46/54"
+2023-10-23 17:36:51 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_2690e3cf-94b3-4235-942b-b7d2051051e5
+2023-10-23 17:36:53 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 46/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_2690e3cf-94b3-4235-942b-b7d2051051e5
+2023-10-23 17:36:53 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 47/54"
+2023-10-23 17:36:53 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_0c8000bf-aa0c-4185-8ae8-55c503cd0ce1
+2023-10-23 17:36:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 47/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_0c8000bf-aa0c-4185-8ae8-55c503cd0ce1
+2023-10-23 17:36:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 48/54"
+2023-10-23 17:36:56 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_8cce5d16-21c6-4dc2-8a9a-5975a295c681
+2023-10-23 17:37:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 48/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_8cce5d16-21c6-4dc2-8a9a-5975a295c681
+2023-10-23 17:37:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 49/54"
+2023-10-23 17:37:04 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_497743ee-48d8-4768-af26-c23b0e950770
+2023-10-23 17:37:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 49/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_497743ee-48d8-4768-af26-c23b0e950770
+2023-10-23 17:37:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 50/54"
+2023-10-23 17:37:11 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_c4b374a0-216d-4e17-9fd5-fbf4552b4fa6
+2023-10-23 17:37:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 50/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_c4b374a0-216d-4e17-9fd5-fbf4552b4fa6
+2023-10-23 17:37:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 51/54"
+2023-10-23 17:37:18 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_86cd1f67-fa64-471e-9b81-a9336306256c
+2023-10-23 17:37:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 51/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_86cd1f67-fa64-471e-9b81-a9336306256c
+2023-10-23 17:37:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 52/54"
+2023-10-23 17:37:21 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_d0741cd9-3482-4ee3-b359-c7feae2ce8cf
+2023-10-23 17:37:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 52/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_d0741cd9-3482-4ee3-b359-c7feae2ce8cf
+2023-10-23 17:37:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 53/54"
+2023-10-23 17:37:24 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_56b2e432-30e4-46ad-90f5-9292dc3e7cae
+2023-10-23 17:37:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 53/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_56b2e432-30e4-46ad-90f5-9292dc3e7cae
+2023-10-23 17:37:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.id_deduplicate.get_query_specs query 54/54"
+2023-10-23 17:37:31 - INFO - cdr_cleaner.clean_cdr_engine - Running id_dedupli_ecb50506-8f93-4859-bf22-08132efc1e95
+2023-10-23 17:37:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 54/54 for cdr_cleaner.cleaning_rules.id_deduplicate with job_id id_dedupli_ecb50506-8f93-4859-bf22-08132efc1e95
+2023-10-23 17:37:44 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.id_deduplicate, 54 jobs were run successfully for 54 queries
+2023-10-23 17:37:44 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.clean_by_birth_year 3/8
+2023-10-23 17:37:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 1/42"
+2023-10-23 17:37:45 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_440c79ba-e712-41d5-904e-fe027012a62a
+2023-10-23 17:37:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_440c79ba-e712-41d5-904e-fe027012a62a
+2023-10-23 17:37:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 2/42"
+2023-10-23 17:37:47 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_53a20b12-4761-437a-b36e-9a4ea01adf40
+2023-10-23 17:37:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_53a20b12-4761-437a-b36e-9a4ea01adf40
+2023-10-23 17:37:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 3/42"
+2023-10-23 17:37:50 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_d5ae3458-078c-494c-9f73-7052a72b1247
+2023-10-23 17:37:53 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_d5ae3458-078c-494c-9f73-7052a72b1247
+2023-10-23 17:37:53 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 4/42"
+2023-10-23 17:37:53 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_b88f51d6-a065-4746-9200-ad05274b642a
+2023-10-23 17:37:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_b88f51d6-a065-4746-9200-ad05274b642a
+2023-10-23 17:37:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 5/42"
+2023-10-23 17:37:56 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_d74a8fcb-29eb-44ce-94c2-a0f3c9b9140c
+2023-10-23 17:37:58 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 5/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_d74a8fcb-29eb-44ce-94c2-a0f3c9b9140c
+2023-10-23 17:37:58 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 6/42"
+2023-10-23 17:37:59 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_8bce7686-4417-4b27-a8d7-3054100414c0
+2023-10-23 17:38:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 6/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_8bce7686-4417-4b27-a8d7-3054100414c0
+2023-10-23 17:38:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 7/42"
+2023-10-23 17:38:02 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_265482c1-2649-41a6-b325-8da1b88235ba
+2023-10-23 17:38:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 7/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_265482c1-2649-41a6-b325-8da1b88235ba
+2023-10-23 17:38:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 8/42"
+2023-10-23 17:38:05 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_d6583161-2778-460e-9a2f-28b1515a3081
+2023-10-23 17:38:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 8/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_d6583161-2778-460e-9a2f-28b1515a3081
+2023-10-23 17:38:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 9/42"
+2023-10-23 17:38:07 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_1417f4f2-f375-4b04-a0e1-9f1d3966b865
+2023-10-23 17:38:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 9/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_1417f4f2-f375-4b04-a0e1-9f1d3966b865
+2023-10-23 17:38:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 10/42"
+2023-10-23 17:38:10 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_be12c36c-5dae-4725-81d9-1055ca537fc8
+2023-10-23 17:38:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 10/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_be12c36c-5dae-4725-81d9-1055ca537fc8
+2023-10-23 17:38:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 11/42"
+2023-10-23 17:38:13 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_ad325809-2a9f-4caf-81b5-1b123d5beab2
+2023-10-23 17:38:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 11/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_ad325809-2a9f-4caf-81b5-1b123d5beab2
+2023-10-23 17:38:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 12/42"
+2023-10-23 17:38:15 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_66e7612a-64df-43c0-a38c-d0ea73cbe1eb
+2023-10-23 17:38:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 12/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_66e7612a-64df-43c0-a38c-d0ea73cbe1eb
+2023-10-23 17:38:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 13/42"
+2023-10-23 17:38:18 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_decee05c-3a35-4a84-a0ae-1bc2efb2413e
+2023-10-23 17:38:20 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 13/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_decee05c-3a35-4a84-a0ae-1bc2efb2413e
+2023-10-23 17:38:20 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 14/42"
+2023-10-23 17:38:20 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_2cab4286-103f-44c9-b24a-770e9ff187c4
+2023-10-23 17:38:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 14/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_2cab4286-103f-44c9-b24a-770e9ff187c4
+2023-10-23 17:38:23 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 15/42"
+2023-10-23 17:38:23 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_87fe910c-b95d-43a4-828a-371e832b2173
+2023-10-23 17:38:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 15/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_87fe910c-b95d-43a4-828a-371e832b2173
+2023-10-23 17:38:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 16/42"
+2023-10-23 17:38:26 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_3224e76c-777c-4b42-a81b-e0556a3aa5ac
+2023-10-23 17:38:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 16/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_3224e76c-777c-4b42-a81b-e0556a3aa5ac
+2023-10-23 17:38:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 17/42"
+2023-10-23 17:38:28 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_005f4913-f36d-438b-a840-695df9254c15
+2023-10-23 17:38:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 17/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_005f4913-f36d-438b-a840-695df9254c15
+2023-10-23 17:38:30 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 18/42"
+2023-10-23 17:38:30 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_c9630394-aaa9-4ba8-9dd0-d13b13bffc40
+2023-10-23 17:38:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 18/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_c9630394-aaa9-4ba8-9dd0-d13b13bffc40
+2023-10-23 17:38:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 19/42"
+2023-10-23 17:38:33 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_9962de4b-074d-449d-b94d-109db150ae03
+2023-10-23 17:38:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 19/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_9962de4b-074d-449d-b94d-109db150ae03
+2023-10-23 17:38:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 20/42"
+2023-10-23 17:38:36 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_03b400c1-add9-496a-abba-4a70230b3552
+2023-10-23 17:38:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 20/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_03b400c1-add9-496a-abba-4a70230b3552
+2023-10-23 17:38:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 21/42"
+2023-10-23 17:38:38 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_9961134d-117a-4584-88ae-c7a81290b234
+2023-10-23 17:38:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 21/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_9961134d-117a-4584-88ae-c7a81290b234
+2023-10-23 17:38:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 22/42"
+2023-10-23 17:38:41 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_d2dbcd74-1b73-4167-998a-affe01cfabdd
+2023-10-23 17:38:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 22/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_d2dbcd74-1b73-4167-998a-affe01cfabdd
+2023-10-23 17:38:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 23/42"
+2023-10-23 17:38:48 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_65c57692-3538-4c26-b0e4-c87320da04fe
+2023-10-23 17:38:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 23/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_65c57692-3538-4c26-b0e4-c87320da04fe
+2023-10-23 17:38:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 24/42"
+2023-10-23 17:38:51 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_bd177bca-723c-4eaf-aa47-13406d828011
+2023-10-23 17:38:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 24/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_bd177bca-723c-4eaf-aa47-13406d828011
+2023-10-23 17:38:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 25/42"
+2023-10-23 17:38:55 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_38f5b646-353e-4d3c-aad5-1ba4c798ffd2
+2023-10-23 17:38:57 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 25/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_38f5b646-353e-4d3c-aad5-1ba4c798ffd2
+2023-10-23 17:38:57 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 26/42"
+2023-10-23 17:38:58 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_16704283-da04-47f2-9b4f-34fc1ea0c9f9
+2023-10-23 17:39:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 26/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_16704283-da04-47f2-9b4f-34fc1ea0c9f9
+2023-10-23 17:39:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 27/42"
+2023-10-23 17:39:06 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_f21cd3ff-6bd4-4175-aff1-1ab22c1a825a
+2023-10-23 17:39:09 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 27/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_f21cd3ff-6bd4-4175-aff1-1ab22c1a825a
+2023-10-23 17:39:09 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 28/42"
+2023-10-23 17:39:09 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_de712bd5-4d87-4c90-871c-d065f88eca14
+2023-10-23 17:39:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 28/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_de712bd5-4d87-4c90-871c-d065f88eca14
+2023-10-23 17:39:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 29/42"
+2023-10-23 17:39:12 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_14cda046-d593-42e4-863e-1c76533e6ba6
+2023-10-23 17:39:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 29/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_14cda046-d593-42e4-863e-1c76533e6ba6
+2023-10-23 17:39:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 30/42"
+2023-10-23 17:39:24 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_c5e3e3a8-89ba-480c-b8bb-d22326e2bb22
+2023-10-23 17:39:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 30/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_c5e3e3a8-89ba-480c-b8bb-d22326e2bb22
+2023-10-23 17:39:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 31/42"
+2023-10-23 17:39:29 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_736eebd0-9db8-411f-85bf-895388491201
+2023-10-23 17:39:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 31/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_736eebd0-9db8-411f-85bf-895388491201
+2023-10-23 17:39:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 32/42"
+2023-10-23 17:39:36 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_31c9d6e8-ac14-413a-9464-0ecbe0c901c3
+2023-10-23 17:39:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 32/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_31c9d6e8-ac14-413a-9464-0ecbe0c901c3
+2023-10-23 17:39:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 33/42"
+2023-10-23 17:39:42 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_13446bb6-d672-4d58-b1f1-15c2f6bf7b3a
+2023-10-23 17:39:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 33/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_13446bb6-d672-4d58-b1f1-15c2f6bf7b3a
+2023-10-23 17:39:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 34/42"
+2023-10-23 17:39:45 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_91c54e77-f7f0-49d3-bd57-9b2f34e2b707
+2023-10-23 17:39:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 34/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_91c54e77-f7f0-49d3-bd57-9b2f34e2b707
+2023-10-23 17:39:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 35/42"
+2023-10-23 17:39:48 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_90254194-2669-4885-9bf7-bb8393f60fff
+2023-10-23 17:39:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 35/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_90254194-2669-4885-9bf7-bb8393f60fff
+2023-10-23 17:39:50 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 36/42"
+2023-10-23 17:39:50 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_f3376cd1-b02c-44f5-869f-53c77798c407
+2023-10-23 17:39:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 36/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_f3376cd1-b02c-44f5-869f-53c77798c407
+2023-10-23 17:39:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 37/42"
+2023-10-23 17:39:53 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_0b615a0a-a3b8-4cad-b0a7-aa6455f7aa99
+2023-10-23 17:40:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 37/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_0b615a0a-a3b8-4cad-b0a7-aa6455f7aa99
+2023-10-23 17:40:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 38/42"
+2023-10-23 17:40:02 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_7aefd523-b94b-4c7f-85f1-dbf129971874
+2023-10-23 17:40:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 38/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_7aefd523-b94b-4c7f-85f1-dbf129971874
+2023-10-23 17:40:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 39/42"
+2023-10-23 17:40:12 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_e67dccac-4782-4021-bdb5-07d344018c03
+2023-10-23 17:40:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 39/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_e67dccac-4782-4021-bdb5-07d344018c03
+2023-10-23 17:40:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 40/42"
+2023-10-23 17:40:19 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_efecd4fb-beb5-453f-9feb-906878dd2b04
+2023-10-23 17:40:22 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 40/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_efecd4fb-beb5-453f-9feb-906878dd2b04
+2023-10-23 17:40:22 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 41/42"
+2023-10-23 17:40:22 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_cf9ecedb-00d1-43b3-93cd-b7a48b2bc499
+2023-10-23 17:40:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 41/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_cf9ecedb-00d1-43b3-93cd-b7a48b2bc499
+2023-10-23 17:40:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year.get_query_specs query 42/42"
+2023-10-23 17:40:25 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_by_b_332f2e16-efe4-491a-89eb-1bc3e63c811b
+2023-10-23 17:40:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 42/42 for cdr_cleaner.cleaning_rules.clean_by_birth_year with job_id clean_by_b_332f2e16-efe4-491a-89eb-1bc3e63c811b
+2023-10-23 17:40:31 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.clean_by_birth_year, 42 jobs were run successfully for 42 queries
+2023-10-23 17:40:31 - WARNING - cdr_cleaner.clean_cdr_engine - EnsureDateDatetimeConsistency does not accept the `table_namer` property yet.
+2023-10-23 17:40:31 - INFO - cdr_cleaner.cleaning_rules.base_cleaning_rule - 'table_namer' was not set.  Using default value of `_unioned_ehr_staging`.
+2023-10-23 17:40:31 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency 4/8
+2023-10-23 17:40:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 1/14"
+2023-10-23 17:40:32 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_53846a7a-2e79-4ce3-bb2c-e8d2ddad4e23
+2023-10-23 17:40:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_53846a7a-2e79-4ce3-bb2c-e8d2ddad4e23
+2023-10-23 17:40:34 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 2/14"
+2023-10-23 17:40:34 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_689ae4f3-8780-4fff-8298-bf962c164abb
+2023-10-23 17:40:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_689ae4f3-8780-4fff-8298-bf962c164abb
+2023-10-23 17:40:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 3/14"
+2023-10-23 17:40:44 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_6d81600a-13e2-414b-878e-5a3a5683cdef
+2023-10-23 17:40:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_6d81600a-13e2-414b-878e-5a3a5683cdef
+2023-10-23 17:40:56 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 4/14"
+2023-10-23 17:40:56 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_61f4741c-b673-4f0e-8492-3bccd6387f7c
+2023-10-23 17:41:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_61f4741c-b673-4f0e-8492-3bccd6387f7c
+2023-10-23 17:41:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 5/14"
+2023-10-23 17:41:02 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_ce9bf2f3-a35a-471f-817a-286e06866958
+2023-10-23 17:41:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 5/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_ce9bf2f3-a35a-471f-817a-286e06866958
+2023-10-23 17:41:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 6/14"
+2023-10-23 17:41:26 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_bd3689ca-1945-47f8-b22e-b052ceb51e40
+2023-10-23 17:41:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 6/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_bd3689ca-1945-47f8-b22e-b052ceb51e40
+2023-10-23 17:41:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 7/14"
+2023-10-23 17:41:38 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_22190e6f-a5b3-4ace-a0a3-f025db4ce111
+2023-10-23 17:41:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 7/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_22190e6f-a5b3-4ace-a0a3-f025db4ce111
+2023-10-23 17:41:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 8/14"
+2023-10-23 17:41:47 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_1fe885c2-dd29-4c51-9f40-055c0ac5e0a3
+2023-10-23 17:41:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 8/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_1fe885c2-dd29-4c51-9f40-055c0ac5e0a3
+2023-10-23 17:41:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 9/14"
+2023-10-23 17:41:50 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_da12039e-f161-487f-b1cd-bf5f45a58aa9
+2023-10-23 17:42:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 9/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_da12039e-f161-487f-b1cd-bf5f45a58aa9
+2023-10-23 17:42:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 10/14"
+2023-10-23 17:42:04 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_3b18a8e8-d6c2-4205-bdba-d06c2ce90c0d
+2023-10-23 17:42:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 10/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_3b18a8e8-d6c2-4205-bdba-d06c2ce90c0d
+2023-10-23 17:42:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 11/14"
+2023-10-23 17:42:11 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_e0d5100a-5128-47ca-9b69-79d62148f04d
+2023-10-23 17:42:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 11/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_e0d5100a-5128-47ca-9b69-79d62148f04d
+2023-10-23 17:42:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 12/14"
+2023-10-23 17:42:14 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_71f2f59a-37e0-4b07-8ae4-549c3765ae1d
+2023-10-23 17:42:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 12/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_71f2f59a-37e0-4b07-8ae4-549c3765ae1d
+2023-10-23 17:42:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 13/14"
+2023-10-23 17:42:18 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_45eb9cb5-4d79-47bf-a2a6-a9e2315ee627
+2023-10-23 17:42:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 13/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_45eb9cb5-4d79-47bf-a2a6-a9e2315ee627
+2023-10-23 17:42:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency.get_query_specs query 14/14"
+2023-10-23 17:42:26 - INFO - cdr_cleaner.clean_cdr_engine - Running ensure_dat_fd9f907b-8061-4bce-bd2d-82576e60ab53
+2023-10-23 17:42:32 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 14/14 for cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency with job_id ensure_dat_fd9f907b-8061-4bce-bd2d-82576e60ab53
+2023-10-23 17:42:32 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency, 14 jobs were run successfully for 14 queries
+2023-10-23 17:42:32 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date 5/8
+2023-10-23 17:42:33 - INFO - cdr_cleaner.cleaning_rules.remove_records_with_wrong_date - No update query for observation_period. observation_period's date/datetime columns are all required. Only delete query is generated for observation_period.
+2023-10-23 17:42:33 - INFO - cdr_cleaner.cleaning_rules.remove_records_with_wrong_date - No update query for procedure_occurrence. procedure_occurrence's date/datetime columns are all required. Only delete query is generated for procedure_occurrence.
+2023-10-23 17:42:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 1/28"
+2023-10-23 17:42:33 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_aaf9df92-b1e0-471c-a4e4-a0f202869309
+2023-10-23 17:42:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_aaf9df92-b1e0-471c-a4e4-a0f202869309
+2023-10-23 17:42:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 2/28"
+2023-10-23 17:42:38 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_13f5a108-ec72-4485-b347-6114265cd468
+2023-10-23 17:42:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_13f5a108-ec72-4485-b347-6114265cd468
+2023-10-23 17:42:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 3/28"
+2023-10-23 17:42:41 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_80c4e494-a118-4920-a568-1dce98f225b9
+2023-10-23 17:42:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_80c4e494-a118-4920-a568-1dce98f225b9
+2023-10-23 17:42:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 4/28"
+2023-10-23 17:42:47 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_f79fc13a-b131-47c6-9c98-8870cd452dfb
+2023-10-23 17:42:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_f79fc13a-b131-47c6-9c98-8870cd452dfb
+2023-10-23 17:42:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 5/28"
+2023-10-23 17:42:50 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_16fe86e7-1a4b-4a8d-ab09-7ee715c8c9d7
+2023-10-23 17:42:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 5/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_16fe86e7-1a4b-4a8d-ab09-7ee715c8c9d7
+2023-10-23 17:42:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 6/28"
+2023-10-23 17:42:52 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_e7b86a8e-8453-42c3-bb33-519a60c89928
+2023-10-23 17:42:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 6/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_e7b86a8e-8453-42c3-bb33-519a60c89928
+2023-10-23 17:42:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 7/28"
+2023-10-23 17:42:55 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_7fcfaa6d-1f83-4839-921c-a86ed911b2af
+2023-10-23 17:42:57 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 7/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_7fcfaa6d-1f83-4839-921c-a86ed911b2af
+2023-10-23 17:42:57 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 8/28"
+2023-10-23 17:42:58 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_e8de6f37-7d31-4d8d-aa30-ec3a16d0e9a6
+2023-10-23 17:43:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 8/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_e8de6f37-7d31-4d8d-aa30-ec3a16d0e9a6
+2023-10-23 17:43:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 9/28"
+2023-10-23 17:43:01 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_1e3e80cf-308b-4749-aafa-84fe5c9b7e20
+2023-10-23 17:43:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 9/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_1e3e80cf-308b-4749-aafa-84fe5c9b7e20
+2023-10-23 17:43:04 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 10/28"
+2023-10-23 17:43:04 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_2e81b34c-e7fe-42bc-86fd-b7c9cb16b06e
+2023-10-23 17:43:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 10/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_2e81b34c-e7fe-42bc-86fd-b7c9cb16b06e
+2023-10-23 17:43:08 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 11/28"
+2023-10-23 17:43:09 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_deaade0f-5689-4b93-aed2-b25897f2ee4e
+2023-10-23 17:43:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 11/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_deaade0f-5689-4b93-aed2-b25897f2ee4e
+2023-10-23 17:43:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 12/28"
+2023-10-23 17:43:24 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_84e49980-59b0-4a5d-aa4e-ab259f63728b
+2023-10-23 17:43:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 12/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_84e49980-59b0-4a5d-aa4e-ab259f63728b
+2023-10-23 17:43:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 13/28"
+2023-10-23 17:43:29 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_e8a4cea1-9133-4f04-9208-229c4f96ea71
+2023-10-23 17:43:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 13/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_e8a4cea1-9133-4f04-9208-229c4f96ea71
+2023-10-23 17:43:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 14/28"
+2023-10-23 17:43:48 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_fc02f9ac-72e0-4e94-909d-15e24edeb15a
+2023-10-23 17:44:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 14/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_fc02f9ac-72e0-4e94-909d-15e24edeb15a
+2023-10-23 17:44:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 15/28"
+2023-10-23 17:44:07 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_f9580996-3d0d-4be7-8eb6-9ff9cae02982
+2023-10-23 17:44:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 15/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_f9580996-3d0d-4be7-8eb6-9ff9cae02982
+2023-10-23 17:44:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 16/28"
+2023-10-23 17:44:17 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_8e755405-22c7-4c41-aa27-c20bb9db0b85
+2023-10-23 17:44:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 16/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_8e755405-22c7-4c41-aa27-c20bb9db0b85
+2023-10-23 17:44:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 17/28"
+2023-10-23 17:44:21 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_3504b71b-3955-4302-a7df-0cd96a8597d9
+2023-10-23 17:44:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 17/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_3504b71b-3955-4302-a7df-0cd96a8597d9
+2023-10-23 17:44:31 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 18/28"
+2023-10-23 17:44:32 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_e31e76f6-f02d-4a79-9d0d-fb5ca88b960f
+2023-10-23 17:44:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 18/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_e31e76f6-f02d-4a79-9d0d-fb5ca88b960f
+2023-10-23 17:44:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 19/28"
+2023-10-23 17:44:41 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_827f5fc6-071e-431a-88d5-47ff0e2ead48
+2023-10-23 17:44:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 19/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_827f5fc6-071e-431a-88d5-47ff0e2ead48
+2023-10-23 17:44:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 20/28"
+2023-10-23 17:44:53 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_a448234b-0c22-471d-b562-ebcbe12d1951
+2023-10-23 17:45:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 20/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_a448234b-0c22-471d-b562-ebcbe12d1951
+2023-10-23 17:45:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 21/28"
+2023-10-23 17:45:04 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_8e7c9791-3ae4-4725-adb3-120188d8674f
+2023-10-23 17:45:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 21/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_8e7c9791-3ae4-4725-adb3-120188d8674f
+2023-10-23 17:45:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 22/28"
+2023-10-23 17:45:19 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_63653827-1140-4f9b-a238-927282234f1f
+2023-10-23 17:45:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 22/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_63653827-1140-4f9b-a238-927282234f1f
+2023-10-23 17:45:25 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 23/28"
+2023-10-23 17:45:26 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_b54b7d26-3319-4a10-bc53-8d4a3b7df58a
+2023-10-23 17:45:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 23/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_b54b7d26-3319-4a10-bc53-8d4a3b7df58a
+2023-10-23 17:45:43 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 24/28"
+2023-10-23 17:45:44 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_22193f1d-ebf8-4806-8611-f5b44f20f03f
+2023-10-23 17:45:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 24/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_22193f1d-ebf8-4806-8611-f5b44f20f03f
+2023-10-23 17:45:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 25/28"
+2023-10-23 17:45:47 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_d722ce8b-7c4b-4003-99ad-583366a140b1
+2023-10-23 17:45:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 25/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_d722ce8b-7c4b-4003-99ad-583366a140b1
+2023-10-23 17:45:49 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 26/28"
+2023-10-23 17:45:50 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_e2ebb5e3-21d5-4d86-8779-b459a2f5137c
+2023-10-23 17:45:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 26/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_e2ebb5e3-21d5-4d86-8779-b459a2f5137c
+2023-10-23 17:45:52 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 27/28"
+2023-10-23 17:45:53 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_b1b35690-17f5-436b-b5e4-e2fe03ac7188
+2023-10-23 17:45:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 27/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_b1b35690-17f5-436b-b5e4-e2fe03ac7188
+2023-10-23 17:45:55 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date.get_query_specs query 28/28"
+2023-10-23 17:45:56 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_rec_dbb47a91-51fd-4235-93e9-4731e91fbc7d
+2023-10-23 17:45:58 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 28/28 for cdr_cleaner.cleaning_rules.remove_records_with_wrong_date with job_id remove_rec_dbb47a91-51fd-4235-93e9-4731e91fbc7d
+2023-10-23 17:45:58 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.remove_records_with_wrong_date, 28 jobs were run successfully for 28 queries
+2023-10-23 17:45:58 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records 6/8
+2023-10-23 17:45:58 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records.get_query_specs query 1/2"
+2023-10-23 17:45:59 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_inv_d9d15622-04cc-4183-85cd-60770783262b
+2023-10-23 17:46:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/2 for cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records with job_id remove_inv_d9d15622-04cc-4183-85cd-60770783262b
+2023-10-23 17:46:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records.get_query_specs query 2/2"
+2023-10-23 17:46:02 - INFO - cdr_cleaner.clean_cdr_engine - Running remove_inv_75273e95-73fc-43e8-af31-0ed692c616de
+2023-10-23 17:46:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/2 for cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records with job_id remove_inv_75273e95-73fc-43e8-af31-0ed692c616de
+2023-10-23 17:46:10 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records, 2 jobs were run successfully for 2 queries
+2023-10-23 17:46:10 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.calculate_primary_death_record 7/8
+2023-10-23 17:46:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.calculate_primary_death_record.get_query_specs query 1/2"
+2023-10-23 17:46:10 - INFO - cdr_cleaner.clean_cdr_engine - Running calculate__aa16fa64-f684-45b7-9555-8686583980f8
+2023-10-23 17:46:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/2 for cdr_cleaner.cleaning_rules.calculate_primary_death_record with job_id calculate__aa16fa64-f684-45b7-9555-8686583980f8
+2023-10-23 17:46:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.calculate_primary_death_record.get_query_specs query 2/2"
+2023-10-23 17:46:13 - INFO - cdr_cleaner.clean_cdr_engine - Running calculate__b8ec56ba-030b-409b-ac39-bda4b994c797
+2023-10-23 17:46:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/2 for cdr_cleaner.cleaning_rules.calculate_primary_death_record with job_id calculate__b8ec56ba-030b-409b-ac39-bda4b994c797
+2023-10-23 17:46:16 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.calculate_primary_death_record, 2 jobs were run successfully for 2 queries
+2023-10-23 17:46:16 - INFO - cdr_cleaner.clean_cdr_engine - Applying cleaning rule cdr_cleaner.cleaning_rules.clean_mapping 8/8
+2023-10-23 17:46:33 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 1/54"
+2023-10-23 17:46:33 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_bd8d003d-fb7b-4b6e-8089-88fdeff4d98d
+2023-10-23 17:46:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 1/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_bd8d003d-fb7b-4b6e-8089-88fdeff4d98d
+2023-10-23 17:46:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 2/54"
+2023-10-23 17:46:36 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_062d30c8-81bd-4cd3-a443-b05fa25a1ca9
+2023-10-23 17:46:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 2/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_062d30c8-81bd-4cd3-a443-b05fa25a1ca9
+2023-10-23 17:46:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 3/54"
+2023-10-23 17:46:39 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_7b0a2cea-e13d-49b9-b6f2-9e25676c0afe
+2023-10-23 17:46:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 3/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_7b0a2cea-e13d-49b9-b6f2-9e25676c0afe
+2023-10-23 17:46:48 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 4/54"
+2023-10-23 17:46:48 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_826f74c2-1369-4647-b682-fea66c0b46c5
+2023-10-23 17:47:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 4/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_826f74c2-1369-4647-b682-fea66c0b46c5
+2023-10-23 17:47:01 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 5/54"
+2023-10-23 17:47:01 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_f9b53322-2dfe-4e3d-be75-4192ef79cc98
+2023-10-23 17:47:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 5/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_f9b53322-2dfe-4e3d-be75-4192ef79cc98
+2023-10-23 17:47:07 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 6/54"
+2023-10-23 17:47:07 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_04eda238-16aa-4bdf-a3a3-dce5fddb78d0
+2023-10-23 17:47:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 6/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_04eda238-16aa-4bdf-a3a3-dce5fddb78d0
+2023-10-23 17:47:12 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 7/54"
+2023-10-23 17:47:12 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_9594d9e3-e75c-459e-bb99-d6d45691f8ea
+2023-10-23 17:47:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 7/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_9594d9e3-e75c-459e-bb99-d6d45691f8ea
+2023-10-23 17:47:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 8/54"
+2023-10-23 17:47:18 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_9063389e-8899-4869-829d-fbce680d8871
+2023-10-23 17:47:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 8/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_9063389e-8899-4869-829d-fbce680d8871
+2023-10-23 17:47:26 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 9/54"
+2023-10-23 17:47:27 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_f575c0da-fd47-40db-93a3-f54127edb46e
+2023-10-23 17:47:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 9/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_f575c0da-fd47-40db-93a3-f54127edb46e
+2023-10-23 17:47:29 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 10/54"
+2023-10-23 17:47:30 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_2a8bc4ae-08e9-4717-b889-70730a0e2368
+2023-10-23 17:47:32 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 10/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_2a8bc4ae-08e9-4717-b889-70730a0e2368
+2023-10-23 17:47:32 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 11/54"
+2023-10-23 17:47:32 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_77002fa0-f26c-48eb-a822-7987641dbd07
+2023-10-23 17:47:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 11/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_77002fa0-f26c-48eb-a822-7987641dbd07
+2023-10-23 17:47:38 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 12/54"
+2023-10-23 17:47:38 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_9560f7f3-8f3f-483f-acde-997eb9199c59
+2023-10-23 17:47:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 12/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_9560f7f3-8f3f-483f-acde-997eb9199c59
+2023-10-23 17:47:44 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 13/54"
+2023-10-23 17:47:44 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_a3808693-6ac4-4c47-a0b8-a521e684d220
+2023-10-23 17:47:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 13/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_a3808693-6ac4-4c47-a0b8-a521e684d220
+2023-10-23 17:47:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 14/54"
+2023-10-23 17:47:51 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_b98d46d8-a929-47e5-93cc-cb55dbb9db9c
+2023-10-23 17:48:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 14/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_b98d46d8-a929-47e5-93cc-cb55dbb9db9c
+2023-10-23 17:48:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 15/54"
+2023-10-23 17:48:03 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_4fc98e41-ada0-41e9-a289-134e92811f01
+2023-10-23 17:48:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 15/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_4fc98e41-ada0-41e9-a289-134e92811f01
+2023-10-23 17:48:06 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 16/54"
+2023-10-23 17:48:07 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_536bd6fd-8be8-4c58-87e4-601d39f7bcd8
+2023-10-23 17:48:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 16/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_536bd6fd-8be8-4c58-87e4-601d39f7bcd8
+2023-10-23 17:48:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 17/54"
+2023-10-23 17:48:10 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_2c894975-2cf2-41d6-b9d4-02c7e444fbab
+2023-10-23 17:48:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 17/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_2c894975-2cf2-41d6-b9d4-02c7e444fbab
+2023-10-23 17:48:13 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 18/54"
+2023-10-23 17:48:13 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_632c06e5-3927-4ca7-97bf-ed92534377bf
+2023-10-23 17:48:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 18/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_632c06e5-3927-4ca7-97bf-ed92534377bf
+2023-10-23 17:48:15 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 19/54"
+2023-10-23 17:48:15 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_9513c38f-9447-4ad2-b7d3-5bacba9d50f3
+2023-10-23 17:48:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 19/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_9513c38f-9447-4ad2-b7d3-5bacba9d50f3
+2023-10-23 17:48:17 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 20/54"
+2023-10-23 17:48:18 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_11d9f135-bf9d-4075-8abb-5938d147fb20
+2023-10-23 17:48:20 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 20/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_11d9f135-bf9d-4075-8abb-5938d147fb20
+2023-10-23 17:48:20 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 21/54"
+2023-10-23 17:48:21 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_33423e88-9fed-47b7-9bae-89f1ab801216
+2023-10-23 17:48:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 21/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_33423e88-9fed-47b7-9bae-89f1ab801216
+2023-10-23 17:48:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 22/54"
+2023-10-23 17:48:29 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_1ba2bc6a-0c8c-4b8f-be43-a0052bac7431
+2023-10-23 17:48:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 22/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_1ba2bc6a-0c8c-4b8f-be43-a0052bac7431
+2023-10-23 17:48:40 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 23/54"
+2023-10-23 17:48:41 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_9af26c18-d71f-4810-8691-71f231955c74
+2023-10-23 17:48:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 23/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_9af26c18-d71f-4810-8691-71f231955c74
+2023-10-23 17:48:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 24/54"
+2023-10-23 17:48:47 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_14f0a4e0-179c-4bae-af2d-be9bca4dfebd
+2023-10-23 17:48:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 24/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_14f0a4e0-179c-4bae-af2d-be9bca4dfebd
+2023-10-23 17:48:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 25/54"
+2023-10-23 17:48:54 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_8cb3fdaa-208c-4e96-9df8-d2f3ccbefa13
+2023-10-23 17:49:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 25/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_8cb3fdaa-208c-4e96-9df8-d2f3ccbefa13
+2023-10-23 17:49:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 26/54"
+2023-10-23 17:49:04 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_409d2ea3-1b70-4066-b33c-397ded245198
+2023-10-23 17:49:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 26/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_409d2ea3-1b70-4066-b33c-397ded245198
+2023-10-23 17:49:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 27/54"
+2023-10-23 17:49:17 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_4aff1d90-c233-4e6f-a857-697938146dc9
+2023-10-23 17:49:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 27/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_4aff1d90-c233-4e6f-a857-697938146dc9
+2023-10-23 17:49:19 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 28/54"
+2023-10-23 17:49:19 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_3e27926c-4a11-4d6d-ae54-c984a65a0c89
+2023-10-23 17:49:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 28/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_3e27926c-4a11-4d6d-ae54-c984a65a0c89
+2023-10-23 17:49:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 29/54"
+2023-10-23 17:49:22 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_d0f3c3a3-54a9-4619-8217-a35371640a7d
+2023-10-23 17:49:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 29/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_d0f3c3a3-54a9-4619-8217-a35371640a7d
+2023-10-23 17:49:28 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 30/54"
+2023-10-23 17:49:28 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_e262e780-4612-4652-ba93-f4f79307569d
+2023-10-23 17:49:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 30/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_e262e780-4612-4652-ba93-f4f79307569d
+2023-10-23 17:49:37 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 31/54"
+2023-10-23 17:49:37 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_1bf534ff-04e9-44c8-b033-ea86b3147ead
+2023-10-23 17:49:39 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 31/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_1bf534ff-04e9-44c8-b033-ea86b3147ead
+2023-10-23 17:49:39 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 32/54"
+2023-10-23 17:49:39 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_21816167-317f-4a37-a98a-070b3716a81d
+2023-10-23 17:49:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 32/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_21816167-317f-4a37-a98a-070b3716a81d
+2023-10-23 17:49:42 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 33/54"
+2023-10-23 17:49:42 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_87c419c6-3118-462a-9c5e-cef856cb8181
+2023-10-23 17:49:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 33/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_87c419c6-3118-462a-9c5e-cef856cb8181
+2023-10-23 17:49:45 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 34/54"
+2023-10-23 17:49:45 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_8570dd7c-79ee-462d-bfc7-c3a8c994cfe8
+2023-10-23 17:49:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 34/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_8570dd7c-79ee-462d-bfc7-c3a8c994cfe8
+2023-10-23 17:49:47 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 35/54"
+2023-10-23 17:49:48 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_014ffaee-e17c-40fb-9393-7f7b6a08cd8b
+2023-10-23 17:49:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 35/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_014ffaee-e17c-40fb-9393-7f7b6a08cd8b
+2023-10-23 17:49:54 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 36/54"
+2023-10-23 17:49:54 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_bcee4943-3ab3-42fd-9794-08785efb3177
+2023-10-23 17:50:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 36/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_bcee4943-3ab3-42fd-9794-08785efb3177
+2023-10-23 17:50:02 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 37/54"
+2023-10-23 17:50:03 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_76f77fcb-74f2-41c4-997b-1e3182e119dd
+2023-10-23 17:50:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 37/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_76f77fcb-74f2-41c4-997b-1e3182e119dd
+2023-10-23 17:50:10 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 38/54"
+2023-10-23 17:50:10 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_100f5233-f600-4914-8a52-c919085ff920
+2023-10-23 17:50:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 38/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_100f5233-f600-4914-8a52-c919085ff920
+2023-10-23 17:50:21 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 39/54"
+2023-10-23 17:50:22 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_bcb35871-4138-417b-8f86-c593a60b2010
+2023-10-23 17:50:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 39/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_bcb35871-4138-417b-8f86-c593a60b2010
+2023-10-23 17:50:27 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 40/54"
+2023-10-23 17:50:27 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_7c1f1f24-74ab-4ad4-85f1-549acbef7de8
+2023-10-23 17:50:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 40/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_7c1f1f24-74ab-4ad4-85f1-549acbef7de8
+2023-10-23 17:50:35 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 41/54"
+2023-10-23 17:50:35 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_74fe29fb-9b0f-462d-9b56-642140bbea6f
+2023-10-23 17:50:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 41/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_74fe29fb-9b0f-462d-9b56-642140bbea6f
+2023-10-23 17:50:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 42/54"
+2023-10-23 17:50:47 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_45626e02-8713-4a0b-8c20-13cdd633d07d
+2023-10-23 17:51:09 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 42/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_45626e02-8713-4a0b-8c20-13cdd633d07d
+2023-10-23 17:51:09 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 43/54"
+2023-10-23 17:51:09 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_fbd07e6a-c067-497c-8f6c-8dd7232a522f
+2023-10-23 17:51:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 43/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_fbd07e6a-c067-497c-8f6c-8dd7232a522f
+2023-10-23 17:51:11 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 44/54"
+2023-10-23 17:51:12 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_f8e18ee6-3caa-4897-ac1a-fddac008019b
+2023-10-23 17:51:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 44/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_f8e18ee6-3caa-4897-ac1a-fddac008019b
+2023-10-23 17:51:14 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 45/54"
+2023-10-23 17:51:14 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_7a4378ab-6b2a-45c7-9209-0c3c260712ee
+2023-10-23 17:51:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 45/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_7a4378ab-6b2a-45c7-9209-0c3c260712ee
+2023-10-23 17:51:16 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 46/54"
+2023-10-23 17:51:17 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_fb255e46-89a1-46c0-b079-80608840f17a
+2023-10-23 17:51:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 46/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_fb255e46-89a1-46c0-b079-80608840f17a
+2023-10-23 17:51:18 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 47/54"
+2023-10-23 17:51:19 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_87dd0788-dcb4-42bf-bf8f-5024ea109e57
+2023-10-23 17:51:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 47/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_87dd0788-dcb4-42bf-bf8f-5024ea109e57
+2023-10-23 17:51:24 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 48/54"
+2023-10-23 17:51:25 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_8bd86a91-78dc-4080-a061-9808d10342a0
+2023-10-23 17:51:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 48/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_8bd86a91-78dc-4080-a061-9808d10342a0
+2023-10-23 17:51:36 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 49/54"
+2023-10-23 17:51:37 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_1d6a44c3-1628-4255-bc35-b32aef15f1c9
+2023-10-23 17:51:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 49/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_1d6a44c3-1628-4255-bc35-b32aef15f1c9
+2023-10-23 17:51:41 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 50/54"
+2023-10-23 17:51:42 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_81b929c7-5ae5-4918-a139-4770c052477f
+2023-10-23 17:51:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 50/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_81b929c7-5ae5-4918-a139-4770c052477f
+2023-10-23 17:51:46 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 51/54"
+2023-10-23 17:51:46 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_bf63c91b-1fd8-4562-8c34-0b44232e1267
+2023-10-23 17:51:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 51/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_bf63c91b-1fd8-4562-8c34-0b44232e1267
+2023-10-23 17:51:51 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 52/54"
+2023-10-23 17:51:51 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_9d1bec7a-b871-4645-8f9b-f98bdc22f3d2
+2023-10-23 17:51:58 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 52/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_9d1bec7a-b871-4645-8f9b-f98bdc22f3d2
+2023-10-23 17:51:58 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 53/54"
+2023-10-23 17:51:58 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_9a22da04-ee65-4065-9603-ba226c5ecca7
+2023-10-23 17:52:00 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 53/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_9a22da04-ee65-4065-9603-ba226c5ecca7
+2023-10-23 17:52:00 - INFO - cdr_cleaner.clean_cdr_engine - 
+Clean rule cdr_cleaner.cleaning_rules.clean_mapping.get_query_specs query 54/54"
+2023-10-23 17:52:01 - INFO - cdr_cleaner.clean_cdr_engine - Running clean_mapp_13c257b6-07b4-4761-8b69-06cb58fc82ae
+2023-10-23 17:52:03 - INFO - cdr_cleaner.clean_cdr_engine - 
+Successfully executed query 54/54 for cdr_cleaner.cleaning_rules.clean_mapping with job_id clean_mapp_13c257b6-07b4-4761-8b69-06cb58fc82ae
+2023-10-23 17:52:03 - INFO - cdr_cleaner.clean_cdr_engine - For clean rule cdr_cleaner.cleaning_rules.clean_mapping, 54 jobs were run successfully for 54 queries

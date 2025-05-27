@@ -1,0 +1,18 @@
+runtime: python311
+service: admin
+entrypoint: gunicorn -b :$PORT admin.admin_api:app
+env: standard
+instance_class: B8
+handlers:
+  - url: /admin/.*
+    script: auto
+    secure: always
+  - url: .*
+    script: auto
+env_variables:
+  # IGNORE_SERVICE_ACCOUNT_EMAILS should be passed as following "['email1','email*',..]"
+  IGNORE_SERVICE_ACCOUNT_EMAILS: "['datadog-gcp-integration@aou-res-curation-stable.iam.gserviceaccount.com']"
+basic_scaling:
+  idle_timeout: 3600s
+  max_instances: 10
+network: {}
