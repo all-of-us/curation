@@ -1,0 +1,56 @@
+[
+  {
+    "mode": "nullable",
+    "name": "person_id",
+    "type": "integer",
+    "description": "A foreign key identifier to the person for whom the data was recorded."
+  },
+  {
+    "mode": "nullable",
+    "name": "src_id",
+    "type": "string",
+    "description": "Flag indicating the participant portal that this record originated from."
+  },
+  {
+    "mode": "nullable",
+    "name": "sleep_log_id",
+    "type": "integer",
+    "description": "Sleep log ID."
+  },
+  {
+    "mode": "nullable",
+    "name": "sleep_date",
+    "type": "date",
+    "description": "The date the sleep log ended."
+  },
+  {
+    "mode": "nullable",
+    "name": "counts_restless",
+    "type": "numeric",
+    "description": "Total number of times the user entered the restless."
+  },
+  {
+    "mode": "nullable",
+    "name": "counts_deep",
+    "type": "numeric",
+    "description": "Total number of times the user entered the deep."
+  },
+  {
+    "mode": "nullable",
+    "name": "counts_light",
+    "type": "numeric",
+    "description": "Total number of times the user entered the light."
+  },
+  {
+    "mode": "nullable",
+    "name": "counts_rem",
+    "type": "numeric",
+    "description": "Total number of times the user entered the rem."
+  },
+  {
+    "mode": "nullable",
+    "name": "counts_wake",
+    "type": "numeric",
+    "description": "Total number of times the user entered the wake."
+  }
+]
