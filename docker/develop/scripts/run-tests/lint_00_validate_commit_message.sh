@@ -2,9 +2,10 @@
 # Validates that single commit branches have an associated [DC-###] or [DST-###] or [EDQ-###] Jira
 # ticket tag in the beginning of the commit message, fails they don't
 
-TICKET_REGEX="^\[(DC|DST|EDQ)-[[:digit:]]+\][[:space:]]"
+TICKET_REGEX="^\[(DC|DL|DST|EDQ)-[[:digit:]]+\][[:space:]]"
 ERROR_MSG="Jira tag is missing or incorrectly formatted in the commit message below.
-Please rename so it is formatted as '[DC-###] commit msg' or'[DST-###] PR title' or '[EDQ-###] commit msg'."
+Please rename so it is formatted as '[DC-###] commit msg' '[DL-###] commit msg'
+or'[DST-###] PR title' or '[EDQ-###] commit msg'."
 
 set +e
 
