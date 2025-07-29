@@ -32,7 +32,7 @@
   {
     "mode": "nullable",
     "name": "start_datetime",
-    "type": "timestamp",
+    "type": "datetime",
     "description": "Timestamp the user started in sleep level. Only supported when log type = stages.."
   },
   {
