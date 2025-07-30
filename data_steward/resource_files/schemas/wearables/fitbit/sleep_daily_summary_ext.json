@@ -43,7 +43,7 @@
   },
   {
     "name": "total_minute_asleep",
-    "type": "timestamp",
+    "type": "integer",
     "mode": "nullable",
     "description": "summary : totalMinutesAsleep Total number of minutes the user was asleep across all sleep records in the sleep log."
   },
@@ -61,13 +61,13 @@
   },
   {
     "name": "sleep_start_time",
-    "type": "timestamp",
+    "type": "datetime",
     "mode": "nullable",
     "description": "sleep : startTime Time the sleep log begins."
   },
   {
     "name": "sleep_end_time",
-    "type": "timestamp",
+    "type": "datetime",
     "mode": "nullable",
     "description": "sleep : endTime Time the sleep log ended."
   },
