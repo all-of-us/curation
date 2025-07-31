@@ -1,0 +1,92 @@
+[
+  {
+    "name": "person_id",
+    "type": "integer",
+    "mode": "nullable",
+    "description": "A foreign key identifier to the person for whom the data was recorded."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "Flag indicating the participant portal that this record originated from."
+  },
+  {
+    "type": "integer",
+    "name": "sleep_log_id",
+    "mode": "nullable",
+    "description": "Sleep log ID."
+  },
+  {
+    "name": "sleep_date",
+    "type": "date",
+    "mode": "nullable",
+    "description": "The date the sleep log ended."
+  },
+  {
+    "name": "sleep_log_type",
+    "type": "integer",
+    "mode": "nullable",
+    "description": "The type of sleep in terms of how it was logged. Supported: auto_detected | manual"
+  },
+  {
+    "name": "total_sleep_records",
+    "type": "integer",
+    "mode": "nullable",
+    "description": "The number of sleep records within the sleep log."
+  },
+  {
+    "name": "sleep_duration",
+    "type": "integer",
+    "mode": "nullable",
+    "description": "Length of the sleep in milliseconds."
+  },
+  {
+    "name": "total_minute_asleep",
+    "type": "integer",
+    "mode": "nullable",
+    "description": "summary : totalMinutesAsleep Total number of minutes the user was asleep across all sleep records in the sleep log."
+  },
+  {
+    "name": "total_time_in_bed",
+    "type": "integer",
+    "mode": "nullable",
+    "description": "summary : totalTimeInBed Total number of minutes the user was in bed across all records in the sleep log."
+  },
+  {
+    "name": "sleep_efficiency",
+    "type": "integer",
+    "mode": "nullable",
+    "description": "Calculated sleep efficiency score."
+  },
+  {
+    "name": "sleep_start_time",
+    "type": "datetime",
+    "mode": "nullable",
+    "description": "sleep : startTime Time the sleep log begins."
+  },
+  {
+    "name": "sleep_end_time",
+    "type": "datetime",
+    "mode": "nullable",
+    "description": "sleep : endTime Time the sleep log ended."
+  },
+  {
+    "name": "sleep_info_code",
+    "type": "integer",
+    "mode": "nullable",
+    "description": "sleep : infoCode An integer value representing the quality of data collected within the sleep log. 0 = Sufficient data to generate a sleep log. 1 = Insufficient heart rate data. 2 = Sleep period was too short (less than 3 hours). 3 = Server-side issue when generating the sleep log. No data impact."
+  },
+  {
+    "name": "is_main_sleep",
+    "type": "string",
+    "mode": "nullable",
+    "description": "Defines a record as being the 'main sleep' record. Boolean value: true or false."
+  },
+  {
+    "name": "sleep_type",
+    "type": "string",
+    "mode": "nullable",
+    "description": "The type of sleep log. Supported : classic | stages."
+  }
+]
