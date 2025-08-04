@@ -3,93 +3,41 @@ concept_id,concept_name,concept_code,privacy_rule,vocabulary_id,date_added
 903061,No,SpectrumHealthSitePairing_No,Geolocation,PPI,1994
 715714,What type of household do you live in? Please specify.,cu_covid_cope_a_204,Free Text,PPI,1994
 44829620,Supervision of high-risk pregnancy with history of abortion,V23.2,Perinatal (including birth trauma),ICD9CM,1994
-44828516,Pregnancy with other poor obstetric history,V23.49,Perinatal (including birth trauma),ICD9CM,1994
-44825037,Multiparity,V61.5,,ICD9CM,1994deadfdfesdx   
+44825037,Multiparity,V61.5,,ICD9CM,1994
 715725,What do you think is the main reason(s) for these experiences? Select all that apply. Other reason - please specify.,eds_follow_up_1_xx,Free Text,PPI,1994
 44820486,Observation following accident at work,V71.3,,ICD9CM,1994
-44830881,"Twin gestation, monochorionic/diamniotic (one placenta, two amniotic sacs)",V91.02,Perinatal (including birth trauma),ICD9CM,1994
-44830764,Supervision of normal first pregnancy,V22.0,Perinatal (including birth trauma),ICD9CM,1994
-44827337,Normal pregnancy,V22,Perinatal (including birth trauma),ICD9CM,1994
 44820466,Family disruption due to child in foster care or in care of non-parental family member,V61.06,Legal Intervention,ICD9CM,1994
 44826171,Supervision of high-risk pregnancy with grand multiparity,V23.3,Perinatal (including birth trauma),ICD9CM,1994
-44832028,"Twin gestation, unable to determine number of placenta and number of amniotic sacs",V91.09,Perinatal (including birth trauma),ICD9CM,1994
-44820412,Encounter for screening for risk of pre-term labor,V28.82,Perinatal (including birth trauma),ICD9CM,1994
-44834254,Pregnancy with history of in utero procedure during previous pregnancy,V23.86,Perinatal (including birth trauma),ICD9CM,1994
-44829621,Supervision of high-risk pregnancy with elderly primigravida,V23.81,Perinatal (including birth trauma),ICD9CM,1994
-44826168,Health supervision for newborn 8 to 28 days old,V20.32,Liveborn infants,ICD9CM,1994
-44837885,Suspected problem with amniotic cavity and membrane not found,V89.01,Perinatal (including birth trauma),ICD9CM,1994
-44820514,"Other specified multiple gestation, with two or more monochorionic fetuses",V91.91,Perinatal (including birth trauma),ICD9CM,1994
-44835444,Supervision of high-risk pregnancy with insufficient prenatal care,V23.7,Perinatal (including birth trauma),ICD9CM,1994
-44823919,"Twin gestation, unspecified number of placenta, unspecified number of amniotic sacs",V91.00,Perinatal (including birth trauma),ICD9CM,1994
 35211257,"46, XX true hermaphrodite",Q99.1,Gender/Sex,ICD10CM,1994
 44820487,Observation following other accident,V71.4,,ICD9CM,1994
-44823804,Supervision of high-risk pregnancy with young primigravida,V23.83,Perinatal (including birth trauma),ICD9CM,1994
-44829619,Supervision of high-risk pregnancy,V23,Perinatal (including birth trauma),ICD9CM,1994
 4326589,Pseudohermaphroditism,75164001,Gender/Sex,SNOMED,1994
-903060,Yes,SpectrumHealthSitePairing_Yes,Geolocation,PPI,1994jk
-44828526,Other specified antenatal screening,V28.89,Perinatal (including birth trauma),ICD9CM,1994
+903060,Yes,SpectrumHealthSitePairing_Yes,Geolocation,PPI,1994
 44821588,family disruption due to divorce or legal separation,V61.03,Legal Intervention,ICD9CM,1994
-44829618,Supervision of other normal pregnancy,V22.1,Perinatal (including birth trauma),ICD9CM,1994
-44826278,Suspected fetal anomaly not found,V89.03,Perinatal (including birth trauma),ICD9CM,1994
-44823806,Routine postpartum follow-up,V24.2,Liveborn infants,ICD9CM,1994
-44821608,"Pregnancy examination or test, positive result",V72.42,Perinatal (including birth trauma),ICD9CM,1994
-44820515,"Other specified multiple gestation, unable to determine number of placenta and number of amniotic sacs",V91.99,Perinatal (including birth trauma),ICD9CM,1994
-44831927,Supervision of high-risk pregnancy with young multigravida,V23.84,Perinatal (including birth trauma),ICD9CM,1994
 44820467,Counseling for parent (guardian)-foster child problem,V61.25,,ICD9CM,1994
-44835457,Other specified antenatal screening,V28.8,Perinatal (including birth trauma),ICD9CM,1994
 44822748,examination for medicolegal reasons,V70.4,Legal Intervention,ICD9CM,1994
 596878,Please specify organ.,otherorgan_freetextbox,Free Text,PPI,1994
-44837787,Pregnancy with history of ectopic pregnancy,V23.42,Perinatal (including birth trauma),ICD9CM,1994
 44826231,family disruption due to return of family member from military deployment,V61.02,Living situation,ICD9CM,1994
 44824985,"Low birth weight status, less than 500 grams",V21.31,Liveborn infants,ICD9CM,1994
-44837783,Health supervision for newborn under 8 days old,V20.31,Liveborn infants,ICD9CM,1994
 4231241,Transsexual,407374003,Gender/Sex,SNOMED,1994
-439156,Finding of neonate,118188004,Liveborn infants,SNOMED,1994
 35207227,other gender identity disorders,F64.8,Gender/Sex,ICD10CM,1994
-44828518,Supervision of unspecified high-risk pregnancy,V23.9,Perinatal (including birth trauma),ICD9CM,1994
-44820478,Pediatric pre-birth visit for expectant parent(s),V65.11,Perinatal (including birth trauma),ICD9CM,1994
 596889,Please specify:,cdc_covid_xx_b_other,Free Text,PPI,1994
-44826170,Supervision of high-risk pregnancy with history of trophoblastic disease,V23.1,Perinatal (including birth trauma),ICD9CM,1994
-44835445,Supervision of other high-risk pregnancy,V23.8,Perinatal (including birth trauma),ICD9CM,1994
 702686,Who do you know who has died? Please specify.,nhs_covid_fhc17b_cope_a_226,Free Text,PPI,1994
-44827338,Supervision of high-risk pregnancy with history of infertility,V23.0,Perinatal (including birth trauma),ICD9CM,1994
-44836632,Supervision of high-risk pregnancy with other poor obstetric history,V23.4,Perinatal (including birth trauma),ICD9CM,1994
 35211010,"Pseudohermaphroditism, unspecified",Q56.3,Gender/Sex,ICD10CM,1994
-44823803,Supervision of high-risk pregnancy with elderly multigravida,V23.82,Perinatal (including birth trauma),ICD9CM,1994
-44837804,Observation and evaluation of newborn for suspected respiratory condition,V29.2,Liveborn infants,ICD9CM,1994
 37312440,Lower uterine segment cesarean section,788180009,Perinatal (including birth trauma),SNOMED,1994
-44828517,Supervision of other high-risk pregnancy,V23.89,Perinatal (including birth trauma),ICD9CM,1994
-44833176,"Twin gestation, monochorionic/monoamniotic (one placenta, one amniotic sac)",V91.01,Perinatal (including birth trauma),ICD9CM,1994
 596879,Please specify tissue.,othertissue_freetextbox,Free Text,PPI,1994
 4210749,victim of sexual aggression,56890008,Assault/Homicide,SNOMED,1994
-44820410,Antenatal screening for fetal growth retardation using ultrasonics,V28.4,Perinatal (including birth trauma),ICD9CM,1994
-44837801,Other antenatal screening based on amniocentesis,V28.2,Perinatal (including birth trauma),ICD9CM,1994
-44821530,Pregnancy with history of pre-term labor,V23.41,Perinatal (including birth trauma),ICD9CM,1994
 4338512,gender identity disorder,87991007,Gender/Sex,SNOMED,1994
 35207228,"gender identity disorder, unspecified",F64.9,Gender/Sex,ICD10CM,1994
 44822621,suicide and self-inflicted injury by crashing of motor vehicle,E958.5,Suicide,ICD9CM,1994
-44820411,Encounter for fetal anatomic survey,V28.81,Perinatal (including birth trauma),ICD9CM,1994
 37200330,transsexualism,F64.0,Gender/Sex,ICD10CM,1994
-44826172,Pregnancy with inconclusive fetal viability,V23.87,Perinatal (including birth trauma),ICD9CM,1994
-44823813,Encounter for routine screening for malformation using ultrasonics,V28.3,Perinatal (including birth trauma),ICD9CM,1994
 44823863,Counseling for parent-adopted child problem,V61.24,,ICD9CM,1994
 35207226,gender identity disorder of childhood,F64.2,Gender/Sex,ICD10CM,1994
 44837850,Family disruption due to child in welfare custody,V61.05,Legal Intervention,ICD9CM,1994
 44821603,observation and evaluation for suspected abuse and neglect,V71.81,Assault/Homicide,ICD9CM,1994
-44837886,Other suspected maternal and fetal condition not found,V89.09,Perinatal (including birth trauma),ICD9CM,1994
-44821263,Apparent life threatening event in infant,799.82,Liveborn infants,ICD9CM,1994
 35207225,dual role transvestism,F64.1,Gender/Sex,ICD10CM,1994
 1333016,What type of household do you live in?,cu_covid,Free Text,PPI,1994
 44823801,"Low birth weight status, 1000-1499 grams",V21.33,Liveborn infants,ICD9CM,1994
-44837786,"Pregnant state, incidental",V22.2,Perinatal (including birth trauma),ICD9CM,1994
-44837802,Unspecified antenatal screening,V28.9,Perinatal (including birth trauma),ICD9CM,1994
 44830763,"Low birth weight status, 2000-2500 grams",V21.35,Liveborn infants,ICD9CM,1994
-44826180,Antenatal screening for Streptococcus B,V28.6,Perinatal (including birth trauma),ICD9CM,1994
-44823916,Suspected problem with fetal growth not found,V89.04,Perinatal (including birth trauma),ICD9CM,1994
-44820399,Supervision of high-risk pregnancy with other poor reproductive history,V23.5,Perinatal (including birth trauma),ICD9CM,1994
-44837871,Maternal postnatal screening for chromosomal anomalies,V82.4,Liveborn infants,ICD9CM,1994
-44823920,"Twin gestation, dichorionic/diamniotic (two placentae, two amniotic sacs)",V91.03,Perinatal (including birth trauma),ICD9CM,1994
-44820409,Antenatal screening for chromosomal anomalies by amniocentesis,V28.0,Perinatal (including birth trauma),ICD9CM,1994
 4246663,gender dysphoria,93461009,Gender/Sex,SNOMED,1994
 4323227,history of intersex surgery,428405009,Gender/Sex,SNOMED,1994
 44823861,person living alone,V60.3,Living situation,ICD9CM,1994
