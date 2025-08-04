@@ -199,7 +199,7 @@ def _mapping_subqueries(client, table_name, hpo_ids, dataset_id, project_id):
     (SELECT '{{table_id}}' AS src_table_id,
       {{table_name}}_id AS src_{{table_name}}_id,
       -- offset is added to the destination key only if add_hpo_offset == True --
-      {%- if hpo_id == 'illinois_near_north' %}
+      {%- if hpo_id in ['illinois_near_north', 'ecchc'] %}
       ROW_NUMBER() OVER (ORDER BY {{table_name}}_id)
         {%- if add_hpo_offset %} + {{hpo_offset}} {%- endif %} AS {{table_name}}_id
       {%- else %}

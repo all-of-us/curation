@@ -94,8 +94,8 @@ class EhrUnionTest(unittest.TestCase):
 
         :param mock_hpo_info: simulate hpo_info being returned
         """
-        # Add illinois_near_north to test the special case
-        test_hpo_ids = [self.FAKE_SITE_1, self.FAKE_SITE_2, 'illinois_near_north']
+        # Add illinois_near_north and ecchc to test the special cases
+        test_hpo_ids = [self.FAKE_SITE_1, self.FAKE_SITE_2, 'illinois_near_north', 'ecchc']
 
         mock_hpo_info.return_value = [{
             'hpo_id': hpo_id
@@ -120,7 +120,7 @@ class EhrUnionTest(unittest.TestCase):
         # Set up the mock to return the same list for each call
         self.mock_bq_client.list_tables.return_value = mock_tables
 
-        # Test visit_occurrence mapping with illinois_near_north special case
+        # Test visit_occurrence mapping with special cases
         actual = eu._mapping_subqueries(self.mock_bq_client, 'visit_occurrence',
                                         test_hpo_ids, 'fake_dataset', 'fake_project')
         hpo_unique_identifiers = eu.get_hpo_offsets(test_hpo_ids)
@@ -135,8 +135,8 @@ class EhrUnionTest(unittest.TestCase):
             self.assertIn(f"'{hpo_table}' AS src_table_id", subquery)
             self.assertIn('visit_occurrence_id AS src_visit_occurrence_id', subquery)
 
-            if hpo_id == 'illinois_near_north':
-                # Check for ROW_NUMBER pattern for illinois_near_north
+            if hpo_id in ['illinois_near_north', 'ecchc']:
+                # Check for ROW_NUMBER pattern for special HPOs
                 self.assertIn('ROW_NUMBER() OVER (ORDER BY visit_occurrence_id)', subquery)
                 self.assertIn(f'+ {hpo_offset} AS visit_occurrence_id', subquery)
             else:
@@ -154,8 +154,8 @@ class EhrUnionTest(unittest.TestCase):
             self.assertIn(f"'{hpo_table}' AS src_table_id", subquery)
             self.assertIn('person_id AS src_person_id', subquery)
 
-            if hpo_id == 'illinois_near_north':
-                # Even for illinois_near_north, person table should use ROW_NUMBER without offset
+            if hpo_id in ['illinois_near_north', 'ecchc']:
+                # Even for special HPOs, person table should use ROW_NUMBER without offset
                 self.assertIn('ROW_NUMBER() OVER (ORDER BY person_id) AS person_id', subquery)
             else:
                 # Standard person mapping
