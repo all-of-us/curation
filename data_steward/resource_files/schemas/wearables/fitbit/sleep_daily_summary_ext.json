@@ -6,12 +6,6 @@
     "description": "A foreign key identifier to the person for whom the data was recorded."
   },
   {
-    "type": "string",
-    "name": "src_id",
-    "mode": "nullable",
-    "description": "Flag indicating the participant portal that this record originated from."
-  },
-  {
     "type": "integer",
     "name": "sleep_log_id",
     "mode": "nullable",
@@ -88,5 +82,11 @@
     "type": "string",
     "mode": "nullable",
     "description": "The type of sleep log. Supported : classic | stages."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "Flag indicating the participant portal that this record originated from."
   }
 ]

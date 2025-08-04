@@ -6,12 +6,6 @@
     "description": "A foreign key identifier to the person for whom the data was recorded."
   },
   {
-    "type": "string",
-    "name": "src_id",
-    "mode": "nullable",
-    "description": "Flag indicating the participant portal that this record originated from."
-  },
-  {
     "type": "integer",
     "name": "sleep_log_id",
     "mode": "nullable",
@@ -52,5 +46,11 @@
     "type": "numeric",
     "mode": "nullable",
     "description": "The average sleep stage time over the past 30 days. A sleep stage log is required to generate this value. When a classic sleep log is recorded, this value will be missing."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "Flag indicating the participant portal that this record originated from."
   }
 ]
