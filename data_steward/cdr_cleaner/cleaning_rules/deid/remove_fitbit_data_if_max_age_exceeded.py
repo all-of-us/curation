@@ -5,7 +5,8 @@ Original Issue: DC-1001, DC-1037, DC-2429, DC-2135, DC-3165
 
 The intent is to ensure there is no data for participants over the age of 89 in
 Activity Summary, Heart Rate Minute Level, Heart Rate Summary, Steps Intraday,
-Sleep Daily Summary, Sleep Level and Device tables by sandboxing the applicable records
+Sleep Daily Summary, Sleep Level, Device, sleep_daily_summary_counts, sleep_level_short,
+sleep_daily_summary_30dayavg and sleep_daily_summary_ext tables by sandboxing the applicable records
 and then dropping them.
 """
 
@@ -121,7 +122,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                     WRITE_TRUNCATE
             })
 
-        # returns the unnested list of list of dictionaries
+        # returns the unnested list of dictionaries
         return sandbox_queries_list + drop_queries_list
 
     def setup_rule(self, client):
