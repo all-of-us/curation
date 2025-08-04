@@ -1,6 +1,5 @@
 concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 8905,26,military_operations,cms place of service,2024-03-12
-433869,1857005,perinatal,snomed,2024-03-12
 436589,217115005,suffocation,snomed,2024-03-12
 4150851,311465003,assault/homicide,snomed,2024-03-12
 45587405,O9A.52,assault/homicide,icd10cm,2024-03-12
@@ -11,9 +10,7 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 4311070,216398007,location,snomed,2024-03-12
 45585776,Y92.412,location,icd10cm,2024-03-12
 45876999,LA7-7,"demographics (race/ethnicity, gender)",loinc,2024-03-12
-312723,13213009,perinatal,snomed,2024-03-12
 45604507,T76.01XD,assault/homicide,icd10cm,2024-03-12
-45767012,704294006,perinatal,snomed,2024-03-12
 46270374,29231000119109,assault/homicide,snomed,2024-03-12
 432306,57715001,gender/sex,snomed,2024-03-12
 442605,6476001,death cause,snomed,2024-03-12
@@ -25,10 +22,8 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 44837772,V15.42,assault/homicide,icd9cm,2024-03-12
 45561593,Y92.199,location,icd10cm,2024-03-12
 45561610,Z04.71,assault/homicide,icd10cm,2024-03-12
-45592221,O31.23X2,death cause,icd10cm,2024-03-12
 45883615,LA16816-3,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 435868,267193004,perinatal,snomed,2024-03-12
-438542,313178001,perinatal,snomed,2024-03-12
 4310064,216417004,location,snomed,2024-03-12
 4311213,216450004,location,snomed,2024-03-12
 4312969,216409007,location,snomed,2024-03-12
@@ -39,7 +34,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45590772,Z91.411,assault/homicide,icd10cm,2024-03-12
 1576139,Z62.81,assault/homicide,icd10cm,2024-03-12
 1595780,Z04.81,assault/homicide,icd10cm,2024-03-12
-4133009,127277000,perinatal,snomed,2024-03-12
 4315007,216383005,location,snomed,2024-03-12
 37016213,15635451000119107,perinatal,snomed,2024-03-12
 37117130,12277671000119109,"demographics (race/ethnicity, gender)",snomed,2024-03-12
@@ -47,15 +41,10 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45600285,Y92.038,location,icd10cm,2024-03-12
 45604502,T74.32XS,assault/homicide,icd10cm,2024-03-12
 432534,269716005,motor vehicle accident,snomed,2024-03-12
-434153,74345006,gender/sex,snomed,2024-03-12
 434903,52813007,gender/sex,snomed,2024-03-12
 4048809,230802007,death cause,snomed,2024-03-12
-37018896,114961000119106,perinatal,snomed,2024-03-12
 45571297,Y92.168,location,icd10cm,2024-03-12
-4062254,200155004,death cause,snomed,2024-03-12
 44820392,V15.4,assault/homicide,icd9cm,2024-03-12
-45548743,O31.23X0,death cause,icd10cm,2024-03-12
-725454,P91.821,perinatal,icd10cm,2024-03-12
 766505,Y35.899A,legal_intervention,icd10cm,2024-03-12
 4014465,169886007,perinatal,snomed,2024-03-12
 4055396,242693000,motor vehicle accident,snomed,2024-03-12
@@ -68,13 +57,10 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 2213203,88025,death cause,cpt4,2024-03-12
 3026646,21838-8,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 3656378,25771000087107,location,snomed,2024-03-12
-4059334,161580006,perinatal,snomed,2024-03-12
 4111063,285093007,location,snomed,2024-03-12
 4111660,284453007,location,snomed,2024-03-12
-4149398,268854008,perinatal,snomed,2024-03-12
 45561590,Y92.142,location,icd10cm,2024-03-12
 45757136,10756301000119105,assault/homicide,snomed,2024-03-12
-436532,59527008,perinatal,snomed,2024-03-12
 37016211,15635291000119101,perinatal,snomed,2024-03-12
 43530910,609450004,perinatal,snomed,2024-03-12
 45566381,Y92.212,location,icd10cm,2024-03-12
@@ -87,16 +73,13 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45605072,Y92.094,location,icd10cm,2024-03-12
 2007107,89.8,death cause,icd9proc,2024-03-12
 2110076,56805,gender/sex,cpt4,2024-03-12
-4060206,161811009,death cause,snomed,2024-03-12
 44828581,V61.1,assault/homicide,icd9cm,2024-03-12
-45539157,O36.4XX2,death cause,icd10cm,2024-03-12
 45546654,T74.01XS,assault/homicide,icd10cm,2024-03-12
 45551831,W05.1XXA,motor vehicle accident,icd10cm,2024-03-12
 45556216,T74.22XA,assault/homicide,icd10cm,2024-03-12
 45556783,Y92.016,location,icd10cm,2024-03-12
 45560994,T74.11XD,assault/homicide,icd10cm,2024-03-12
 45590752,Z69.021,assault/homicide,icd10cm,2024-03-12
-45606569,O31.21X1,death cause,icd10cm,2024-03-12
 45609676,W05.2XXD,motor vehicle accident,icd10cm,2024-03-12
 2110277,58999,gender/sex,cpt4,2024-03-12
 4312841,216331003,location,snomed,2024-03-12
@@ -108,7 +91,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 436381,5095008,gender/sex,snomed,2024-03-12
 4309760,216382000,location,snomed,2024-03-12
 35225252,Z65.4,assault/homicide,icd10cm,2024-03-12
-44825605,651.30,death cause,icd9cm,2024-03-12
 45546663,T76.12XA,assault/homicide,icd10cm,2024-03-12
 45561587,Y92.003,location,icd10cm,2024-03-12
 45571291,Y92.091,location,icd10cm,2024-03-12
@@ -130,26 +112,19 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 42538171,739684008,perinatal,snomed,2024-03-12
 44786876,74221-3,location,loinc,2024-03-12
 45536996,T74.11XA,assault/homicide,icd10cm,2024-03-12
-45596984,O36.4XX9,death cause,icd10cm,2024-03-12
-441128,79995002,perinatal,snomed,2024-03-12
 602337,12399371000119105,assault/homicide,snomed,2024-03-12
 1595798,Z91.42,assault/homicide,icd10cm,2024-03-12
 4268837,365956009,gender/sex,snomed,2024-03-12
-44837252,651.43,death cause,icd9cm,2024-03-12
 45763732,700229002,assault/homicide,snomed,2024-03-12
 4171711,42085001,assault/homicide,snomed,2024-03-12
 37016212,15635331000119107,perinatal,snomed,2024-03-12
 37020140,91390-5,assault/homicide,loinc,2024-03-12
 44833141,V62.83,assault/homicide,icd9cm,2024-03-12
-45596949,O31.22X2,death cause,icd10cm,2024-03-12
 725641,V00.841A,motor vehicle accident,icd10cm,2024-03-12
 2110124,57292,gender/sex,cpt4,2024-03-12
 4009631,111332007,gender/sex,snomed,2024-03-12
-4126257,289205009,perinatal,snomed,2024-03-12
 35225258,Z70.1,sexual_orientation,icd10cm,2024-03-12
-37202302,Z84.82,death cause,icd10cm,2024-03-12
 40479849,444557007,assault/homicide,snomed,2024-03-12
-43531705,609428000,perinatal,snomed,2024-03-12
 45547258,Y92.015,location,icd10cm,2024-03-12
 45556788,Y92.120,location,icd10cm,2024-03-12
 45590746,Z62.819,assault/homicide,icd10cm,2024-03-12
@@ -172,7 +147,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 4060241,169582001,death cause,snomed,2024-03-12
 37111595,726626004,death cause,snomed,2024-03-12
 45542374,Y92.121,location,icd10cm,2024-03-12
-45558274,O36.4XX3,death cause,icd10cm,2024-03-12
 45585780,Y92.811,motor vehicle accident,icd10cm,2024-03-12
 4035165,15086000,"demographics (race/ethnicity, gender)",snomed,2024-03-12
 4177669,49588008,military_operations,snomed,2024-03-12
@@ -186,7 +160,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45600290,Y92.488,location,icd10cm,2024-03-12
 45604509,T76.21XS,assault/homicide,icd10cm,2024-03-12
 762055,288331000119108,assault/homicide,snomed,2024-03-12
-4218813,41587001,perinatal,snomed,2024-03-12
 4309756,216356009,location,snomed,2024-03-12
 37206229,785870008,perinatal,snomed,2024-03-12
 40771514,68989-3,location,loinc,2024-03-12
@@ -199,21 +172,15 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 44826231,V61.02,military_operations,icd9cm,2024-03-12
 44828342,995.50,assault/homicide,icd9cm,2024-03-12
 44833708,636.90,legal_intervention,icd9cm,2024-03-12
-255084,78895009,perinatal,snomed,2024-03-12
 440068,268637002,gender/sex,snomed,2024-03-12
 1585853,AvtiveDutyServeStatus_Yes,active duty military status,ppi,2024-03-12
 4045163,12247004,motor vehicle accident,snomed,2024-03-12
-4071610,206283000,perinatal,snomed,2024-03-12
 4235695,406138006,assault/homicide,snomed,2024-03-12
 45609291,T76.01XA,assault/homicide,icd10cm,2024-03-12
-435640,72544005,perinatal,snomed,2024-03-12
 4041991,118199002,sexual_orientation,snomed,2024-03-12
 4048144,206266009,liveborn_infants,snomed,2024-03-12
-4241830,59291004,death cause,snomed,2024-03-12
-37109041,16216731000119106,death cause,snomed,2024-03-12
 45551440,T74.12XA,assault/homicide,icd10cm,2024-03-12
 45609892,Y92.143,location,icd10cm,2024-03-12
-193254,25658005,perinatal,snomed,2024-03-12
 432810,219356008,suicide,snomed,2024-03-12
 437748,309535002,motor vehicle accident,snomed,2024-03-12
 765389,288381000119109,assault/homicide,snomed,2024-03-12
@@ -224,9 +191,7 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 44832925,995.59,assault/homicide,icd9cm,2024-03-12
 44834594,302.74,"demographics (race/ethnicity, gender)",icd9cm,2024-03-12
 45566377,Y92.190,location,icd10cm,2024-03-12
-45567909,O31.22X1,death cause,icd10cm,2024-03-12
 45592318,O9A.313,assault/homicide,icd10cm,2024-03-12
-137974,655007,liveborn_infants,snomed,2024-03-12
 442985,248153007,"demographics (race/ethnicity, gender)",snomed,2024-03-12
 2109986,54690,gender/sex,cpt4,2024-03-12
 4210749,56890008,assault/homicide,snomed,2024-03-12
@@ -235,11 +200,9 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 4279614,66466001,suffocation,snomed,2024-03-12
 4310930,216329007,location,snomed,2024-03-12
 4311062,216362004,location,snomed,2024-03-12
-36712668,10211000132109,perinatal,snomed,2024-03-12
 36713087,288391000119107,assault/homicide,snomed,2024-03-12
 37395583,288001000119103,military_operations,snomed,2024-03-12
 44822729,V61.0,military_operations,icd9cm,2024-03-12
-44823255,651.63,death cause,icd9cm,2024-03-12
 45547334,Z63.71,military_operations,icd10cm,2024-03-12
 45590695,Z04.72,assault/homicide,icd10cm,2024-03-12
 440167,53443007,liveborn_infants,snomed,2024-03-12
@@ -272,17 +235,12 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 4315088,216395005,location,snomed,2024-03-12
 35225253,Z65.5,operations_of_war,icd10cm,2024-03-12
 44827330,V17.41,death cause,icd9cm,2024-03-12
-45548770,O36.4XX1,death cause,icd10cm,2024-03-12
 45599710,T74.21XA,assault/homicide,icd10cm,2024-03-12
 45605068,Y92.014,location,icd10cm,2024-03-12
 4083591,184102003,location,snomed,2024-03-12
 4312974,216429008,location,snomed,2024-03-12
 4315085,216386002,location,snomed,2024-03-12
-37402956,P28.43,perinatal,icd10cm,2024-03-12
 43020449,237451000119100,assault/homicide,snomed,2024-03-12
-44831399,651.60,death cause,icd9cm,2024-03-12
-45563087,O31.20X0,death cause,icd10cm,2024-03-12
-45592220,O31.21X0,death cause,icd10cm,2024-03-12
 433107,219340003,suicide,snomed,2024-03-12
 437460,95922009,assault/homicide,snomed,2024-03-12
 443549,419916003,assault/homicide,snomed,2024-03-12
@@ -293,16 +251,13 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45547256,Y92.001,location,icd10cm,2024-03-12
 435017,198722004,perinatal,snomed,2024-03-12
 1585406,CurrentLiving_MotelHotel,living_situation,ppi,2024-03-12
-72434,82062003,perinatal,snomed,2024-03-12
 192379,111431001,perinatal,snomed,2024-03-12
 435131,95930005,assault/homicide,snomed,2024-03-12
 903562,ResultsConsent_Signature,explicitidentifiersuppression,ppi,2024-03-12
 4228490,405769009,gender/sex,snomed,2024-03-12
 4314991,216339001,location,snomed,2024-03-12
 35211008,Q56.1,gender/sex,icd10cm,2024-03-12
-44834898,651.40,death cause,icd9cm,2024-03-12
 45556782,Y92.013,location,icd10cm,2024-03-12
-605035,1010286003,perinatal,snomed,2024-03-12
 4053113,160877008,assault/homicide,snomed,2024-03-12
 4061268,16983000,death cause,snomed,2024-03-12
 4090129,281255004,suffocation,snomed,2024-03-12
@@ -313,16 +268,12 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45571303,Y92.415,location,icd10cm,2024-03-12
 45592319,O9A.411,assault/homicide,icd10cm,2024-03-12
 45604503,T74.4XXA,assault/homicide,icd10cm,2024-03-12
-37016099,101071000119104,perinatal,snomed,2024-03-12
 44836976,302.5,"demographics (race/ethnicity, gender)",icd9cm,2024-03-12
-45539156,O36.4XX0,death cause,icd10cm,2024-03-12
 45560993,T74.01XD,assault/homicide,icd10cm,2024-03-12
 4022125,225823009,assault/homicide,snomed,2024-03-12
-4145947,267258002,perinatal,snomed,2024-03-12
 36307702,LA22879-3,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 40758409,55280-2,military_operations,loinc,2024-03-12
 43021158,472946002,gender/sex,snomed,2024-03-12
-43530894,609429008,perinatal,snomed,2024-03-12
 43530907,609446006,perinatal,snomed,2024-03-12
 44826990,798.0,death cause,icd9cm,2024-03-12
 44834122,995.83,assault/homicide,icd9cm,2024-03-12
@@ -330,12 +281,8 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45590675,Y92.218,location,icd10cm,2024-03-12
 45600288,Y92.211,location,icd10cm,2024-03-12
 443625,18003009,gender/sex,snomed,2024-03-12
-766415,P00.82,perinatal,icd10cm,2024-03-12
 4032248,108259003,death cause,snomed,2024-03-12
-4214956,417662000,liveborn_infants,snomed,2024-03-12
 36684962,459541000124109,assault/homicide,snomed,2024-03-12
-44784273,698318003,perinatal,snomed,2024-03-12
-45563090,O31.23X1,death cause,icd10cm,2024-03-12
 435151,371779005,assault/homicide,snomed,2024-03-12
 37018683,15635411000119106,perinatal,snomed,2024-03-12
 44823647,995.85,assault/homicide,icd9cm,2024-03-12
@@ -354,13 +301,10 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45604504,T74.92XA,assault/homicide,icd10cm,2024-03-12
 436605,287186005,suicide,snomed,2024-03-12
 1585405,CurrentLiving_Family,living_situation,ppi,2024-03-12
-4060424,199257008,perinatal,snomed,2024-03-12
 4169278,418189009,assault/homicide,snomed,2024-03-12
 4208350,313070006,assault/homicide,snomed,2024-03-12
 37207733,293611000119101,assault/homicide,snomed,2024-03-12
-42539560,762287001,perinatal,snomed,2024-03-12
 45533174,G93.82,death cause,icd10cm,2024-03-12
-140526,4184009,perinatal,snomed,2024-03-12
 195595,4576001,legal_intervention,snomed,2024-03-12
 1575158,T74.9,assault/homicide,icd10cm,2024-03-12
 2110135,57335,gender/sex,cpt4,2024-03-12
@@ -374,19 +318,14 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 762999,434771000124107,location,snomed,2024-03-12
 1554055,Y35.99XA,legal_intervention,icd10cm,2024-03-12
 1585407,CurrentLiving_TemporaryInstitute,living_situation,ppi,2024-03-12
-4140071,33010005,perinatal,snomed,2024-03-12
 4166164,293206002,gender/sex,snomed,2024-03-12
 44832927,995.82,assault/homicide,icd9cm,2024-03-12
-725455,P91.822,perinatal,icd10cm,2024-03-12
 1332916,cope_a_104,living_situation,ppi,2024-03-12
-4062790,199294004,perinatal,snomed,2024-03-12
-40491865,447259000,perinatal,snomed,2024-03-12
 44826508,302.52,"demographics (race/ethnicity, gender)",icd9cm,2024-03-12
 45570670,T74.31XD,assault/homicide,icd10cm,2024-03-12
 45582603,O9A.311,assault/homicide,icd10cm,2024-03-12
 45595455,Y92.046,location,icd10cm,2024-03-12
 45768441,706872008,assault/homicide,snomed,2024-03-12
-444267,84132007,perinatal,snomed,2024-03-12
 2106303,3085F,death cause,cpt4,2024-03-12
 2314106,95824,death cause,cpt4,2024-03-12
 4022081,105530003,location,snomed,2024-03-12
@@ -400,24 +339,20 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45537601,Y92.413,location,icd10cm,2024-03-12
 1585876,CurrentLiving_Shelter,living_situation,ppi,2024-03-12
 1595725,T74.51XS,assault/homicide,icd10cm,2024-03-12
-4129155,289530006,perinatal,snomed,2024-03-12
 4197467,313214000,assault/homicide,snomed,2024-03-12
 4331312,22674006,motor vehicle accident,snomed,2024-03-12
 44822074,636.20,legal_intervention,icd9cm,2024-03-12
 45542375,Y92.126,location,icd10cm,2024-03-12
 45585195,T74.22XD,assault/homicide,icd10cm,2024-03-12
-444094,118185001,perinatal,snomed,2024-03-12
 4236049,360875003,location,snomed,2024-03-12
 4319155,95877004,operations_of_war,snomed,2024-03-12
 43530945,609491002,perinatal,snomed,2024-03-12
 45580987,Y92.213,location,icd10cm,2024-03-12
 45585193,T74.02XS,assault/homicide,icd10cm,2024-03-12
 193532,198705001,perinatal,snomed,2024-03-12
-441647,429187001,death cause,snomed,2024-03-12
 4314999,216358005,location,snomed,2024-03-12
 43021802,473453008,assault/homicide,snomed,2024-03-12
 43530939,609485004,perinatal,snomed,2024-03-12
-44829596,V13.7,perinatal,icd9cm,2024-03-12
 45566374,Y92.112,location,icd10cm,2024-03-12
 45590670,Y92.007,location,icd10cm,2024-03-12
 45757171,10760981000119107,assault/homicide,snomed,2024-03-12
@@ -425,13 +360,11 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 1575166,T76.2,assault/homicide,icd10cm,2024-03-12
 2109973,54520,gender/sex,cpt4,2024-03-12
 4147109,309985003,location,snomed,2024-03-12
-4345685,240302002,perinatal,snomed,2024-03-12
 21492869,80431-0,location,loinc,2024-03-12
 21492871,80433-6,location,loinc,2024-03-12
 44829474,995.52,assault/homicide,icd9cm,2024-03-12
 45580372,T76.11XD,assault/homicide,icd10cm,2024-03-12
 45585204,T76.02XS,assault/homicide,icd10cm,2024-03-12
-136530,206539008,perinatal,snomed,2024-03-12
 196754,198718009,perinatal,snomed,2024-03-12
 1333140,cope_a_109,active_duty_military_status,ppi,2024-03-12
 4074047,219221007,assault/homicide,snomed,2024-03-12
@@ -450,14 +383,11 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 4195901,79993009,location,snomed,2024-03-12
 4264823,364587008,perinatal,snomed,2024-03-12
 45604508,T76.21XD,assault/homicide,icd10cm,2024-03-12
-441678,78395001,perinatal,snomed,2024-03-12
-4089069,249053001,perinatal,snomed,2024-03-12
 4234364,407377005,gender/sex,snomed,2024-03-12
 4296024,76799001,perinatal,snomed,2024-03-12
 4312979,216445005,location,snomed,2024-03-12
 4317150,95281009,death cause,snomed,2024-03-12
 40481828,442084003,assault/homicide,snomed,2024-03-12
-43020670,472321009,death cause,snomed,2024-03-12
 44835510,V61.21,assault/homicide,icd9cm,2024-03-12
 45605069,Y92.019,location,icd10cm,2024-03-12
 436169,74978008,legal_intervention,snomed,2024-03-12
@@ -468,7 +398,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 4326265,75148009,military_operations,snomed,2024-03-12
 40611621,61626005,death cause,snomed,2024-03-12
 44831990,V62.2,military_operations,icd9cm,2024-03-12
-45534210,O31.22X0,death cause,icd10cm,2024-03-12
 439395,371775004,assault/homicide,snomed,2024-03-12
 903513,Reconsent_Signature,explicitidentifiersuppression,ppi,2024-03-12
 1585395,HealthInsuranceType_Military,active_duty_military_status,ppi,2024-03-12
@@ -477,17 +406,14 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 40213244,53,military_operations,cvx,2024-03-12
 45546665,T76.22XS,assault/homicide,icd10cm,2024-03-12
 45547337,Z69.010,assault/homicide,icd10cm,2024-03-12
-433823,40609001,perinatal,snomed,2024-03-12
 435443,17886000,motor vehicle accident,snomed,2024-03-12
 443882,15355001,death cause,snomed,2024-03-12
-444377,86095007,perinatal,snomed,2024-03-12
 4051266,160471004,death cause,snomed,2024-03-12
 4182566,429746005,assault/homicide,snomed,2024-03-12
 44786929,74286-6,motor vehicle accident,loinc,2024-03-12
 45572915,O9A.412,assault/homicide,icd10cm,2024-03-12
 45576103,Y92.027,location,icd10cm,2024-03-12
 45587403,O9A.32,assault/homicide,icd10cm,2024-03-12
-432430,46906003,perinatal,snomed,2024-03-12
 440615,71677004,military_operations,snomed,2024-03-12
 1575165,T76.1,assault/homicide,icd10cm,2024-03-12
 4021192,225337009,death cause,snomed,2024-03-12
@@ -497,14 +423,10 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45546666,T76.31XA,assault/homicide,icd10cm,2024-03-12
 45599711,T74.31XA,assault/homicide,icd10cm,2024-03-12
 439615,217150002,motor vehicle accident,snomed,2024-03-12
-725457,P91.829,perinatal,icd10cm,2024-03-12
 1554051,Y35.839A,legal_intervention,icd10cm,2024-03-12
 4107655,284465006,assault/homicide,snomed,2024-03-12
 4129846,237361005,death cause,snomed,2024-03-12
 4177807,49713007,death cause,snomed,2024-03-12
-4269424,364617005,perinatal,snomed,2024-03-12
-4320813,95821001,perinatal,snomed,2024-03-12
-4323285,70591005,perinatal,snomed,2024-03-12
 45590673,Y92.095,location,icd10cm,2024-03-12
 45609287,T74.22XS,assault/homicide,icd10cm,2024-03-12
 433374,242397005,motor vehicle accident,snomed,2024-03-12
@@ -530,7 +452,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 765761,446141000124107,"demographics (race/ethnicity, gender)",snomed,2024-03-12
 4210607,56417000,death cause,snomed,2024-03-12
 4213182,80522000,location,snomed,2024-03-12
-37402948,P28.30,perinatal,icd10cm,2024-03-12
 44826938,752.7,gender/sex,icd9cm,2024-03-12
 45605070,Y92.090,location,icd10cm,2024-03-12
 45609888,Y92.023,location,icd10cm,2024-03-12
@@ -538,14 +459,11 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 762124,29221000119106,assault/homicide,snomed,2024-03-12
 4054939,243069004,assault/homicide,snomed,2024-03-12
 4076658,225048008,suicide,snomed,2024-03-12
-4229439,888003,perinatal,snomed,2024-03-12
 44821588,V61.03,legal_intervention,icd9cm,2024-03-12
 44825304,302.50,gender/sex,icd9cm,2024-03-12
 45560998,T76.02XA,assault/homicide,icd10cm,2024-03-12
 45585775,Y92.191,location,icd10cm,2024-03-12
-433864,64920003,perinatal,snomed,2024-03-12
 439236,219335006,suicide,snomed,2024-03-12
-4061426,169578003,perinatal,snomed,2024-03-12
 4151405,269795008,suffocation,snomed,2024-03-12
 4217564,395507008,perinatal,snomed,2024-03-12
 37017839,714189008,gender/sex,snomed,2024-03-12
@@ -555,18 +473,13 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45595456,Y92.124,location,icd10cm,2024-03-12
 45609763,W94.11XA,location,icd10cm,2024-03-12
 45768458,706893006,assault/homicide,snomed,2024-03-12
-439922,313179009,perinatal,snomed,2024-03-12
 443279,287185009,suicide,snomed,2024-03-12
-444417,45139008,perinatal,snomed,2024-03-12
 3026373,18743-5,death cause,loinc,2024-03-12
 3656374,25711000087100,location,snomed,2024-03-12
 4201284,51427007,gender/sex,snomed,2024-03-12
-4239065,91576008,perinatal,snomed,2024-03-12
 46270485,32570681000036106,gender/sex,snomed,2024-03-12
-434156,63565007,perinatal,snomed,2024-03-12
 4110772,285116001,"demographics (race/ethnicity, gender)",snomed,2024-03-12
 4160622,371772001,assault/homicide,snomed,2024-03-12
-4173334,276660001,perinatal,snomed,2024-03-12
 4310061,216403008,location,snomed,2024-03-12
 36305361,87720-9,location,loinc,2024-03-12
 45546656,T74.21XS,assault/homicide,icd10cm,2024-03-12
@@ -587,13 +500,10 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 75605,14022007,death cause,snomed,2024-03-12
 434489,419099009,death cause,snomed,2024-03-12
 439397,371704001,terrorism,snomed,2024-03-12
-766421,P09.6,perinatal,icd10cm,2024-03-12
-37402957,P28.49,perinatal,icd10cm,2024-03-12
 45566379,Y92.197,location,icd10cm,2024-03-12
 45595452,Y92.010,location,icd10cm,2024-03-12
 45609957,Z62.812,assault/homicide,icd10cm,2024-03-12
 46235350,75617-1,location,loinc,2024-03-12
-380513,79410001,perinatal,snomed,2024-03-12
 725642,V00.841D,motor vehicle accident,icd10cm,2024-03-12
 2721666,T2007,motor vehicle accident,hcpcs,2024-03-12
 4075529,224680000,location,snomed,2024-03-12
@@ -609,13 +519,11 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 4051267,160473001,death cause,snomed,2024-03-12
 4075234,225049000,suicide,snomed,2024-03-12
 4236321,90774003,assault/homicide,snomed,2024-03-12
-37206226,785867009,perinatal,snomed,2024-03-12
 44835797,302.51,"demographics (race/ethnicity, gender)",icd9cm,2024-03-12
 45585194,T74.12XD,assault/homicide,icd10cm,2024-03-12
 45923856,126582,assault/homicide,ciel,2024-03-12
 442289,53559009,death cause,snomed,2024-03-12
 443278,287181000,suicide,snomed,2024-03-12
-600552,1010282001,perinatal,snomed,2024-03-12
 600767,8521000175109,death cause,snomed,2024-03-12
 4105261,281575007,military_operations,snomed,2024-03-12
 4310928,216323008,location,snomed,2024-03-12
@@ -630,13 +538,9 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45566378,Y92.193,location,icd10cm,2024-03-12
 45600351,Z69.81,assault/homicide,icd10cm,2024-03-12
 45877988,LA10610-6,"demographics (race/ethnicity, gender)",loinc,2024-03-12
-439788,190745006,perinatal,snomed,2024-03-12
-600520,1004019008,perinatal,snomed,2024-03-12
 762058,288401000119109,assault/homicide,snomed,2024-03-12
-4066378,200724002,perinatal,snomed,2024-03-12
 4192796,39491008,gender/sex,snomed,2024-03-12
 35225239,Z63.4,death cause,icd10cm,2024-03-12
-37017051,713234005,death cause,snomed,2024-03-12
 44837251,651.31,death cause,icd9cm,2024-03-12
 45537594,Y92.128,location,icd10cm,2024-03-12
 45547257,Y92.002,location,icd10cm,2024-03-12
@@ -649,7 +553,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 4239435,363901006,gender/sex,snomed,2024-03-12
 37110280,724484007,perinatal,snomed,2024-03-12
 44832243,302.85,"demographics (race/ethnicity, gender)",icd9cm,2024-03-12
-45572791,O31.21X2,death cause,icd10cm,2024-03-12
 46235215,76691-5,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 438043,225824003,assault/homicide,snomed,2024-03-12
 1554034,Y35.819A,legal_intervention,icd10cm,2024-03-12
@@ -658,7 +561,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 4153697,283545005,assault/homicide,snomed,2024-03-12
 37108765,12277711000119108,"demographics (race/ethnicity, gender)",snomed,2024-03-12
 45571294,Y92.139,location,icd10cm,2024-03-12
-432373,199307003,death cause,snomed,2024-03-12
 4215271,394744001,"demographics (race/ethnicity, gender)",snomed,2024-03-12
 4215475,71783008,motor vehicle accident,snomed,2024-03-12
 4233034,439011002,gender/sex,snomed,2024-03-12
@@ -679,7 +581,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 43021960,472947006,gender/sex,snomed,2024-03-12
 43529920,InsuranceTypeUpdate_Military,active_duty_military_status,ppi,2024-03-12
 45605078,Y92.219,location,icd10cm,2024-03-12
-432441,366323009,perinatal,snomed,2024-03-12
 442596,61752008,legal_intervention,snomed,2024-03-12
 4058280,161472001,assault/homicide,snomed,2024-03-12
 4092095,247650009,death cause,snomed,2024-03-12
@@ -693,17 +594,10 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 1554047,Y35.833A,legal_intervention,icd10cm,2024-03-12
 4312978,216437000,location,snomed,2024-03-12
 36717284,288371000119106,assault/homicide,snomed,2024-03-12
-40484207,445548006,death cause,snomed,2024-03-12
 45590674,Y92.214,location,icd10cm,2024-03-12
-45766189,703300001,suffocation,snomed,2024-03-12
-4041280,118213005,liveborn_infants,snomed,2024-03-12
-4048592,206372007,perinatal,snomed,2024-03-12
 4061738,20078004,location,snomed,2024-03-12
 4074169,219365001,suffocation,snomed,2024-03-12
-4159152,371121002,perinatal,snomed,2024-03-12
 4318126,95921002,assault/homicide,snomed,2024-03-12
-36717004,134251000119105,perinatal,snomed,2024-03-12
-44830232,651.41,death cause,icd9cm,2024-03-12
 44831789,995.84,assault/homicide,icd9cm,2024-03-12
 45542381,Y92.215,location,icd10cm,2024-03-12
 45572917,O9A.513,assault/homicide,icd10cm,2024-03-12
@@ -711,9 +605,7 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 440453,198706000,perinatal,snomed,2024-03-12
 1585875,CurrentLiving_Transitional,living_situation,ppi,2024-03-12
 4193573,313217007,assault/homicide,snomed,2024-03-12
-4251491,73893000,perinatal,snomed,2024-03-12
 4309757,216359002,location,snomed,2024-03-12
-37403780,Z87.68,perinatal,icd10cm,2024-03-12
 44819549,302.9,"demographics (race/ethnicity, gender)",icd9cm,2024-03-12
 44827922,636.70,legal_intervention,icd9cm,2024-03-12
 45552039,Y92.049,location,icd10cm,2024-03-12
@@ -739,17 +631,13 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 1585898,CurrentMaritalStatus_LivingWithPartner,living_situation,ppi,2024-03-12
 2110051,55970,gender/sex,cpt4,2024-03-12
 3019523,11351-4,sexual_orientation,loinc,2024-03-12
-4082921,278067008,perinatal,snomed,2024-03-12
 4161694,398070004,location,snomed,2024-03-12
-4167918,275359008,perinatal,snomed,2024-03-12
 4302066,418506006,assault/homicide,snomed,2024-03-12
 46238126,LA23729-9,"demographics (race/ethnicity, gender)",loinc,2024-03-12
 439391,371778002,assault/homicide,snomed,2024-03-12
 4202389,318784009,military_operations,snomed,2024-03-12
 4309752,216343002,location,snomed,2024-03-12
 4311069,216392008,location,snomed,2024-03-12
-37110290,724497009,liveborn_infants,snomed,2024-03-12
-44830233,651.53,death cause,icd9cm,2024-03-12
 45537595,Y92.129,location,icd10cm,2024-03-12
 45542376,Y92.149,location,icd10cm,2024-03-12
 45585769,Y92.022,location,icd10cm,2024-03-12
@@ -759,8 +647,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 4283657,66621004,gender/sex,snomed,2024-03-12
 4312316,217118007,suffocation,snomed,2024-03-12
 4320042,95934001,assault/homicide,snomed,2024-03-12
-4329097,431268006,perinatal,snomed,2024-03-12
-37118028,726565008,perinatal,snomed,2024-03-12
 44784482,698636009,perinatal,snomed,2024-03-12
 45556794,Y92.482,location,icd10cm,2024-03-12
 45590672,Y92.030,location,icd10cm,2024-03-12
@@ -779,7 +665,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 434095,198709007,perinatal,snomed,2024-03-12
 4012613,113173007,location,snomed,2024-03-12
 4022124,225820007,assault/homicide,snomed,2024-03-12
-4079968,276639007,perinatal,snomed,2024-03-12
 4105393,257564005,location,snomed,2024-03-12
 44825609,656.43,death cause,icd9cm,2024-03-12
 44835798,302.70,"demographics (race/ethnicity, gender)",icd9cm,2024-03-12
@@ -788,7 +673,6 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 45570668,T74.02XA,assault/homicide,icd10cm,2024-03-12
 436001,371774000,assault/homicide,snomed,2024-03-12
 440577,78523004,terrorism,snomed,2024-03-12
-4132087,127335003,perinatal,snomed,2024-03-12
 4315001,216366001,location,snomed,2024-03-12
 37018684,15887131000119101,perinatal,snomed,2024-03-12
 44784256,698301002,assault/homicide,snomed,2024-03-12
@@ -817,22 +701,16 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 1575156,T74.2,assault/homicide,icd10cm,2024-03-12
 4271764,364703007,military_operations,snomed,2024-03-12
 4312840,216330002,location,snomed,2024-03-12
-44819872,651.33,death cause,icd9cm,2024-03-12
 45594871,T76.91XS,assault/homicide,icd10cm,2024-03-12
 436313,102458000,assault/homicide,snomed,2024-03-12
 439325,198743003,legal_intervention,snomed,2024-03-12
 3041797,52532-9,location,loinc,2024-03-12
-4060296,199112006,perinatal,snomed,2024-03-12
 45561001,T76.32XA,assault/homicide,icd10cm,2024-03-12
-45606570,O31.23X3,death cause,icd10cm,2024-03-12
 435155,219334005,military_operations,snomed,2024-03-12
 441349,48433002,perinatal,snomed,2024-03-12
-600527,1004026008,perinatal,snomed,2024-03-12
-766422,P09.8,perinatal,icd10cm,2024-03-12
 2102032,1157F,legal_intervention,cpt4,2024-03-12
 4020158,213015009,assault/homicide,snomed,2024-03-12
 4279451,66280005,location,snomed,2024-03-12
-36715950,721744003,perinatal,snomed,2024-03-12
 44819548,302.6,"demographics (race/ethnicity, gender)",icd9cm,2024-03-12
 44836686,V61.07,death cause,icd9cm,2024-03-12
 45552046,Y92.411,location,icd10cm,2024-03-12
@@ -843,3 +721,1278 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 43020429,149141000119102,assault/homicide,snomed,2024-03-12
 45547259,Y92.032,location,icd10cm,2024-03-12
 45609288,T74.91XD,assault/homicide,icd10cm,2024-03-12
+45587269,O04.89,abortion,icd10cm,2025-08-04
+45539079,O04.80,abortion,icd10cm,2025-08-04
+45582600,O99.814,liveborn,icd10cm,2025-08-04
+44823247,648.82,liveborn,icd9cm,2025-08-04
+44822104,648.81,liveborn,icd9cm,2025-08-04
+439402,372055003,liveborn,snomed,2025-08-04
+45587388,O76,liveborn,icd10cm,2025-08-04
+44826807,659.71,liveborn,icd9cm,2025-08-04
+2784560,10A07ZX,abortion,icd10pcs,2025-08-04
+2784559,10A07ZW,abortion,icd10pcs,2025-08-04
+2784558,10A07Z6,abortion,icd10pcs,2025-08-04
+2784561,10A07ZZ,abortion,icd10pcs,2025-08-04
+2784562,10A08ZZ,abortion,icd10pcs,2025-08-04
+38001490,770,abortion,drg,2025-08-04
+38001496,779,abortion,drg,2025-08-04
+44825642,675.12,liveborn,icd9cm,2025-08-04
+44824459,675.11,liveborn,icd9cm,2025-08-04
+44837293,669.32,liveborn,icd9cm,2025-08-04
+3045859,43993-5,liveborn,loinc,2025-08-04
+45587390,O88.02,liveborn,icd10cm,2025-08-04
+45757126,1.08E+16,liveborn,snomed,2025-08-04
+45587398,O99.314,liveborn,icd10cm,2025-08-04
+2004824,75.37,liveborn,icd9proc,2025-08-04
+4127245,236956008,liveborn,snomed,2025-08-04
+2004808,75.31,liveborn,icd9proc,2025-08-04
+4281535,66456009,liveborn,snomed,2025-08-04
+437936,199677008,liveborn,snomed,2025-08-04
+45539203,O88.12,liveborn,icd10cm,2025-08-04
+45757212,1.08E+16,liveborn,snomed,2025-08-04
+45553601,O88.13,liveborn,icd10cm,2025-08-04
+44829167,673.11,liveborn,icd9cm,2025-08-04
+442054,200294005,liveborn,snomed,2025-08-04
+45587385,O70.4,liveborn,icd10cm,2025-08-04
+44825622,664.61,liveborn,icd9cm,2025-08-04
+44831428,664.6,liveborn,icd9cm,2025-08-04
+45597052,O99.02,liveborn,icd10cm,2025-08-04
+432968,199244000,liveborn,snomed,2025-08-04
+45757092,1.07E+16,liveborn,snomed,2025-08-04
+442922,199247007,liveborn,snomed,2025-08-04
+44833725,648.22,liveborn,icd9cm,2025-08-04
+44829114,648.21,liveborn,icd9cm,2025-08-04
+45534311,O90.81,liveborn,icd10cm,2025-08-04
+2101811,1965,abortion,cpt4,2025-08-04
+2101812,1966,abortion,cpt4,2025-08-04
+2101013,850,liveborn,cpt4,2025-08-04
+2101593,946,liveborn,cpt4,2025-08-04
+441649,200232006,liveborn,snomed,2025-08-04
+44837232,641.31,liveborn,icd9cm,2025-08-04
+443133,198917009,liveborn,snomed,2025-08-04
+45597010,O46.093,liveborn,icd10cm,2025-08-04
+45757095,1.07E+16,liveborn,snomed,2025-08-04
+2006861,88.46,liveborn,icd9proc,2025-08-04
+2004526,69.52,liveborn,icd9proc,2025-08-04
+2004525,69.51,abortion,icd9proc,2025-08-04
+4212941,391897002,abortion,snomed,2025-08-04
+4112809,196040003,liveborn,snomed,2025-08-04
+35210345,O74.0,liveborn,icd10cm,2025-08-04
+76761,199099004,liveborn,snomed,2025-08-04
+44833719,646.52,liveborn,icd9cm,2025-08-04
+44827943,646.51,liveborn,icd9cm,2025-08-04
+35210263,O66.5,liveborn,icd10cm,2025-08-04
+4150397,310493005,liveborn,snomed,2025-08-04
+4147717,310494004,liveborn,snomed,2025-08-04
+4149455,310538001,liveborn,snomed,2025-08-04
+438258,310539009,liveborn,snomed,2025-08-04
+45563201,O99.844,liveborn,icd10cm,2025-08-04
+44831392,649.22,liveborn,icd9cm,2025-08-04
+44819868,649.21,liveborn,icd9cm,2025-08-04
+314103,198944004,liveborn,snomed,2025-08-04
+320456,198945003,liveborn,snomed,2025-08-04
+44823229,642.01,liveborn,icd9cm,2025-08-04
+46236885,77963-7,liveborn; free text,loinc,2025-08-04
+4015270,169836001,liveborn,snomed,2025-08-04
+43533795,73771-8,liveborn,loinc,2025-08-04
+4149610,310660006,liveborn,snomed,2025-08-04
+46271901,710168009,liveborn,snomed,2025-08-04
+44830226,648.72,liveborn,icd9cm,2025-08-04
+44833728,648.71,liveborn,icd9cm,2025-08-04
+443903,3033000,liveborn,snomed,2025-08-04
+2721125,S2150,liveborn,hcpcs,2025-08-04
+77624,200418007,liveborn,snomed,2025-08-04
+81086,200419004,liveborn,snomed,2025-08-04
+436767,200142000,liveborn,snomed,2025-08-04
+44837294,669.61,liveborn,icd9cm,2025-08-04
+73267,17532001,liveborn,snomed,2025-08-04
+44827952,652.11,liveborn,icd9cm,2025-08-04
+73537,199354004,liveborn,snomed,2025-08-04
+44825606,652.21,liveborn,icd9cm,2025-08-04
+35210347,O74.2,liveborn,icd10cm,2025-08-04
+4065093,200077002,liveborn,snomed,2025-08-04
+44830269,668.13,liveborn,icd9cm,2025-08-04
+44826825,668.11,liveborn,icd9cm,2025-08-04
+35210348,O74.3,liveborn,icd10cm,2025-08-04
+4065094,200078007,liveborn,snomed,2025-08-04
+44826827,668.21,liveborn,icd9cm,2025-08-04
+44823265,655.01,liveborn,icd9cm,2025-08-04
+44827991,674.02,liveborn,icd9cm,2025-08-04
+44827990,674.01,liveborn,icd9cm,2025-08-04
+441369,199482005,liveborn,snomed,2025-08-04
+435607,199483000,liveborn,snomed,2025-08-04
+44824417,654.52,liveborn,icd9cm,2025-08-04
+44824416,654.51,liveborn,icd9cm,2025-08-04
+197043,249020006,liveborn,snomed,2025-08-04
+44836092,649.71,liveborn,icd9cm,2025-08-04
+45597037,O86.11,liveborn,icd10cm,2025-08-04
+437942,200146002,liveborn,snomed,2025-08-04
+44831438,669.7,liveborn,icd9cm,2025-08-04
+44826829,669.71,liveborn,icd9cm,2025-08-04
+44824445,669.7,liveborn,icd9cm,2025-08-04
+4192036,74,liveborn,icd9proc,2025-08-04
+2004789,74.4,liveborn,icd9proc,2025-08-04
+2004790,74.9,liveborn,icd9proc,2025-08-04
+38001485,765,liveborn,drg,2025-08-04
+38001486,766,liveborn,drg,2025-08-04
+2784326,10207YZ,liveborn,icd10pcs,2025-08-04
+4229118,88748005,liveborn,snomed,2025-08-04
+35211124,Q77.6,liveborn,icd10cm,2025-08-04
+80838,62501005,liveborn,snomed,2025-08-04
+4021397,11612004,liveborn,snomed,2025-08-04
+45567964,O41.1222,liveborn,icd10cm,2025-08-04
+45592254,O41.1223,liveborn,icd10cm,2025-08-04
+45577632,O41.1231,liveborn,icd10cm,2025-08-04
+45553549,O41.1232,liveborn,icd10cm,2025-08-04
+45577633,O41.1234,liveborn,icd10cm,2025-08-04
+45587355,O41.1230,liveborn,icd10cm,2025-08-04
+45553550,O41.1239,liveborn,icd10cm,2025-08-04
+45563141,O41.1299,liveborn,icd10cm,2025-08-04
+44821042,655.11,liveborn,icd9cm,2025-08-04
+2004785,74,liveborn,icd9proc,2025-08-04
+44826787,649.32,liveborn,icd9cm,2025-08-04
+44821034,649.31,liveborn,icd9cm,2025-08-04
+438805,198661003,liveborn,snomed,2025-08-04
+35210354,O74.9,liveborn,icd10cm,2025-08-04
+35210361,O75.9,liveborn,icd10cm,2025-08-04
+4064978,200046004,liveborn,snomed,2025-08-04
+4052737,124736009,liveborn,snomed,2025-08-04
+44832549,654.01,liveborn,icd9cm,2025-08-04
+196178,267214002,liveborn,snomed,2025-08-04
+315013,199266007,liveborn,snomed,2025-08-04
+44825603,648.51,liveborn,icd9cm,2025-08-04
+44831405,654.72,liveborn,icd9cm,2025-08-04
+44833744,654.71,liveborn,icd9cm,2025-08-04
+44834909,654.81,liveborn,icd9cm,2025-08-04
+433826,199306007,abortion,snomed,2025-08-04
+4129709,237247003,abortion; multiples,snomed,2025-08-04
+45582480,O31.31X0,abortion; multiples,icd10cm,2025-08-04
+45558241,O31.31X9,abortion; multiples,icd10cm,2025-08-04
+45539133,O31.32X1,abortion; multiples,icd10cm,2025-08-04
+45534213,O31.32X2,abortion; multiples,icd10cm,2025-08-04
+45606572,O31.32X3,abortion; multiples,icd10cm,2025-08-04
+45587308,O31.32X0,abortion; multiples,icd10cm,2025-08-04
+45601808,O31.33X1,abortion; multiples,icd10cm,2025-08-04
+45606573,O31.33X2,abortion; multiples,icd10cm,2025-08-04
+45534214,O31.33X3,abortion; multiples,icd10cm,2025-08-04
+45548746,O31.33X0,abortion; multiples,icd10cm,2025-08-04
+45567911,O31.30X0,abortion; multiples,icd10cm,2025-08-04
+2779045,0W3N3ZZ,liveborn,icd10pcs,2025-08-04
+2779060,0W3R7ZZ,liveborn,icd10pcs,2025-08-04
+2779033,0W3J3ZZ,liveborn,icd10pcs,2025-08-04
+44822418,861.11,liveborn,icd9cm,2025-08-04
+79186,40521006,liveborn,snomed,2025-08-04
+434708,289311005,liveborn,snomed,2025-08-04
+44823281,663.1,liveborn,icd9cm,2025-08-04
+44824429,663.13,liveborn,icd9cm,2025-08-04
+44832570,663.11,liveborn,icd9cm,2025-08-04
+442292,53419009,liveborn,snomed,2025-08-04
+433270,11209007,liveborn,snomed,2025-08-04
+433828,267266006,liveborn,snomed,2025-08-04
+439092,199880007,liveborn,snomed,2025-08-04
+44824461,676.12,liveborn,icd9cm,2025-08-04
+440481,200412008,liveborn,snomed,2025-08-04
+44830265,665.61,liveborn,icd9cm,2025-08-04
+443773,24258008,liveborn,snomed,2025-08-04
+45548690,O04.84,abortion,icd10cm,2025-08-04
+4083587,184099003,liveborn; date of birth,snomed,2025-08-04
+44821047,655.71,liveborn,icd9cm,2025-08-04
+44831442,671.31,liveborn,icd9cm,2025-08-04
+44836133,671.42,liveborn,icd9cm,2025-08-04
+75882,199774009,liveborn,snomed,2025-08-04
+44829142,660.31,liveborn,icd9cm,2025-08-04
+44824425,660.3,liveborn,icd9cm,2025-08-04
+44784536,698702007,liveborn,snomed,2025-08-04
+44827981,666.22,liveborn,icd9cm,2025-08-04
+441361,35347003,liveborn,snomed,2025-08-04
+35210360,O75.5,liveborn,icd10cm,2025-08-04
+44823271,658.33,liveborn,icd9cm,2025-08-04
+44823270,658.31,liveborn,icd9cm,2025-08-04
+44834915,658.3,liveborn,icd9cm,2025-08-04
+44833755,658.23,liveborn,icd9cm,2025-08-04
+44819894,658.21,liveborn,icd9cm,2025-08-04
+44831412,658.2,liveborn,icd9cm,2025-08-04
+438213,199860006,liveborn,snomed,2025-08-04
+35210193,O63.2,liveborn,icd10cm,2025-08-04
+44825618,662.31,liveborn,icd9cm,2025-08-04
+4064559,199862003,liveborn,snomed,2025-08-04
+35209537,O07.1,abortion,icd10cm,2025-08-04
+4118802,302253005,liveborn,snomed,2025-08-04
+4154615,271373005,liveborn,snomed,2025-08-04
+444113,106008001,liveborn,snomed,2025-08-04
+4065737,200133007,liveborn,snomed,2025-08-04
+4061457,200148001,liveborn,snomed,2025-08-04
+4066112,200149009,liveborn,snomed,2025-08-04
+441641,48782003,liveborn,snomed,2025-08-04
+2774799,0U570ZZ,liveborn,icd10pcs,2025-08-04
+2774802,0U577ZZ,liveborn,icd10pcs,2025-08-04
+2774794,0U560ZZ,liveborn,icd10pcs,2025-08-04
+2774789,0U550ZZ,liveborn,icd10pcs,2025-08-04
+2774807,0U597ZZ,liveborn,icd10pcs,2025-08-04
+443012,199225007,liveborn,snomed,2025-08-04
+45757129,1.08E+16,liveborn,snomed,2025-08-04
+4062685,199226008,liveborn,snomed,2025-08-04
+44836084,648.01,liveborn,icd9cm,2025-08-04
+2004490,69.02,abortion; liveborn,icd9proc,2025-08-04
+2004489,69.01,abortion,icd9proc,2025-08-04
+4153555,28379004,abortion,snomed,2025-08-04
+4309425,391998006,liveborn,snomed,2025-08-04
+4168396,274973002,abortion,snomed,2025-08-04
+2775766,0U797DZ,liveborn,icd10pcs,2025-08-04
+45563198,O99.42,liveborn,icd10cm,2025-08-04
+45582599,O99.62,liveborn,icd10cm,2025-08-04
+45601909,O99.354,liveborn,icd10cm,2025-08-04
+45568008,O99.52,liveborn,icd10cm,2025-08-04
+45539224,O99.72,liveborn,icd10cm,2025-08-04
+4180630,362972006,liveborn,snomed,2025-08-04
+44821039,653.81,liveborn,icd9cm,2025-08-04
+44824456,674.12,liveborn,icd9cm,2025-08-04
+44836138,674.22,liveborn,icd9cm,2025-08-04
+2779072,0W8NXZZ,liveborn,icd10pcs,2025-08-04
+2784547,10907ZU,liveborn,icd10pcs,2025-08-04
+2784331,10900ZC,liveborn,icd10pcs,2025-08-04
+2784545,10907ZC,liveborn,icd10pcs,2025-08-04
+2775320,0U970ZZ,liveborn,icd10pcs,2025-08-04
+2775305,0U960ZZ,liveborn,icd10pcs,2025-08-04
+2775290,0U950ZZ,liveborn,icd10pcs,2025-08-04
+2757629,0K9N00Z,liveborn,icd10pcs,2025-08-04
+2775523,0U990ZZ,liveborn,icd10pcs,2025-08-04
+442915,199252002,liveborn,snomed,2025-08-04
+44819864,648.31,liveborn,icd9cm,2025-08-04
+45582594,O99.324,liveborn,icd10cm,2025-08-04
+44829105,644.2,liveborn,icd9cm,2025-08-04
+44819854,644.21,liveborn,icd9cm,2025-08-04
+44824398,644.2,liveborn,icd9cm,2025-08-04
+133816,198990007,liveborn,snomed,2025-08-04
+35209549,O15.1,liveborn,icd10cm,2025-08-04
+4034096,237283007,liveborn,snomed,2025-08-04
+44827935,642.61,liveborn,icd9cm,2025-08-04
+44827941,646.12,liveborn,icd9cm,2025-08-04
+44819858,646.11,liveborn,icd9cm,2025-08-04
+44829139,659.61,liveborn,icd9cm,2025-08-04
+440794,199718001,liveborn,snomed,2025-08-04
+44827966,659.51,liveborn,icd9cm,2025-08-04
+35225121,Z39.0,liveborn,icd10cm,2025-08-04
+35210363,O82,liveborn,icd10cm,2025-08-04
+45547303,Z33.2,abortion,icd10cm,2025-08-04
+35210362,O80,liveborn,icd10cm,2025-08-04
+45592312,O99.284,liveborn,icd10cm,2025-08-04
+45534310,O86.12,liveborn,icd10cm,2025-08-04
+44823310,676.22,liveborn,icd9cm,2025-08-04
+44836142,676.21,liveborn,icd9cm,2025-08-04
+44827950,649.42,liveborn,icd9cm,2025-08-04
+44827949,649.41,liveborn,icd9cm,2025-08-04
+2004848,75.91,liveborn,icd9proc,2025-08-04
+2004849,75.92,liveborn,icd9proc,2025-08-04
+4100019,293018003,liveborn,snomed,2025-08-04
+44831411,656.61,liveborn,icd9cm,2025-08-04
+2780119,0UB70ZZ,liveborn,icd10pcs,2025-08-04
+2780118,0UB70ZX,liveborn,icd10pcs,2025-08-04
+4065745,200164009,liveborn,snomed,2025-08-04
+2780620,0UCC8ZZ,liveborn,icd10pcs,2025-08-04
+43018232,0UC48ZZ,liveborn,icd10pcs,2025-08-04
+2780606,0UC90ZZ,liveborn,icd10pcs,2025-08-04
+2780609,0UC97ZZ,liveborn,icd10pcs,2025-08-04
+1781151,10D20ZZ,liveborn,icd10pcs,2025-08-04
+1781152,10D24ZZ,liveborn,icd10pcs,2025-08-04
+78210,37762002,liveborn,snomed,2025-08-04
+44831401,652.43,liveborn,icd9cm,2025-08-04
+44822113,652.41,liveborn,icd9cm,2025-08-04
+44832542,652.4,liveborn,icd9cm,2025-08-04
+44822079,638.1,abortion,icd9cm,2025-08-04
+44834872,638.6,abortion,icd9cm,2025-08-04
+44826770,638,abortion,icd9cm,2025-08-04
+44830206,638.3,abortion,icd9cm,2025-08-04
+44831371,638.5,abortion,icd9cm,2025-08-04
+44819846,638.7,abortion,icd9cm,2025-08-04
+44819847,638.8,abortion,icd9cm,2025-08-04
+44825585,638.9,abortion,icd9cm,2025-08-04
+4158476,271954000,abortion,snomed,2025-08-04
+4171359,49416000,abortion,snomed,2025-08-04
+200455,26623000,abortion,snomed,2025-08-04
+443868,13943000,abortion,snomed,2025-08-04
+197047,29421008,abortion,snomed,2025-08-04
+201637,67042008,abortion,snomed,2025-08-04
+194694,59919008,abortion,snomed,2025-08-04
+4113055,198806007,abortion,snomed,2025-08-04
+4260543,44992005,abortion,snomed,2025-08-04
+45572753,O07.39,abortion,icd10cm,2025-08-04
+4073090,24444009,abortion,snomed,2025-08-04
+45553470,O07.30,abortion,icd10cm,2025-08-04
+192380,90645002,abortion,snomed,2025-08-04
+35209539,O07.4,abortion,icd10cm,2025-08-04
+45587382,O66.41,liveborn,icd10cm,2025-08-04
+45757775,3.85E+13,liveborn,snomed,2025-08-04
+44832566,660.73,liveborn,icd9cm,2025-08-04
+44829145,660.71,liveborn,icd9cm,2025-08-04
+1571851,O61,liveborn,icd10cm,2025-08-04
+35210183,O61.9,liveborn,icd10cm,2025-08-04
+36675595,772006002,liveborn,snomed,2025-08-04
+35210181,O61.1,liveborn,icd10cm,2025-08-04
+437622,90188009,liveborn,snomed,2025-08-04
+441924,199694005,liveborn,snomed,2025-08-04
+44833758,659.01,liveborn,icd9cm,2025-08-04
+438491,77854008,liveborn,snomed,2025-08-04
+35210180,O61.0,liveborn,icd10cm,2025-08-04
+45534290,,liveborn,,2025-08-04
+44831414,659.11,liveborn,icd9cm,2025-08-04
+4113510,198878009,abortion,snomed,2025-08-04
+443521,413339006,liveborn,snomed,2025-08-04
+45534296,O66.40,liveborn,icd10cm,2025-08-04
+4003545,120062000,liveborn,snomed,2025-08-04
+45539164,O36.8213,liveborn,icd10cm,2025-08-04
+44829131,656.31,liveborn,icd9cm,2025-08-04
+2004809,75.32,liveborn,icd9proc,2025-08-04
+4248953,408807004,liveborn,snomed,2025-08-04
+44821084,678.01,liveborn,icd9cm,2025-08-04
+2110285,59030,liveborn,cpt4,2025-08-04
+4079857,276602006,liveborn,snomed,2025-08-04
+44837262,653.41,liveborn,icd9cm,2025-08-04
+72697,199526007,liveborn,snomed,2025-08-04
+4064171,199533007,liveborn,snomed,2025-08-04
+4126390,289258004,liveborn,snomed,2025-08-04
+197343,57759005,liveborn,snomed,2025-08-04
+45577658,,liveborn,,2025-08-04
+35210326,O70.0,liveborn,icd10cm,2025-08-04
+192978,199916005,liveborn,snomed,2025-08-04
+199088,199917001,liveborn,snomed,2025-08-04
+44837280,664.01,liveborn,icd9cm,2025-08-04
+44823285,664.04,liveborn,icd9cm,2025-08-04
+435022,200130005,liveborn,snomed,2025-08-04
+44836126,669.5,liveborn,icd9cm,2025-08-04
+44831437,669.51,liveborn,icd9cm,2025-08-04
+44831436,669.5,liveborn,icd9cm,2025-08-04
+45582571,,liveborn,,2025-08-04
+35210329,O70.3,liveborn,icd10cm,2025-08-04
+194429,199934009,liveborn,snomed,2025-08-04
+198496,199935005,liveborn,snomed,2025-08-04
+44823287,664.31,liveborn,icd9cm,2025-08-04
+4089329,18559007,liveborn,snomed,2025-08-04
+45539179,O42.12,liveborn,icd10cm,2025-08-04
+45592262,O42.02,liveborn,icd10cm,2025-08-04
+45597005,O42.92,liveborn,icd10cm,2025-08-04
+44831454,676.62,liveborn,icd9cm,2025-08-04
+44822159,676.61,liveborn,icd9cm,2025-08-04
+44821049,659.31,liveborn,icd9cm,2025-08-04
+77052,199405005,liveborn,snomed,2025-08-04
+44837261,653.11,liveborn,icd9cm,2025-08-04
+4091200,249219008,liveborn,snomed,2025-08-04
+35209533,O04.5,abortion,icd10cm,2025-08-04
+81357,199106001,liveborn,snomed,2025-08-04
+80778,199107005,liveborn,snomed,2025-08-04
+442769,63503002,liveborn,snomed,2025-08-04
+37200965,O13.4,liveborn,icd10cm,2025-08-04
+46234792,76516-4,liveborn,loinc,2025-08-04
+45757124,1.08E+16,liveborn,snomed,2025-08-04
+37200978,O24.425,liveborn,icd10cm,2025-08-04
+45539106,O24.420,liveborn,icd10cm,2025-08-04
+45563059,O24.424,liveborn,icd10cm,2025-08-04
+45582460,O24.429,liveborn,icd10cm,2025-08-04
+37200963,O12.24,liveborn,icd10cm,2025-08-04
+37200959,O12.04,liveborn,icd10cm,2025-08-04
+37200961,O12.14,liveborn,icd10cm,2025-08-04
+45587395,O98.22,liveborn,icd10cm,2025-08-04
+45757125,1.08E+16,liveborn,snomed,2025-08-04
+44824402,647.11,liveborn,icd9cm,2025-08-04
+434110,199714004,liveborn,snomed,2025-08-04
+44830250,659.41,liveborn,icd9cm,2025-08-04
+44825616,659.4,pregnancy; multiples,icd9cm,2025-08-04
+45757134,1.08E+16,liveborn,snomed,2025-08-04
+36306162,87125-1,liveborn,loinc,2025-08-04
+4129017,237226002,liveborn,snomed,2025-08-04
+37200971,O14.24,liveborn,icd10cm,2025-08-04
+4263072,46502006,liveborn,snomed,2025-08-04
+44826773,641.11,liveborn,icd9cm,2025-08-04
+435323,81448000,liveborn,snomed,2025-08-04
+44826801,655.21,liveborn,icd9cm,2025-08-04
+442088,199373000,liveborn,snomed,2025-08-04
+77615,199375007,liveborn,snomed,2025-08-04
+44821038,652.51,liveborn,icd9cm,2025-08-04
+44823289,665.4,liveborn,icd9cm,2025-08-04
+44830264,665.41,liveborn,icd9cm,2025-08-04
+45597051,O98.72,liveborn,icd10cm,2025-08-04
+45757132,1.08E+16,liveborn,snomed,2025-08-04
+44824392,642.12,liveborn,icd9cm,2025-08-04
+44827930,642.11,liveborn,icd9cm,2025-08-04
+44823278,661.41,liveborn,icd9cm,2025-08-04
+2110331,59850,abortion,cpt4,2025-08-04
+2110332,59851,abortion,cpt4,2025-08-04
+2110334,59855,abortion,cpt4,2025-08-04
+2110335,59856,abortion,cpt4,2025-08-04
+2110329,59840,abortion,cpt4,2025-08-04
+2110330,59841,abortion,cpt4,2025-08-04
+43530948,609494005,abortion,snomed,2025-08-04
+4248955,408818004,liveborn,snomed,2025-08-04
+44833756,658.41,liveborn,icd9cm,2025-08-04
+45601851,O41.1021,liveborn,icd10cm,2025-08-04
+45553544,O41.1022,liveborn,icd10cm,2025-08-04
+45601852,O41.1031,liveborn,icd10cm,2025-08-04
+45563139,O41.1030,liveborn,icd10cm,2025-08-04
+44832528,646.62,liveborn,icd9cm,2025-08-04
+44826779,646.61,liveborn,icd9cm,2025-08-04
+45757688,3.28E+13,liveborn,snomed,2025-08-04
+2514569,99477,liveborn,cpt4,2025-08-04
+4121775,288045002,abortion,snomed,2025-08-04
+4115963,286554000,liveborn,snomed,2025-08-04
+45583138,S35.535A,liveborn,icd10cm,2025-08-04
+45544587,S35.533A,liveborn,icd10cm,2025-08-04
+200882,64042000,liveborn,snomed,2025-08-04
+44835226,902.55,liveborn,icd9cm,2025-08-04
+45572914,O9A.22,liveborn,icd10cm,2025-08-04
+44819878,653.21,liveborn,icd9cm,2025-08-04
+77621,199409004,liveborn,snomed,2025-08-04
+2756775,0JH80HZ,liveborn,icd10pcs,2025-08-04
+2757028,0JHH0HZ,liveborn,icd10pcs,2025-08-04
+2756828,0JHG0HZ,liveborn,icd10pcs,2025-08-04
+43018095,0UH90HZ,liveborn,icd10pcs,2025-08-04
+2781586,0WHR73Z,liveborn,icd10pcs,2025-08-04
+2723348,00HU43Z,liveborn,icd10pcs,2025-08-04
+2763198,0QH404Z,liveborn,icd10pcs,2025-08-04
+2784582,10H073Z,liveborn,icd10pcs,2025-08-04
+2784581,10H00YZ,liveborn,icd10pcs,2025-08-04
+2784583,10H07YZ,liveborn,icd10pcs,2025-08-04
+2780909,0UJ80ZZ,liveborn,icd10pcs,2025-08-04
+2784590,10J0XZZ,liveborn,icd10pcs,2025-08-04
+2784588,10J07ZZ,liveborn,icd10pcs,2025-08-04
+2004804,75,abortion,icd9proc,2025-08-04
+4242238,38010008,liveborn,snomed,2025-08-04
+35210266,O67.0,liveborn,icd10cm,2025-08-04
+4065747,200173001,liveborn,snomed,2025-08-04
+35210268,O67.9,liveborn,icd10cm,2025-08-04
+2789512,3E0P73Z,liveborn,icd10pcs,2025-08-04
+2787958,3E0E33Z,liveborn,icd10pcs,2025-08-04
+2787973,3E0E73Z,liveborn,icd10pcs,2025-08-04
+2789514,3E0P77Z,liveborn,icd10pcs,2025-08-04
+2787736,3E0D77Z,liveborn,icd10pcs,2025-08-04
+2787960,3E0E37Z,liveborn,icd10pcs,2025-08-04
+2787975,3E0E77Z,liveborn,icd10pcs,2025-08-04
+2789508,3E0P705,liveborn,icd10pcs,2025-08-04
+2786438,3E033VJ,liveborn,icd10pcs,2025-08-04
+2787227,3E097GC,liveborn,icd10pcs,2025-08-04
+2787977,3E0E7GC,liveborn,icd10pcs,2025-08-04
+44822143,665.22,liveborn,icd9cm,2025-08-04
+4142524,265703000,liveborn,snomed,2025-08-04
+44830208,639.3,abortion,icd9cm,2025-08-04
+35210269,O68,liveborn,icd10cm,2025-08-04
+4063307,199597005,liveborn,snomed,2025-08-04
+45548821,O69.1XX1,liveborn,icd10cm,2025-08-04
+45567984,O69.1XX2,liveborn,icd10cm,2025-08-04
+45548820,O69.1XX0,liveborn,icd10cm,2025-08-04
+45592284,O69.81X1,liveborn,icd10cm,2025-08-04
+45601889,O69.81X2,liveborn,icd10cm,2025-08-04
+45582568,O69.81X0,liveborn,icd10cm,2025-08-04
+45572889,O69.9XX0,liveborn,icd10cm,2025-08-04
+45563174,O69.9XX9,liveborn,icd10cm,2025-08-04
+443247,267257007,liveborn,snomed,2025-08-04
+45567993,O77.9,liveborn,icd10cm,2025-08-04
+45553594,O77.0,liveborn,icd10cm,2025-08-04
+45582570,O69.89X1,liveborn,icd10cm,2025-08-04
+45539197,O69.89X2,liveborn,icd10cm,2025-08-04
+45592288,O69.89X0,liveborn,icd10cm,2025-08-04
+45534300,O69.89X9,liveborn,icd10cm,2025-08-04
+45572884,O69.2XX1,liveborn,icd10cm,2025-08-04
+45587384,O69.2XX0,liveborn,icd10cm,2025-08-04
+45563169,O69.2XX9,liveborn,icd10cm,2025-08-04
+45601890,O69.82X1,liveborn,icd10cm,2025-08-04
+45582569,O69.82X2,liveborn,icd10cm,2025-08-04
+45592286,O69.82X0,liveborn,icd10cm,2025-08-04
+45548832,O77.8,liveborn,icd10cm,2025-08-04
+45592279,O69.0XX1,liveborn,icd10cm,2025-08-04
+45592280,O69.0XX2,liveborn,icd10cm,2025-08-04
+45606643,O69.0XX0,liveborn,icd10cm,2025-08-04
+45577656,O69.3XX0,liveborn,icd10cm,2025-08-04
+45572886,O69.4XX1,liveborn,icd10cm,2025-08-04
+45534299,O69.4XX2,liveborn,icd10cm,2025-08-04
+45601887,O69.4XX0,liveborn,icd10cm,2025-08-04
+45563172,O69.5XX1,liveborn,icd10cm,2025-08-04
+45606646,O69.5XX2,liveborn,icd10cm,2025-08-04
+45548824,O69.5XX0,liveborn,icd10cm,2025-08-04
+4063306,199595002,liveborn,snomed,2025-08-04
+4038496,118216002,liveborn,snomed,2025-08-04
+199089,199972004,liveborn,snomed,2025-08-04
+44824435,665.31,liveborn,icd9cm,2025-08-04
+4152625,283959008,liveborn,snomed,2025-08-04
+45554215,S37.532A,liveborn,icd10cm,2025-08-04
+4155516,283963001,liveborn,snomed,2025-08-04
+45563175,O71.81,liveborn,icd10cm,2025-08-04
+4088588,249052006,liveborn,snomed,2025-08-04
+80782,199422007,liveborn,snomed,2025-08-04
+44837237,643.21,liveborn,icd9cm,2025-08-04
+44822068,635,abortion,icd9cm,2025-08-04
+44833704,635.7,abortion,icd9cm,2025-08-04
+44822071,635.9,abortion,icd9cm,2025-08-04
+44833701,635.22,abortion,icd9cm,2025-08-04
+44834861,635.2,abortion,icd9cm,2025-08-04
+44837217,635.12,abortion,icd9cm,2025-08-04
+44823222,635.11,abortion,icd9cm,2025-08-04
+44837216,635.1,abortion,icd9cm,2025-08-04
+44829090,635.62,abortion,icd9cm,2025-08-04
+44824375,635.02,abortion,icd9cm,2025-08-04
+44825575,635.01,abortion,icd9cm,2025-08-04
+44836067,635,abortion,icd9cm,2025-08-04
+44837218,635.42,abortion,icd9cm,2025-08-04
+44825576,635.5,abortion,icd9cm,2025-08-04
+44830202,635.72,abortion,icd9cm,2025-08-04
+44819843,635.71,abortion,icd9cm,2025-08-04
+44832511,635.7,abortion,icd9cm,2025-08-04
+44825577,635.82,abortion,icd9cm,2025-08-04
+44822070,635.81,abortion,icd9cm,2025-08-04
+44826764,635.8,abortion,icd9cm,2025-08-04
+44825579,635.92,abortion,icd9cm,2025-08-04
+44822072,635.91,abortion,icd9cm,2025-08-04
+44825578,635.9,abortion,icd9cm,2025-08-04
+4347172,240006007,liveborn,snomed,2025-08-04
+2110237,58611,liveborn,cpt4,2025-08-04
+45539108,O26.62,liveborn,icd10cm,2025-08-04
+44837242,646.71,liveborn,icd9cm,2025-08-04
+196170,199117000,liveborn,snomed,2025-08-04
+4122726,289240005,liveborn,snomed,2025-08-04
+35210194,O63.9,liveborn,icd10cm,2025-08-04
+44835441,V21.32,liveborn,icd9cm,2025-08-04
+44821528,V21.30,liveborn,icd9cm,2025-08-04
+2004786,74.1,liveborn,icd9proc,2025-08-04
+44836128,670.02,liveborn,icd9cm,2025-08-04
+45553622,O9A.12,liveborn,icd10cm,2025-08-04
+45757101,1.07E+16,liveborn,snomed,2025-08-04
+45548718,O25.2,liveborn,icd10cm,2025-08-04
+45757199,1.08E+16,liveborn,snomed,2025-08-04
+44822110,652,liveborn,icd9cm,2025-08-04
+4151385,28233006,liveborn,snomed,2025-08-04
+2004826,75.4,liveborn,icd9proc,2025-08-04
+4010271,112927003,liveborn,snomed,2025-08-04
+1326743,O36.8311,liveborn,icd10cm,2025-08-04
+1326746,O36.8314,liveborn,icd10cm,2025-08-04
+1326751,O36.8321,liveborn,icd10cm,2025-08-04
+1326753,O36.8323,liveborn,icd10cm,2025-08-04
+45596954,O32.1XX2,liveborn,icd10cm,2025-08-04
+4065886,200469007,liveborn,snomed,2025-08-04
+45567917,O32.6XX1,liveborn,icd10cm,2025-08-04
+45596957,O32.6XX2,liveborn,icd10cm,2025-08-04
+45558246,O32.6XX0,liveborn,icd10cm,2025-08-04
+35209818,O33.8,liveborn,icd10cm,2025-08-04
+45543992,O36.93X9,liveborn,icd10cm,2025-08-04
+45587311,O32.4XX1,liveborn,icd10cm,2025-08-04
+45558245,O32.4XX3,liveborn,icd10cm,2025-08-04
+45567916,O32.4XX0,liveborn,icd10cm,2025-08-04
+45582514,O36.5123,liveborn,icd10cm,2025-08-04
+45548773,O36.5132,liveborn,icd10cm,2025-08-04
+45543977,O36.5130,liveborn,icd10cm,2025-08-04
+45539135,O32.9XX2,liveborn,icd10cm,2025-08-04
+45596958,O32.8XX2,liveborn,icd10cm,2025-08-04
+45534220,O32.8XX0,liveborn,icd10cm,2025-08-04
+45572797,O32.2XX1,liveborn,icd10cm,2025-08-04
+44836145,679.01,liveborn,icd9cm,2025-08-04
+436183,200099005,liveborn,snomed,2025-08-04
+44825629,669.03,liveborn,icd9cm,2025-08-04
+44829161,669.01,liveborn,icd9cm,2025-08-04
+44824441,669,liveborn,icd9cm,2025-08-04
+45757191,1.08E+16,liveborn,snomed,2025-08-04
+35210355,O75.0,liveborn,icd10cm,2025-08-04
+45567992,O75.81,liveborn,icd10cm,2025-08-04
+441640,199163006,liveborn,snomed,2025-08-04
+442070,200111005,liveborn,snomed,2025-08-04
+313829,200112003,liveborn,snomed,2025-08-04
+44830276,669.22,liveborn,icd9cm,2025-08-04
+44837292,669.21,liveborn,icd9cm,2025-08-04
+45543927,O26.53,liveborn,icd10cm,2025-08-04
+434105,37141005,liveborn,snomed,2025-08-04
+44823272,659.21,liveborn,icd9cm,2025-08-04
+44837274,659.2,liveborn,icd9cm,2025-08-04
+4143214,267340006,liveborn,snomed,2025-08-04
+438206,199192005,liveborn,snomed,2025-08-04
+435606,199156006,liveborn,snomed,2025-08-04
+443019,199157002,liveborn,snomed,2025-08-04
+443020,199159004,liveborn,snomed,2025-08-04
+779895,2603505,liveborn,rxnorm,2025-08-04
+2787053,4A0HX4Z,liveborn,icd10pcs,2025-08-04
+2787045,4A0H74Z,liveborn,icd10pcs,2025-08-04
+2787046,4A0H7CZ,liveborn,icd10pcs,2025-08-04
+2787047,4A0H7FZ,liveborn,icd10pcs,2025-08-04
+4205561,55581002,liveborn,snomed,2025-08-04
+44825775,763.84,liveborn,icd9cm,2025-08-04
+45890732,G9361,liveborn,hcpcs,2025-08-04
+4150970,31208007,liveborn,snomed,2025-08-04
+4115153,285409006,abortion,snomed,2025-08-04
+442920,199259006,liveborn,snomed,2025-08-04
+45757197,1.08E+16,liveborn,snomed,2025-08-04
+442919,199260001,liveborn,snomed,2025-08-04
+44821029,648.42,liveborn,icd9cm,2025-08-04
+44833726,648.41,liveborn,icd9cm,2025-08-04
+45543908,O04.83,abortion,icd10cm,2025-08-04
+44831377,643.01,liveborn,icd9cm,2025-08-04
+443326,199022003,liveborn,snomed,2025-08-04
+44837234,642.42,liveborn,icd9cm,2025-08-04
+44822082,642.41,liveborn,icd9cm,2025-08-04
+37200967,O14.04,liveborn,icd10cm,2025-08-04
+4063183,199416003,liveborn,snomed,2025-08-04
+72970,199418002,liveborn,snomed,2025-08-04
+78817,199419005,liveborn,snomed,2025-08-04
+2787787,4A1HX4Z,liveborn,icd10pcs,2025-08-04
+2787779,4A1H74Z,liveborn,icd10pcs,2025-08-04
+2787780,4A1H7CZ,liveborn,icd10pcs,2025-08-04
+2787784,4A1H8CZ,liveborn,icd10pcs,2025-08-04
+2787789,4A1HXFZ,liveborn,icd10pcs,2025-08-04
+2787785,4A1H8FZ,liveborn,icd10pcs,2025-08-04
+2787790,4A1HXHZ,liveborn,icd10pcs,2025-08-04
+2787793,4A1J7BZ,liveborn,icd10pcs,2025-08-04
+433260,289256000,liveborn,snomed,2025-08-04
+4119402,287427008,liveborn,snomed,2025-08-04
+38000996,138,liveborn,drg,2025-08-04
+4344627,240284002,abortion,snomed,2025-08-04
+2110337,59866,abortion,cpt4,2025-08-04
+44834900,651.71,liveborn,icd9cm,2025-08-04
+44837258,652.61,liveborn,icd9cm,2025-08-04
+4060542,199378009,liveborn,snomed,2025-08-04
+442082,199380003,liveborn,snomed,2025-08-04
+2101016,857,liveborn,cpt4,2025-08-04
+2101598,955,liveborn,cpt4,2025-08-04
+4059914,161962008,liveborn,snomed,2025-08-04
+4084874,247994001,liveborn,snomed,2025-08-04
+44832591,675.22,liveborn,icd9cm,2025-08-04
+44819929,675.21,liveborn,icd9cm,2025-08-04
+4014720,169961004,liveborn,snomed,2025-08-04
+4209211,440425000,multiples,snomed,2025-08-04
+4091280,252114001,abortion,snomed,2025-08-04
+4090055,252113007,abortion,snomed,2025-08-04
+4208183,440013005,multiples,snomed,2025-08-04
+45534322,O99.214,liveborn,icd10cm,2025-08-04
+44821032,649.12,liveborn,icd9cm,2025-08-04
+44836089,649.11,liveborn,icd9cm,2025-08-04
+45757112,1.08E+16,liveborn,snomed,2025-08-04
+442053,200301007,liveborn,snomed,2025-08-04
+74433,200374003,liveborn,snomed,2025-08-04
+78494,200375002,liveborn,snomed,2025-08-04
+40760190,57071-3,liveborn,loinc,2025-08-04
+192979,199977005,liveborn,snomed,2025-08-04
+193269,199979008,liveborn,snomed,2025-08-04
+35210334,O71.4,liveborn,icd10cm,2025-08-04
+197048,199969006,liveborn,snomed,2025-08-04
+35210333,O71.3,liveborn,icd10cm,2025-08-04
+442080,199974003,liveborn,snomed,2025-08-04
+193271,199996009,liveborn,snomed,2025-08-04
+192387,200342005,liveborn,snomed,2025-08-04
+442072,200105007,liveborn,snomed,2025-08-04
+195025,200106008,liveborn,snomed,2025-08-04
+44829168,673.22,liveborn,icd9cm,2025-08-04
+44831445,673.21,liveborn,icd9cm,2025-08-04
+374430,25053000,liveborn,snomed,2025-08-04
+198819,111451002,liveborn,snomed,2025-08-04
+193827,199746004,liveborn,snomed,2025-08-04
+199087,199759007,liveborn,snomed,2025-08-04
+196182,199769001,liveborn,snomed,2025-08-04
+35210256,O65.5,liveborn,icd10cm,2025-08-04
+4061852,199765007,liveborn,snomed,2025-08-04
+4060036,199751005,liveborn,snomed,2025-08-04
+45544012,O64.1XX1,liveborn,icd10cm,2025-08-04
+45567981,O64.1XX2,liveborn,icd10cm,2025-08-04
+45548814,O64.1XX0,liveborn,icd10cm,2025-08-04
+4060037,199753008,liveborn,snomed,2025-08-04
+45534292,O64.3XX2,liveborn,icd10cm,2025-08-04
+45572872,O64.3XX0,liveborn,icd10cm,2025-08-04
+4064819,199755001,liveborn,snomed,2025-08-04
+45606642,O64.5XX1,liveborn,icd10cm,2025-08-04
+45601881,O64.5XX2,liveborn,icd10cm,2025-08-04
+45597020,O64.5XX0,liveborn,icd10cm,2025-08-04
+45757117,1.08E+16,liveborn,snomed,2025-08-04
+4061850,199752003,liveborn,snomed,2025-08-04
+45558320,O64.2XX0,liveborn,icd10cm,2025-08-04
+194100,199747008,liveborn,snomed,2025-08-04
+194711,199749006,liveborn,snomed,2025-08-04
+35210255,O65.4,liveborn,icd10cm,2025-08-04
+35210252,O65.1,liveborn,icd10cm,2025-08-04
+4060039,199762005,liveborn,snomed,2025-08-04
+45772074,1.08E+16,liveborn,snomed,2025-08-04
+45587376,O64.0XX2,liveborn,icd10cm,2025-08-04
+45606640,O64.0XX3,liveborn,icd10cm,2025-08-04
+45567980,O64.0XX0,liveborn,icd10cm,2025-08-04
+45582564,O64.9XX2,liveborn,icd10cm,2025-08-04
+45577654,O64.9XX0,liveborn,icd10cm,2025-08-04
+35210258,O65.9,liveborn,icd10cm,2025-08-04
+35210262,O66.3,liveborn,icd10cm,2025-08-04
+45553584,O64.8XX0,liveborn,icd10cm,2025-08-04
+35210257,O65.8,liveborn,icd10cm,2025-08-04
+42536563,735492001,liveborn,snomed,2025-08-04
+35210259,O66.0,liveborn,icd10cm,2025-08-04
+4060038,199754002,liveborn,snomed,2025-08-04
+45539194,O64.4XX0,liveborn,icd10cm,2025-08-04
+35210261,O66.2,liveborn,icd10cm,2025-08-04
+4064437,199806003,liveborn,snomed,2025-08-04
+44837276,660.21,liveborn,icd9cm,2025-08-04
+44827967,660.11,liveborn,icd9cm,2025-08-04
+44830252,660.01,liveborn,icd9cm,2025-08-04
+2781143,0UL70CZ,liveborn,icd10pcs,2025-08-04
+2781145,0UL70ZZ,liveborn,icd10pcs,2025-08-04
+2781130,0UL60CZ,liveborn,icd10pcs,2025-08-04
+2781132,0UL60ZZ,liveborn,icd10pcs,2025-08-04
+2781117,0UL50CZ,liveborn,icd10pcs,2025-08-04
+2781119,0UL50ZZ,liveborn,icd10pcs,2025-08-04
+44832562,658,liveborn,icd9cm,2025-08-04
+433274,199653002,liveborn,snomed,2025-08-04
+44823268,658.01,liveborn,icd9cm,2025-08-04
+45572841,O41.01X3,liveborn,icd10cm,2025-08-04
+45553542,O41.03X4,liveborn,icd10cm,2025-08-04
+45544028,O75.82,liveborn,icd10cm,2025-08-04
+44824407,649.82,liveborn,icd9cm,2025-08-04
+44834897,649.81,liveborn,icd9cm,2025-08-04
+4185578,43882005,liveborn,snomed,2025-08-04
+44822122,654.42,liveborn,icd9cm,2025-08-04
+44832551,654.41,liveborn,icd9cm,2025-08-04
+44819885,654.91,liveborn,icd9cm,2025-08-04
+44830258,663.23,liveborn,icd9cm,2025-08-04
+44822140,663.21,liveborn,icd9cm,2025-08-04
+44827974,663.2,liveborn,icd9cm,2025-08-04
+44821056,663.33,liveborn,icd9cm,2025-08-04
+44826819,663.31,liveborn,icd9cm,2025-08-04
+44824430,663.3,liveborn,icd9cm,2025-08-04
+44829173,676.32,liveborn,icd9cm,2025-08-04
+44819931,676.31,liveborn,icd9cm,2025-08-04
+44830255,661.21,liveborn,icd9cm,2025-08-04
+44822081,641.81,liveborn,icd9cm,2025-08-04
+44830225,648.62,liveborn,icd9cm,2025-08-04
+44832535,648.61,liveborn,icd9cm,2025-08-04
+44834919,660.81,liveborn,icd9cm,2025-08-04
+2004802,74.99,liveborn,icd9proc,2025-08-04
+35210353,O74.8,liveborn,icd10cm,2025-08-04
+44831434,668.83,liveborn,icd9cm,2025-08-04
+44823293,668.82,liveborn,icd9cm,2025-08-04
+44829158,668.81,liveborn,icd9cm,2025-08-04
+44833776,668.84,liveborn,icd9cm,2025-08-04
+44831433,668.8,liveborn,icd9cm,2025-08-04
+44833778,669.83,liveborn,icd9cm,2025-08-04
+44830277,669.82,liveborn,icd9cm,2025-08-04
+44832578,669.81,liveborn,icd9cm,2025-08-04
+44822149,669.8,liveborn,icd9cm,2025-08-04
+44821070,669.42,liveborn,icd9cm,2025-08-04
+44824444,669.41,liveborn,icd9cm,2025-08-04
+44823304,674.32,liveborn,icd9cm,2025-08-04
+44831448,674.82,liveborn,icd9cm,2025-08-04
+35210351,O74.6,liveborn,icd10cm,2025-08-04
+45534216,O31.8X31,liveborn,icd10cm,2025-08-04
+44819882,654.62,liveborn,icd9cm,2025-08-04
+44833743,654.61,liveborn,icd9cm,2025-08-04
+44819866,648.92,liveborn,icd9cm,2025-08-04
+44834895,648.91,liveborn,icd9cm,2025-08-04
+45568005,O99.12,liveborn,icd10cm,2025-08-04
+44824465,676.82,liveborn,icd9cm,2025-08-04
+45548837,O88.82,liveborn,icd10cm,2025-08-04
+35210182,O61.8,liveborn,icd10cm,2025-08-04
+44837263,653.71,liveborn,icd9cm,2025-08-04
+44836122,666.12,liveborn,icd9cm,2025-08-04
+44833757,659,liveborn,icd9cm,2025-08-04
+45558351,O99.834,liveborn,icd10cm,2025-08-04
+35210358,O75.3,liveborn,icd10cm,2025-08-04
+45601907,O98.32,liveborn,icd10cm,2025-08-04
+44829154,665.51,liveborn,icd9cm,2025-08-04
+35210267,O67.8,liveborn,icd10cm,2025-08-04
+44824419,655.81,liveborn,icd9cm,2025-08-04
+44831440,670.82,liveborn,icd9cm,2025-08-04
+45606667,O98.82,liveborn,icd10cm,2025-08-04
+45572907,O99.344,liveborn,icd10cm,2025-08-04
+35210335,O71.5,liveborn,icd10cm,2025-08-04
+2004862,75.99,liveborn,icd9proc,2025-08-04
+2004803,75,liveborn,icd9proc,2025-08-04
+44819923,673.81,liveborn,icd9cm,2025-08-04
+44827989,671.52,liveborn,icd9cm,2025-08-04
+44830281,671.51,liveborn,icd9cm,2025-08-04
+44832559,656.71,liveborn,icd9cm,2025-08-04
+45534190,O24.82,liveborn,icd10cm,2025-08-04
+44827932,642.22,liveborn,icd9cm,2025-08-04
+44836074,642.21,liveborn,icd9cm,2025-08-04
+44824421,658.81,liveborn,icd9cm,2025-08-04
+35210346,O74.1,liveborn,icd10cm,2025-08-04
+1567455,B96.8,liveborn,icd10cm,2025-08-04
+45597027,O75.89,liveborn,icd10cm,2025-08-04
+44834884,646.82,liveborn,icd9cm,2025-08-04
+44830218,646.81,liveborn,icd9cm,2025-08-04
+37200260,E13.3292,liveborn,icd10cm,2025-08-04
+725451,O99.892,liveborn,icd10cm,2025-08-04
+44833752,656.81,liveborn,icd9cm,2025-08-04
+44833711,640.81,liveborn,icd9cm,2025-08-04
+44819898,659.83,liveborn,icd9cm,2025-08-04
+44833762,659.81,liveborn,icd9cm,2025-08-04
+44819897,659.8,liveborn,icd9cm,2025-08-04
+44834942,675.82,liveborn,icd9cm,2025-08-04
+44833782,675.81,liveborn,icd9cm,2025-08-04
+44831387,647.82,liveborn,icd9cm,2025-08-04
+44822097,647.81,liveborn,icd9cm,2025-08-04
+44836096,652.81,liveborn,icd9cm,2025-08-04
+44837259,652.8,liveborn,icd9cm,2025-08-04
+44832541,651.81,liveborn,icd9cm,2025-08-04
+44825624,665.82,liveborn,icd9cm,2025-08-04
+44819910,665.81,liveborn,icd9cm,2025-08-04
+45544024,O71.82,liveborn,icd10cm,2025-08-04
+44833770,664.81,liveborn,icd9cm,2025-08-04
+44834921,663.83,liveborn,icd9cm,2025-08-04
+44823283,663.81,liveborn,icd9cm,2025-08-04
+44824431,663.8,liveborn,icd9cm,2025-08-04
+44834888,647.21,liveborn,icd9cm,2025-08-04
+44830283,671.82,liveborn,icd9cm,2025-08-04
+44830282,671.81,liveborn,icd9cm,2025-08-04
+45572901,O98.52,liveborn,icd10cm,2025-08-04
+44832531,647.62,liveborn,icd9cm,2025-08-04
+44837244,647.61,liveborn,icd9cm,2025-08-04
+44829101,643.81,liveborn,icd9cm,2025-08-04
+44832546,653.31,liveborn,icd9cm,2025-08-04
+73824,199413006,liveborn,snomed,2025-08-04
+4075178,177135005,liveborn,snomed,2025-08-04
+4265587,397774002,liveborn,snomed,2025-08-04
+45543944,O31.03X3,liveborn,icd10cm,2025-08-04
+45606567,O31.03X0,liveborn,icd10cm,2025-08-04
+195075,249529000,liveborn,snomed,2025-08-04
+46270525,3.92E+12,liveborn; location; free text,snomed,2025-08-04
+198221,5740008,liveborn,snomed,2025-08-04
+44833772,665.72,liveborn,icd9cm,2025-08-04
+44837286,665.71,liveborn,icd9cm,2025-08-04
+725052,34713,liveborn,cpt4,2025-08-04
+4022627,175715003,liveborn,snomed,2025-08-04
+439390,398019008,liveborn,snomed,2025-08-04
+35210330,O70.9,liveborn,icd10cm,2025-08-04
+44836139,674.51,liveborn,icd9cm,2025-08-04
+197042,199093003,liveborn,snomed,2025-08-04
+44822090,646.41,liveborn,icd9cm,2025-08-04
+2788067,6A550ZT,liveborn,icd10pcs,2025-08-04
+317941,26850007,liveborn,snomed,2025-08-04
+4181974,366344009,liveborn; location,snomed,2025-08-04
+193264,198905007,liveborn,snomed,2025-08-04
+201359,198899007,liveborn,snomed,2025-08-04
+44825587,641.01,liveborn,icd9cm,2025-08-04
+193539,198910006,liveborn,snomed,2025-08-04
+4145335,268585006,liveborn,snomed,2025-08-04
+45572858,O43.813,liveborn,icd10cm,2025-08-04
+45534274,O43.819,liveborn,icd10cm,2025-08-04
+4034100,237292005,liveborn,snomed,2025-08-04
+4059085,168882002,liveborn,snomed,2025-08-04
+4214343,39249009,liveborn,snomed,2025-08-04
+45572847,O41.1431,liveborn,icd10cm,2025-08-04
+45577635,O41.1490,liveborn,icd10cm,2025-08-04
+1571798,O40,liveborn,icd10cm,2025-08-04
+434427,199646006,liveborn,snomed,2025-08-04
+44830248,657.01,liveborn,icd9cm,2025-08-04
+45567958,O40.3XX9,liveborn,icd10cm,2025-08-04
+44826804,656.51,liveborn,icd9cm,2025-08-04
+44831380,645.11,liveborn,icd9cm,2025-08-04
+4009589,102879009,liveborn,snomed,2025-08-04
+439894,199063009,liveborn,snomed,2025-08-04
+38001489,769,abortion,drg,2025-08-04
+38001493,776,abortion,drg,2025-08-04
+44836635,V24.0,liveborn,icd9cm,2025-08-04
+441363,200030007,liveborn,snomed,2025-08-04
+44824438,666.32,liveborn,icd9cm,2025-08-04
+35210332,O71.2,liveborn,icd10cm,2025-08-04
+44823230,642.72,liveborn,icd9cm,2025-08-04
+44832523,642.71,liveborn,icd9cm,2025-08-04
+135601,198999008,liveborn,snomed,2025-08-04
+134414,199000005,liveborn,snomed,2025-08-04
+45757079,1.06E+14,liveborn,snomed,2025-08-04
+45567885,O10.02,liveborn,icd10cm,2025-08-04
+37200957,O11.4,liveborn,icd10cm,2025-08-04
+45534172,O10.22,liveborn,icd10cm,2025-08-04
+45558202,O10.32,liveborn,icd10cm,2025-08-04
+45757137,1.08E+16,liveborn,snomed,2025-08-04
+45534170,O10.12,liveborn,icd10cm,2025-08-04
+45757138,1.08E+16,liveborn,snomed,2025-08-04
+45534173,O10.42,liveborn,icd10cm,2025-08-04
+45606546,O24.02,liveborn,icd10cm,2025-08-04
+45587293,O24.12,liveborn,icd10cm,2025-08-04
+35210187,O62.3,liveborn,icd10cm,2025-08-04
+438220,199833004,liveborn,snomed,2025-08-04
+44836112,661.31,liveborn,icd9cm,2025-08-04
+40759952,56833-7,pregnancy; free text,loinc,2025-08-04
+4086393,282020008,liveborn,snomed,2025-08-04
+4175637,49550006,liveborn,snomed,2025-08-04
+1571806,O42,liveborn,icd10cm,2025-08-04
+200160,199658006,liveborn,snomed,2025-08-04
+45772076,1.08E+16,liveborn,snomed,2025-08-04
+45757123,1.08E+16,liveborn,snomed,2025-08-04
+45757122,1.08E+16,liveborn,snomed,2025-08-04
+44823269,658.11,liveborn,icd9cm,2025-08-04
+1571807,O42.0,liveborn,icd10cm,2025-08-04
+45567975,O45.003,liveborn,icd10cm,2025-08-04
+45606631,O45.022,liveborn,icd10cm,2025-08-04
+45601870,O45.023,liveborn,icd10cm,2025-08-04
+45587366,O45.092,liveborn,icd10cm,2025-08-04
+44836072,641.21,liveborn,icd9cm,2025-08-04
+45757175,1.08E+16,liveborn,snomed,2025-08-04
+45757176,1.08E+16,liveborn,snomed,2025-08-04
+10141,O60.12,liveborn,icd10cm,2025-08-04
+45577648,O60.12X1,liveborn; multiples,icd10cm,2025-08-04
+45553579,O60.12X2,liveborn; multiples,icd10cm,2025-08-04
+45587373,O60.12X3,liveborn; multiples,icd10cm,2025-08-04
+45606635,O60.12X0,liveborn,icd10cm,2025-08-04
+45534285,O60.13X1,liveborn; multiples,icd10cm,2025-08-04
+45534286,O60.13X2,liveborn; multiples,icd10cm,2025-08-04
+45577649,O60.13X3,liveborn; multiples,icd10cm,2025-08-04
+45582558,O60.13X0,liveborn,icd10cm,2025-08-04
+45592272,O60.13X9,liveborn,icd10cm,2025-08-04
+45544006,O60.14X1,liveborn; multiples,icd10cm,2025-08-04
+45544007,O60.14X2,liveborn; multiples,icd10cm,2025-08-04
+45567978,O60.14X3,liveborn; multiples,icd10cm,2025-08-04
+45597013,O60.14X5,liveborn; multiples,icd10cm,2025-08-04
+45553580,O60.14X0,liveborn,icd10cm,2025-08-04
+45539188,O60.14X9,liveborn; multiples,icd10cm,2025-08-04
+1571849,O60.1,liveborn,icd10cm,2025-08-04
+36712702,1.08E+16,liveborn,snomed,2025-08-04
+45572863,O60.10X1,liveborn; multiples,icd10cm,2025-08-04
+45572864,O60.10X2,liveborn; multiples,icd10cm,2025-08-04
+45587372,O60.10X0,liveborn,icd10cm,2025-08-04
+45553578,O60.10X9,liveborn; multiples,icd10cm,2025-08-04
+45563151,O60.00,liveborn,icd10cm,2025-08-04
+45534270,O42.111,liveborn,icd10cm,2025-08-04
+45592261,O42.013,liveborn,icd10cm,2025-08-04
+44784550,698716002,liveborn,snomed,2025-08-04
+44784551,698717006,liveborn,snomed,2025-08-04
+45757094,1.07E+16,liveborn,snomed,2025-08-04
+44822120,654.21,liveborn,icd9cm,2025-08-04
+44831404,654.2,liveborn,icd9cm,2025-08-04
+35210184,O62.0,liveborn,icd10cm,2025-08-04
+443435,387699008,liveborn,snomed,2025-08-04
+196762,199819004,liveborn,snomed,2025-08-04
+44822134,661.01,liveborn,icd9cm,2025-08-04
+441645,199869007,liveborn,snomed,2025-08-04
+44829149,663.03,liveborn,icd9cm,2025-08-04
+44819906,663.01,liveborn,icd9cm,2025-08-04
+44826818,663,liveborn,icd9cm,2025-08-04
+72692,199384007,liveborn,snomed,2025-08-04
+44834904,652.73,liveborn,icd9cm,2025-08-04
+44832543,652.71,liveborn,icd9cm,2025-08-04
+80159,199385008,liveborn,snomed,2025-08-04
+4060695,199672002,liveborn,snomed,2025-08-04
+35210191,O63.0,liveborn,icd10cm,2025-08-04
+44834920,662.01,liveborn,icd9cm,2025-08-04
+44827939,645.21,liveborn,icd9cm,2025-08-04
+44831379,645.01,liveborn,icd9cm,2025-08-04
+434431,199857004,liveborn,snomed,2025-08-04
+35210192,O63.1,liveborn,icd10cm,2025-08-04
+434714,77259008,liveborn,snomed,2025-08-04
+44836114,662.21,liveborn,icd9cm,2025-08-04
+442418,200331001,liveborn,snomed,2025-08-04
+4065749,200181000,liveborn,snomed,2025-08-04
+44824449,670.12,liveborn,icd9cm,2025-08-04
+434713,200280009,liveborn,snomed,2025-08-04
+44832579,670.22,liveborn,icd9cm,2025-08-04
+45597038,O86.81,liveborn,icd10cm,2025-08-04
+44819914,668.02,liveborn,icd9cm,2025-08-04
+44821067,668.01,liveborn,icd9cm,2025-08-04
+44823291,668,liveborn,icd9cm,2025-08-04
+35210357,O75.2,liveborn,icd10cm,2025-08-04
+45567991,,liveborn,,2025-08-04
+44819921,672.02,liveborn,icd9cm,2025-08-04
+438481,199325005,liveborn,snomed,2025-08-04
+44819871,651.21,liveborn,icd9cm,2025-08-04
+4252419,74016001,liveborn,snomed,2025-08-04
+44837239,646.31,liveborn,icd9cm,2025-08-04
+4142591,306105003,liveborn,snomed,2025-08-04
+2757325,0JN8XZZ,liveborn,icd10pcs,2025-08-04
+4332707,231021005,liveborn,snomed,2025-08-04
+2778133,0UPD3CZ,liveborn,icd10pcs,2025-08-04
+46270997,709013008,liveborn,snomed,2025-08-04
+2005315,78.6,liveborn,icd9proc,2025-08-04
+2784796,10P07YZ,liveborn,icd10pcs,2025-08-04
+2752623,0DQR0ZZ,liveborn,icd10pcs,2025-08-04
+2778623,0UQC0ZZ,liveborn,icd10pcs,2025-08-04
+2778626,0UQC7ZZ,liveborn,icd10pcs,2025-08-04
+2778640,0UQJXZZ,liveborn,icd10pcs,2025-08-04
+2784827,10Q00ZT,liveborn,icd10pcs,2025-08-04
+2778646,0UQKXZZ,liveborn,icd10pcs,2025-08-04
+2778644,0UQK7ZZ,liveborn,icd10pcs,2025-08-04
+2778420,0UQ60ZZ,liveborn,icd10pcs,2025-08-04
+2729866,04QF0ZZ,liveborn,icd10pcs,2025-08-04
+2004842,75.61,liveborn,icd9proc,2025-08-04
+2004829,75.51,liveborn,icd9proc,2025-08-04
+2004843,75.62,liveborn,icd9proc,2025-08-04
+4230535,359946000,liveborn,snomed,2025-08-04
+2004828,75.5,liveborn,icd9proc,2025-08-04
+4172666,42390009,liveborn,snomed,2025-08-04
+4135477,31939001,liveborn,snomed,2025-08-04
+2004844,75.69,liveborn,icd9proc,2025-08-04
+2756126,0KQM0ZZ,liveborn,icd10pcs,2025-08-04
+2756499,0HQ9XZZ,liveborn,icd10pcs,2025-08-04
+2778415,0UQ50ZZ,liveborn,icd10pcs,2025-08-04
+2729863,04QE0ZZ,liveborn,icd10pcs,2025-08-04
+2778412,0UQ40ZZ,liveborn,icd10pcs,2025-08-04
+2778430,0UQ90ZZ,liveborn,icd10pcs,2025-08-04
+2778638,0UQGXZZ,liveborn,icd10pcs,2025-08-04
+2778650,0UQMXZZ,liveborn,icd10pcs,2025-08-04
+2785337,10S07ZZ,liveborn,icd10pcs,2025-08-04
+2778891,0UT68ZZ,liveborn,icd10pcs,2025-08-04
+44834929,667.02,liveborn,icd9cm,2025-08-04
+44830268,667.12,liveborn,icd9cm,2025-08-04
+4194998,44216000,liveborn,snomed,2025-08-04
+44821080,676.01,liveborn,icd9cm,2025-08-04
+2752432,0DWD4UZ,liveborn,icd10pcs,2025-08-04
+195878,199582007,liveborn,snomed,2025-08-04
+44829130,656.11,liveborn,icd9cm,2025-08-04
+4274418,36547009,liveborn,snomed,2025-08-04
+44837243,647.51,liveborn,icd9cm,2025-08-04
+198816,199960005,liveborn,snomed,2025-08-04
+44834924,665.01,liveborn,icd9cm,2025-08-04
+45558328,O71.03,liveborn,icd10cm,2025-08-04
+192699,199964001,liveborn,snomed,2025-08-04
+44827975,665.11,liveborn,icd9cm,2025-08-04
+45539104,O23.523,liveborn,icd10cm,2025-08-04
+2004351,66.72,liveborn,icd9proc,2025-08-04
+4179940,50877006,liveborn,snomed,2025-08-04
+198492,6234006,liveborn,snomed,2025-08-04
+35210327,O70.1,liveborn,icd10cm,2025-08-04
+198499,199925004,liveborn,snomed,2025-08-04
+197337,199926003,liveborn,snomed,2025-08-04
+44831426,664.1,liveborn,icd9cm,2025-08-04
+44823286,664.11,liveborn,icd9cm,2025-08-04
+44825619,664.14,liveborn,icd9cm,2025-08-04
+4065618,200025008,liveborn,snomed,2025-08-04
+35210185,O62.1,liveborn,icd10cm,2025-08-04
+192974,43715006,liveborn,snomed,2025-08-04
+192384,199824001,liveborn,snomed,2025-08-04
+44819904,661.11,liveborn,icd9cm,2025-08-04
+44822135,661.1,liveborn,icd9cm,2025-08-04
+45548691,O04.87,abortion,icd10cm,2025-08-04
+45534162,O07.37,abortion,icd10cm,2025-08-04
+45757143,1.08E+16,liveborn,snomed,2025-08-04
+438490,198983002,liveborn,snomed,2025-08-04
+439077,198984008,liveborn,snomed,2025-08-04
+37200969,O14.14,liveborn,icd10cm,2025-08-04
+44834878,642.52,liveborn,icd9cm,2025-08-04
+44825589,642.51,liveborn,icd9cm,2025-08-04
+444269,84007008,liveborn,snomed,2025-08-04
+35210356,O75.1,liveborn,icd10cm,2025-08-04
+44830274,669.12,liveborn,icd9cm,2025-08-04
+44823295,669.11,liveborn,icd9cm,2025-08-04
+435020,199889008,liveborn,snomed,2025-08-04
+44821057,663.43,liveborn,icd9cm,2025-08-04
+44829150,663.41,liveborn,icd9cm,2025-08-04
+44831422,663.4,liveborn,icd9cm,2025-08-04
+44821053,660.41,liveborn,icd9cm,2025-08-04
+80474,199783004,liveborn,snomed,2025-08-04
+72377,89700002,liveborn,snomed,2025-08-04
+45534324,O99.334,liveborn,icd10cm,2025-08-04
+4065627,200076006,liveborn,snomed,2025-08-04
+35210350,O74.5,liveborn,icd10cm,2025-08-04
+44831364,634.92,abortion,icd9cm,2025-08-04
+4309364,84457005,liveborn,snomed,2025-08-04
+45757118,1.08E+16,liveborn,snomed,2025-08-04
+4015143,169734005,liveborn,snomed,2025-08-04
+44822108,649.51,liveborn,icd9cm,2025-08-04
+1576306,Z98.5,liveborn,icd10cm,2025-08-04
+45572911,O99.824,liveborn,icd10cm,2025-08-04
+45567901,O26.72,liveborn,icd10cm,2025-08-04
+2514572,99480,liveborn,cpt4,2025-08-04
+40485078,444162001,liveborn,snomed,2025-08-04
+44824451,671.22,liveborn,icd9cm,2025-08-04
+44834936,671.21,liveborn,icd9cm,2025-08-04
+45553473,O09.41,pregnancy; multiples,icd10cm,2025-08-04
+45548694,O09.42,pregnancy; multiples,icd10cm,2025-08-04
+45587276,O09.43,pregnancy; multiples,icd10cm,2025-08-04
+45548693,O09.40,pregnancy; multiples,icd10cm,2025-08-04
+2778928,0UU40JZ,liveborn,icd10pcs,2025-08-04
+77347,200439000,liveborn,snomed,2025-08-04
+44825645,676.51,liveborn,icd9cm,2025-08-04
+4242804,9221009,abortion,snomed,2025-08-04
+44832554,655.51,liveborn,icd9cm,2025-08-04
+44822124,655.41,liveborn,icd9cm,2025-08-04
+44821044,655.31,liveborn,icd9cm,2025-08-04
+45577670,O98.12,liveborn,icd10cm,2025-08-04
+45757152,1.08E+16,liveborn,snomed,2025-08-04
+44826780,647.02,liveborn,icd9cm,2025-08-04
+44819861,647.01,liveborn,icd9cm,2025-08-04
+45553581,O60.22X1,liveborn; multiples,icd10cm,2025-08-04
+45577650,O60.22X2,liveborn,icd10cm,2025-08-04
+45592274,O60.22X0,liveborn,icd10cm,2025-08-04
+45597016,O60.23X1,liveborn; multiples,icd10cm,2025-08-04
+45539189,O60.23X2,liveborn,icd10cm,2025-08-04
+45601877,O60.23X0,liveborn,icd10cm,2025-08-04
+45601876,O60.20X0,liveborn,icd10cm,2025-08-04
+4127705,23667007,liveborn,snomed,2025-08-04
+4240605,57797005,abortion,snomed,2025-08-04
+4297250,386639001,abortion,snomed,2025-08-04
+4204840,53638009,abortion,snomed,2025-08-04
+35210328,O70.2,liveborn,icd10cm,2025-08-04
+37201011,O70.21,liveborn,icd10cm,2025-08-04
+37201012,O70.22,liveborn,icd10cm,2025-08-04
+37201013,O70.23,liveborn,icd10cm,2025-08-04
+37201010,O70.20,liveborn,icd10cm,2025-08-04
+193275,199930000,liveborn,snomed,2025-08-04
+199097,199931001,liveborn,snomed,2025-08-04
+44834922,664.2,liveborn,icd9cm,2025-08-04
+44832572,664.21,liveborn,icd9cm,2025-08-04
+44829156,666.02,liveborn,icd9cm,2025-08-04
+44825586,640.01,liveborn,icd9cm,2025-08-04
+45606658,O88.22,liveborn,icd10cm,2025-08-04
+136755,199237009,liveborn,snomed,2025-08-04
+138207,199238004,liveborn,snomed,2025-08-04
+44830222,648.12,liveborn,icd9cm,2025-08-04
+44819863,648.11,liveborn,icd9cm,2025-08-04
+764198,4.52E+14,liveborn,snomed,2025-08-04
+44831391,649.01,liveborn,icd9cm,2025-08-04
+45757177,1.08E+16,liveborn,snomed,2025-08-04
+4225209,405363008,liveborn,snomed,2025-08-04
+2110288,59070,liveborn,cpt4,2025-08-04
+2788682,30230M1,liveborn,icd10pcs,2025-08-04
+137940,198965005,liveborn,snomed,2025-08-04
+141639,198966006,liveborn,snomed,2025-08-04
+44836077,642.31,liveborn,icd9cm,2025-08-04
+44834876,642.32,liveborn,icd9cm,2025-08-04
+44824411,652.31,liveborn,icd9cm,2025-08-04
+432975,267268007,liveborn,snomed,2025-08-04
+439093,64229006,liveborn,snomed,2025-08-04
+2110328,59830,abortion,cpt4,2025-08-04
+440462,199321001,liveborn,snomed,2025-08-04
+44824409,651.11,liveborn; multiples,icd9cm,2025-08-04
+45548843,O98.02,liveborn,icd10cm,2025-08-04
+45568003,O98.03,liveborn,icd10cm,2025-08-04
+45757151,1.08E+16,liveborn,snomed,2025-08-04
+433812,199178004,liveborn,snomed,2025-08-04
+44834889,647.32,liveborn,icd9cm,2025-08-04
+44824403,647.31,liveborn,icd9cm,2025-08-04
+196181,267221002,liveborn,snomed,2025-08-04
+197049,267222009,liveborn,snomed,2025-08-04
+44827954,654.12,liveborn,icd9cm,2025-08-04
+44822119,654.11,liveborn,icd9cm,2025-08-04
+435018,199317008,liveborn,snomed,2025-08-04
+44832539,651.01,liveborn; multiples,icd9cm,2025-08-04
+42709937,449809008,liveborn,snomed,2025-08-04
+2793350,BY4DZZZ,liveborn,icd10pcs,2025-08-04
+2793352,BY4GZZZ,liveborn,icd10pcs,2025-08-04
+441646,302929008,liveborn,snomed,2025-08-04
+42538185,740597009,liveborn,snomed,2025-08-04
+4060157,199874004,liveborn,snomed,2025-08-04
+4061971,199875003,liveborn,snomed,2025-08-04
+2110341,59898,liveborn,cpt4,2025-08-04
+2110342,59899,liveborn,cpt4,2025-08-04
+44826814,661.91,liveborn,icd9cm,2025-08-04
+44826768,637.9,abortion,icd9cm,2025-08-04
+44834867,637.12,abortion,icd9cm,2025-08-04
+44825582,637.11,abortion,icd9cm,2025-08-04
+44832513,637.1,abortion,icd9cm,2025-08-04
+44837226,637.02,abortion,icd9cm,2025-08-04
+44827923,637.01,abortion,icd9cm,2025-08-04
+44821014,637,abortion,icd9cm,2025-08-04
+44831368,637.41,abortion,icd9cm,2025-08-04
+44822077,637.3,abortion,icd9cm,2025-08-04
+44823226,637.72,abortion,icd9cm,2025-08-04
+44830205,637.71,abortion,icd9cm,2025-08-04
+44827925,637.7,abortion,icd9cm,2025-08-04
+44824384,637.82,abortion,icd9cm,2025-08-04
+44822078,637.81,abortion,icd9cm,2025-08-04
+44827927,637.8,abortion,icd9cm,2025-08-04
+44826769,637.92,abortion,icd9cm,2025-08-04
+44836070,637.91,abortion,icd9cm,2025-08-04
+44823227,637.9,abortion,icd9cm,2025-08-04
+44824388,641.91,liveborn,icd9cm,2025-08-04
+44824440,668.92,liveborn,icd9cm,2025-08-04
+44829159,668.91,liveborn,icd9cm,2025-08-04
+44830278,669.93,liveborn,icd9cm,2025-08-04
+44831439,669.91,liveborn,icd9cm,2025-08-04
+44821071,669.94,liveborn,icd9cm,2025-08-04
+44824447,669.9,liveborn,icd9cm,2025-08-04
+44824399,646.91,liveborn,icd9cm,2025-08-04
+44825641,674.92,liveborn,icd9cm,2025-08-04
+45587295,O24.92,liveborn,icd10cm,2025-08-04
+44832596,676.91,liveborn,icd9cm,2025-08-04
+44823259,653.9,liveborn,icd9cm,2025-08-04
+44834906,653.91,liveborn,icd9cm,2025-08-04
+44836111,660.63,liveborn,icd9cm,2025-08-04
+44830253,660.61,liveborn,icd9cm,2025-08-04
+44822128,656.91,liveborn,icd9cm,2025-08-04
+44821018,640.91,liveborn,icd9cm,2025-08-04
+44822083,642.92,liveborn,icd9cm,2025-08-04
+44824395,642.91,liveborn,icd9cm,2025-08-04
+44832564,659.93,liveborn,icd9cm,2025-08-04
+44819899,659.91,liveborn,icd9cm,2025-08-04
+44836108,659.9,liveborn,icd9cm,2025-08-04
+44834943,675.92,liveborn,icd9cm,2025-08-04
+44822156,675.91,liveborn,icd9cm,2025-08-04
+44833723,647.92,liveborn,icd9cm,2025-08-04
+44824406,647.91,liveborn,icd9cm,2025-08-04
+44833733,652.91,liveborn,icd9cm,2025-08-04
+37200975,O16.4,liveborn,icd10cm,2025-08-04
+45601908,O98.92,liveborn,icd10cm,2025-08-04
+44821037,651.91,liveborn,icd9cm,2025-08-04
+44829146,660.91,liveborn,icd9cm,2025-08-04
+44837282,664.41,liveborn,icd9cm,2025-08-04
+37200973,O14.94,liveborn,icd10cm,2025-08-04
+45606548,O24.32,liveborn,icd10cm,2025-08-04
+45539090,O10.92,liveborn,icd10cm,2025-08-04
+44831413,658.91,liveborn,icd9cm,2025-08-04
+44830256,662.11,liveborn,icd9cm,2025-08-04
+44821023,646.21,liveborn,icd9cm,2025-08-04
+44819890,655.91,liveborn,icd9cm,2025-08-04
+44824433,664.91,liveborn,icd9cm,2025-08-04
+44837283,664.94,liveborn,icd9cm,2025-08-04
+44831425,663.93,liveborn,icd9cm,2025-08-04
+44831424,663.91,liveborn,icd9cm,2025-08-04
+44832571,663.9,liveborn,icd9cm,2025-08-04
+44836135,671.92,liveborn,icd9cm,2025-08-04
+44836134,671.91,liveborn,icd9cm,2025-08-04
+44825594,643.91,liveborn,icd9cm,2025-08-04
+79889,199344003,liveborn,snomed,2025-08-04
+44830235,652.01,liveborn,icd9cm,2025-08-04
+44830238,653.51,liveborn,icd9cm,2025-08-04
+44833737,653.5,liveborn,icd9cm,2025-08-04
+45548662,N35.021,liveborn,icd10cm,2025-08-04
+45582438,O04.88,abortion,icd10cm,2025-08-04
+4062569,199111004,liveborn,snomed,2025-08-04
+45577662,O86.20,liveborn,icd10cm,2025-08-04
+4060558,199463001,liveborn,snomed,2025-08-04
+44830230,649.61,liveborn,icd9cm,2025-08-04
+2008333,99.47,liveborn,icd9proc,2025-08-04
+442069,200138003,liveborn,snomed,2025-08-04
+193544,267240008,liveborn,snomed,2025-08-04
+194098,267241007,liveborn,snomed,2025-08-04
+45768455,706890009,liveborn,snomed,2025-08-04
+4125611,289259007,liveborn,snomed,2025-08-04
+4129042,237313003,liveborn,snomed,2025-08-04
+38001491,774,liveborn,drg,2025-08-04
+38001488,768,liveborn,drg,2025-08-04
+38001487,767,liveborn,drg,2025-08-04
+38001492,775,liveborn,drg,2025-08-04
+4096535,249220002,liveborn,snomed,2025-08-04
+45563181,O86.13,liveborn,icd10cm,2025-08-04
+44834935,671.02,liveborn,icd9cm,2025-08-04
+44819919,671.01,liveborn,icd9cm,2025-08-04
+442059,200206000,liveborn,snomed,2025-08-04
+44836131,671.12,liveborn,icd9cm,2025-08-04
+44836130,671.11,liveborn,icd9cm,2025-08-04
+435609,199895009,liveborn,snomed,2025-08-04
+44823282,663.53,liveborn,icd9cm,2025-08-04
+44826820,663.51,liveborn,icd9cm,2025-08-04
+44821058,663.5,liveborn,icd9cm,2025-08-04
+321367,199900008,liveborn,snomed,2025-08-04
+44821059,663.63,liveborn,icd9cm,2025-08-04
+44822141,663.61,liveborn,icd9cm,2025-08-04
+44831423,663.6,liveborn,icd9cm,2025-08-04
+37110288,724494002,abortion,snomed,2025-08-04
+45757153,1.08E+16,liveborn,snomed,2025-08-04
+45582589,O98.42,liveborn,icd10cm,2025-08-04
+45757141,1.08E+16,liveborn,snomed,2025-08-04
+443246,267247006,liveborn,snomed,2025-08-04
+443245,267269004,liveborn,snomed,2025-08-04
+44832573,664.5,liveborn,icd9cm,2025-08-04
+44832574,664.51,liveborn,icd9cm,2025-08-04
+40767430,64724-8,pregnancy; multiples,loinc,2025-08-04
+45582578,,liveborn,,2025-08-04
+45561626,,liveborn,,2025-08-04
+444365,70317007,abortion,snomed,2025-08-04
+3038469,52027-0,abortion,loinc,2025-08-04
+42739743,1964,abortion,cpt4,2025-08-04
+2110154,57520,abortion,cpt4,2025-08-04
+2110155,57522,abortion,cpt4,2025-08-04
+38001470,744,abortion,drg,2025-08-04
+38001471,745,abortion,drg,2025-08-04
+4296031,76810006,abortion,snomed,2025-08-04
+4047258,13091001,abortion,snomed,2025-08-04
+4106559,29682007,abortion,snomed,2025-08-04
+2110163,57558,abortion,cpt4,2025-08-04
+4218452,72356007,abortion,snomed,2025-08-04
+42733496,57820,abortion,cpt4,2025-08-04
+4015660,11401008,abortion,snomed,2025-08-04
+2110171,58120,abortion,cpt4,2025-08-04
+2110150,57505,abortion,cpt4,2025-08-04
+4148434,267014009,abortion,snomed,2025-08-04
+4260758,412758008,abortion,snomed,2025-08-04
+37019066,713649008,abortion,snomed,2025-08-04
+2110222,58558,abortion,cpt4,2025-08-04
+2722222,56351,abortion,cpt4,2025-08-04
+444077,39406005,abortion,snomed,2025-08-04
+197617,58071009,abortion,snomed,2025-08-04
+2721012,S0199,abortion,hcpcs,2025-08-04
+2004491,69.09,abortion,icd9proc,2025-08-04
