@@ -6,9 +6,11 @@ from datetime import datetime
 from app_identity import PROJECT_ID
 import cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map as pr
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import (ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_INTRADAY, STEPS_INTRADAY, SLEEP_DAILY_SUMMARY,
-                    SLEEP_LEVEL, DEVICE, DEID_MAP, SLEEP_DAILY_SUMMARY_COUNTS, SLEEP_DAILY_SUMMARY_30DAYAVG,
-                    SLEEP_DAILY_SUMMARY_EXT, SLEEP_LEVEL_SHORT)
+from common import (ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_INTRADAY,
+                    STEPS_INTRADAY, SLEEP_DAILY_SUMMARY, SLEEP_LEVEL, DEVICE,
+                    DEID_MAP, SLEEP_DAILY_SUMMARY_COUNTS,
+                    SLEEP_DAILY_SUMMARY_30DAYAVG, SLEEP_DAILY_SUMMARY_EXT,
+                    SLEEP_LEVEL_SHORT)
 
 
 class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
@@ -208,7 +210,8 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             (2345, 1, date('2020-08-17'), 'false'),
             (6789, 1, date('2020-08-17'), 'true'),
             (3456, 1, date('2020-08-17'), 'false')""").render(
-            fq_dataset_name=self.fq_dataset_name, fitbit_table=SLEEP_LEVEL_SHORT)
+            fq_dataset_name=self.fq_dataset_name,
+            fitbit_table=SLEEP_LEVEL_SHORT)
         queries.append(sls_query)
 
         device_query = self.jinja_env.from_string("""
@@ -335,7 +338,9 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 sb_name for sb_name in self.fq_sandbox_table_names
                 if SLEEP_DAILY_SUMMARY_COUNTS in sb_name
             ][0],
-            'fields': ['person_id', 'sleep_log_id', 'sleep_date', 'counts_deep'],
+            'fields': [
+                'person_id', 'sleep_log_id', 'sleep_date', 'counts_deep'
+            ],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
             'cleaned_values': [
@@ -351,7 +356,10 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 sb_name for sb_name in self.fq_sandbox_table_names
                 if SLEEP_DAILY_SUMMARY_30DAYAVG in sb_name
             ][0],
-            'fields': ['person_id', 'sleep_log_id', 'sleep_date', 'thirty_day_avg_minutes_restless'],
+            'fields': [
+                'person_id', 'sleep_log_id', 'sleep_date',
+                'thirty_day_avg_minutes_restless'
+            ],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
             'cleaned_values': [
@@ -367,7 +375,9 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 sb_name for sb_name in self.fq_sandbox_table_names
                 if SLEEP_DAILY_SUMMARY_EXT in sb_name
             ][0],
-            'fields': ['person_id', 'sleep_log_id', 'sleep_date', 'total_sleep_records'],
+            'fields': [
+                'person_id', 'sleep_log_id', 'sleep_date', 'total_sleep_records'
+            ],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
             'cleaned_values': [
@@ -399,7 +409,9 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 sb_name for sb_name in self.fq_sandbox_table_names
                 if SLEEP_LEVEL_SHORT in sb_name
             ][0],
-            'fields': ['person_id', 'sleep_log_id', 'sleep_date', 'is_main_sleep'],
+            'fields': [
+                'person_id', 'sleep_log_id', 'sleep_date', 'is_main_sleep'
+            ],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
             'cleaned_values': [
