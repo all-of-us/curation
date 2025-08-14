@@ -23,13 +23,13 @@ RUN apt update \
   && apt install -y \
   curl \
   git \
-  python3.11-dev \
-  python3.11-venv \
+  python3.12-dev \
+  python3.12-venv \
   python3-pip \
   python3-wheel \
   wget \
-  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
-  && update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 \
+  && update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
 
 ## BUILD ARGS
 

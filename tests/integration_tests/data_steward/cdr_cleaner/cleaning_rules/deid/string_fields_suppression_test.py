@@ -158,6 +158,7 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
               SELECT ARRAY<STRUCT<
                     note_nlp_id int64,
                     note_id int64,
+                    section_concept_id int64,
                     snippet STRING,
                     offset STRING,
                     lexical_variant STRING,
@@ -168,16 +169,17 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                     term_temporal STRING,
                     term_modifiers STRING
                     >>
-                  [(1, 1, 'test_snippet', 'offset', '', 1585250, 1585250, 'CLAMP 1.7.6', 'true', 'hour=5', 'value=65'),
-                   (2, 1, 'test_string', 'test_offset', '', 0, 352341, 'CLAMP 1.7.6', 'false', 'time', 'test=3'),
-                   (3, 1, 'test', '123-533', '', 0, 352341, 'CLAMP 1.7.6', 'none', 'day=2', 'sample'),
-                   (4, 1, 'test_snippet', '255-134', '', 0, 352341, 'CLAMP 1.7.7', 'true', 'before', 'modifier'),
-                   (5, 1, 'snippet', '5523', '', 0, 352341, 'CLAMP 1.7.6', 'other', '2024-01-01', 'present=true'),
-                   (6, 1, 'string', '423', '', 715711, 4262234, 'CLAMP 1.7.6', 'null', 'noon', '')] col
+                  [(1, 1, 1, 'test_snippet', 'offset', '', 1585250, 1585250, 'CLAMP 1.7.6', 'true', 'hour=5', 'value=65'),
+                   (2, 1, 1, 'test_string', 'test_offset', '', 0, 352341, 'CLAMP 1.7.6', 'false', 'time', 'test=3'),
+                   (3, 1, 1, 'test', '123-533', '', 0, 352341, 'CLAMP 1.7.6', 'none', 'day=2', 'sample'),
+                   (4, 1, 1, 'test_snippet', '255-134', '', 0, 352341, 'CLAMP 1.7.7', 'true', 'before', 'modifier'),
+                   (5, 1, 1, 'snippet', '5523', '', 0, 352341, 'CLAMP 1.7.6', 'other', '2024-01-01', 'present=true'),
+                   (6, 1, 1, 'string', '423', '', 715711, 4262234, 'CLAMP 1.7.6', 'null', 'noon', '')] col
             )
             SELECT 
                 note_nlp_id,
                 note_id,
+                section_concept_id,
                 snippet,
                 offset,
                 lexical_variant,
@@ -247,22 +249,22 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1, 2, 3, 4, 5, 6],
             'sandboxed_ids': [],
             'fields': [
-                'note_nlp_id', 'note_id', 'snippet', 'offset',
-                'lexical_variant', 'note_nlp_concept_id',
+                'note_nlp_id', 'note_id', 'section_concept_id', 'snippet',
+                'offset', 'lexical_variant', 'note_nlp_concept_id',
                 'note_nlp_source_concept_id', 'nlp_system', 'term_exists',
                 'term_temporal', 'term_modifiers'
             ],
-            'cleaned_values': [(1, 1, None, None, '', 1585250, 1585250,
+            'cleaned_values': [(1, 1, 1, None, None, '', 1585250, 1585250,
                                 'CLAMP 1.7.6', 'true', None, None),
-                               (2, 1, None, None, '', 0, 352341, 'CLAMP 1.7.6',
-                                'false', None, None),
-                               (3, 1, None, None, '', 0, 352341, 'CLAMP 1.7.6',
-                                None, None, None),
-                               (4, 1, None, None, '', 0, 352341, None, 'true',
-                                None, None),
-                               (5, 1, None, None, '', 0,
+                               (2, 1, 1, None, None, '', 0, 352341,
+                                'CLAMP 1.7.6', 'false', None, None),
+                               (3, 1, 1, None, None, '', 0, 352341,
+                                'CLAMP 1.7.6', None, None, None),
+                               (4, 1, 1, None, None, '', 0, 352341, None,
+                                'true', None, None),
+                               (5, 1, 1, None, None, '', 0,
                                 352341, 'CLAMP 1.7.6', None, None, None),
-                               (6, 1, None, None, '', 715711, 4262234,
+                               (6, 1, 1, None, None, '', 715711, 4262234,
                                 'CLAMP 1.7.6', None, None, None)]
         }, {
             'fq_table_name': f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
