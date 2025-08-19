@@ -1,4 +1,3 @@
-from cgitb import lookup
 import unittest
 
 import mock

@@ -73,8 +73,8 @@ def get_corresponding_combined_dataset(all_datasets, deid_datasets):
 
         if combined in all_datasets:
             new_row = pd.DataFrame({
-                'deid_dataset': d,
-                'combined_dataset': combined
+                'deid_dataset': [d],
+                'combined_dataset': [combined]
             })
             deid_and_combined_datasets_df = pd.concat(
                 [deid_and_combined_datasets_df, new_row], ignore_index=True)
