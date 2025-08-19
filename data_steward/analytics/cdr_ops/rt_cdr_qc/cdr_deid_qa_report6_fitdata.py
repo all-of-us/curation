@@ -42,6 +42,10 @@ date_columns = {
     'sleep_level': 'sleep_date',
     'sleep_daily_summary': 'sleep_date',
     'device': 'device_date',
+    'sleep_daily_summary_counts': 'sleep_date',
+    'sleep_daily_summary_30dayavg': 'sleep_date',
+    'sleep_daily_summary_ext': 'sleep_date',
+    'sleep_level_short': 'sleep_date',
 }
 secondary_date_column = {
     'device': 'last_sync_time',
