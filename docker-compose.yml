@@ -12,7 +12,7 @@ services:
       # runtime "environments" config key
       args:
         GSDK_VERSION: 525.0.0
-        GSDK_CHECKSUM: 5d2e35be22eb5ecb35556b56e6b5b09a0bf95b823995d10d45004fe0242efd84
+        GSDK_CHECKSUM: bd84779b7cc2eb353213e70c926e85d908f956e0cbb7cf2ced67d130f6dfe9a1
         CIRCLECI_CLI_VERSION: "0.1.15973"
         CIRCLECI_CLI_CHECKSUM: "4187a5245f06dd8e1d51d5a99ad40ed9e8963397cecf006fd2d6a04ac374bef6"
         GID: 20
