@@ -29,7 +29,6 @@ click==8.1.7
 comm==0.2.2
 contourpy==1.2.1
 coverage==7.5.4
-curation==0.5.9
 cycler==0.12.1
 db-dtypes==1.2.0
 debugpy==1.8.2
