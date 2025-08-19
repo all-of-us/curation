@@ -14,8 +14,8 @@ job_defaults: &job_defaults
   # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
   environment:
     - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-    - GSDK_VERSION: 454.0.0
-    - GSDK_CHECKSUM: 58fd3e6d34e6a6e4a4afbfd3a1470ea23ef7ed6e69841c4eb89829ef833dac2c
+    - GSDK_VERSION: 525.0.0
+    - GSDK_CHECKSUM: 5d2e35be22eb5ecb35556b56e6b5b09a0bf95b823995d10d45004fe0242efd84
     - CIRCLECI_CLI_VERSION: "0.1.22924"
     - CIRCLECI_CLI_CHECKSUM: "4187a5245f06dd8e1d51d5a99ad40ed9e8963397cecf006fd2d6a04ac374bef6"
 
