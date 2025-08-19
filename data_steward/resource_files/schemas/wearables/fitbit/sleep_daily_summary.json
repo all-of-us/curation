@@ -27,7 +27,7 @@
     "name": "minute_asleep",
     "type": "integer",
     "mode": "nullable",
-    "description": "Total number of minutes the user was asleep across all sleep records in the sleep log."
+    "description": "Total number of minutes the user was asleep."
   },
   {
     "name": "minute_after_wakeup",
