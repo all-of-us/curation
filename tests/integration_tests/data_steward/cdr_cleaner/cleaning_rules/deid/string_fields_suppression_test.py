@@ -38,7 +38,9 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                                                     cls.sandbox_id)
 
         # Generates list of fully qualified table names
-        for table_name in [CONDITION_OCCURRENCE, OBSERVATION, AOU_DEATH]:
+        for table_name in [
+                CONDITION_OCCURRENCE, OBSERVATION, AOU_DEATH, NOTE_NLP
+        ]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
