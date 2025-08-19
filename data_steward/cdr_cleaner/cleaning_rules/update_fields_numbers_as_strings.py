@@ -36,7 +36,7 @@ OBSERVATION_SOURCE_VALUES = "('basics_xx', 'basics_xx20', 'ipaq_1_cope_a_24', 'i
                             "'ipaq_5_cope_a_85', 'ipaq_7_cope_a_160', 'ipaq_7_cope_a_85', 'cdc_covid_19_n_a2')"
 
 # Query to sandbox original observation table before CR
-SANDBOX_QUERY = JINJA_ENV.from_string("""
+SANDBOX_QUERY = JINJA_ENV.from_string(r"""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` as(
     SELECT
         *
@@ -51,7 +51,7 @@ CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` as(
 """)
 
 # Query to update value_as_number field
-NUMBERS_AS_STRINGS_QUERY = JINJA_ENV.from_string("""
+NUMBERS_AS_STRINGS_QUERY = JINJA_ENV.from_string(r"""
 SELECT
   observation_id,
   person_id,

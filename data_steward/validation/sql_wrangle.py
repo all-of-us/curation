@@ -8,11 +8,11 @@ import resources
 COMMAND_SEP = ';'
 PREFIX_PLACEHOLDER = 'synpuf_100.'
 TEMP_PREFIX = 'temp.'
-TEMP_TABLE_PATTERN = re.compile('\s*INTO\s+([^\s]+)')
-TRUNCATE_TABLE_PATTERN = re.compile('\s*truncate\s+table\s+([^\s]+)')
-DROP_TABLE_PATTERN = re.compile('\s*drop\s+table\s+([^\s]+)')
+TEMP_TABLE_PATTERN = re.compile(r'\s*INTO\s+([^\s]+)')
+TRUNCATE_TABLE_PATTERN = re.compile(r'\s*truncate\s+table\s+([^\s]+)')
+DROP_TABLE_PATTERN = re.compile(r'\s*drop\s+table\s+([^\s]+)')
 COMMENTED_BLOCK_REGEX = re.compile(
-    '(?P<before_comment>(^)(.)*)(?P<comment>(\/\*)(.)*(\*\/))(?P<after_comment>(.)*$)',
+    r'(?P<before_comment>(^)(.)*)(?P<comment>(\/\*)(.)*(\*\/))(?P<after_comment>(.)*$)',
     re.DOTALL)
 
 

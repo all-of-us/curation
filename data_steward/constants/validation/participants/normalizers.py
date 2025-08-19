@@ -70,11 +70,11 @@ STATE_ABBREVIATIONS = [
 
 AT = '@'
 
-NUMERIC_ENDINGS_REGEX = '(\d+)(st|nd|rd|th)'
+NUMERIC_ENDINGS_REGEX = r'(\d+)(st|nd|rd|th)'
 
 COMPILED_NUMERIC_ENDINGS_REGEX = re.compile(NUMERIC_ENDINGS_REGEX)
 
-ALPHA_NUMERIC = '(\d+)[a-zA-Z]+'
+ALPHA_NUMERIC = r'(\d+)[a-zA-Z]+'
 
 COMPILED_ALPHA_NUMERIC = re.compile(ALPHA_NUMERIC)
 

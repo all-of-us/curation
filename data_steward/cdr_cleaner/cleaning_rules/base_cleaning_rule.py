@@ -429,7 +429,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         Set the table_namer for this class instance. If no value is provided, it is set to a default value.
         """
         if not table_namer:
-            self._table_namer = re.sub('\d{4}q\dr\d', '', self.dataset_id)
+            self._table_namer = re.sub(r'\d{4}q\dr\d', '', self.dataset_id)
             LOGGER.info(f"'table_namer' was not set.  "
                         f"Using default value of `{self._table_namer}`.")
         else:
@@ -478,8 +478,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                 )
             else:
                 return RuntimeError(
-                    f'{self._issue_numbers[0]} cleaning rule is failed on {dataset}.{k} table.\
-                     There is a discrepancy in no.of records that\'s been deleted'
+                    f"{self._issue_numbers[0]} cleaning rule is failed on {dataset}.{k} table.",
+                    f"There is a discrepancy in no. of records that's been deleted"
                 )
 
     @abstractmethod
