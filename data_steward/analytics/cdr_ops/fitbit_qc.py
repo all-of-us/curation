@@ -42,7 +42,11 @@ date_columns = {
     'steps_intraday': 'datetime',
     'sleep_level': 'sleep_date',
     'sleep_daily_summary': 'sleep_date',
-    'device': 'device_date'
+    'device': 'device_date',
+    'sleep_daily_summary_counts': 'sleep_date',
+    'sleep_daily_summary_30dayavg': 'sleep_date',
+    'sleep_daily_summary_ext': 'sleep_date',
+    'sleep_level_short': 'sleep_date',
 }
 
 # For tables that have a second date field that needs to be checked for their cutoff date/deactivation dates
