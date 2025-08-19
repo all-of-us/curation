@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.13
 LABEL org.opencontainers.image.authors="daniel.p.carbone@vumc.org"
 LABEL org.opencontainers.image.url="https://github.com/all-of-us/curation"
 LABEL org.opencontainers.image.documentation="https://github.com/all-of-us/curation"
@@ -23,12 +23,12 @@ RUN apt update \
   && apt install -y \
   curl \
   git \
-  python3.11.13 \
+  python3.13 \
   python3-pip \
   python3-wheel \
   wget \
-  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11.13 1 \
-  && update-alternatives --install /usr/bin/python python /usr/bin/python3.11.13 1
+  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1 \
+  && update-alternatives --install /usr/bin/python python /usr/bin/python3.13 1
 
 ## BUILD ARGS
 
