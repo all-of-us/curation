@@ -3,7 +3,7 @@ import os
 from datetime import date
 
 # Project imports
-from common import JINJA_ENV, ACTIVITY_SUMMARY, STEPS_INTRADAY, SLEEP_LEVEL, PERSON
+from common import JINJA_ENV, ACTIVITY_SUMMARY, STEPS_INTRADAY, SLEEP_LEVEL, PERSON, SLEEP_LEVEL_SHORT
 from app_identity import PROJECT_ID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.remove_non_existing_pids import RemoveNonExistingPids
@@ -36,6 +36,16 @@ VALUES
 (2, '2021-02-01', 35),
 (3, '2021-01-01', 60),
 (4, '2021-07-01', 55)
+""")
+
+SLEEP__SHORT_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{table_id}}`
+(person_id, sleep_log_id, sleep_date, duration_in_min)
+VALUES
+(1, 1, '2021-04-01', 45),
+(2, 1, '2021-02-01', 35),
+(3, 1, '2021-01-01', 60),
+(4, 1, '2021-07-01', 55)
 """)
 
 PERSON_TEMPLATE = JINJA_ENV.from_string("""
@@ -75,7 +85,9 @@ class RemoveNonExistingPidsTest(BaseTest.CleaningRulesTestBase):
             reference_dataset_id=cls.reference_dataset_id)
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
-        for table in [STEPS_INTRADAY, ACTIVITY_SUMMARY, SLEEP_LEVEL]:
+        for table in [
+                STEPS_INTRADAY, ACTIVITY_SUMMARY, SLEEP_LEVEL, SLEEP_LEVEL_SHORT
+        ]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table}')
             cls.fq_sandbox_table_names.append(
@@ -106,10 +118,16 @@ class RemoveNonExistingPidsTest(BaseTest.CleaningRulesTestBase):
         sleep_query = SLEEP_TEMPLATE.render(project_id=self.project_id,
                                             dataset_id=self.dataset_id,
                                             table_id=SLEEP_LEVEL)
+        sleep_short_query = SLEEP__SHORT_TEMPLATE.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            table_id=SLEEP_LEVEL_SHORT)
 
         # Load test data
-        self.load_test_data(
-            [person_query, steps_query, summary_query, sleep_query])
+        self.load_test_data([
+            person_query, steps_query, summary_query, sleep_query,
+            sleep_short_query
+        ])
 
     def test_remove_non_existing_pids(self):
         """
@@ -146,6 +164,19 @@ class RemoveNonExistingPidsTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [(1, date.fromisoformat('2021-04-01'), 45),
                                (2, date.fromisoformat('2021-02-01'), 35),
                                (4, date.fromisoformat('2021-07-01'), 55)]
+        }, {
+            'fq_table_name':
+                self.fq_table_names[3],
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[3],
+            'loaded_ids': [1, 2, 3, 4],
+            'sandboxed_ids': [3],
+            'fields': [
+                'person_id', 'sleep_log_id', 'sleep_date', 'duration_in_min'
+            ],
+            'cleaned_values': [(1, 1, date.fromisoformat('2021-04-01'), 45),
+                               (2, 1, date.fromisoformat('2021-02-01'), 35),
+                               (4, 1, date.fromisoformat('2021-07-01'), 55)]
         }]
 
         self.default_test(tables_and_counts)
