@@ -24,7 +24,6 @@ from common import JINJA_ENV
 
 
 class BaseTest:
-
     class BigQueryTestBase(TestCase):
         """
         A base class for big query integration tests.
@@ -188,7 +187,7 @@ class BaseTest:
 
             This method assumes the first value in each row is a uniquely
             identifiable value, e.g. a primary key.  It relies on this
-            value being unique when performing the assertEquals check.  So, if
+            value being unique when performing the assertEqual check.  So, if
             two expected_values[0] are the same and the rest of the row is
             different, this function will likely fail when iterating the list
             of returned tuples.
@@ -353,7 +352,7 @@ class BaseTest:
                 destination = f'{self.project_id}.{self.dataset_id}.{src_table.table_id}'
                 dst_table = self.client.create_table(bigquery.Table(
                     destination, schema=schema),
-                                                     exists_ok=True)
+                    exists_ok=True)
                 self.client.copy_table(src_table, dst_table)
                 self.fq_table_names.append(destination)
 
@@ -415,7 +414,7 @@ class BaseTest:
             """
             # delete the mapping table
             for table in [
-                    self.fq_mapping_tablename, self.fq_questionnaire_tablename
+                self.fq_mapping_tablename, self.fq_questionnaire_tablename
             ]:
                 if table:
                     self.client.delete_table(table)
