@@ -8,7 +8,7 @@ orbs:
 job_defaults: &job_defaults
   machine:
     image: ubuntu-2204:current
-    docker_layer_caching: true
+    docker_layer_caching: false
   parallelism: 1
   # CircleCI 2.0 does not support environment variables that refer to each other the same way as 1.0 did.
   # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
@@ -92,7 +92,7 @@ jobs:
 
   integration_test:
     <<: *job_defaults
-    parallelism: 4
+    parallelism: 6
     environment:
       # Set variable to filepath containing tests to run
       - CURATION_TESTS_FILEPATH: ./tests/tests-to-run
