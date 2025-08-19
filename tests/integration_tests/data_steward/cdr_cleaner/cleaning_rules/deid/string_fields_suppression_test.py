@@ -143,6 +143,7 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             (
                 note_nlp_id int64,
                 note_id int64,
+                section_concept_id int64,
                 snippet STRING,
                 offset STRING,
                 lexical_variant STRING,
