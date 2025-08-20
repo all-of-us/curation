@@ -8,45 +8,47 @@ import common
 from gcloud.gcs import StorageClient
 from io import open
 
-LATEST_REPORTS_QUERY = (
-    'SELECT'
-    '  timestamp AS upload_timestamp,'
-    '  CONCAT(\'gs://{drc_bucket}\', SUBSTR(protopayload_auditlog.resourceName, 49)) AS file_path'
-    ' FROM ('
-    '  SELECT'
-    '    *,'
-    '    DENSE_RANK() OVER(PARTITION BY REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+")'
-    '    ORDER BY'
-    '      timestamp DESC) AS rank_order'
-    '  FROM'
-    '    `aou-res-curation-prod.GcsBucketLogging.cloudaudit_googleapis_com_data_access_{year}*` l'
-    '  WHERE'
-    '    protopayload_auditlog.methodName = \'storage.objects.create\' '
-    '    AND resource.labels.bucket_name LIKE \'{drc_bucket}\' '
-    '    AND protopayload_auditlog.resourceName LIKE \'%datasources.json\' '
-    '    AND REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+") IS NOT NULL ) a '
-    'WHERE '
-    '  rank_order = 1')
+LATEST_REPORTS_QUERY = r"""
+SELECT
+  timestamp AS upload_timestamp,
+  CONCAT(\'gs://{drc_bucket}\', SUBSTR(protopayload_auditlog.resourceName, 49)) AS file_path
+ FROM (
+  SELECT
+    *,
+    DENSE_RANK() OVER(PARTITION BY REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+")
+    ORDER BY
+      timestamp DESC) AS rank_order
+  FROM
+    `aou-res-curation-prod.GcsBucketLogging.cloudaudit_googleapis_com_data_access_{year}*` l
+  WHERE
+    protopayload_auditlog.methodName = \'storage.objects.create\' 
+    AND resource.labels.bucket_name LIKE \'{drc_bucket}\' 
+    AND protopayload_auditlog.resourceName LIKE \'%datasources.json\' 
+    AND REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+") IS NOT NULL ) a 
+WHERE 
+  rank_order = 1
+"""
 
-LATEST_RESULTS_QUERY = (
-    'SELECT'
-    '  timestamp AS upload_timestamp,'
-    '  CONCAT(\'gs://{drc_bucket}\', SUBSTR(protopayload_auditlog.resourceName, 49)) AS file_path'
-    ' FROM ('
-    '  SELECT'
-    '    *,'
-    '    DENSE_RANK() OVER(PARTITION BY REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+")'
-    '    ORDER BY'
-    '      timestamp DESC) AS rank_order'
-    '  FROM'
-    '    `aou-res-curation-prod.GcsBucketLogging.cloudaudit_googleapis_com_data_access_{year}*` l'
-    '  WHERE'
-    '    protopayload_auditlog.methodName = \'storage.objects.create\' '
-    '    AND resource.labels.bucket_name LIKE \'{drc_bucket}\' '
-    '    AND protopayload_auditlog.resourceName LIKE \'%person.csv\' '
-    '    AND REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+") IS NOT NULL ) a '
-    'WHERE '
-    '  rank_order = 1')
+LATEST_RESULTS_QUERY = r"""
+SELECT
+  timestamp AS upload_timestamp,
+  CONCAT(\'gs://{drc_bucket}\', SUBSTR(protopayload_auditlog.resourceName, 49)) AS file_path
+ FROM (
+  SELECT
+    *,
+    DENSE_RANK() OVER(PARTITION BY REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+")
+    ORDER BY
+      timestamp DESC) AS rank_order
+  FROM
+    `aou-res-curation-prod.GcsBucketLogging.cloudaudit_googleapis_com_data_access_{year}*` l
+  WHERE
+    protopayload_auditlog.methodName = \'storage.objects.create\' 
+    AND resource.labels.bucket_name LIKE \'{drc_bucket}\' 
+    AND protopayload_auditlog.resourceName LIKE \'%person.csv\' 
+    AND REGEXP_EXTRACT(protopayload_auditlog.resourceName, r".+\/aou[0-9]+") IS NOT NULL ) a 
+WHERE 
+  rank_order = 1
+"""
 
 
 def get_most_recent(app_id=None, drc_bucket=None, report_for=None):

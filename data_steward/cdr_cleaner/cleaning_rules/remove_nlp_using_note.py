@@ -98,35 +98,39 @@ class RemoveNoteUsingNLP(BaseCleaningRule):
         """
         queries_list = []
 
-        sandbox_query = dict()
-        sandbox_query[cdr_consts.QUERY] = SANDBOX_NOTE_TABLE.render(
+        sandbox_note_query = dict()
+        sandbox_note_query[cdr_consts.QUERY] = SANDBOX_NOTE_TABLE.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             sandbox_table=self.get_sandbox_tablenames()[0])
-        queries_list.append(sandbox_query)
+        queries_list.append(sandbox_note_query)
 
-        sandbox_query[cdr_consts.QUERY] = SANDBOX_NOTE_NLP_TABLE.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            sandbox_dataset_id=self.sandbox_dataset_id,
-            sandbox_table=self.get_sandbox_tablenames()[1])
-        queries_list.append(sandbox_query)
+        sandbox_note_nlp_query = dict()
+        sandbox_note_nlp_query[
+            cdr_consts.QUERY] = SANDBOX_NOTE_NLP_TABLE.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                sandbox_dataset_id=self.sandbox_dataset_id,
+                sandbox_table=self.get_sandbox_tablenames()[1])
+        queries_list.append(sandbox_note_nlp_query)
 
-        suppress_query = dict()
-        suppress_query[cdr_consts.QUERY] = SUPPRESS_NOTE_QUERY.render(
+        suppress_note_query = dict()
+        suppress_note_query[cdr_consts.QUERY] = SUPPRESS_NOTE_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             sandbox_table=self.get_sandbox_tablenames()[0])
-        queries_list.append(suppress_query)
+        queries_list.append(suppress_note_query)
 
-        suppress_query[cdr_consts.QUERY] = SUPPRESS_NOTE_NLP_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            sandbox_dataset_id=self.sandbox_dataset_id,
-            sandbox_table=self.get_sandbox_tablenames()[1])
-        queries_list.append(suppress_query)
+        suppress_note_nlp_query = dict()
+        suppress_note_nlp_query[
+            cdr_consts.QUERY] = SUPPRESS_NOTE_NLP_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                sandbox_dataset_id=self.sandbox_dataset_id,
+                sandbox_table=self.get_sandbox_tablenames()[1])
+        queries_list.append(suppress_note_nlp_query)
 
         return queries_list
 

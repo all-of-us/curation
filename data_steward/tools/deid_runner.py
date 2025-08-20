@@ -4,9 +4,9 @@ from argparse import ArgumentParser
 from datetime import datetime, timedelta
 import json
 
-import curation_bq_utils
+import bq_utils
 from common import CDR_SCOPES, NOTE_NLP, VOCABULARY_TABLES, ALL_ADDITIONAL_TABLES
-from curation_utils import auth, pipeline_logging
+from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants.cdr_cleaner import clean_cdr as consts
 from create_tier import create_datasets, get_dataset_name, TIER_LIST, DEID_STAGE_LIST
@@ -174,10 +174,10 @@ def main(raw_args=None):
     for additional_table in ALL_ADDITIONAL_TABLES:
         field_list = fields_for(additional_table)
         # create a table schema only.
-        curation_bq_utils.create_table(additional_table,
-                                       field_list,
-                                       drop_existing=True,
-                                       dataset_id=datasets[consts.STAGING])
+        bq_utils.create_table(additional_table,
+                              field_list,
+                              drop_existing=True,
+                              dataset_id=datasets[consts.STAGING])
 
     # Run cleaning rules
     LOGGER.info('Running cleaning rules...')

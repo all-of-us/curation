@@ -13,7 +13,7 @@ ISSUE_NUMBERS = ['DC1367']
 
 SUPPRESSION_RULE_CONCEPT_TABLE = 'motor_vehicle_accident_suppression_concept'
 
-MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY = JINJA_ENV.from_string("""
+MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY = JINJA_ENV.from_string(r"""
 -- This query generates a lookup table that contains all the suppressed concepts related -- 
 -- to motor vehicle accident. This table is generated using three sources of information --
 -- 1. ICD9CM E800 - E849 --

@@ -43,7 +43,7 @@ class BqUtilsTest(unittest.TestCase):
         expected = job_ids
         self.assertEqual(actual, expected)
         # TODO figure out how to count this
-        # self.assertEquals(mock_time_sleep.call_count, bq_utils.BQ_DEFAULT_RETRY_COUNT)
+        # self.assertEqual(mock_time_sleep.call_count, bq_utils.BQ_DEFAULT_RETRY_COUNT)
 
     @mock.patch('time.sleep', return_value=None)
     @mock.patch(

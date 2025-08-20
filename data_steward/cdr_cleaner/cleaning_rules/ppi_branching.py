@@ -70,6 +70,7 @@ from typing import Union
 
 # Third Party imports
 import pandas
+import pandas as pd
 from google.cloud import bigquery
 
 # Project imports
@@ -293,7 +294,8 @@ class PpiBranching(BaseCleaningRule):
         for rule_path in self.rule_paths:
             rules_df = pandas.read_csv(rule_path, header=0)
             rules_df['rule_source'] = Path(rule_path).name
-            all_rules_df = all_rules_df.append(rules_df)
+            all_rules_df = pd.concat([all_rules_df, rules_df],
+                                     ignore_index=True)
         return all_rules_df
 
     def load_rules_lookup(self,

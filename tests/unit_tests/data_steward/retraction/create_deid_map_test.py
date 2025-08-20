@@ -95,13 +95,13 @@ class CreateDeidMapTest(unittest.TestCase):
 
         result = create_deid_map.check_if_deid_map_exists(
             self.mock_bq_client, self.dataset_id)
-        self.assertEquals(result, consts.CREATE)
+        self.assertEqual(result, consts.CREATE)
         result = create_deid_map.check_if_deid_map_exists(
             self.mock_bq_client, self.dataset_id)
-        self.assertEquals(result, consts.SKIP)
+        self.assertEqual(result, consts.SKIP)
         result = create_deid_map.check_if_deid_map_exists(
             self.mock_bq_client, self.dataset_id)
-        self.assertEquals(result, consts.RENAME)
+        self.assertEqual(result, consts.RENAME)
 
     @mock.patch('retraction.create_deid_map.get_table_info_for_dataset')
     def test_create_deid_map_table_queries(self, mock_table_info):
@@ -142,4 +142,4 @@ class CreateDeidMapTest(unittest.TestCase):
                     consts.CREATE_DEID_MAP_TABLE_QUERY.format(
                         project=self.project_id, dataset=dataset))
 
-        self.assertEquals(expected_queries, result)
+        self.assertEqual(expected_queries, result)

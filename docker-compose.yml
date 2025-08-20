@@ -11,12 +11,12 @@ services:
       # they were envvars.  it may be necessary to replicate some of these in the
       # runtime "environments" config key
       args:
-          GSDK_VERSION: 454.0.0
-          GSDK_CHECKSUM: 58fd3e6d34e6a6e4a4afbfd3a1470ea23ef7ed6e69841c4eb89829ef833dac2c
-          CIRCLECI_CLI_VERSION: "0.1.15973"
-          CIRCLECI_CLI_CHECKSUM: "4187a5245f06dd8e1d51d5a99ad40ed9e8963397cecf006fd2d6a04ac374bef6"
-          GID: 20
-          UID: 502    # run-time environment variable values.
+        GSDK_VERSION: 525.0.0
+        GSDK_CHECKSUM: a8835338e63e4e9363d86b1530182936cbf2369c1a3a6be47cb6a1a1977190b4
+        CIRCLECI_CLI_VERSION: "0.1.15973"
+        CIRCLECI_CLI_CHECKSUM: "4187a5245f06dd8e1d51d5a99ad40ed9e8963397cecf006fd2d6a04ac374bef6"
+        GID: 20
+        UID: 502    # run-time environment variable values.
     # may containe duplicates from "build.args" map
     environment:
       APPLICATION_ID: "aou-res-curation-test"
