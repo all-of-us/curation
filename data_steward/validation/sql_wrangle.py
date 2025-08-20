@@ -95,7 +95,7 @@ def qualify_tables(command, hpo_id=None):
 
     table_prefix = resources.get_table_id(table_name="", hpo_id=hpo_id)
     command = command.replace(PREFIX_PLACEHOLDER, table_prefix)
-    command = re.sub('(temp\.[^\s])', temp_repl, command)
+    command = re.sub(r'(temp\.[^\s])', temp_repl, command)
     return command
 
 
