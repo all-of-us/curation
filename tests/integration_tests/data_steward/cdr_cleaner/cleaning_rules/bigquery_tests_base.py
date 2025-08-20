@@ -188,7 +188,7 @@ class BaseTest:
 
             This method assumes the first value in each row is a uniquely
             identifiable value, e.g. a primary key.  It relies on this
-            value being unique when performing the assertEquals check.  So, if
+            value being unique when performing the assertEqual check.  So, if
             two expected_values[0] are the same and the rest of the row is
             different, this function will likely fail when iterating the list
             of returned tuples.

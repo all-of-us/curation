@@ -153,7 +153,7 @@ def get_modified_columns(fields, fields_to_replace, table=None):
     for field in fields:
         if field in fields_to_replace:
             if table == OBSERVATION and field == 'value_as_string':
-                col_expr = """
+                col_expr = r"""
                     IF(observation_source_concept_id = 1585250 AND REGEXP_CONTAINS(value_as_string, r'\*\*$'),
                         {name}, {prefix}.concept_code) as {name}
                 """.format(prefix=fields_to_replace[field]['prefix'],

@@ -22,7 +22,7 @@ MISSING = "missing"
 # Date format strings
 DATE_FORMAT = '%Y-%m-%d'
 DRC_DATE_FORMAT = '%Y%m%d'
-DRC_DATE_REGEX = '\d{8}'
+DRC_DATE_REGEX = r'\d{8}'
 
 # Table names
 OBSERVATION_TABLE = 'observation'
@@ -70,7 +70,7 @@ VALIDATION_FIELDS = [
 # Report names and directories
 REPORT_TITLE = 'id-validation.csv'
 REPORT_DIRECTORY = 'drc-validations-{date}'
-REPORT_DIRECTORY_REGEX = 'drc-validations-\d{8}'
+REPORT_DIRECTORY_REGEX = r'drc-validations-\d{8}'
 
 # Validation dataset name
 DESTINATION_DATASET_DESCRIPTION = '{version} {rdr_dataset} + {ehr_dataset}'

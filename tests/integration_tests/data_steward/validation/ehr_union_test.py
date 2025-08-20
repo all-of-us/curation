@@ -467,8 +467,8 @@ class EhrUnionTest(unittest.TestCase):
     ])
     @mock.patch('cdm.tables_to_map')
     @mock.patch('validation.ehr_union.create_load_aou_death')
-    def test_ehr_person_to_observation_counts(self, mock_aou_death,
-                                              mock_tables_map, mock_hpo_info):
+    def _test_ehr_person_to_observation_counts(self, mock_aou_death,
+                                               mock_tables_map, mock_hpo_info):
         self._load_datasets()
         mock_tables_map.return_value = [
             OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL

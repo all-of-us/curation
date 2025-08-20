@@ -36,10 +36,9 @@ class CleanPPINumericFieldsUsingParametersTest(unittest.TestCase):
         self.rule_instance = clean_ppi.CleanPPINumericFieldsUsingParameters(
             self.project_id, self.dataset_id, self.sandbox_id)
 
-        self.assertEquals(self.rule_instance.project_id, self.project_id)
-        self.assertEquals(self.rule_instance.dataset_id, self.dataset_id)
-        self.assertEquals(self.rule_instance.sandbox_dataset_id,
-                          self.sandbox_id)
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
     def test_setup_rule(self):
         # Test

@@ -4,7 +4,7 @@ RENAME = 'rename'
 SKIP = 'skip'
 CREATE = 'create'
 
-CURRENT_RELEASE_REGEX = re.compile('R\d{4}q\dr\d')
+CURRENT_RELEASE_REGEX = re.compile(r'R\d{4}q\dr\d')
 
 RENAME_DEID_MAP_TABLE_QUERY = """
 CREATE OR REPLACE TABLE `{project}.{dataset}._deid_map` AS (
