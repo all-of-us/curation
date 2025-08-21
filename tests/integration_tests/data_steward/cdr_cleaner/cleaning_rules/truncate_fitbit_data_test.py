@@ -15,7 +15,9 @@ from dateutil import parser
 
 # Project imports
 from common import (FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_SUMMARY,
-                    HEART_RATE_INTRADAY, STEPS_INTRADAY, DEVICE, RDR_DATASET_ID)
+                    SLEEP_DAILY_SUMMARY_EXT, HEART_RATE_INTRADAY, SLEEP_LEVEL,
+                    STEPS_INTRADAY, DEVICE, SLEEP_LEVEL_SHORT, RDR_DATASET_ID,
+                    SLEEP_DAILY_SUMMARY, SLEEP_DAILY_SUMMARY_30DAYAVG)
 from app_identity import PROJECT_ID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
@@ -117,6 +119,65 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
             fitbit_table=HEART_RATE_SUMMARY)
         queries.append(hrs_query)
 
+        sdsext_query = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+            (person_id, sleep_log_id, sleep_date)
+            VALUES
+            (111, 1, date('2018-11-26')),
+            (222, 1, date('2019-11-26')),
+            (333, 1, date('2020-11-26')),
+            (444, 1, date('2021-11-26'))""").render(
+            fq_dataset_name=self.fq_dataset_name,
+            fitbit_table=SLEEP_DAILY_SUMMARY_EXT)
+        queries.append(sdsext_query)
+
+        sls_query = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+            (person_id, sleep_log_id, sleep_date)
+            VALUES
+            (111, 1, date('2018-11-26')),
+            (222, 1, date('2019-11-26')),
+            (333, 1, date('2020-11-26')),
+            (444, 1, date('2021-11-26'))""").render(
+            fq_dataset_name=self.fq_dataset_name,
+            fitbit_table=SLEEP_LEVEL_SHORT)
+        queries.append(sls_query)
+
+        sds_query = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+            (person_id, sleep_date, is_main_sleep)
+            VALUES
+            (111, date('2018-11-26'), 'true'),
+            (222, date('2019-11-26'), 'true'),
+            (333, date('2020-11-26'), 'false'),
+            (444, date('2021-11-26'), 'false')""").render(
+            fq_dataset_name=self.fq_dataset_name,
+            fitbit_table=SLEEP_DAILY_SUMMARY)
+        queries.append(sds_query)
+
+        sds30day_query = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+            (person_id, sleep_log_id, sleep_date)
+            VALUES
+            (111, 1, date('2018-11-26')),
+            (222, 1, date('2019-11-26')),
+            (333, 1, date('2020-11-26')),
+            (444, 1, date('2021-11-26'))""").render(
+            fq_dataset_name=self.fq_dataset_name,
+            fitbit_table=SLEEP_DAILY_SUMMARY_30DAYAVG)
+        queries.append(sds30day_query)
+
+        sl_query = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+            (person_id, sleep_date, is_main_sleep)
+            VALUES
+            (111, date('2018-11-26'), 'true'),
+            (222, date('2019-11-26'), 'true'),
+            (333, date('2020-11-26'), 'false'),
+            (444, date('2021-11-26'), 'false')""").render(
+            fq_dataset_name=self.fq_dataset_name, fitbit_table=SLEEP_LEVEL)
+        queries.append(sl_query)
+
         sid_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}` 
             (person_id, datetime)
@@ -198,6 +259,66 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
             'sandboxed_ids': [333, 444],
             'cleaned_values': [(111, parser.parse('2018-11-26 00:00:00')),
                                (222, parser.parse('2019-11-26 00:00:00'))]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_DAILY_SUMMARY_EXT]),
+            'fq_sandbox_table_name': [
+                table for table in self.fq_sandbox_table_names
+                if SLEEP_DAILY_SUMMARY_EXT in table
+            ][0],
+            'fields': ['person_id', 'sleep_log_id', 'sleep_date'],
+            'loaded_ids': [111, 222, 333, 444],
+            'sandboxed_ids': [333, 444],
+            'cleaned_values': [(111, 1, parser.parse('2018-11-26').date()),
+                               (222, 1, parser.parse('2019-11-26').date())]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_LEVEL_SHORT]),
+            'fq_sandbox_table_name': [
+                table for table in self.fq_sandbox_table_names
+                if SLEEP_LEVEL_SHORT in table
+            ][0],
+            'fields': ['person_id', 'sleep_log_id', 'sleep_date'],
+            'loaded_ids': [111, 222, 333, 444],
+            'sandboxed_ids': [333, 444],
+            'cleaned_values': [(111, 1, parser.parse('2018-11-26').date()),
+                               (222, 1, parser.parse('2019-11-26').date())]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_DAILY_SUMMARY]),
+            'fq_sandbox_table_name': [
+                table for table in self.fq_sandbox_table_names
+                if SLEEP_DAILY_SUMMARY in table
+            ][0],
+            'fields': ['person_id', 'sleep_date', 'is_main_sleep'],
+            'loaded_ids': [111, 222, 333, 444],
+            'sandboxed_ids': [333, 444],
+            'cleaned_values': [(111, parser.parse('2018-11-26').date(), 'true'),
+                               (222, parser.parse('2019-11-26').date(), 'true')]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_DAILY_SUMMARY_30DAYAVG]),
+            'fq_sandbox_table_name': [
+                table for table in self.fq_sandbox_table_names
+                if SLEEP_DAILY_SUMMARY_30DAYAVG in table
+            ][0],
+            'fields': ['person_id', 'sleep_log_id', 'sleep_date'],
+            'loaded_ids': [111, 222, 333, 444],
+            'sandboxed_ids': [333, 444],
+            'cleaned_values': [(111, 1, parser.parse('2018-11-26').date()),
+                               (222, 1, parser.parse('2019-11-26').date())]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_LEVEL]),
+            'fq_sandbox_table_name': [
+                table for table in self.fq_sandbox_table_names
+                if SLEEP_LEVEL in table
+            ][0],
+            'fields': ['person_id', 'sleep_date', 'is_main_sleep'],
+            'loaded_ids': [111, 222, 333, 444],
+            'sandboxed_ids': [333, 444],
+            'cleaned_values': [(111, parser.parse('2018-11-26').date(), 'true'),
+                               (222, parser.parse('2019-11-26').date(), 'true')]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, DEVICE]),
