@@ -175,8 +175,7 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
             (222, date('2019-11-26'), 'true'),
             (333, date('2020-11-26'), 'false'),
             (444, date('2021-11-26'), 'false')""").render(
-            fq_dataset_name=self.fq_dataset_name,
-            fitbit_table=SLEEP_LEVEL)
+            fq_dataset_name=self.fq_dataset_name, fitbit_table=SLEEP_LEVEL)
         queries.append(sl_query)
 
         sid_query = self.jinja_env.from_string("""
