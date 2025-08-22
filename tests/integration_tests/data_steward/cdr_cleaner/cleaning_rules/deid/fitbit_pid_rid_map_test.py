@@ -6,7 +6,11 @@ from datetime import datetime
 from app_identity import PROJECT_ID
 import cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map as pr
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_INTRADAY, STEPS_INTRADAY, SLEEP_DAILY_SUMMARY, SLEEP_LEVEL, DEVICE, DEID_MAP
+from common import (ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_INTRADAY,
+                    STEPS_INTRADAY, SLEEP_DAILY_SUMMARY, SLEEP_LEVEL, DEVICE,
+                    DEID_MAP, SLEEP_DAILY_SUMMARY_COUNTS,
+                    SLEEP_DAILY_SUMMARY_30DAYAVG, SLEEP_DAILY_SUMMARY_EXT,
+                    SLEEP_LEVEL_SHORT)
 
 
 class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
@@ -76,7 +80,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         Tests that the specifications for the SANDBOX_QUERY and CLEAN_PPI_NUMERIC_FIELDS_QUERY
         perform as designed.
 
-        Validates pre conditions, tests execution, and post conditions based on the load
+        Validates pre-conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
         """
 
@@ -146,6 +150,45 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             fitbit_table=SLEEP_DAILY_SUMMARY)
         queries.append(sds_query)
 
+        sdsc_query = self.jinja_env.from_string("""
+                INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+                (person_id,sleep_log_id,sleep_date,counts_deep)
+                VALUES
+                    (1234, 1, date('2020-08-17'), 2),
+                    (5678, 1, date('2020-08-17'), 3),
+                    (2345, 1, date('2020-08-17'), 4),
+                    (6789, 1, date('2020-08-17'), 5),
+                    (3456, 1, date('2020-08-17'), 5)""").render(
+            fq_dataset_name=self.fq_dataset_name,
+            fitbit_table=SLEEP_DAILY_SUMMARY_COUNTS)
+        queries.append(sdsc_query)
+
+        sds30da_query = self.jinja_env.from_string("""
+                INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+                (person_id,sleep_log_id,sleep_date,thirty_day_avg_minutes_restless)
+                VALUES
+                    (1234, 1, date('2020-08-17'), 502),
+                    (5678, 1, date('2020-08-17'), 443),
+                    (2345, 1, date('2020-08-17'), 744),
+                    (6789, 1, date('2020-08-17'), 605),
+                    (3456, 1, date('2020-08-17'), 578)""").render(
+            fq_dataset_name=self.fq_dataset_name,
+            fitbit_table=SLEEP_DAILY_SUMMARY_30DAYAVG)
+        queries.append(sds30da_query)
+
+        sdsext_query = self.jinja_env.from_string("""
+                INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+                (person_id,sleep_log_id,sleep_date,total_sleep_records)
+                VALUES
+                    (1234, 1, date('2020-08-17'), 2),
+                    (5678, 1, date('2020-08-17'), 3),
+                    (2345, 1, date('2020-08-17'), 4),
+                    (6789, 1, date('2020-08-17'), 3),
+                    (3456, 1, date('2020-08-17'), 3)""").render(
+            fq_dataset_name=self.fq_dataset_name,
+            fitbit_table=SLEEP_DAILY_SUMMARY_EXT)
+        queries.append(sdsext_query)
+
         sl_query = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
         (person_id,sleep_date,duration_in_min)
@@ -157,6 +200,19 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             (3456, date('2020-08-17'), 12)""").render(
             fq_dataset_name=self.fq_dataset_name, fitbit_table=SLEEP_LEVEL)
         queries.append(sl_query)
+
+        sls_query = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+        (person_id,sleep_log_id,sleep_date,is_main_sleep)
+        VALUES
+            (1234, 1, date('2020-08-17'), 'false'),
+            (5678, 1, date('2020-08-17'), 'true'),
+            (2345, 1, date('2020-08-17'), 'false'),
+            (6789, 1, date('2020-08-17'), 'true'),
+            (3456, 1, date('2020-08-17'), 'false')""").render(
+            fq_dataset_name=self.fq_dataset_name,
+            fitbit_table=SLEEP_LEVEL_SHORT)
+        queries.append(sls_query)
 
         device_query = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
@@ -277,6 +333,61 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             ]
         }, {
             'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_DAILY_SUMMARY_COUNTS]),
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if SLEEP_DAILY_SUMMARY_COUNTS in sb_name
+            ][0],
+            'fields': [
+                'person_id', 'sleep_log_id', 'sleep_date', 'counts_deep'
+            ],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
+            'cleaned_values': [
+                (234, 1, datetime.fromisoformat('2020-08-17').date(), 2),
+                (678, 1, datetime.fromisoformat('2020-08-17').date(), 3),
+                (345, 1, datetime.fromisoformat('2020-08-17').date(), 4),
+                (789, 1, datetime.fromisoformat('2020-08-17').date(), 5)
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_DAILY_SUMMARY_30DAYAVG]),
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if SLEEP_DAILY_SUMMARY_30DAYAVG in sb_name
+            ][0],
+            'fields': [
+                'person_id', 'sleep_log_id', 'sleep_date',
+                'thirty_day_avg_minutes_restless'
+            ],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
+            'cleaned_values': [
+                (234, 1, datetime.fromisoformat('2020-08-17').date(), 502),
+                (678, 1, datetime.fromisoformat('2020-08-17').date(), 443),
+                (345, 1, datetime.fromisoformat('2020-08-17').date(), 744),
+                (789, 1, datetime.fromisoformat('2020-08-17').date(), 605)
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_DAILY_SUMMARY_EXT]),
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if SLEEP_DAILY_SUMMARY_EXT in sb_name
+            ][0],
+            'fields': [
+                'person_id', 'sleep_log_id', 'sleep_date', 'total_sleep_records'
+            ],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
+            'cleaned_values': [
+                (234, 1, datetime.fromisoformat('2020-08-17').date(), 2),
+                (678, 1, datetime.fromisoformat('2020-08-17').date(), 3),
+                (345, 1, datetime.fromisoformat('2020-08-17').date(), 4),
+                (789, 1, datetime.fromisoformat('2020-08-17').date(), 3)
+            ]
+        }, {
+            'fq_table_name':
                 '.'.join([self.fq_dataset_name, SLEEP_LEVEL]),
             'fq_sandbox_table_name': [
                 sb_name for sb_name in self.fq_sandbox_table_names
@@ -290,6 +401,24 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (678, datetime.fromisoformat('2020-08-17').date(), 15),
                 (345, datetime.fromisoformat('2020-08-17').date(), 22),
                 (789, datetime.fromisoformat('2020-08-17').date(), 56)
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_LEVEL_SHORT]),
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if SLEEP_LEVEL_SHORT in sb_name
+            ][0],
+            'fields': [
+                'person_id', 'sleep_log_id', 'sleep_date', 'is_main_sleep'
+            ],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
+            'cleaned_values': [
+                (234, 1, datetime.fromisoformat('2020-08-17').date(), 'false'),
+                (678, 1, datetime.fromisoformat('2020-08-17').date(), 'true'),
+                (345, 1, datetime.fromisoformat('2020-08-17').date(), 'false'),
+                (789, 1, datetime.fromisoformat('2020-08-17').date(), 'true')
             ]
         }, {
             'fq_table_name':
