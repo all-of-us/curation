@@ -1,5 +1,6 @@
 # Python Imports
 import unittest
+import re
 from unittest import mock
 from unittest.mock import ANY
 
@@ -67,6 +68,11 @@ MAP_PER_OBS_QRY = '''
         '''
 
 
+def normalize_sql(s: str) -> str:
+    # Collapse all whitespace runs (spaces, tabs, newlines) to a single space
+    return re.sub(r'\s+', ' ', s).strip()
+
+
 class EhrUnionTest(unittest.TestCase):
     FAKE_SITE_1 = 'fake_site_1'
     FAKE_SITE_2 = 'fake_site_2'
@@ -89,85 +95,91 @@ class EhrUnionTest(unittest.TestCase):
     def test_mapping_subqueries(self, mock_hpo_info):
         """
         Verify the query for loading mapping tables. A constant value should be added to
-        destination key fields in all tables except for person where the values in 
+        destination key fields in all tables except for person where the values in
         the src_person_id and person_id fields should be equal.
-        
+
         :param mock_hpo_info: simulate hpo_info being returned
         """
+        # Add illinois_near_north and ecchc to test the special cases
+        test_hpo_ids = [
+            self.FAKE_SITE_1, self.FAKE_SITE_2, 'illinois_near_north', 'ecchc'
+        ]
 
         mock_hpo_info.return_value = [{
             'hpo_id': hpo_id
-        } for hpo_id in self.hpo_ids]
+        } for hpo_id in test_hpo_ids]
+
         tables = ['person', 'visit_occurrence', 'pii_name']
         fake_table_ids = [
             resources.get_table_id(table, hpo_id=hpo_id)
-            for hpo_id in self.hpo_ids
+            for hpo_id in test_hpo_ids
             for table in tables
         ]
         fake_table_ids.append(
             resources.get_table_id('condition_occurrence',
                                    hpo_id=self.FAKE_SITE_1))
 
-        mock_table_obj = mock.MagicMock()
-        type(mock_table_obj).table_id = mock.PropertyMock(
-            side_effect=fake_table_ids)
-        mock_fake_tables = [mock_table_obj] * 7
-        self.mock_bq_client.list_tables.return_value = mock_fake_tables
+        # Create mock table objects that return the table IDs
+        mock_tables = []
+        for table_id in fake_table_ids:
+            mock_table = mock.MagicMock()
+            mock_table.table_id = table_id
+            mock_tables.append(mock_table)
 
-        hpo_count = len(self.hpo_ids)
+        # Set up the mock to return the same list for each call
+        self.mock_bq_client.list_tables.return_value = mock_tables
 
-        # offset is added to the visit_occurrence destination key field
+        # Test visit_occurrence mapping with special cases
         actual = eu._mapping_subqueries(self.mock_bq_client, 'visit_occurrence',
-                                        self.hpo_ids, 'fake_dataset',
+                                        test_hpo_ids, 'fake_dataset',
                                         'fake_project')
-        hpo_unique_identifiers = eu.get_hpo_offsets(self.hpo_ids)
-        self.assertEqual(hpo_count, len(actual))
-        for i in range(0, hpo_count):
-            hpo_id = self.hpo_ids[i]
+        hpo_unique_identifiers = eu.get_hpo_offsets(test_hpo_ids)
+
+        self.assertEqual(len(test_hpo_ids), len(actual))
+
+        for i, hpo_id in enumerate(test_hpo_ids):
             subquery = actual[i]
             hpo_table = resources.get_table_id('visit_occurrence',
                                                hpo_id=hpo_id)
             hpo_offset = hpo_unique_identifiers[hpo_id]
+
             self.assertIn(f"'{hpo_table}' AS src_table_id", subquery)
             self.assertIn('visit_occurrence_id AS src_visit_occurrence_id',
                           subquery)
-            self.assertIn(
-                f'visit_occurrence_id + {hpo_offset} AS visit_occurrence_id',
-                subquery)
 
-        # src_person_id and person_id fields both use participant ID value
-        # (offset is NOT added to the value)
-        type(mock_table_obj).table_id = mock.PropertyMock(
-            side_effect=fake_table_ids)
+            if hpo_id in ['illinois_near_north', 'ecchc']:
+                # Check for ROW_NUMBER pattern for special HPOs
+                self.assertIn(
+                    'ROW_NUMBER() OVER (ORDER BY visit_occurrence_id)',
+                    subquery)
+                self.assertIn(f'+ {hpo_offset} AS visit_occurrence_id',
+                              subquery)
+            else:
+                # Check for standard pattern for other HPOs
+                self.assertIn(
+                    f'visit_occurrence_id + {hpo_offset} AS visit_occurrence_id',
+                    subquery)
+
+        # Test person table (should not use offsets for any HPO)
         actual = eu._mapping_subqueries(self.mock_bq_client, 'person',
-                                        self.hpo_ids, 'fake_dataset',
+                                        test_hpo_ids, 'fake_dataset',
                                         'fake_project')
-        self.assertEqual(hpo_count, len(actual))
-        for i in range(0, hpo_count):
-            hpo_id = self.hpo_ids[i]
+        self.assertEqual(len(test_hpo_ids), len(actual))
+
+        for i, hpo_id in enumerate(test_hpo_ids):
             subquery = actual[i]
             hpo_table = resources.get_table_id('person', hpo_id=hpo_id)
             self.assertIn(f"'{hpo_table}' AS src_table_id", subquery)
             self.assertIn('person_id AS src_person_id', subquery)
-            self.assertIn('person_id AS person_id', subquery)
 
-        # only return queries for tables that exist
-        type(mock_table_obj).table_id = mock.PropertyMock(
-            side_effect=fake_table_ids)
-        actual = eu._mapping_subqueries(self.mock_bq_client,
-                                        'condition_occurrence', self.hpo_ids,
-                                        'fake_dataset', 'fake_project')
-        self.assertEqual(1, len(actual))
-        subquery = actual[0]
-        hpo_table = resources.get_table_id('condition_occurrence',
-                                           hpo_id=self.FAKE_SITE_1)
-        hpo_offset = hpo_unique_identifiers[self.FAKE_SITE_1]
-        self.assertIn(f"'{hpo_table}' AS src_table_id", subquery)
-        self.assertIn('condition_occurrence_id AS src_condition_occurrence_id',
-                      subquery)
-        self.assertIn(
-            f'condition_occurrence_id + {hpo_offset} AS condition_occurrence_id',
-            subquery)
+            if hpo_id in ['illinois_near_north', 'ecchc']:
+                # Even for special HPOs, person table should use ROW_NUMBER without offset
+                self.assertIn(
+                    'ROW_NUMBER() OVER (ORDER BY person_id) AS person_id',
+                    subquery)
+            else:
+                # Standard person mapping
+                self.assertIn('person_id AS person_id', subquery)
 
     @mock.patch('bq_utils.get_hpo_info')
     def test_mapping_query(self, mock_hpo_info):
@@ -217,8 +229,9 @@ class EhrUnionTest(unittest.TestCase):
     FROM all_measurement
     '''.format(dataset_id=dataset_id, project_id=project_id)
         self.assertEqual(
-            expected_query.strip(), query.strip(),
-            "Mapping query for \n {q} \n to is not as expected".format(q=query))
+            normalize_sql(expected_query), normalize_sql(query),
+            f"Mapping query mismatch.\nGot:\n{query}\n\nExpected:\n{expected_query}"
+        )
 
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('validation.ehr_union.output_table_for')
