@@ -532,6 +532,33 @@ def create_table(table_id, fields, drop_existing=False, dataset_id=None):
     if 'person_id' in field_names:
         insert_body['clustering'] = {bq_consts.FIELDS: ['person_id']}
         insert_body['timePartitioning'] = {'type': 'DAY'}
+    if table_id == common.HEART_RATE_SUMMARY:
+        insert_body['clustering'] = {
+            bq_consts.FIELDS: ['person_id', 'date', 'zone_name']
+        }
+    elif table_id == common.ACTIVITY_SUMMARY:
+        insert_body['clustering'] = {bq_consts.FIELDS: ['person_id', 'date']}
+    elif table_id == common.DEVICE:
+        insert_body['clustering'] = {
+            bq_consts.FIELDS: ['person_id', 'device_date']
+        }
+    elif table_id in (common.SLEEP_DAILY_SUMMARY, common.SLEEP_LEVEL,
+                      common.SLEEP_LEVEL_SHORT):
+        insert_body['clustering'] = {
+            bq_consts.FIELDS: ['person_id', 'sleep_date', 'is_main_sleep']
+        }
+    elif table_id in (common.SLEEP_DAILY_SUMMARY_COUNTS,
+                      common.SLEEP_DAILY_SUMMARY_30DAYAVG):
+        insert_body['clustering'] = {
+            bq_consts.FIELDS: ['person_id', 'sleep_date']
+        }
+    elif table_id in common.SLEEP_DAILY_SUMMARY_EXT:
+        insert_body['clustering'] = {
+            bq_consts.FIELDS: [
+                'person_id', 'sleep_date', 'is_main_sleep', 'sleep_info_code',
+                'sleep_type'
+            ]
+        }
     insert_job = bq_service.tables().insert(projectId=app_id,
                                             datasetId=dataset_id,
                                             body=insert_body)
