@@ -313,43 +313,6 @@ def process_digital_health_data_to_json(api_data: List[Dict],
     return participant_records
 
 
-def get_deactivated_participants(client, api_project_id: str,
-                                 columns: List[str]) -> pandas.DataFrame:
-    """
-    Fetches all deactivated participants via API if suspensionStatus = 'NO_CONTACT'
-    and stores all the deactivated participants in a BigQuery dataset table
-    :param client: BigQuery client object
-    :param api_project_id: The RDR project that contains participant summary data
-    :param columns: columns to be pushed to a table in BigQuery in the form of a list of strings
-    :return: returns dataframe of deactivated participants
-    """
-
-    # Parameter checks
-    if not isinstance(api_project_id, str):
-        raise RuntimeError(f'Please specify the RDR project')
-
-    if not isinstance(columns, list):
-        raise RuntimeError(
-            'Please provide a list of columns to be pushed to BigQuery table')
-
-    # Make request to get API version. This is the current RDR version for reference
-    # See https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this api.
-    params = {'_sort': 'lastModified', 'suspensionStatus': 'NO_CONTACT'}
-
-    participant_data = get_participant_data(client,
-                                            api_project_id,
-                                            params=params)
-
-    column_map = {
-        'participant_id': 'person_id',
-        'suspension_time': 'deactivated_datetime'
-    }
-
-    df = process_api_data_to_df(participant_data, columns, column_map)
-
-    return df
-
-
 def get_site_participant_information(project_id: str, hpo_id: str):
     """
     Fetches the necessary participant information for a particular site.
@@ -473,41 +436,6 @@ def get_all_participant_information(project_id: str) -> pandas.DataFrame:
     return df
 
 
-def get_digital_health_information(project_id: str) -> List[Dict]:
-    """
-    Fetches the necessary participant information for a particular site.
-    :param project_id: The RDR project hosting the API
-    :return: a json list of participant information
-    :raises: RuntimeError if the project_id is not a string
-    :raises: TimeoutError if response takes longer than 10 minutes
-    """
-    # Parameter checks
-    if not isinstance(project_id, str):
-        raise RuntimeError(f'Please specify the RDR project')
-
-    # Make request to get API version. This is the current RDR version for reference see
-    # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
-    params = {
-        'suspensionStatus': 'NOT_SUSPENDED',
-        'withdrawalStatus': 'NOT_WITHDRAWN',
-        '_sort': 'participantId',
-        '_count': '5000'
-    }
-
-    participant_data = get_participant_data(
-        None,
-        project_id,
-        params=params,
-        expected_fields=FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH)
-
-    column_map = {'participant_id': 'person_id'}
-
-    json_list = process_digital_health_data_to_json(
-        participant_data, FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH, column_map)
-
-    return json_list
-
-
 def participant_id_to_int(participant_id: str):
     """
     Transforms the participantId received from RDR ParticipantSummary API from an
@@ -592,54 +520,6 @@ def store_participant_data(df: pandas.DataFrame,
     job = client.load_table_from_dataframe(df,
                                            destination_table,
                                            job_config=load_job_config)
-    job.result()
-
-    return job.job_id
-
-
-def store_digital_health_status_data(client: BigQueryClient,
-                                     json_data: List[Dict],
-                                     destination_table: str,
-                                     schema=None):
-    """
-    Stores the fetched digital_health_sharing_status data in a BigQuery dataset.
-
-    If the table doesn't exist, it will create that table. If the table does exist,
-    it will create a partition in the designated table or append to the same partition.
-    This is necessary for storing data has "RECORD" type fields which do not conform to a dataframe.
-    The data is stored using a JSON file object since it is one of the ways BigQuery expects it.
-    :param client: a BigQueryClient
-    :param json_data: list of json objects retrieved from process_digital_health_data_to_json
-    :param destination_table: fully qualified destination table name as 'project.dataset.table'
-    :param schema: a list of SchemaField objects corresponding to the destination table
-
-    :return: returns the bq job_id for the loading of digital health data
-    """
-
-    # Parameter check
-    if not client:
-        raise RuntimeError(f'A bigquery client is needed to create the table')
-
-    if not schema:
-        schema = client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
-
-    client.delete_table(destination_table, not_found_ok=True)
-    LOGGER.info(f'Creating table {destination_table}')
-
-    table = Table(destination_table, schema=schema)
-    table = client.create_table(table)
-
-    file_obj = StringIO()
-    for json_obj in json_data:
-        json.dump(json_obj, file_obj)
-        file_obj.write('\n')
-    job_config = LoadJobConfig(
-        source_format=SourceFormat.NEWLINE_DELIMITED_JSON, schema=schema)
-    job = client.load_table_from_file(file_obj,
-                                      table,
-                                      rewind=True,
-                                      job_config=job_config,
-                                      job_id_prefix='ps_digital_health_load_')
     job.result()
 
     return job.job_id

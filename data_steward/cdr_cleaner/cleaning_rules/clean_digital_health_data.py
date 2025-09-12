@@ -13,7 +13,6 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, FITBIT_TABLES, PIPELINE_TABLES, DIGITAL_HEALTH_SHARING_STATUS, PS_API_VALUES
 from utils import pipeline_logging
-from utils.participant_summary_requests import get_digital_health_information, store_digital_health_status_data
 from google.cloud.bigquery import Table
 
 LOGGER = logging.getLogger(__name__)
