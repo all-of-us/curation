@@ -274,8 +274,7 @@ class RemoveParticipantDataPastDeactivationDateTest(
         actual = self.rule_instance.get_date_cols_dict(date_cols)
         self.assertDictEqual(expected, actual)
 
-    @mock.patch(
-        'utils.participant_summary_requests.get_deactivated_participants')
+    @mock.patch('client.query.result')
     def test_removing_data_past_deactivated_date(self, mock_get_deact):
         """
         Validate deactivated participant records are dropped via cleaning rule.

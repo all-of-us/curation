@@ -16,9 +16,9 @@ import logging
 from pandas import DataFrame
 
 # Project imports
-from common import AOU_DEATH, FITBIT_TABLES, JINJA_ENV
+from common import AOU_DEATH, FITBIT_TABLES, JINJA_ENV, PS_API_VALUES
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import utils.participant_summary_requests as psr
+from google.cloud.bigquery import Table
 from constants.bq_utils import WRITE_TRUNCATE
 from resources import fields_for, CDM_TABLES
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
@@ -35,6 +35,17 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 # For reference
 DEACTIVATION_ISSUE_NUMBERS = ['DC686', 'DC1184', 'DC1799']
 ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129', 'DC2631', 'DC3164']
+
+POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{deactivated_participants}}`
+    (
+    person_id, suspension_status, deactivated_datetime
+    )
+SELECT
+    person_id, suspension_status, suspension_time
+FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
+WHERE suspension_status = 'NO_CONTACT'
+""")
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
     """
@@ -120,10 +131,10 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
     def __init__(self,
                  project_id,
                  dataset_id,
+                 rdr_dataset_id,
                  sandbox_dataset_id,
                  table_namer=None,
-                 api_project_id=None,
-                 key_path=None):
+                 api_project_id=None):
         """
         Initialize the class with proper information.
 
@@ -149,6 +160,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
                          [AOU_DEATH],
                          table_namer=table_namer)
         self.api_project_id = api_project_id
+        self.rdr_dataset = rdr_dataset_id
         self.destination_table = (f'{self.project_id}.{self.sandbox_dataset_id}'
                                   f'.{DEACTIVATED_PARTICIPANTS}')
         self.deact_table_ref = gbq.TableReference.from_string(
@@ -156,7 +168,6 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         self.table_cols_df = self.get_table_cols_df(None, self.project_id,
                                                     self.dataset_id)
         self.table_dates_info = self.get_table_dates_info(self.table_cols_df)
-        self.key_path = key_path
 
     def get_date_cols_dict(self, date_cols_list):
         """
@@ -296,24 +307,26 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
 
         :param client: a BiQueryClient passed to store the data
         """
-        LOGGER.info("Querying RDR API for deactivated participant data")
-        import os
-        if self.key_path:
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
+        LOGGER.info(
+            f"Querying Participant Summary Table in RDR Dataset to populate "
+            f"`{self.destination_table}` table")
 
-        # gets the deactivated participant dataset to ensure it's up-to-date
-        df = psr.get_deactivated_participants(client, self.api_project_id,
-                                              DEACTIVATED_PARTICIPANTS_COLUMNS)
+        # Create 'deactivated_participants' table with specific schema
+        schema = client.get_table_schema(DEACTIVATED_PARTICIPANTS)
+        client.create_table(Table(self.destination_table, schema=schema))
 
-        LOGGER.info(f"Found '{len(df)}' deactivated participants via RDR API")
-
-        # To store dataframe in a BQ dataset table named _deactivated_participants
-        psr.store_participant_data(df, client, self.destination_table)
-
-        LOGGER.info(f"Finished storing participant records in: "
-                    f"`{self.destination_table}`")
-        if self.key_path:
-            del os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+        # run insert query to populate 'deactivated_participants' table
+        q = POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            rdr_dataset=self.rdr_dataset,
+            deactivated_participants=DEACTIVATED_PARTICIPANTS,
+            ps_api_values=PS_API_VALUES)
+        query_job = client.query(q)
+        query_job.result()
+        if query_job.exception():
+            LOGGER.error(
+                f"The `{self.destination_table}` table was not populated")
 
         LOGGER.info(f"Finished storing participant records in: "
                     f"`{self.destination_table}`")
@@ -366,12 +379,6 @@ if __name__ == '__main__':
         dest='api_project_id',
         help='Identifies the RDR project for participant summary API',
         required=True)
-    ext_parser.add_argument('-kp',
-                            '--key_path',
-                            action='store',
-                            dest='key_path',
-                            help='Path to service account key file',
-                            required=True)
     ARGS = ext_parser.parse_args()
 
     if ARGS.list_queries:
@@ -379,10 +386,10 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(
             ARGS.project_id,
             ARGS.dataset_id,
+            ARGS.rdr_dataset_id,
             ARGS.sandbox_dataset_id,
             [(RemoveParticipantDataPastDeactivationDate,)],
             api_project_id=ARGS.api_project_id,
-            key_path=ARGS.key_path,
             table_namer='manual')
         for query in query_list:
             LOGGER.info(query)
@@ -391,8 +398,8 @@ if __name__ == '__main__':
         clean_engine.clean_dataset(
             ARGS.project_id,
             ARGS.dataset_id,
+            ARGS.rdr_dataset_id,
             ARGS.sandbox_dataset_id,
             [(RemoveParticipantDataPastDeactivationDate,)],
             api_project_id=ARGS.api_project_id,
-            key_path=ARGS.key_path,
             table_namer='manual')

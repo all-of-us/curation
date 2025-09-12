@@ -11,9 +11,10 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, FITBIT_TABLES, PIPELINE_TABLES, DIGITAL_HEALTH_SHARING_STATUS
+from common import JINJA_ENV, FITBIT_TABLES, PIPELINE_TABLES, DIGITAL_HEALTH_SHARING_STATUS, PS_API_VALUES
 from utils import pipeline_logging
 from utils.participant_summary_requests import get_digital_health_information, store_digital_health_status_data
+from google.cloud.bigquery import Table
 
 LOGGER = logging.getLogger(__name__)
 
@@ -33,16 +34,68 @@ CREATE TABLE `{{fq_sandbox_table}}` AS
 SELECT *
 """)
 
+POPULATE_DIGITAL_HEALTH_SHARING_STATUS_TABLE_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{digital_health_sharing_status}}` (
+  person_id,
+  wearable,
+  status,
+  authored_time,
+  history
+)
+SELECT
+  -- Select the main columns (latest row per id)
+  latest.person_id,
+  latest.wearable,
+  latest.status,
+  latest.authored_time,
+  -- Collect older rows into the repeated record field
+  older.history_array
+FROM
+  (
+    SELECT
+      person_id,
+      wearable,
+      status,
+      authored_time
+    FROM (
+      SELECT
+        *,
+        ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY authored_time DESC) as rn
+      FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
+    )
+    WHERE rn = 1
+  ) AS latest
+LEFT JOIN
+  (
+    SELECT
+      person_id,
+      ARRAY_AGG(STRUCT(status AS status, authored_time AS authored_time)) AS history_array
+    FROM (
+      SELECT
+        *,
+        ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY authored_time DESC) as rn
+      FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
+    )
+    WHERE rn > 1
+    GROUP BY person_id
+  ) AS older
+ON latest.person_id = older.person_id;
+WHERE
+    latest.suspension_status = 'NOT_SUSPENDED'
+    AND
+    latest.withdrawal_status = 'NOT_WITHDRAWN'
+""")
+
 
 class CleanDigitalHealthStatus(BaseCleaningRule):
 
     def __init__(self,
                  project_id,
                  dataset_id,
+                 rdr_dataset_id,
                  sandbox_dataset_id,
                  table_namer=None,
-                 api_project_id=None,
-                 key_path=None):
+                 api_project_id=None):
         """
         Initialize the class with proper information.
 
@@ -64,8 +117,8 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
-        self.key_path = key_path
         self.api_project_id = api_project_id
+        self.rdr_dataset_id = rdr_dataset_id
 
     def setup_rule(self, client, *args, **keyword_args):
         """
@@ -78,22 +131,32 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
         :param client: a BigQueryClient
         :return:
         """
-        import os
-        if self.key_path:
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
+        destination_table = f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}'
 
-        digital_health_json_list = get_digital_health_information(
-            self.api_project_id)
+        # delete pre-existing Table
+        client.delete_table(destination_table, not_found_ok=True)
+        LOGGER.info(f'Deleted existing {destination_table} table.')
 
-        # gets the deactivated participant dataset to ensure it's up-to-date
+        schema = client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
+        client.create_table(Table(destination_table, schema=schema))
 
-        store_digital_health_status_data(
-            client, digital_health_json_list,
-            f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}'
-        )
+        # Insert query
+        q = POPULATE_DIGITAL_HEALTH_SHARING_STATUS_TABLE_QUERY.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            rdr_dataset=self.rdr_dataset_id,
+            digital_health_sharing_status=DIGITAL_HEALTH_SHARING_STATUS,
+            ps_api_values=PS_API_VALUES)
+        query_job = client.query(q)
+        query_job.result()
+        if query_job.exception():
+            LOGGER.error(
+                f"New `{DIGITAL_HEALTH_SHARING_STATUS}` table was not populated"
+            )
 
-        if self.key_path:
-            del os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+        LOGGER.info(
+            f"New `{DIGITAL_HEALTH_SHARING_STATUS}` table was populated")
+
         # Snapshot DIGITAL_HEALTH_SHARING_STATUS table for current CDR
         client.copy_table(
             f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}',
@@ -184,12 +247,6 @@ if __name__ == '__main__':
         dest='api_project_id',
         help='Identifies the RDR project for participant summary API',
         required=True)
-    ext_parser.add_argument('-kp',
-                            '--key_path',
-                            action='store',
-                            dest='key_path',
-                            help='Path to service account key file',
-                            required=True)
 
     ARGS = ext_parser.parse_args()
 
@@ -200,10 +257,10 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(
             ARGS.project_id,
             ARGS.dataset_id,
+            ARGS.rdr_dataset_id,
             ARGS.sandbox_dataset_id,
             [(CleanDigitalHealthStatus,)],
             api_project_id=ARGS.api_project_id,
-            key_path=ARGS.key_path,
         )
 
         for query in query_list:
@@ -213,8 +270,8 @@ if __name__ == '__main__':
         clean_engine.clean_dataset(
             ARGS.project_id,
             ARGS.dataset_id,
+            ARGS.rdr_dataset_id,
             ARGS.sandbox_dataset_id,
             [(CleanDigitalHealthStatus,)],
             api_project_id=ARGS.api_project_id,
-            key_path=ARGS.key_path,
         )
