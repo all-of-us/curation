@@ -41,48 +41,54 @@ INSERT INTO `{{project}}.{{dataset}}.{{digital_health_sharing_status}}` (
   authored_time,
   history
 )
+WITH deduped AS (
+  SELECT DISTINCT
+    person_id,
+    wearable,
+    status,
+    authored_time,
+    suspension_status,
+    withdrawal_status
+  FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
+),
+filtered AS (
+  SELECT *
+  FROM deduped
+  WHERE suspension_status = 'NOT_SUSPENDED'
+    AND withdrawal_status = 'NOT_WITHDRAWN'
+),
+ranked AS (
+  SELECT
+    f.*,
+    ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY authored_time DESC) AS rn
+  FROM filtered f
+),
+latest AS (
+  SELECT
+    person_id,
+    wearable,
+    status,
+    authored_time
+  FROM ranked
+  WHERE rn = 1
+),
+older AS (
+  SELECT
+    id,
+    ARRAY_AGG(STRUCT(status AS status, authored_time AS authored_time) ORDER BY authored_time DESC) AS history
+  FROM ranked
+  WHERE rn > 1
+  GROUP BY id
+)
 SELECT
-  -- Select the main columns (latest row per id)
-  latest.person_id,
-  latest.wearable,
-  latest.status,
-  latest.authored_time,
-  -- Collect older rows into the repeated record field
-  older.history_array
-FROM
-  (
-    SELECT
-      person_id,
-      wearable,
-      status,
-      authored_time
-    FROM (
-      SELECT
-        *,
-        ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY authored_time DESC) as rn
-      FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
-    )
-    WHERE rn = 1
-  ) AS latest
-LEFT JOIN
-  (
-    SELECT
-      person_id,
-      ARRAY_AGG(STRUCT(status AS status, authored_time AS authored_time)) AS history_array
-    FROM (
-      SELECT
-        *,
-        ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY authored_time DESC) as rn
-      FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
-    )
-    WHERE rn > 1
-    GROUP BY person_id
-  ) AS older
-ON latest.person_id = older.person_id;
-WHERE
-    latest.suspension_status = 'NOT_SUSPENDED'
-    AND
-    latest.withdrawal_status = 'NOT_WITHDRAWN'
+  l.person_id,
+  l.wearable,
+  l.status,
+  l.authored_time,
+  COALESCE(o.history, []) AS history
+FROM latest l
+LEFT JOIN older o
+USING (person_id)
 """)
 
 
