@@ -311,10 +311,6 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
             f"Querying Participant Summary Table in RDR Dataset to populate "
             f"`{self.destination_table}` table")
 
-        # Create 'deactivated_participants' table with specific schema
-        schema = client.get_table_schema(DEACTIVATED_PARTICIPANTS)
-        client.create_table(Table(self.destination_table, schema=schema))
-
         # run insert query to populate 'deactivated_participants' table
         q = POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY.render(
             project=self.project_id,

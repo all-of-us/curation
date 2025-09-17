@@ -136,14 +136,6 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
         :param client: a BigQueryClient
         :return:
         """
-        destination_table = f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}'
-
-        # delete pre-existing Table
-        client.delete_table(destination_table, not_found_ok=True)
-        LOGGER.info(f'Deleted existing {destination_table} table.')
-
-        schema = client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
-        client.create_table(Table(destination_table, schema=schema))
 
         # Insert query
         q = POPULATE_DIGITAL_HEALTH_SHARING_STATUS_TABLE_QUERY.render(
