@@ -25,13 +25,12 @@ FROM `{{project_id}}.{{dataset_id}}.note_nlp` s
 JOIN `{{project_id}}.{{dataset_id}}.note` n ON n.note_id = s.note_id
 JOIN `{{project_id}}.pipeline_tables.all_final_eponymous_concepts` c ON s.note_nlp_concept_id = c.concept_id
 LEFT JOIN (
-  SELECT DISTINCT person_id, condition_concept_id
+  SELECT *
   FROM `{{project_id}}.{{dataset_id}}.condition_occurrence`
   WHERE condition_source_value != 'note_nlp'
 ) co ON n.person_id = co.person_id AND s.note_nlp_concept_id = co.condition_concept_id
 WHERE 
-  c.concept_id IS NULL
-  OR co.person_id IS NOT NULL;
+  co.condition_concept_id IS NULL;
 """)
 
 EPONYM_DELETE_QUERY = JINJA_ENV.from_string("""
