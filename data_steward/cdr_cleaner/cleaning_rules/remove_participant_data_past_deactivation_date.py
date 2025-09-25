@@ -18,6 +18,7 @@ from pandas import DataFrame
 # Project imports
 from common import AOU_DEATH, FITBIT_TABLES, JINJA_ENV, PS_API_VALUES
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+import utils.participant_summary_requests as psr
 from google.cloud.bigquery import Table
 from constants.bq_utils import WRITE_TRUNCATE
 from resources import fields_for, CDM_TABLES
@@ -36,11 +37,11 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 DEACTIVATION_ISSUE_NUMBERS = ['DC686', 'DC1184', 'DC1799']
 ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129', 'DC2631', 'DC3164']
 
+#INSERT INTO `{{project}}.{{dataset}}.{{deactivated_participants}}`
+#    (
+#    person_id, suspension_status, deactivated_datetime
+#    )
 POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.{{deactivated_participants}}`
-    (
-    person_id, suspension_status, deactivated_datetime
-    )
 SELECT
     person_id, suspension_status, suspension_time
 FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
@@ -131,9 +132,9 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
     def __init__(self,
                  project_id,
                  dataset_id,
-                 rdr_dataset_id,
                  sandbox_dataset_id,
                  table_namer=None,
+                 rdr_dataset_id=None,
                  api_project_id=None):
         """
         Initialize the class with proper information.
@@ -315,11 +316,15 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         q = POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
-            rdr_dataset=self.rdr_dataset,
+            rdr_dataset='drc_ops',
             deactivated_participants=DEACTIVATED_PARTICIPANTS,
-            ps_api_values=PS_API_VALUES)
+            ps_api_values='ps_awardee_values')
         query_job = client.query(q)
-        query_job.result()
+        df = query_job.to_dataframe()
+
+        # To store dataframe in a BQ dataset table named _deactivated_participants
+        psr.store_participant_data(df, client, self.destination_table)
+
         if query_job.exception():
             LOGGER.error(
                 f"The `{self.destination_table}` table was not populated")
@@ -382,10 +387,10 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(
             ARGS.project_id,
             ARGS.dataset_id,
-            ARGS.rdr_dataset_id,
             ARGS.sandbox_dataset_id,
             [(RemoveParticipantDataPastDeactivationDate,)],
             api_project_id=ARGS.api_project_id,
+            rdr_dataset_id=ARGS.rdr_dataset_id,
             table_namer='manual')
         for query in query_list:
             LOGGER.info(query)
@@ -394,8 +399,8 @@ if __name__ == '__main__':
         clean_engine.clean_dataset(
             ARGS.project_id,
             ARGS.dataset_id,
-            ARGS.rdr_dataset_id,
             ARGS.sandbox_dataset_id,
             [(RemoveParticipantDataPastDeactivationDate,)],
             api_project_id=ARGS.api_project_id,
+            rdr_dataset_id=ARGS.rdr_dataset_id,
             table_namer='manual')

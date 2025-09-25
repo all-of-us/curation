@@ -136,7 +136,7 @@ def fetch_and_store_ps_hpo_data(client,
 
     q = GET_HPO_PARTICIPANT_DATA_QUERY.render(project=rdr_project_id,
                                               dataset=dataset_id,
-                                              table=PS_API_VALUES,
+                                              table='ps_awardee_values',
                                               organization=f'{org_id}')
     query_job = client.query(q)
     participant_info = query_job.to_dataframe()
@@ -182,7 +182,7 @@ def fetch_and_store_full_ps_data(client,
 
     q = GET_FULL_PARTICIPANT_DATA_QUERY.render(project=rdr_project_id,
                                                dataset=dataset_id,
-                                               table=PS_API_VALUES)
+                                               table='ps_awardee_values')
     query_job = client.query(q)
     df = query_job.to_dataframe()
 
