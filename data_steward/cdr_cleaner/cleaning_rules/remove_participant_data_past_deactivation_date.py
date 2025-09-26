@@ -318,7 +318,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
             dataset=self.dataset_id,
             rdr_dataset='drc_ops',
             deactivated_participants=DEACTIVATED_PARTICIPANTS,
-            ps_api_values='ps_awardee_values')
+            ps_api_values='ps_awaredee_values_view')
         query_job = client.query(q)
         df = query_job.to_dataframe()
 
