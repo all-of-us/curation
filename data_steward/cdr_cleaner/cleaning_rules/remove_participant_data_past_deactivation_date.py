@@ -43,7 +43,9 @@ ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129', 'DC2631', 'DC3164']
 #    )
 POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY = JINJA_ENV.from_string("""
 SELECT
-    person_id, suspension_status, suspension_time
+    participant_id AS person_id,
+    suspension_status,
+    suspension_time
 FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
 WHERE suspension_status = 'NO_CONTACT'
 """)
