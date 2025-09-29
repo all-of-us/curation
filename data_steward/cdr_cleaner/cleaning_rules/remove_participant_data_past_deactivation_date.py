@@ -45,7 +45,7 @@ POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY = JINJA_ENV.from_string("""
 SELECT
     participant_id AS person_id,
     suspension_status,
-    suspension_time
+    suspension_time AS deactivated_datetime
 FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
 WHERE suspension_status = 'NO_CONTACT'
 """)
