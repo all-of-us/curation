@@ -1997,3 +1997,7 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 2721012,S0199,abortion,hcpcs,2025-08-04
 2004491,69.09,abortion,icd9proc,2025-08-04
 442333,42571002,abortion,snomed,2025-08-14
+2110123,57291,gender/sex,cpt4,2025-11-11
+2110052,55980,gender/sex,cpt4,2025-11-11
+36717747,719670005,gender/sex,snomed,2025-11-11
+434153,74345006,gender/sex,snomed,2025-11-11
