@@ -320,9 +320,9 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
             dataset=self.dataset_id,
             rdr_dataset='drc_ops',
             deactivated_participants=DEACTIVATED_PARTICIPANTS,
-            ps_api_values='ps_awaredee_values_view')
+            ps_api_values='ps_awardee_values_view')
         query_job = client.query(q)
-        df = query_job.to_dataframe()
+        df = query_job.result().to_dataframe()
 
         # To store dataframe in a BQ dataset table named _deactivated_participants
         psr.store_participant_data(df, client, self.destination_table)

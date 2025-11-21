@@ -24,6 +24,12 @@
     "description": "Total number of minutes the user was in bed."
   },
   {
+    "name": "minute_to_fall_asleep",
+    "type": "integer",
+    "mode": "nullable",
+    "description": "Total minutes for user to fall asleep."
+  },
+  {
     "name": "minute_asleep",
     "type": "integer",
     "mode": "nullable",

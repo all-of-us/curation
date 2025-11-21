@@ -27,26 +27,24 @@ SCOPES = [
 ]
 
 GET_HPO_PARTICIPANT_DATA_QUERY = JINJA_ENV.from_string("""
-    SELECT person_id, first_name, middle_name, last_name, street_address,
-    street_address2', city, state, zip_code, phone_number, email,
+    SELECT participant_id AS person_id, first_name, middle_name, last_name, street_address,
+    street_address2, city, state, zip_code, phone_number, email,
     date_of_birth, sex
-    FROM {{project}}.{{dataset}}.{{table}}
+    FROM `{{project}}.{{dataset}}.{{table}}`
     WHERE
     awardee = {{hpo_id}} AND
-    suspension_status = 'NOT_SUSPENDED' AND
-    consent_for_electronic_health_records = 'SUBMITTED' AND
-    withdrawalStatus = 'NOT_WITHDRAWN'
+    suspension_status = 'not_deactivated' AND
+    withdrawal_status = 'not_withdrawn'
 """)
 
 GET_FULL_PARTICIPANT_DATA_QUERY = JINJA_ENV.from_string("""
-    SELECT person_id, first_name, middle_name, last_name, street_address,
-    street_address2', city, state, zip_code, phone_number, email,
+    SELECT participant_id AS person_id, first_name, middle_name, last_name, street_address,
+    street_address2, city, state, zip_code, phone_number, email,
     date_of_birth, sex
-    FROM {{project}}.{{dataset}}.{{table}}
+    FROM `{{project}}.{{dataset}}.{{table}}`
     WHERE
-    suspension_status = 'NOT_SUSPENDED' AND
-    consent_for_electronic_health_records = 'SUBMITTED' AND
-    withdrawalStatus = 'NOT_WITHDRAWN'
+    suspension_status = 'not_deactivated' AND
+    withdrawal_status = 'not_withdrawn'
 """)
 
 
@@ -136,10 +134,10 @@ def fetch_and_store_ps_hpo_data(client,
 
     q = GET_HPO_PARTICIPANT_DATA_QUERY.render(project=rdr_project_id,
                                               dataset=dataset_id,
-                                              table='ps_awaredee_values_view',
+                                              table='ps_awardee_values_view',
                                               organization=f'{org_id}')
     query_job = client.query(q)
-    participant_info = query_job.to_dataframe()
+    participant_info = query_job.result().to_dataframe()
 
     # Insert summary data into table
     LOGGER.info(
@@ -182,9 +180,13 @@ def fetch_and_store_full_ps_data(client,
 
     q = GET_FULL_PARTICIPANT_DATA_QUERY.render(project=rdr_project_id,
                                                dataset=dataset_id,
-                                               table='ps_awaredee_values_view')
+                                               table='ps_awardee_values_view')
     query_job = client.query(q)
-    df = query_job.to_dataframe()
+    query_result = query_job.result()
+    df = query_result.to_dataframe()
+    print(f"Query: {q}")
+    print(f"data_result: {query_result}")
+    print(f"data_frame: {df}")
 
     # Insert paginated summary data into table
     LOGGER.info(f'Storing paginated participant data in table {fq_table_id}')

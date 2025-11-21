@@ -6,10 +6,12 @@ partitions from drc_ops.
 # Python imports
 import argparse
 import logging
+import os
 
 # Third party imports
 from google.cloud.bigquery import Table, Dataset
 
+import common
 # Project imports
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
@@ -18,6 +20,7 @@ from common import DRC_OPS, CDR_SCOPES, IDENTITY_MATCH, DE_IDENTIFIED
 from constants.validation.participants.snapshot_validaiton_dataset import (
     PARTITIONS_QUERY, SNAPSHOT_TABLE_QUERY)
 from bq_utils import get_hpo_info, get_table_id
+from validation.participants.store_participant_summary_results import fetch_and_store_full_ps_data
 from validation.participants.validate import setup_and_validate_participants
 
 LOGGER = logging.getLogger(__name__)
@@ -154,6 +157,12 @@ def main():
         args.run_as_email, CDR_SCOPES)
 
     bq_client = BigQueryClient(args.project_id, credentials=impersonation_creds)
+
+    # rdr_project_id = os.environ.get('RDR_PROJECT_ID')
+    drc_dataset_id = common.DRC_OPS
+    logging.info(f"Fetching Participant Summary API data")
+    fetch_and_store_full_ps_data(bq_client, args.project_id, 'aou-res-curation-prod',
+                                 drc_dataset_id)
 
     # Validate hpo_ids
     validate_hpo_ids(bq_client, skip_list=args.hpo_id_ex)

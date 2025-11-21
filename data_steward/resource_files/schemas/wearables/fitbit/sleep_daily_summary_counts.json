@@ -19,31 +19,31 @@
   },
   {
     "mode": "nullable",
-    "name": "counts_restless",
+    "name": "count_restless",
     "type": "numeric",
     "description": "Total number of times the user entered the restless."
   },
   {
     "mode": "nullable",
-    "name": "counts_deep",
+    "name": "count_deep",
     "type": "numeric",
     "description": "Total number of times the user entered the deep."
   },
   {
     "mode": "nullable",
-    "name": "counts_light",
+    "name": "count_light",
     "type": "numeric",
     "description": "Total number of times the user entered the light."
   },
   {
     "mode": "nullable",
-    "name": "counts_rem",
+    "name": "count_rem",
     "type": "numeric",
     "description": "Total number of times the user entered the rem."
   },
   {
     "mode": "nullable",
-    "name": "counts_wake",
+    "name": "count_wake",
     "type": "numeric",
     "description": "Total number of times the user entered the wake."
   },
