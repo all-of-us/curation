@@ -70,92 +70,86 @@ class ParticipantSummaryRequestsTest(TestCase):
             self.updated_deactivated_participants, columns=self.columns)
 
         self.participant_data = [{
-                'participantId': 'P111',
-                'suspensionStatus': 'NO_CONTACT',
-                'suspensionTime': '2018-12-07T08:21:14Z'
+            'participantId': 'P111',
+            'suspensionStatus': 'NO_CONTACT',
+            'suspensionTime': '2018-12-07T08:21:14Z'
         }, {
-                'participantId': 'P222',
-                'suspensionStatus': 'NO_CONTACT',
-                'suspensionTime': '2018-12-07T08:21:14Z'
-            }
-        ]
+            'participantId': 'P222',
+            'suspensionStatus': 'NO_CONTACT',
+            'suspensionTime': '2018-12-07T08:21:14Z'
+        }]
 
         self.site_participant_info_data = [{
-                'participantId': 'P333',
-                'firstName': 'foo_first',
-                'middleName': 'foo_middle',
-                'lastName': 'foo_last',
-                'streetAddress': 'foo_street_address',
-                'streetAddress2': 'foo_street_address_2',
-                'city': 'foo_city',
-                'state': 'foo_state',
-                'zipCode': '12345',
-                'phoneNumber': '1112223333',
-                'email': 'foo_email',
-                'dateOfBirth': '1900-01-01',
-                'sex': 'SexAtBirth_Male'
-            },
-            {
-                'participantId': 'P444',
-                'firstName': 'bar_first',
-                'lastName': 'bar_last'
-            }
-        ]
+            'participantId': 'P333',
+            'firstName': 'foo_first',
+            'middleName': 'foo_middle',
+            'lastName': 'foo_last',
+            'streetAddress': 'foo_street_address',
+            'streetAddress2': 'foo_street_address_2',
+            'city': 'foo_city',
+            'state': 'foo_state',
+            'zipCode': '12345',
+            'phoneNumber': '1112223333',
+            'email': 'foo_email',
+            'dateOfBirth': '1900-01-01',
+            'sex': 'SexAtBirth_Male'
+        }, {
+            'participantId': 'P444',
+            'firstName': 'bar_first',
+            'lastName': 'bar_last'
+        }]
 
         self.json_response_entry = {
             'entry': [{
-                    'participantId': 'P111',
-                    'suspensionStatus': 'NO_CONTACT',
-                    'suspensionTime': '2018-12-07T08:21:14Z'
-                },
-                {
-                    'participantId': 'P222',
-                    'suspensionStatus': 'NO_CONTACT',
-                    'suspensionTime': '2018-12-07T08:21:14Z'
-                }
-            ]
+                'participantId': 'P111',
+                'suspensionStatus': 'NO_CONTACT',
+                'suspensionTime': '2018-12-07T08:21:14Z'
+            }, {
+                'participantId': 'P222',
+                'suspensionStatus': 'NO_CONTACT',
+                'suspensionTime': '2018-12-07T08:21:14Z'
+            }]
         }
         # Used in test_process_digital_health_data_to_df. Mimics data from the RDR PS API.
         self.api_digital_health_data = [{
-                'participantId': 'P123',
-                'digitalHealthSharingStatus': {
-                    'fitbit': {
+            'participantId': 'P123',
+            'digitalHealthSharingStatus': {
+                'fitbit': {
+                    'status': 'YES',
+                    'history': [{
                         'status': 'YES',
-                        'history': [{
-                            'status': 'YES',
-                            'authoredTime': '2020-01-01T12:01:01Z'
-                        }],
                         'authoredTime': '2020-01-01T12:01:01Z'
-                    }
-                }
-        }, {
-                'participantId': 'P234',
-                'digitalHealthSharingStatus': {
-                    'fitbit': {
-                        'status': 'YES',
-                        'history': [{
-                            'status': 'YES',
-                            'authoredTime': '2021-01-01T12:01:01Z'
-                        }],
-                        'authoredTime': '2021-01-01T12:01:01Z'
-                    },
-                    'appleHealthKit': {
-                        'status': 'YES',
-                        'history': [{
-                            'status': 'YES',
-                            'authoredTime': '2021-02-01T12:01:01Z'
-                        }, {
-                            'status': 'NO',
-                            'authoredTime': '2020-06-01T12:01:01Z'
-                        }, {
-                            'status': 'YES',
-                            'authoredTime': '2020-03-01T12:01:01Z'
-                        }],
-                        'authoredTime': '2021-02-01T12:01:01Z'
-                    }
+                    }],
+                    'authoredTime': '2020-01-01T12:01:01Z'
                 }
             }
-        ]
+        }, {
+            'participantId': 'P234',
+            'digitalHealthSharingStatus': {
+                'fitbit': {
+                    'status': 'YES',
+                    'history': [{
+                        'status': 'YES',
+                        'authoredTime': '2021-01-01T12:01:01Z'
+                    }],
+                    'authoredTime': '2021-01-01T12:01:01Z'
+                },
+                'appleHealthKit': {
+                    'status': 'YES',
+                    'history': [{
+                        'status': 'YES',
+                        'authoredTime': '2021-02-01T12:01:01Z'
+                    }, {
+                        'status': 'NO',
+                        'authoredTime': '2020-06-01T12:01:01Z'
+                    }, {
+                        'status': 'YES',
+                        'authoredTime': '2020-03-01T12:01:01Z'
+                    }],
+                    'authoredTime': '2021-02-01T12:01:01Z'
+                }
+            }
+        }]
         # Used in test_process_digital_health_data_to_df
         self.stored_digital_health_data = [{
             'person_id': 123,

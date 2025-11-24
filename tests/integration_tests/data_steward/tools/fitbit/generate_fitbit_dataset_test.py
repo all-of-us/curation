@@ -77,7 +77,7 @@ class GenerateFitbitDatasetTest(TestCase):
         view_job = self.bq_client.query(create_view)
         view_job.result()
         gfd.copy_fitbit_tables_from_views(self.bq_client, self.dataset,
-                                          self.dataset, 'view_')
+                                          self.dataset, 'view_', '_combined')
 
         query_contents = content_query.render(project_id=self.project_id,
                                               dataset_id=self.dataset,

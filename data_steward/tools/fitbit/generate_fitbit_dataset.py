@@ -23,7 +23,8 @@ SCOPES = [
 INSERT_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{fq_dest_table}}` ({{fields}})
 SELECT {{fields_casted}}
-FROM `{{client.project}}.{{from_dataset}}.{{table_prefix}}{{table}}{{table_suffix}}`""")
+FROM `{{client.project}}.{{from_dataset}}.{{table_prefix}}{{table}}{{table_suffix}}`"""
+                                    )
 
 
 def create_fitbit_datasets(client, release_tag):
