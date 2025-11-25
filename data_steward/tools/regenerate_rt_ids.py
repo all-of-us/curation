@@ -634,20 +634,14 @@ if __name__ == '__main__':
                         dest='output_dataset_id',
                         required=True,
                         help='Dataset where results should be stored')
-    parser.add_argument(
-        '--pipeline_dataset_id',
-        dest='pipeline_dataset_id',
-        required=True,
-        help=
-        'Dataset containing rdr_participant_research_ids_view for person mapping'
-    )
-    parser.add_argument(
-        '--rt_ids_view',
-        dest='rt_ids_view',
-        required=True,
-        help=
-        'View containing person_id to rt_id mapping'
-    )
+    parser.add_argument('--pipeline_dataset_id',
+                        dest='pipeline_dataset_id',
+                        required=True,
+                        help='Dataset containing rdr_participant_research_ids_view for person mapping')
+    parser.add_argument('--rt_ids_view',
+                        dest='rt_ids_view',
+                        required=True,
+                        help='View containing person_id to rt_id mapping')
 
     args = parser.parse_args()
     main(args.input_dataset_id, args.output_dataset_id, args.project_id,
