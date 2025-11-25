@@ -152,7 +152,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
         sdsc_query = self.jinja_env.from_string("""
                 INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
-                (person_id,sleep_log_id,sleep_date,counts_deep)
+                (person_id,sleep_log_id,sleep_date,count_deep)
                 VALUES
                     (1234, 1, date('2020-08-17'), 2),
                     (5678, 1, date('2020-08-17'), 3),
@@ -338,9 +338,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 sb_name for sb_name in self.fq_sandbox_table_names
                 if SLEEP_DAILY_SUMMARY_COUNTS in sb_name
             ][0],
-            'fields': [
-                'person_id', 'sleep_log_id', 'sleep_date', 'counts_deep'
-            ],
+            'fields': ['person_id', 'sleep_log_id', 'sleep_date', 'count_deep'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
             'cleaned_values': [
