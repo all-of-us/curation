@@ -134,6 +134,7 @@ def mapping_query(table_name, input_dataset_id, project_id,
     FROM `{project_id}.{input_dataset_id}.{table_name}`
     '''
 
+
 def mapping(domain_table,
             input_dataset_id,
             output_dataset_id,
