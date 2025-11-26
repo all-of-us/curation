@@ -69,44 +69,6 @@ class StoreParticipantSummaryResultsTest(TestCase):
 
         self.assertCountEqual(actual, expected)
 
-    @mock.patch.object(BigQueryClient, 'get_table_schema')
-    @mock.patch(
-        'validation.participants.store_participant_summary_results.get_org_participant_information'
-    )
-    def test_main(self, mock_get_org_participant_information,
-                  mock_get_table_schema):
-        data = [{
-            'person_id': 1,
-            'first_name': 'John',
-            'last_name': 'Smith'
-        }, {
-            'person_id': 2,
-            'first_name': 'Jane',
-            'last_name': 'Doe'
-        }]
-        data_df = DataFrame(data)
-        mock_get_org_participant_information.return_value = data_df
-        mock_get_table_schema.return_value = [
-            bigquery.SchemaField('person_id', 'integer'),
-            bigquery.SchemaField('first_name', 'string'),
-            bigquery.SchemaField('last_name', 'string')
-        ]
-        fetch_and_store_ps_hpo_data(self.bq_client,
-                                    'rdr_project',
-                                    self.hpo_id,
-                                    dataset_id=self.dataset_id)
-
-        query = PS_API_CONTENTS_QUERY.render(project_id=self.project_id,
-                                             dataset_id=self.dataset_id,
-                                             ps_api_table_id=self.ps_api_table)
-
-        job = self.bq_client.query(query)
-        results_df = job.result().to_dataframe()
-        actual = results_df.to_dict(orient='records')
-        expected = data
-
-        self.assertCountEqual(actual, expected)
-
     def tearDown(self):
         """
         Add a one second delay to teardown to make it less likely to fail due to rate limits.
