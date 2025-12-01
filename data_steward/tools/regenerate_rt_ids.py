@@ -62,7 +62,7 @@ import bq_utils
 
 from common import (AOU_DEATH, DEATH, MAPPING_PREFIX, PERSON,
                     SURVEY_CONDUCT, VISIT_DETAIL, VISIT_OCCURRENCE, CARE_SITE,
-                    LOCATION, NOTE, NOTE_NLP)
+                    LOCATION, NOTE, NOTE_NLP, FITBIT_TABLES)
 
 from gcloud.bq import BigQueryClient
 from resources import fields_for, has_primary_key, CDM_TABLES
@@ -298,6 +298,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id, pip
     has_care_site_id = False
     has_location_id = False
     has_note_id = False
+    has_questionnaire_response_id = False
 
     # Track if table has person_id
     has_person_id = False
@@ -336,6 +337,10 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id, pip
         elif field_name == 'note_id' and table_name != NOTE:
             col_expr = f'ni.note_id'
             has_note_id = True
+        elif field_name == 'questionnaire_response_id':
+            # questionnaire_response_id maps to survey_conduct_id
+            col_expr = f'mqr.survey_conduct_id AS questionnaire_response_id'
+            has_questionnaire_response_id = True
         elif field_name in ('snippet', 'offset') and table_name == NOTE_NLP:
             col_expr = f'CAST({field_name} AS STRING) AS {field_name}'
         else:
@@ -368,6 +373,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id, pip
     location_join_expr = ''
     care_site_join_expr = ''
     note_join_expr = ''
+    questionnaire_response_join_expr = ''
     visit_detail_filter_expr = ''
 
     if has_person_id:
@@ -406,6 +412,15 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id, pip
 
     if has_note_id:
         note_join_expr = _get_join_expression(NOTE, 'ni', 'note_id')
+
+    if has_questionnaire_response_id:
+        # questionnaire_response_id maps to survey_conduct_id
+        mapping_survey_conduct = mapping_table_for(SURVEY_CONDUCT)
+        questionnaire_response_join_expr = f'''
+        LEFT JOIN `{project_id}.{output_dataset_id}.{mapping_survey_conduct}` mqr
+            ON t.questionnaire_response_id = mqr.src_survey_conduct_id
+            AND mqr.src_table_id = '{input_dataset_id}.{SURVEY_CONDUCT}'
+        '''
 
     if table_name == PERSON:
         return f'''
@@ -457,13 +472,14 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id, pip
     {visit_detail_parent_join_expr}
     {location_join_expr}
     {note_join_expr}
+    {questionnaire_response_join_expr}
     WHERE
         row_num = 1
     {visit_detail_filter_expr}
     '''
 
 
-def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id):
+def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id, rt_ids_view):
     """
     Loads a single domain table into the output dataset with new IDs.
 
@@ -472,6 +488,8 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id, pip
     :param input_dataset_id: identifies dataset containing input data
     :param output_dataset_id: identifies dataset where result should be output
     :param project_id: identifies the GCP project
+    :param pipeline_dataset_id: identifies the pipeline_tables dataset (for person mapping)
+    :param rt_ids_view: view containing person_id to rt_id mapping
     :return:
     """
     output_table = output_table_for(cdm_table)
@@ -487,7 +505,7 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id, pip
         )
         return None
 
-    q = table_query(cdm_table, input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id)
+    q = table_query(cdm_table, input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id, rt_ids_view)
     query_result = bq_utils.query(q,
                                   destination_table_id=output_table,
                                   destination_dataset_id=output_dataset_id)
@@ -599,6 +617,8 @@ def main(input_dataset_id, output_dataset_id, project_id,
         mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
                 pipeline_dataset_id, rt_ids_view)
 
+
+
     # Load all tables with new IDs
     for table_name in CDM_TABLES:
         if table_name == DEATH:
@@ -606,7 +626,17 @@ def main(input_dataset_id, output_dataset_id, project_id,
             continue
         LOGGER.info(f'Loading table {table_name}...')
         load(bq_client, table_name, input_dataset_id, output_dataset_id,
-             project_id, pipeline_dataset_id)
+             project_id, pipeline_dataset_id, rt_ids_view)
+
+    # Load Fitbit tables if they exist
+    LOGGER.info('Processing Fitbit tables (if they exist)...')
+    for fitbit_table in FITBIT_TABLES:
+        if bq_client.table_exists(fitbit_table, input_dataset_id):
+            LOGGER.info(f'Loading Fitbit table {fitbit_table}...')
+            load(bq_client, fitbit_table, input_dataset_id, output_dataset_id,
+                 project_id, pipeline_dataset_id)
+        else:
+            LOGGER.info(f'Fitbit table {fitbit_table} does not exist, skipping')
 
     # Update extension tables with new IDs
     LOGGER.info('Updating extension tables...')
