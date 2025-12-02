@@ -134,6 +134,9 @@ DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
 ALL_REPORT_FILES = [f'{report}.json' for report in ALL_REPORTS]
 
+# RDR participant Summary View
+PS_AWARDEE = 'ps_awardee_values_view'
+
 # Wearables
 ACTIVITY_SUMMARY = 'activity_summary'
 HEART_RATE_INTRADAY = 'heart_rate_intraday'

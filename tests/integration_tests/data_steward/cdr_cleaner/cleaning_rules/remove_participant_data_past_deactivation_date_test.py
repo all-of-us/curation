@@ -19,7 +19,8 @@ from google.cloud.bigquery import TableReference
 # Project imports
 from common import (AOU_DEATH, JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH,
                     PERSON, SURVEY_CONDUCT, HEART_RATE_INTRADAY, SLEEP_LEVEL,
-                    STEPS_INTRADAY, DEVICE, SLEEP_LEVEL_SHORT)
+                    STEPS_INTRADAY, DEVICE, SLEEP_LEVEL_SHORT, PS_AWARDEE,
+                    DRC_OPS)
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
@@ -69,6 +70,8 @@ class RemoveParticipantDataPastDeactivationDateTest(
             f"{project_id}.{dataset_id}.{tablename}"
             for tablename in cls.rule_instance.affected_tables
         ]
+
+        cls.fq_table_names.append(f"{project_id}.{DRC_OPS}.{PS_AWARDEE}")
 
         cls.fq_obs_table = [
             table for table in cls.fq_table_names if 'observation' in table
@@ -209,7 +212,34 @@ class RemoveParticipantDataPastDeactivationDateTest(
         (3, '15', NULL, '2010-01-01T00:00:00'),
         (3, '16', '2010-11-18', NULL),
         (3, '17', NULL, NULL)
-        """)
+        """),
+            PS_AWARDEE:
+                JINJA_ENV.from_string("""
+                INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
+                (participant_id, first_name, middle_name, last_name, street_address, street_address2, city,
+                 state, zip_code, phone_number, email, date_of_birth, sex, suspension_status, suspension_time,
+                 withdrawal_time, withdrawal_status, digital_health_sharing_status, wearable,
+                 consent_for_electronic_health_records, organization)
+                VALUES
+                (1,'first_name','middle_name','last_name','street_address','street_address2','city',
+                 'state','zip_code','phone_number','email',date('1980-10-01'),'male','NO_CONTACT','2009-07-25T01:00:00',
+                 '2009-07-25T01:00:00','NO_CONTACT',null,'fitbit','YES','100'),
+                (2,'first_name','middle_name','last_name','street_address','street_address2','city',
+                 'state','zip_code','phone_number','email',date('1980-10-02'),'male','NO_CONTACT','2009-03-14T01:00:00',
+                 '2009-03-14T01:00:00','NO_CONTACT',null,'fitbit','YES','101'),
+                (3,'first_name','middle_name','last_name','street_address','street_address2','city',
+                 'state','zip_code','phone_number','email',date('1980-10-03'),'male','NO_CONTACT','2009-11-18T01:00:00',
+                 '2009-11-18T01:00:00','NO_CONTACT',null,'fitbit','YES','102'),
+                (4,'first_name','middle_name','last_name','street_address','street_address2','city',
+                 'state','zip_code','phone_number','email',date('1980-10-04'),'male','NO_CONTACT','2009-11-25T01:00:00',
+                 '2009-11-25T01:00:00','NO_CONTACT',null,'fitbit','YES','103'),
+                (5,'first_name','middle_name','last_name','street_address','street_address2','city',
+                 'state','zip_code','phone_number','email',date('1980-10-05'),'male','NO_CONTACT','2009-09-20T01:00:00',
+                 '2009-09-20T01:00:00','NO_CONTACT',null,'fitbit','YES','104'),
+                (6,'first_name','middle_name','last_name','street_address','street_address2','city',
+                 'state','zip_code','phone_number','email',date('1980-10-06'),'male','NO_CONTACT','2009-10-06T01:00:00',
+                 '2009-10-06T01:00:00','NO_CONTACT',null,'fitbit','YES','105')
+                """)
         }
 
         self.load_statements = []
@@ -217,6 +247,9 @@ class RemoveParticipantDataPastDeactivationDateTest(
         for table in TABLE_ROWS:
             fq_table = TableReference.from_string(
                 f'{self.project_id}.{self.dataset_id}.{table}')
+            if table == PS_AWARDEE:
+                fq_table = TableReference.from_string(
+                    f'{self.project_id}.{DRC_OPS}.{table}')
             query = TABLE_ROWS[table].render(table=fq_table)
             self.load_statements.append(query)
 
@@ -274,8 +307,8 @@ class RemoveParticipantDataPastDeactivationDateTest(
         actual = self.rule_instance.get_date_cols_dict(date_cols)
         self.assertDictEqual(expected, actual)
 
-    @mock.patch('client.query.result')
-    def test_removing_data_past_deactivated_date(self, mock_get_deact):
+    #@mock.patch('DataFrame(table_dict_list)')
+    def test_removing_data_past_deactivated_date(self):
         """
         Validate deactivated participant records are dropped via cleaning rule.
 
@@ -287,14 +320,14 @@ class RemoveParticipantDataPastDeactivationDateTest(
 
         self.get_date_cols_dict()
         self.get_dates_info()
-        mock_get_deact.return_value = pd.DataFrame(
-            [(1, 'NO_CONTACT', '2009-07-25 01:00:00 UTC'),
-             (2, 'NO_CONTACT', '2009-03-14 01:00:00 UTC'),
-             (3, 'NO_CONTACT', '2009-11-18 01:00:00 UTC'),
-             (4, 'NO_CONTACT', '2009-11-25 01:00:00 UTC'),
-             (5, 'NO_CONTACT', '2009-09-20 01:00:00 UTC'),
-             (6, 'NO_CONTACT', '2009-10-06 01:00:00 UTC')],
-            columns=['person_id', 'suspension_status', 'deactivated_datetime'])
+        # mock_get_deact.return_value = pd.DataFrame(
+        #     [(1, 'NO_CONTACT', '2009-07-25 01:00:00 UTC'),
+        #      (2, 'NO_CONTACT', '2009-03-14 01:00:00 UTC'),
+        #      (3, 'NO_CONTACT', '2009-11-18 01:00:00 UTC'),
+        #      (4, 'NO_CONTACT', '2009-11-25 01:00:00 UTC'),
+        #      (5, 'NO_CONTACT', '2009-09-20 01:00:00 UTC'),
+        #      (6, 'NO_CONTACT', '2009-10-06 01:00:00 UTC')],
+        #     columns=['person_id', 'suspension_status', 'deactivated_datetime'])
 
         self.load_test_data(self.load_statements)
 
