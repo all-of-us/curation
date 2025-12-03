@@ -17,61 +17,6 @@ from common import FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_INTRADAY, HEART_R
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 import cdr_cleaner.cleaning_rules.clean_digital_health_data as clean_dhd
 
-DIGITAL_HEALTH_JSON = [{
-    'person_id': 111,
-    'wearable': 'fitbit',
-    'status': 'YES',
-    'history': [{
-        'status': 'YES',
-        'authored_time': '2020-01-01T12:01:01Z'
-    }],
-    'authored_time': '2020-01-01T12:01:01Z'
-}, {
-    'person_id': 222,
-    'wearable': 'fitbit',
-    'status': 'YES',
-    'history': [{
-        'status': 'YES',
-        'authored_time': '2021-01-01T12:01:01Z'
-    }],
-    'authored_time': '2021-01-01T12:01:01Z'
-}, {
-    'person_id': 333,
-    'wearable': 'appleHealthKit',
-    'status': 'NO',
-    'history': [{
-        'status': 'NO',
-        'authored_time': '2022-02-01T12:01:01Z'
-    }, {
-        'status': 'YES',
-        'authored_time': '2021-02-01T12:01:01Z'
-    }, {
-        'status': 'NO',
-        'authored_time': '2020-06-01T12:01:01Z'
-    }, {
-        'status': 'YES',
-        'authored_time': '2020-03-01T12:01:01Z'
-    }],
-    'authored_time': '2022-02-01T12:01:01Z'
-}]
-
-OLD_DIGITAL_HEALTH_JSON = [{
-    'person_id': 333,
-    'wearable': 'appleHealthKit',
-    'status': 'YES',
-    'history': [{
-        'status': 'YES',
-        'authored_time': '2021-02-01T12:01:01Z'
-    }, {
-        'status': 'NO',
-        'authored_time': '2020-06-01T12:01:01Z'
-    }, {
-        'status': 'YES',
-        'authored_time': '2020-03-01T12:01:01Z'
-    }],
-    'authored_time': '2021-02-01T12:01:01Z'
-}]
-
 
 class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
 
@@ -90,10 +35,15 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         # Set the expected test datasets
         dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.dataset_id = dataset_id
+        rdr_dataset_id = os.environ.get('RDR_DATASET_ID')
+        cls.rdr_dataset_id = rdr_dataset_id
         sandbox_id = f'{dataset_id}_sandbox'
         cls.sandbox_id = sandbox_id
 
-        cls.kwargs = {'api_project_id': 'rdr_project_id'}
+        cls.kwargs = {
+            'api_project_id': 'rdr_project_id',
+            'rdr_dataset_id': rdr_dataset_id
+        }
 
         cls.rule_instance = clean_dhd.CleanDigitalHealthStatus(
             project_id, dataset_id, sandbox_id, **cls.kwargs)
@@ -116,25 +66,30 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         super().setUpClass()
 
     @patch(
-        'cdr_cleaner.cleaning_rules.clean_digital_health_data.get_digital_health_information'
-    )
-    @patch(
         'cdr_cleaner.cleaning_rules.clean_digital_health_data.PIPELINE_TABLES',
         os.environ.get('COMBINED_DATASET_ID'))
-    def test_clean_digital_health_data(self, mock_get_digital_health):
+    def test_clean_digital_health_data(self):
         """
         Tests perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
         """
-        clean_dhd.store_digital_health_status_data(
-            self.client, OLD_DIGITAL_HEALTH_JSON,
-            f'{self.project_id}.{self.dataset_id}.{clean_dhd.DIGITAL_HEALTH_SHARING_STATUS}'
-        )
-        mock_get_digital_health.return_value = DIGITAL_HEALTH_JSON
 
         queries = []
+        dhss_query = self.jinja_env.from_string(f"""
+                    INSERT INTO `{self.project_id}.{self.dataset_id}.{clean_dhd.DIGITAL_HEALTH_SHARING_STATUS}`
+                    (person_id, wearable, status, history, authored_time)
+                    VALUES
+                    (111,'fitbit','YES',[{{'status':'YES','authored_time':'2020-01-01T12:01:01Z'}}],'2020-01-01T12:01:01Z'),
+                    (222,'fitbit','YES',[{{'status':'YES','authored_time':'2021-01-01T12:01:01Z'}}],'2021-01-01T12:01:01Z'),
+                    (333,'appleHealthKit','YES',[{{'status':'NO','authored_time':'2022-02-01T12:01:01Z'}},
+                     {{'status':'YES','authored_time':'2021-02-01T12:01:01Z'}},
+                     {{'status':'NO','authored_time':'2020-06-01T12:01:01Z'}},
+                     {{'status':'YES','authored_time':'2020-03-01T12:01:01Z'}}],
+                     '2022-02-01T12:01:01Z')""")
+        queries.append(dhss_query)
+
         as_query = self.jinja_env.from_string("""
                     INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
                     (person_id, date)

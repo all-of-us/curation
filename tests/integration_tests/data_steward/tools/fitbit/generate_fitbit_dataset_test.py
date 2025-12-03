@@ -48,7 +48,7 @@ class GenerateFitbitDatasetTest(TestCase):
         self.bq_client = BigQueryClient(self.project_id)
         self.table_id = 'fake'
         self.final_table = 'steps_intraday'
-        self.view_id = f'view_{self.final_table}'
+        self.view_id = f'v_{self.final_table}_combined'
         self.test_tables = [self.table_id, self.view_id, self.final_table]
 
     @patch('tools.fitbit.generate_fitbit_dataset.FITBIT_TABLES',
@@ -77,7 +77,7 @@ class GenerateFitbitDatasetTest(TestCase):
         view_job = self.bq_client.query(create_view)
         view_job.result()
         gfd.copy_fitbit_tables_from_views(self.bq_client, self.dataset,
-                                          self.dataset, 'view_')
+                                          self.dataset, 'v_', '_combined')
 
         query_contents = content_query.render(project_id=self.project_id,
                                               dataset_id=self.dataset,

@@ -23,7 +23,8 @@ SCOPES = [
 INSERT_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{fq_dest_table}}` ({{fields}})
 SELECT {{fields_casted}}
-FROM `{{client.project}}.{{from_dataset}}.{{table_prefix}}{{table}}`""")
+FROM `{{client.project}}.{{from_dataset}}.{{table_prefix}}{{table}}{{table_suffix}}`"""
+                                    )
 
 
 def create_fitbit_datasets(client, release_tag):
@@ -87,7 +88,7 @@ def cast_to_schema_type(field, schema_type):
 
 
 def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
-                                  table_prefix):
+                                  table_prefix, table_suffix):
     """
     Copies tables from views with prefix
 
@@ -95,6 +96,7 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
     :param from_dataset: dataset containing views
     :param to_dataset: dataset to create tables
     :param table_prefix: prefix added to table_ids
+    :param table_suffix: suffix added to table_ids
     :return:
     """
     for table in FITBIT_TABLES:
@@ -115,6 +117,7 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
                                             client=client,
                                             from_dataset=from_dataset,
                                             table_prefix=table_prefix,
+                                            table_suffix=table_suffix,
                                             table=table)
         job = client.query(content_query)
         job.result()
@@ -232,7 +235,8 @@ def main(raw_args=None):
     copy_fitbit_tables_from_views(bq_client,
                                   args.fitbit_dataset,
                                   fitbit_datasets[consts.BACKUP],
-                                  table_prefix='v_')
+                                  table_prefix='v_',
+                                  table_suffix='_combined')
     bq_client.copy_dataset(
         f'{args.project_id}.{fitbit_datasets[consts.BACKUP]}',
         f'{args.project_id}.{fitbit_datasets[consts.STAGING]}')

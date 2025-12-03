@@ -7,21 +7,14 @@ Original Issue: DC-1214
 import argparse
 import logging
 from typing import List, Dict
-from requests import Session
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 # Third party imports
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 
 # Project imports
-from utils.participant_summary_requests import (
-    get_org_participant_information, get_paginated_participant_data,
-    store_participant_data, process_api_data_to_df,
-    FIELDS_OF_INTEREST_FOR_VALIDATION, MAX_RETRIES, BACKOFF_FACTOR,
-    STATUS_FORCELIST)
-from common import PS_API_VALUES, DRC_OPS, UNIONED
+from utils.participant_summary_requests import store_participant_data
+from common import PS_API_VALUES, DRC_OPS, JINJA_ENV
 from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants import bq_utils as bq_consts
@@ -32,6 +25,27 @@ SCOPES = [
     'https://www.googleapis.com/auth/devstorage.read_write',
     'https://www.googleapis.com/auth/cloud-platform'
 ]
+
+GET_HPO_PARTICIPANT_DATA_QUERY = JINJA_ENV.from_string("""
+    SELECT participant_id AS person_id, first_name, middle_name, last_name, street_address,
+    street_address2, city, state, zip_code, phone_number, email,
+    date_of_birth, sex
+    FROM `{{project}}.{{dataset}}.{{table}}`
+    WHERE
+    awardee = {{hpo_id}} AND
+    suspension_status = 'not_deactivated' AND
+    withdrawal_status = 'not_withdrawn'
+""")
+
+GET_FULL_PARTICIPANT_DATA_QUERY = JINJA_ENV.from_string("""
+    SELECT participant_id AS person_id, first_name, middle_name, last_name, street_address,
+    street_address2, city, state, zip_code, phone_number, email,
+    date_of_birth, sex
+    FROM `{{project}}.{{dataset}}.{{table}}`
+    WHERE
+    suspension_status = 'not_deactivated' AND
+    withdrawal_status = 'not_withdrawn'
+""")
 
 
 def get_hpo_org_info(client: BigQueryClient) -> List[Dict]:
@@ -95,13 +109,7 @@ def fetch_and_store_ps_hpo_data(client,
 
     org_id = get_org_id(client, hpo_id)
 
-    # Get participant summary data
-    LOGGER.info(
-        f'Getting participant summary data for HPO/ORG {hpo_id}/{org_id}')
-    participant_info = get_org_participant_information(rdr_project_id, org_id)
-
     # Load schema and create ingestion time-partitioned table
-
     schema = client.get_table_schema(PS_API_VALUES)
     # TODO use resources.get_table_id after updating it to flip hpo_id, table_name
     table_name = f'{PS_API_VALUES}_{hpo_id}'
@@ -119,6 +127,18 @@ def fetch_and_store_ps_hpo_data(client,
             type_=bigquery.TimePartitioningType.HOUR)
         table = client.create_table(table)
 
+    # Populate time-partitioned table with participant summary data
+    LOGGER.info(
+        f'Populate time-partitioned table  with participant summary data for HPO/ORG {hpo_id}/{org_id}'
+    )
+
+    q = GET_HPO_PARTICIPANT_DATA_QUERY.render(project=rdr_project_id,
+                                              dataset=dataset_id,
+                                              table='ps_awardee_values_view',
+                                              organization=f'{org_id}')
+    query_job = client.query(q)
+    participant_info = query_job.result().to_dataframe()
+
     # Insert summary data into table
     LOGGER.info(
         f'Storing participant data for {hpo_id} in table {client.project}.{dataset_id}.{table.table_id}'
@@ -126,7 +146,6 @@ def fetch_and_store_ps_hpo_data(client,
     store_participant_data(participant_info,
                            client,
                            f'{dataset_id}.{table_name}',
-                           schema=schema,
                            to_hour_partition=True)
 
     LOGGER.info(f'Done.')
@@ -157,54 +176,25 @@ def fetch_and_store_full_ps_data(client,
     table = bigquery.Table(fq_table_id, schema=schema)
     table = client.create_table(table)
 
-    done = False
-    url = None
+    LOGGER.info(f'Getting full participant summary data')
 
-    params = {
-        'suspensionStatus': 'NOT_SUSPENDED',
-        'consentForElectronicHealthRecords': 'SUBMITTED',
-        'withdrawalStatus': 'NOT_WITHDRAWN',
-        '_sort': 'participantId',
-        '_count': '10000'
-    }
+    q = GET_FULL_PARTICIPANT_DATA_QUERY.render(project=rdr_project_id,
+                                               dataset=dataset_id,
+                                               table='ps_awardee_values_view')
+    query_job = client.query(q)
+    query_result = query_job.result()
+    df = query_result.to_dataframe()
+    print(f"Query: {q}")
+    print(f"data_result: {query_result}")
+    print(f"data_frame: {df}")
 
-    # Create session for reuse
-    session = Session()
-    retries = Retry(total=MAX_RETRIES,
-                    read=MAX_RETRIES,
-                    connect=MAX_RETRIES,
-                    backoff_factor=BACKOFF_FACTOR,
-                    status_forcelist=STATUS_FORCELIST)
-    session.mount('https://', HTTPAdapter(max_retries=retries))
-    session.mount('http://', HTTPAdapter(max_retries=retries))
-
-    while not done:
-        # Get paginated participant summary data
-        LOGGER.info(f'Getting paginated participant summary data')
-
-        paginated_dict = get_paginated_participant_data(rdr_project_id,
-                                                        params=params,
-                                                        url=url,
-                                                        session=session)
-        participant_data = paginated_dict['data']
-        url = paginated_dict['url']
-
-        column_map = {'participant_id': 'person_id'}
-
-        df = process_api_data_to_df(participant_data,
-                                    FIELDS_OF_INTEREST_FOR_VALIDATION,
-                                    column_map)
-        # Insert paginated summary data into table
-        LOGGER.info(
-            f'Storing paginated participant data in table {fq_table_id}')
-        store_participant_data(df,
-                               client,
-                               f'{dataset_id}.{table_name}',
-                               schema=schema,
-                               to_hour_partition=False,
-                               append=True)
-        if not url:
-            done = True
+    # Insert paginated summary data into table
+    LOGGER.info(f'Storing paginated participant data in table {fq_table_id}')
+    store_participant_data(df,
+                           client,
+                           f'{dataset_id}.{table_name}',
+                           to_hour_partition=False,
+                           append=True)
 
     LOGGER.info(f'Done.')
 
