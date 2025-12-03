@@ -97,8 +97,8 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
     def __init__(self,
                  project_id,
                  dataset_id,
-                 rdr_dataset_id,
                  sandbox_dataset_id,
+                 rdr_dataset_id=None,
                  table_namer=None,
                  api_project_id=None):
         """
