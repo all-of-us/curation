@@ -60,9 +60,9 @@ import logging
 from google.cloud.bigquery import Table
 import bq_utils
 
-from common import (AOU_DEATH, DEATH, MAPPING_PREFIX, PERSON,
-                    SURVEY_CONDUCT, VISIT_DETAIL, VISIT_OCCURRENCE, CARE_SITE,
-                    LOCATION, NOTE, NOTE_NLP, FITBIT_TABLES)
+from common import (AOU_DEATH, DEATH, MAPPING_PREFIX, PERSON, SURVEY_CONDUCT,
+                    VISIT_DETAIL, VISIT_OCCURRENCE, CARE_SITE, LOCATION, NOTE,
+                    NOTE_NLP, FITBIT_TABLES)
 
 from gcloud.bq import BigQueryClient
 from resources import fields_for, has_primary_key, CDM_TABLES
@@ -103,8 +103,8 @@ def mapping_table_for(domain_table):
     return f'{MAPPING_PREFIX}{domain_table}'
 
 
-def mapping_query(table_name, input_dataset_id, project_id,
-                  pipeline_dataset_id, rt_ids_view):
+def mapping_query(table_name, input_dataset_id, project_id, pipeline_dataset_id,
+                  rt_ids_view):
     """
     Get the query used to generate new sequential IDs for a CDM table.
 
@@ -135,12 +135,8 @@ def mapping_query(table_name, input_dataset_id, project_id,
     '''
 
 
-def mapping(domain_table,
-            input_dataset_id,
-            output_dataset_id,
-            project_id,
-            pipeline_dataset_id,
-            rt_ids_view):
+def mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
+            pipeline_dataset_id, rt_ids_view):
     """
     Create and load a table that assigns unique sequential ids to records in domain tables
 
@@ -162,7 +158,8 @@ def mapping(domain_table,
                    write_disposition='WRITE_TRUNCATE')
 
 
-def table_query(table_name, input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id, rt_ids_view):
+def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
+                pipeline_dataset_id, rt_ids_view):
     """
     Returns a query to retrieve all records from an input table with new IDs.
 
@@ -311,35 +308,35 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id, pip
             col_expr = f'm.{field_name}'
         elif field_name == 'person_id' and table_name != PERSON:
             # Update person_id foreign key with new person_id
-            col_expr = f'mp.person_id'
+            col_expr = 'mp.person_id'
             has_person_id = True
         elif field_name == 'visit_occurrence_id' and table_name != VISIT_OCCURRENCE:
-            col_expr = f'mvo.visit_occurrence_id'
+            col_expr = 'mvo.visit_occurrence_id'
             has_visit_occurrence_id = True
         elif field_name == 'preceding_visit_occurrence_id':
-            col_expr = f'pvo.visit_occurrence_id AS preceding_visit_occurrence_id'
+            col_expr = 'pvo.visit_occurrence_id AS preceding_visit_occurrence_id'
             has_preceding_visit_occurrence_id = True
         elif field_name == 'visit_detail_id' and table_name != VISIT_DETAIL:
-            col_expr = f'mvd.visit_detail_id'
+            col_expr = 'mvd.visit_detail_id'
             has_visit_detail_id = True
         elif field_name == 'preceding_visit_detail_id':
-            col_expr = f'pvd.visit_detail_id AS preceding_visit_detail_id'
+            col_expr = 'pvd.visit_detail_id AS preceding_visit_detail_id'
             has_preceding_visit_detail_id = True
         elif field_name == 'visit_detail_parent_id':
-            col_expr = f'ppvd.visit_detail_id AS visit_detail_parent_id'
+            col_expr = 'ppvd.visit_detail_id AS visit_detail_parent_id'
             has_visit_detail_parent_id = True
         elif field_name == 'care_site_id' and table_name != CARE_SITE:
-            col_expr = f'mcs.care_site_id'
+            col_expr = 'mcs.care_site_id'
             has_care_site_id = True
         elif field_name == 'location_id' and table_name != LOCATION:
-            col_expr = f'loc.location_id'
+            col_expr = 'loc.location_id'
             has_location_id = True
         elif field_name == 'note_id' and table_name != NOTE:
-            col_expr = f'ni.note_id'
+            col_expr = 'ni.note_id'
             has_note_id = True
         elif field_name == 'questionnaire_response_id':
             # questionnaire_response_id maps to survey_conduct_id
-            col_expr = f'mqr.survey_conduct_id AS questionnaire_response_id'
+            col_expr = 'mqr.survey_conduct_id AS questionnaire_response_id'
             has_questionnaire_response_id = True
         elif field_name in ('snippet', 'offset') and table_name == NOTE_NLP:
             col_expr = f'CAST({field_name} AS STRING) AS {field_name}'
@@ -405,10 +402,12 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id, pip
             VISIT_DETAIL, 'ppvd', 'visit_detail_parent_id')
 
     if has_care_site_id:
-        care_site_join_expr = _get_join_expression(CARE_SITE, 'mcs', 'care_site_id')
+        care_site_join_expr = _get_join_expression(CARE_SITE, 'mcs',
+                                                   'care_site_id')
 
     if has_location_id:
-        location_join_expr = _get_join_expression(LOCATION, 'loc', 'location_id')
+        location_join_expr = _get_join_expression(LOCATION, 'loc',
+                                                  'location_id')
 
     if has_note_id:
         note_join_expr = _get_join_expression(NOTE, 'ni', 'note_id')
@@ -444,7 +443,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id, pip
         '''
 
     if table_name == VISIT_DETAIL:
-        visit_detail_filter_expr = f'''
+        visit_detail_filter_expr = '''
         AND mvo.visit_occurrence_id IS NOT NULL
         '''
 
@@ -479,7 +478,8 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id, pip
     '''
 
 
-def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id, rt_ids_view):
+def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
+         pipeline_dataset_id, rt_ids_view):
     """
     Loads a single domain table into the output dataset with new IDs.
 
@@ -505,7 +505,8 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id, pip
         )
         return None
 
-    q = table_query(cdm_table, input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id, rt_ids_view)
+    q = table_query(cdm_table, input_dataset_id, output_dataset_id, project_id,
+                    pipeline_dataset_id, rt_ids_view)
     query_result = bq_utils.query(q,
                                   destination_table_id=output_table,
                                   destination_dataset_id=output_dataset_id)
@@ -558,8 +559,8 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
                           write_disposition='WRITE_TRUNCATE')
 
 
-def main(input_dataset_id, output_dataset_id, project_id,
-         pipeline_dataset_id, rt_ids_view):
+def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
+         rt_ids_view):
     """
     Create a new CDM dataset with regenerated IDs
 
@@ -617,8 +618,6 @@ def main(input_dataset_id, output_dataset_id, project_id,
         mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
                 pipeline_dataset_id, rt_ids_view)
 
-
-
     # Load all tables with new IDs
     for table_name in CDM_TABLES:
         if table_name == DEATH:
@@ -664,10 +663,13 @@ if __name__ == '__main__':
                         dest='output_dataset_id',
                         required=True,
                         help='Dataset where results should be stored')
-    parser.add_argument('--pipeline_dataset_id',
-                        dest='pipeline_dataset_id',
-                        required=True,
-                        help='Dataset containing rdr_participant_research_ids_view for person mapping')
+    parser.add_argument(
+        '--pipeline_dataset_id',
+        dest='pipeline_dataset_id',
+        required=True,
+        help=
+        'Dataset containing rdr_participant_research_ids_view for person mapping'
+    )
     parser.add_argument('--rt_ids_view',
                         dest='rt_ids_view',
                         required=True,

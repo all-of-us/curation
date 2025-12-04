@@ -17,7 +17,7 @@ import logging
 from google.cloud.bigquery import Table
 import bq_utils
 
-from common import (MAPPING_PREFIX, PERSON)
+from common import (MAPPING_PREFIX)
 
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
@@ -54,10 +54,7 @@ def mapping_query(table_name, input_dataset_id, project_id):
     '''
 
 
-def mapping(domain_table,
-            input_dataset_id,
-            output_dataset_id,
-            project_id):
+def mapping(domain_table, input_dataset_id, output_dataset_id, project_id):
     """
     Create and load a table that assigns unique sequential ids to records
     """
@@ -70,7 +67,9 @@ def mapping(domain_table,
                    write_disposition='WRITE_TRUNCATE')
 
 
-def table_query(client, table_name, input_dataset_id, output_dataset_id, project_id, pipeline_project_id, pipeline_dataset_id, rt_ids_view):
+def table_query(client, table_name, input_dataset_id, output_dataset_id,
+                project_id, pipeline_project_id, pipeline_dataset_id,
+                rt_ids_view):
     """
     Returns a query to retrieve all records from an input table with new IDs.
     """
@@ -78,18 +77,18 @@ def table_query(client, table_name, input_dataset_id, output_dataset_id, project
     table_ref = f'{project_id}.{input_dataset_id}.{table_name}'
     table = client.get_table(table_ref)
     schema = table.schema
-    
+
     col_exprs = []
     for field in schema:
         field_name = field.name
-        
+
         if field_name == 'sitting_id':
             col_expr = 'm.sitting_id'
         elif field_name == 'person_id':
             col_expr = 'mp.registered_tier_id AS person_id'
         else:
             col_expr = f't.{field_name}'
-        
+
         col_exprs.append(col_expr)
 
     cols = ',\n        '.join(col_exprs)
@@ -107,7 +106,8 @@ def table_query(client, table_name, input_dataset_id, output_dataset_id, project
     '''
 
 
-def load(client, table_name, input_dataset_id, output_dataset_id, project_id, pipeline_project_id, pipeline_dataset_id, rt_ids_view):
+def load(client, table_name, input_dataset_id, output_dataset_id, project_id,
+         pipeline_project_id, pipeline_dataset_id, rt_ids_view):
     """
     Loads a single ETM table into the output dataset with new IDs.
     """
@@ -122,7 +122,9 @@ def load(client, table_name, input_dataset_id, output_dataset_id, project_id, pi
         )
         return None
 
-    q = table_query(client, table_name, input_dataset_id, output_dataset_id, project_id, pipeline_project_id, pipeline_dataset_id, rt_ids_view)
+    q = table_query(client, table_name, input_dataset_id, output_dataset_id,
+                    project_id, pipeline_project_id, pipeline_dataset_id,
+                    rt_ids_view)
     query_result = bq_utils.query(q,
                                   destination_table_id=output_table,
                                   destination_dataset_id=output_dataset_id)
@@ -184,8 +186,8 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_project_id,
 
         # Load table
         LOGGER.info(f'Loading table {table}...')
-        load(bq_client, table, input_dataset_id, output_dataset_id,
-             project_id, pipeline_dataset_id, rt_ids_view)
+        load(bq_client, table, input_dataset_id, output_dataset_id, project_id,
+             pipeline_dataset_id, rt_ids_view)
 
     LOGGER.info('ETM RT ID regeneration complete')
 
@@ -207,14 +209,18 @@ if __name__ == '__main__':
                         dest='output_dataset_id',
                         required=True,
                         help='Dataset where results should be stored')
-    parser.add_argument('--pipeline_project_id',
-                        dest='pipeline_project_id',
-                        required=True,
-                        help='Project associated with the pipeline tables dataset')
-    parser.add_argument('--pipeline_dataset_id',
-                        dest='pipeline_dataset_id',
-                        required=True,
-                        help='Dataset containing rdr_participant_research_ids_view for person mapping')
+    parser.add_argument(
+        '--pipeline_project_id',
+        dest='pipeline_project_id',
+        required=True,
+        help='Project associated with the pipeline tables dataset')
+    parser.add_argument(
+        '--pipeline_dataset_id',
+        dest='pipeline_dataset_id',
+        required=True,
+        help=
+        'Dataset containing rdr_participant_research_ids_view for person mapping'
+    )
     parser.add_argument('--rt_ids_view',
                         dest='rt_ids_view',
                         required=True,
