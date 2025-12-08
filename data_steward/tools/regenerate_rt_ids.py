@@ -188,7 +188,8 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
     if table_name in FITBIT_TABLES:
         fields = fields_for(table_name)
         col_exprs = [
-            'mp.person_id' if field['name'] == 'person_id' else f"t.{field['name']}"
+            'mp.person_id'
+            if field['name'] == 'person_id' else f"t.{field['name']}"
             for field in fields
         ]
         cols = ',\n        '.join(col_exprs)
@@ -755,8 +756,7 @@ if __name__ == '__main__':
         '--mapping_dataset_id',
         dest='mapping_dataset_id',
         required=True,
-        help=
-        'Dataset to store/lookup mapping tables. Can be a sandbox dataset.'
+        help='Dataset to store/lookup mapping tables. Can be a sandbox dataset.'
     )
     parser.add_argument(
         '--mapping_source_dataset_id',
@@ -767,5 +767,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     main(args.input_dataset_id, args.output_dataset_id, args.project_id,
-         args.pipeline_dataset_id, args.rt_ids_view,
-         args.mapping_dataset_id, args.mapping_source_dataset_id)
+         args.pipeline_dataset_id, args.rt_ids_view, args.mapping_dataset_id,
+         args.mapping_source_dataset_id)
