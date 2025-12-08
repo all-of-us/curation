@@ -53,7 +53,9 @@ Usage:
     --input_dataset_id <input_dataset> \
     --output_dataset_id <output_dataset> \
     --pipeline_dataset_id <pipeline_tables_dataset> \
-    --rt_ids_view <rdr_participant_research_ids_view>
+    --rt_ids_view <rdr_participant_research_ids_view> \
+    --mapping_dataset_id <mapping_tables_dataset> \
+    --mapping_source_dataset_id <optional_source_dataset_for_mappings>
 """
 import argparse
 import logging
@@ -136,16 +138,17 @@ def mapping_query(table_name, input_dataset_id, project_id, pipeline_dataset_id,
 
 
 def mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
-            pipeline_dataset_id, rt_ids_view):
+            pipeline_dataset_id, rt_ids_view, mapping_dataset_id):
     """
     Create and load a table that assigns unique sequential ids to records in domain tables
 
     :param domain_table: name of the CDM table
     :param input_dataset_id: identifies dataset with source data
-    :param output_dataset_id: identifies dataset where mapping table should be output
+    :param output_dataset_id: NOT USED. Kept for legacy compatibility.
     :param project_id: identifies GCP project that contains the datasets
     :param pipeline_dataset_id: identifies pipeline_tables dataset (for person mapping)
     :param rt_ids_view: view containing person_id to rt_id mapping
+    :param mapping_dataset_id: identifies the dataset where mapping tables are stored
     :return:
     """
     q = mapping_query(domain_table, input_dataset_id, project_id,
@@ -153,13 +156,14 @@ def mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
     mapping_table = mapping_table_for(domain_table)
     LOGGER.info(f'Query for {mapping_table} is {q}')
     bq_utils.query(q,
-                   destination_dataset_id=output_dataset_id,
+                   destination_dataset_id=mapping_dataset_id,
                    destination_table_id=mapping_table,
                    write_disposition='WRITE_TRUNCATE')
 
 
 def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
-                pipeline_dataset_id, rt_ids_view):
+                pipeline_dataset_id, rt_ids_view, mapping_dataset_id,
+                mapping_source_dataset_id):
     """
     Returns a query to retrieve all records from an input table with new IDs.
 
@@ -170,10 +174,13 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
 
     :param table_name: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :param input_dataset_id: identifies dataset containing source data
-    :param output_dataset_id: identifies dataset where mapping tables are stored
+    :param output_dataset_id: identifies dataset where final results are stored
     :param project_id: identifies the GCP project
     :param pipeline_dataset_id: identifies the pipeline_tables dataset (for person mapping)
     :param rt_ids_view: view containing person_id to rt_id mapping
+    :param mapping_dataset_id: identifies the dataset where mapping tables are stored
+    :param mapping_source_dataset_id: original dataset used to create the mappings
+
     :return: the query
     """
     # Fitbit tables do not have a domain-specific primary key. They only need person_id updated.
@@ -189,7 +196,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         return f'''
     SELECT {cols}
     FROM `{project_id}.{input_dataset_id}.{table_name}` t
-    JOIN `{project_id}.{output_dataset_id}.{mapping_person}` mp ON t.person_id = mp.src_person_id
+    JOIN `{project_id}.{mapping_dataset_id}.{mapping_person}` mp ON t.person_id = mp.src_person_id
     '''
 
     # Special handling for aou_death - keep aou_death_id but update person_id
@@ -207,7 +214,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         return f'''
     SELECT {cols}
     FROM `{project_id}.{input_dataset_id}.{table_name}` t
-    JOIN `{project_id}.{output_dataset_id}.{mapping_person}` mp
+    JOIN `{project_id}.{mapping_dataset_id}.{mapping_person}` mp
         ON t.person_id = mp.src_person_id
         AND mp.src_table_id = '{pipeline_dataset_id}.{rt_ids_view}'
     '''
@@ -242,12 +249,12 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         FROM
             `{project_id}.{input_dataset_id}.{table_name}` AS nm) AS t
     JOIN
-        `{project_id}.{output_dataset_id}.{mapping_table}` AS m
+        `{project_id}.{mapping_dataset_id}.{mapping_table}` AS m
     ON
         t.survey_conduct_id = m.src_survey_conduct_id
     AND m.src_table_id = '{input_dataset_id}.{table_name}'
     JOIN
-        `{project_id}.{output_dataset_id}.{mapping_person}` AS mp
+        `{project_id}.{mapping_dataset_id}.{mapping_person}` AS mp
     ON
         t.person_id = mp.src_person_id
     AND mp.src_table_id = '{pipeline_dataset_id}.{rt_ids_view}'
@@ -284,12 +291,12 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
             # Join with person mapping if table has person_id
             mapping_person = mapping_table_for(PERSON)
             return f'''
-    SELECT {cols}
-    FROM `{project_id}.{input_dataset_id}.{table_name}` t
-    JOIN `{project_id}.{output_dataset_id}.{mapping_person}` mp
-        ON t.person_id = mp.src_person_id
-        AND mp.src_table_id = '{pipeline_dataset_id}.{rt_ids_view}'
-    '''
+            SELECT {cols}
+            FROM `{project_id}.{input_dataset_id}.{table_name}` t
+            JOIN `{project_id}.{mapping_dataset_id}.{mapping_person}` mp
+                ON t.person_id = mp.src_person_id
+                AND mp.src_table_id = '{pipeline_dataset_id}.{rt_ids_view}'
+            '''
         else:
             # No person_id, just copy as-is
             return f'''
@@ -368,12 +375,15 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
                              on_field,
                              src_table_alias='t'):
         """Helper to create a LEFT JOIN expression for a mapping table."""
+        # Use the original source dataset for the join condition if provided, else use current input
+        source_dataset = mapping_source_dataset_id if mapping_source_dataset_id else input_dataset_id
+
         mapping_tbl = mapping_table_for(join_table)
         src_field = f'src_{join_table}_id'
         return f'''
-        LEFT JOIN `{project_id}.{output_dataset_id}.{mapping_tbl}` {join_alias}
+        LEFT JOIN `{project_id}.{mapping_dataset_id}.{mapping_tbl}` {join_alias}
           ON {src_table_alias}.{on_field} = {join_alias}.{src_field}
-         AND {join_alias}.src_table_id = '{input_dataset_id}.{join_table}'
+         AND {join_alias}.src_table_id = '{source_dataset}.{join_table}'
         '''
 
     # Build JOIN expressions for foreign keys
@@ -392,7 +402,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
     if has_person_id:
         mapping_person = mapping_table_for(PERSON)
         person_join_expr = f'''
-        JOIN `{project_id}.{output_dataset_id}.{mapping_person}` mp
+        JOIN `{project_id}.{mapping_dataset_id}.{mapping_person}` mp
             ON t.person_id = mp.src_person_id
             AND mp.src_table_id = '{pipeline_dataset_id}.{rt_ids_view}'
         '''
@@ -432,9 +442,10 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         # questionnaire_response_id maps to survey_conduct_id
         mapping_survey_conduct = mapping_table_for(SURVEY_CONDUCT)
         questionnaire_response_join_expr = f'''
-        LEFT JOIN `{project_id}.{output_dataset_id}.{mapping_survey_conduct}` mqr
-            ON t.questionnaire_response_id = mqr.src_survey_conduct_id
-            AND mqr.src_table_id = '{input_dataset_id}.{SURVEY_CONDUCT}'
+        LEFT JOIN `{project_id}.{mapping_dataset_id}.{mapping_survey_conduct}` mqr
+            ON t.questionnaire_response_id = mqr.src_survey_conduct_id AND mqr.src_table_id = '{
+                mapping_source_dataset_id if mapping_source_dataset_id else input_dataset_id
+            }.{SURVEY_CONDUCT}'
         '''
 
     if table_name == PERSON:
@@ -448,10 +459,12 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
             FROM
                 `{project_id}.{input_dataset_id}.{table_name}` AS nm) AS t
         JOIN
-            `{project_id}.{output_dataset_id}.{mapping_table}` AS m
+            `{project_id}.{mapping_dataset_id}.{mapping_table}` AS m
         ON
             t.person_id = m.src_person_id
-        AND m.src_table_id = '{input_dataset_id}.{table_name}'
+        AND m.src_table_id = '{
+            mapping_source_dataset_id if mapping_source_dataset_id else input_dataset_id
+        }.{table_name}'
         {location_join_expr}
         {care_site_join_expr}
         WHERE
@@ -464,6 +477,9 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         '''
 
     # For tables with primary keys that need remapping
+    # Use the original source dataset for the join condition if provided, else use current input
+    source_dataset = mapping_source_dataset_id if mapping_source_dataset_id else input_dataset_id
+
     return f'''
     SELECT
         {cols}
@@ -474,10 +490,10 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         FROM
             `{project_id}.{input_dataset_id}.{table_name}` AS nm) AS t
     JOIN
-        `{project_id}.{output_dataset_id}.{mapping_table}` AS m
+        `{project_id}.{mapping_dataset_id}.{mapping_table}` AS m
     ON
         t.{table_name}_id = m.src_{table_name}_id
-    AND m.src_table_id = '{input_dataset_id}.{table_name}'
+    AND m.src_table_id = '{source_dataset}.{table_name}'
     {person_join_expr}
     {visit_occurrence_join_expr}
     {visit_detail_join_expr}
@@ -495,7 +511,8 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
 
 
 def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
-         pipeline_dataset_id, rt_ids_view):
+         pipeline_dataset_id, rt_ids_view, mapping_dataset_id,
+         mapping_source_dataset_id):
     """
     Loads a single domain table into the output dataset with new IDs.
 
@@ -505,6 +522,8 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
     :param output_dataset_id: identifies dataset where result should be output
     :param project_id: identifies the GCP project
     :param pipeline_dataset_id: identifies the pipeline_tables dataset (for person mapping)
+    :param mapping_dataset_id: identifies the dataset where mapping tables are stored
+    :param mapping_source_dataset_id: original dataset used to create the mappings
     :param rt_ids_view: view containing person_id to rt_id mapping
     :return:
     """
@@ -522,7 +541,8 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
         return None
 
     q = table_query(cdm_table, input_dataset_id, output_dataset_id, project_id,
-                    pipeline_dataset_id, rt_ids_view)
+                    pipeline_dataset_id, rt_ids_view, mapping_dataset_id,
+                    mapping_source_dataset_id)
     query_result = bq_utils.query(q,
                                   destination_table_id=output_table,
                                   destination_dataset_id=output_dataset_id)
@@ -533,14 +553,20 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
 
 
 def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
-                     project_id):
+                     project_id, mapping_dataset_id, pipeline_dataset_id,
+                     rt_ids_view, mapping_source_dataset_id):
     """
     Update an extension table with new IDs from its corresponding mapping table.
 
     :param ext_table_name: name of the extension table (e.g. 'person_ext')
     :param input_dataset_id: identifies dataset containing source data
     :param output_dataset_id: identifies dataset where result should be output
+    :param mapping_dataset_id: identifies the dataset where mapping tables are stored
     :param project_id: identifies the GCP project
+    :param pipeline_dataset_id: identifies the pipeline_tables dataset (for person mapping)
+    :param rt_ids_view: view containing person_id to rt_id mapping
+    :param mapping_source_dataset_id: original dataset used to create the mappings
+
     :return: query result
     """
     # Extract base table name (e.g. 'person' from 'person_ext')
@@ -559,14 +585,27 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
 
     LOGGER.info(f'Updating extension table {ext_table_name}')
 
+    # Use the original source dataset for the join condition if provided, else use current input
+    source_dataset = mapping_source_dataset_id if mapping_source_dataset_id else input_dataset_id
+
     q = f'''
     SELECT
         m.{id_field},
         e.* EXCEPT({id_field})
     FROM `{project_id}.{input_dataset_id}.{ext_table_name}` e
-    JOIN `{project_id}.{output_dataset_id}.{mapping_table}` m
+    JOIN `{project_id}.{mapping_dataset_id}.{mapping_table}` m
+        ON e.{id_field} = m.src_{id_field} AND m.src_table_id = '{source_dataset}.{base_table}'
+        '''
+
+    if base_table == PERSON:
+        q = f'''
+    SELECT
+        m.{id_field},
+        e.* EXCEPT({id_field})
+    FROM `{project_id}.{input_dataset_id}.{ext_table_name}` e
+    JOIN `{project_id}.{mapping_dataset_id}.{mapping_table}` m
         ON e.{id_field} = m.src_{id_field}
-        AND m.src_table_id = '{input_dataset_id}.{base_table}'
+        AND m.src_table_id = '{pipeline_dataset_id}.{rt_ids_view}'
     '''
 
     return bq_utils.query(q,
@@ -576,20 +615,30 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
 
 
 def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
-         rt_ids_view):
+         rt_ids_view, mapping_dataset_id, mapping_source_dataset_id):
     """
     Create a new CDM dataset with regenerated IDs
 
     :param input_dataset_id: identifies the source dataset
     :param output_dataset_id: identifies the dataset to store the new CDM in
     :param project_id: project containing the datasets
+    :param mapping_dataset_id: dataset to store/lookup mapping tables
     :param pipeline_dataset_id: dataset containing rdr_participant_research_ids_view for person mapping
     :param rt_ids_view: view containing person_id to rt_id mapping
+    :param mapping_source_dataset_id: original dataset used to create the mappings
     :returns: list of tables generated successfully
     """
     bq_client = BigQueryClient(project_id)
 
     LOGGER.info('RT ID regeneration started')
+
+    # Create mapping dataset if it doesn't exist
+    try:
+        bq_client.get_dataset(mapping_dataset_id)
+        LOGGER.info(f'Dataset {mapping_dataset_id} already exists')
+    except Exception:
+        LOGGER.info(f'Creating dataset {mapping_dataset_id}')
+        bq_client.create_dataset(mapping_dataset_id, exists_ok=True)
 
     # Create output dataset if it doesn't exist
     try:
@@ -622,17 +671,26 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
         bq_client.delete_table(fq_table_name, not_found_ok=True)
         bq_client.create_table(table_to_create)
 
-    # Create mapping tables for tables that need ID regeneration
-    # NOTE: Now includes PERSON and SURVEY_CONDUCT tables
-    for domain_table in CDM_TABLES:
-        if domain_table in SKIP_ID_REGEN_TABLES:
-            continue
-        if not has_primary_key(domain_table):
-            continue
+    # Create mapping tables only if they don't already exist
+    person_mapping_table = mapping_table_for(PERSON)
+    if not bq_client.table_exists(person_mapping_table, mapping_dataset_id):
+        LOGGER.info(
+            f'Mapping tables do not exist in {mapping_dataset_id}. Creating them...'
+        )
+        # NOTE: Now includes PERSON and SURVEY_CONDUCT tables
+        for domain_table in CDM_TABLES:
+            if domain_table in SKIP_ID_REGEN_TABLES:
+                continue
+            if not has_primary_key(domain_table):
+                continue
 
-        LOGGER.info(f'Creating mapping for {domain_table}...')
-        mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
-                pipeline_dataset_id, rt_ids_view)
+            LOGGER.info(f'Creating mapping for {domain_table}...')
+            mapping(domain_table, input_dataset_id, output_dataset_id,
+                    project_id, pipeline_dataset_id, rt_ids_view,
+                    mapping_dataset_id)
+    else:
+        LOGGER.info(
+            f'Reusing existing mapping tables from {mapping_dataset_id}.')
 
     # Load all tables with new IDs
     for table_name in CDM_TABLES:
@@ -641,7 +699,8 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
             continue
         LOGGER.info(f'Loading table {table_name}...')
         load(bq_client, table_name, input_dataset_id, output_dataset_id,
-             project_id, pipeline_dataset_id, rt_ids_view)
+             project_id, pipeline_dataset_id, rt_ids_view, mapping_dataset_id,
+             mapping_source_dataset_id)
 
     # Load Fitbit tables if they exist
     LOGGER.info('Processing Fitbit tables (if they exist)...')
@@ -649,7 +708,8 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
         if bq_client.table_exists(fitbit_table, input_dataset_id):
             LOGGER.info(f'Loading Fitbit table {fitbit_table}...')
             load(bq_client, fitbit_table, input_dataset_id, output_dataset_id,
-                 project_id, pipeline_dataset_id, rt_ids_view)
+                 project_id, pipeline_dataset_id, rt_ids_view,
+                 mapping_dataset_id, mapping_source_dataset_id)
         else:
             LOGGER.info(f'Fitbit table {fitbit_table} does not exist, skipping')
 
@@ -657,7 +717,8 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
     LOGGER.info('Updating extension tables...')
     for ext_table in EXT_TABLES:
         update_ext_table(ext_table, input_dataset_id, output_dataset_id,
-                         project_id)
+                         project_id, mapping_dataset_id, pipeline_dataset_id,
+                         rt_ids_view, mapping_source_dataset_id)
 
     LOGGER.info('RT ID regeneration complete')
 
@@ -690,7 +751,21 @@ if __name__ == '__main__':
                         dest='rt_ids_view',
                         required=True,
                         help='View containing person_id to rt_id mapping')
+    parser.add_argument(
+        '--mapping_dataset_id',
+        dest='mapping_dataset_id',
+        required=True,
+        help=
+        'Dataset to store/lookup mapping tables. Can be a sandbox dataset.'
+    )
+    parser.add_argument(
+        '--mapping_source_dataset_id',
+        dest='mapping_source_dataset_id',
+        required=False,
+        help=
+        'Original dataset mappings were created from, if different from input.')
 
     args = parser.parse_args()
     main(args.input_dataset_id, args.output_dataset_id, args.project_id,
-         args.pipeline_dataset_id, args.rt_ids_view)
+         args.pipeline_dataset_id, args.rt_ids_view,
+         args.mapping_dataset_id, args.mapping_source_dataset_id)
