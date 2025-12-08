@@ -176,6 +176,22 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
     :param rt_ids_view: view containing person_id to rt_id mapping
     :return: the query
     """
+    # Fitbit tables do not have a domain-specific primary key. They only need person_id updated.
+    # This logic is similar to tables without a primary key.
+    if table_name in FITBIT_TABLES:
+        fields = fields_for(table_name)
+        col_exprs = [
+            'mp.person_id' if field['name'] == 'person_id' else f"t.{field['name']}"
+            for field in fields
+        ]
+        cols = ',\n        '.join(col_exprs)
+        mapping_person = mapping_table_for(PERSON)
+        return f'''
+    SELECT {cols}
+    FROM `{project_id}.{input_dataset_id}.{table_name}` t
+    JOIN `{project_id}.{output_dataset_id}.{mapping_person}` mp ON t.person_id = mp.src_person_id
+    '''
+
     # Special handling for aou_death - keep aou_death_id but update person_id
     if table_name == AOU_DEATH:
         fields = fields_for(table_name)
@@ -633,7 +649,7 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
         if bq_client.table_exists(fitbit_table, input_dataset_id):
             LOGGER.info(f'Loading Fitbit table {fitbit_table}...')
             load(bq_client, fitbit_table, input_dataset_id, output_dataset_id,
-                 project_id, pipeline_dataset_id)
+                 project_id, pipeline_dataset_id, rt_ids_view)
         else:
             LOGGER.info(f'Fitbit table {fitbit_table} does not exist, skipping')
 
