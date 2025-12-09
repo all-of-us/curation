@@ -54,7 +54,8 @@ def mapping_query(table_name, input_dataset_id, project_id):
     '''
 
 
-def mapping(domain_table, input_dataset_id, output_dataset_id, project_id):
+def mapping(domain_table, input_dataset_id, mapping_dataset_id,
+            mapping_project_id, project_id):
     """
     Create and load a table that assigns unique sequential ids to records
     """
@@ -62,14 +63,15 @@ def mapping(domain_table, input_dataset_id, output_dataset_id, project_id):
     mapping_table = mapping_table_for(domain_table)
     LOGGER.info(f'Query for {mapping_table} is {q}')
     bq_utils.query(q,
-                   destination_dataset_id=output_dataset_id,
+                   destination_dataset_id=mapping_dataset_id,
                    destination_table_id=mapping_table,
-                   write_disposition='WRITE_TRUNCATE')
+                   write_disposition='WRITE_TRUNCATE',
+                   destination_project_id=mapping_project_id)
 
 
-def table_query(client, table_name, input_dataset_id, output_dataset_id,
-                project_id, pipeline_project_id, pipeline_dataset_id,
-                rt_ids_view):
+def table_query(client, table_name, input_dataset_id, mapping_project_id,
+                mapping_dataset_id, project_id, pipeline_project_id,
+                pipeline_dataset_id, rt_ids_view):
     """
     Returns a query to retrieve all records from an input table with new IDs.
     """
@@ -98,7 +100,7 @@ def table_query(client, table_name, input_dataset_id, output_dataset_id,
     SELECT
         {cols}
     FROM `{project_id}.{input_dataset_id}.{table_name}` t
-    JOIN `{project_id}.{output_dataset_id}.{mapping_table}` m
+    JOIN `{mapping_project_id}.{mapping_dataset_id}.{mapping_table}` m
         ON t.sitting_id = m.src_sitting_id
         AND m.src_table_id = '{input_dataset_id}.{table_name}'
     JOIN `{pipeline_project_id}.{pipeline_dataset_id}.{rt_ids_view}` mp
@@ -107,7 +109,8 @@ def table_query(client, table_name, input_dataset_id, output_dataset_id,
 
 
 def load(client, table_name, input_dataset_id, output_dataset_id, project_id,
-         pipeline_project_id, pipeline_dataset_id, rt_ids_view):
+         pipeline_project_id, pipeline_dataset_id, rt_ids_view,
+         mapping_project_id, mapping_dataset_id):
     """
     Loads a single ETM table into the output dataset with new IDs.
     """
@@ -122,9 +125,9 @@ def load(client, table_name, input_dataset_id, output_dataset_id, project_id,
         )
         return None
 
-    q = table_query(client, table_name, input_dataset_id, output_dataset_id,
-                    project_id, pipeline_project_id, pipeline_dataset_id,
-                    rt_ids_view)
+    q = table_query(client, table_name, input_dataset_id, mapping_project_id,
+                    mapping_dataset_id, project_id, pipeline_project_id,
+                    pipeline_dataset_id, rt_ids_view)
     query_result = bq_utils.query(q,
                                   destination_table_id=output_table,
                                   destination_dataset_id=output_dataset_id)
@@ -135,21 +138,31 @@ def load(client, table_name, input_dataset_id, output_dataset_id, project_id,
 
 
 def main(input_dataset_id, output_dataset_id, project_id, pipeline_project_id,
-         pipeline_dataset_id, rt_ids_view):
+         pipeline_dataset_id, rt_ids_view, mapping_project_id,
+         mapping_dataset_id):
     """
     Create a new CDM dataset with regenerated IDs for ETM tables
     """
-    bq_client = BigQueryClient(project_id)
+    bq_client = BigQueryClient(project_id)  # for input/output datasets
 
     LOGGER.info('ETM RT ID regeneration started')
 
-    # Create output dataset if it doesn't exist
+    # Create output and mapping datasets if they don't exist
     try:
         bq_client.get_dataset(output_dataset_id)
         LOGGER.info(f'Dataset {output_dataset_id} already exists')
     except Exception:
-        LOGGER.info(f'Creating dataset {output_dataset_id}')
+        LOGGER.info(f'Creating output dataset {output_dataset_id}')
         bq_client.create_dataset(output_dataset_id, exists_ok=True)
+
+    # Use a separate client for the mapping project if it's different
+    mapping_bq_client = BigQueryClient(
+        mapping_project_id) if mapping_project_id != project_id else bq_client
+    try:
+        mapping_bq_client.get_dataset(mapping_dataset_id)
+    except Exception:
+        LOGGER.info(f'Creating mapping dataset {mapping_dataset_id}')
+        mapping_bq_client.create_dataset(mapping_dataset_id, exists_ok=True)
 
     # Process ETM tables
     for table in ETM_TABLES:
@@ -182,12 +195,14 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_project_id,
 
         # Create mapping table
         LOGGER.info(f'Creating mapping for {table}...')
-        mapping(table, input_dataset_id, output_dataset_id, project_id)
+        mapping(table, input_dataset_id, mapping_dataset_id, mapping_project_id,
+                project_id)
 
         # Load table
         LOGGER.info(f'Loading table {table}...')
         load(bq_client, table, input_dataset_id, output_dataset_id, project_id,
-             pipeline_dataset_id, rt_ids_view)
+             pipeline_project_id, pipeline_dataset_id, rt_ids_view,
+             mapping_project_id, mapping_dataset_id)
 
     LOGGER.info('ETM RT ID regeneration complete')
 
@@ -225,7 +240,18 @@ if __name__ == '__main__':
                         dest='rt_ids_view',
                         required=True,
                         help='View containing person_id to rt_id mapping')
+    parser.add_argument('--mapping_project_id',
+                        dest='mapping_project_id',
+                        required=True,
+                        help='Project that the mapping dataset resides in.')
+    parser.add_argument(
+        '--mapping_dataset_id',
+        dest='mapping_dataset_id',
+        required=True,
+        help='Dataset to store/lookup mapping tables. Can be a sandbox dataset.'
+    )
 
     args = parser.parse_args()
     main(args.input_dataset_id, args.output_dataset_id, args.project_id,
-         args.pipeline_project_id, args.pipeline_dataset_id, args.rt_ids_view)
+         args.pipeline_project_id, args.pipeline_dataset_id, args.rt_ids_view,
+         args.mapping_project_id, args.mapping_dataset_id)
