@@ -22,7 +22,7 @@ SCOPES = [
 LOGGER = logging.getLogger(__name__)
 
 TIER_LIST = ['controlled', 'registered']
-DEID_STAGE_LIST = ['deid', 'base', 'clean']
+DEID_STAGE_LIST = ['deid', 'base', 'clean', 'serology']
 
 # modes for running script
 MODE_HOTFIX = 'hotfix'
@@ -45,9 +45,11 @@ def get_dataset_name(tier, release_tag, deid_stage):
 
     tier = tier[0].upper()
     release_tag = release_tag.upper()
-    deid_stage = f'_{deid_stage}' if deid_stage == 'base' else ''
+    if deid_stage != 'serology':
+        deid_stage = deid_stage if deid_stage == 'base' else ''
+    deid_stage_value = f'_{deid_stage}'
 
-    dataset_name = f"{tier}{release_tag}{deid_stage}"
+    dataset_name = f"{tier}{release_tag}{deid_stage_value}"
 
     return dataset_name
 
@@ -187,7 +189,7 @@ def generate_output_prod(tier,
     bq_client.create_dataset(dataset_object, exists_ok=False)
 
     # Optionally copy fitbit tables to source dataset
-    if copy_fitbit and fitbit_dataset_id:
+    if copy_fitbit and fitbit_dataset_id and deid_stage != 'serology':
         LOGGER.info(
             f'Copying fitbit tables from dataset {src_project_id}.{fitbit_dataset_id} to {src_project_id}.{src_dataset_id}...'
         )
@@ -203,13 +205,14 @@ def generate_output_prod(tier,
         f'{src_project_id}.{src_dataset_id}',
         f'{output_prod_project_id}.{output_dataset_name}')
 
-    #Append extra columns to person table
-    LOGGER.info(f'Appending extract columns to the person table...')
-    update_person(bq_client, output_dataset_name)
+    if deid_stage != 'serology':
+        #Append extra columns to person table
+        LOGGER.info(f'Appending extract columns to the person table...')
+        update_person(bq_client, output_dataset_name)
 
-    #Add records to death table using aou_death table
-    LOGGER.info(f'Populating death table using aou_death table...')
-    populate_death(bq_client, output_prod_project_id, output_dataset_name)
+        #Add records to death table using aou_death table
+        LOGGER.info(f'Populating death table using aou_death table...')
+        populate_death(bq_client, output_prod_project_id, output_dataset_name)
 
     LOGGER.info(f'Completed successfully.')
 
