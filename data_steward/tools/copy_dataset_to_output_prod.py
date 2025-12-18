@@ -214,6 +214,18 @@ def generate_output_prod(tier,
     if tier == 'controlled' and deid_stage == 'clean':
         serology_input = src_dataset_id.replace("deid_clean", "antibody_quest")
         serology_output = output_dataset_name.replace("deid", "serology")
+        description = f'Serology dataset created from {serology_input} for {tier}{release_tag} CDR run'
+        labels = {
+            'clean': 'yes',
+            'data_tier': tier.lower(),
+            'release_tag': release_tag.lower()
+        }
+        LOGGER.info(
+            f'Creating dataset {serology_output} in {output_prod_project_id}...'
+        )
+        dataset_object = bq_client.define_dataset(serology_output, description,
+                                                  labels)
+        bq_client.create_dataset(dataset_object, exists_ok=False)
         _ = bq_client.copy_dataset(
             f'{src_project_id}.{serology_input}',
             f'{output_prod_project_id}.{serology_output}')
