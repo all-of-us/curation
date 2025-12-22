@@ -126,12 +126,12 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
         person_id==9: Same as 3, but listed in the exlude_lookup_table. Must be ignored when exlude_lookup_table is specified.
         """
         self.kwargs = self.kwargs.copy()
-        
+
         # Defensive cleanup: ensure tables from a prior test run are not
         # present before we load data.
         for fq_table in getattr(self, 'fq_table_names', []):
             self.client.delete_table(fq_table, not_found_ok=True)
-            
+
         super().setUp()
         # Defensive cleanup: ensure sandbox tables from a prior test run are not
         # present before we load data. `default_test` asserts sandbox tables do
