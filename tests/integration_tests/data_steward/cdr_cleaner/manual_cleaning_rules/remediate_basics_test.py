@@ -125,8 +125,19 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
         person_id==3: Does not exist in the original dataset but exists in the incremental dataset. Records will be ignored.
         person_id==9: Same as 3, but listed in the exlude_lookup_table. Must be ignored when exlude_lookup_table is specified.
         """
-
+        self.kwargs = self.kwargs.copy()
+        
+        # Defensive cleanup: ensure tables from a prior test run are not
+        # present before we load data.
+        for fq_table in getattr(self, 'fq_table_names', []):
+            self.client.delete_table(fq_table, not_found_ok=True)
+            
         super().setUp()
+        # Defensive cleanup: ensure sandbox tables from a prior test run are not
+        # present before we load data. `default_test` asserts sandbox tables do
+        # not exist at the beginning of a test.
+        for fq_table in getattr(self, 'fq_sandbox_table_names', []):
+            self.client.delete_table(fq_table, not_found_ok=True)
 
         insert_obs = self.jinja_env.from_string("""
             INSERT INTO `{{project}}.{{dataset}}.{{obs}}`
@@ -951,5 +962,11 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             f'{self.project_id}.{self.sandbox_id}.{self.sb_pers_ext}')
 
     def tearDown(self):
+        # Clean up the exclusion lookup table created in setUp.
         self.client.delete_table(self.fq_exclusion_table, not_found_ok=True)
+
+        # Defensive cleanup for sandbox tables in case a test fails mid-run.
+        for fq_table in getattr(self, 'fq_sandbox_table_names', []):
+            self.client.delete_table(fq_table, not_found_ok=True)
+
         super().tearDown()
