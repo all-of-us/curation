@@ -47,6 +47,121 @@ HEEL_ERROR_QUERY_VALIDATION = '''
 HEEL_ERROR_FAIL_ROWS = [(NULL_MESSAGE, HEEL_ERROR_FAIL_MESSAGE, NULL_MESSAGE,
                          NULL_MESSAGE)]
 
+EHR_OPS_METRICS = "ehr_ops_metrics_staging"
+EHR_RDR_PARTICIPANT = "mv_ehr_rdr_participant"
+DATAVIEW_ID = "rdr_ops_data_view"
+PARTICIPANT_STATUS = "pdr_ehr_participant_status"
+PARTICIPANT_PATIENT_STATUS = "v_pdr_participant_patient_status"
+PARTICIPANT_PM = "v_pdr_participant_pm"
+PARTICIPANT_BIOBANK_ORDER = "v_pdr_participant_biobank_order"
+ORG_HPO_MAPPING = "mv_org_hpo_mapping"
+
+PARTICIPANT_STATS_QUERY = """
+WITH pt_w_ehr AS (
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_condition_occurrence`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_drug_exposure`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_procedure_occurrence`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_measurement`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_observation`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_visit_occurrence`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_device_exposure`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_death`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_specimen`),
+paired_pt AS (
+  SELECT DISTINCT participant_id, ORGANIZATION,
+  FROM `{ehr_project_id}.{ehr_ops_metrics}.{ehr_rdr_participant}`
+  WHERE ORGANIZATION NOT LIKE 'CARE%OMOP%'),
+ehr_consent AS (
+  SELECT pdr_cons.participant_id, CASE WHEN consent_for_electronic_health_records = 'yes' THEN 1 ELSE 0 END AS ehr_consent_yes_flag
+  FROM `{pdr_project_id}.{dataview_id}.{participant_status}` pdr_cons),
+ps_status AS (
+  SELECT DISTINCT participant_id, patient_status, RANK() OVER (PARTITION BY participant_id ORDER BY patient_status_modified DESC) ps_order
+  FROM `{pdr_project_id}.{dataview_id}.{participant_patient_status}`),
+pm_status AS (
+  SELECT DISTINCT pm.participant_id, pm.pm_status, RANK() OVER (PARTITION BY pm.participant_id ORDER BY pm_finalized DESC) pm_order
+  FROM `{pdr_project_id}.{dataview_id}.{participant_pm}` pm),
+bio_status AS (
+  SELECT participant_id, bbo_collection_method
+  FROM `{pdr_project_id}.{dataview_id}.{participant_biobank_order}`)
+SELECT DISTINCT 
+  p.person_id,
+  CASE WHEN pwe.person_id IS NOT NULL THEN 1 ELSE 0 END AS ehr_data_available,
+  CASE WHEN LOWER(hpo_map.HPO_ID) = '{hpo_id}' THEN 1 ELSE 0 END AS hpo_paired_participant,
+  pp.ORGANIZATION,
+  e.ehr_consent_yes_flag,
+  ps_status.patient_status,
+  pm_status.pm_status,
+  bio_status.bbo_collection_method
+FROM `{project_id}.{dataset_id}.{hpo_id}_person` p
+LEFT JOIN pt_w_ehr pwe USING (person_id)
+LEFT JOIN paired_pt pp ON p.person_id = pp.participant_id
+LEFT JOIN ehr_consent e ON p.person_id = e.participant_id
+LEFT JOIN ps_status ON p.person_id = ps_status.participant_id AND ps_order = 1
+LEFT JOIN pm_status ON p.person_id = pm_status.participant_id AND pm_order = 1
+LEFT JOIN bio_status ON p.person_id = bio_status.participant_id AND bbo_collection_method = 'ON_SITE'
+LEFT JOIN `{ehr_project_id}.{ehr_ops_metrics}.{org_hpo_mapping}` hpo_map ON pp.ORGANIZATION = hpo_map.Org_ID
+"""
+
+PARTICIPANT_STATS_SUMMARY_QUERY = """
+WITH pt_w_ehr AS (
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_condition_occurrence`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_drug_exposure`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_procedure_occurrence`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_measurement`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_observation`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_visit_occurrence`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_device_exposure`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_death`
+  UNION DISTINCT
+  SELECT DISTINCT(person_id) FROM `{project_id}.{dataset_id}.{hpo_id}_specimen`),
+paired_pt AS (
+  SELECT DISTINCT participant_id, ORGANIZATION
+  FROM `{ehr_project_id}.{ehr_ops_metrics}.{ehr_rdr_participant}`
+  WHERE ORGANIZATION NOT LIKE 'CARE%OMOP%'),
+ehr_consent AS (
+  SELECT pdr_cons.participant_id, CASE WHEN consent_for_electronic_health_records = 'yes' THEN 1 ELSE 0 END AS ehr_consent_yes_flag
+  FROM `{pdr_project_id}.{dataview_id}.{participant_status}` pdr_cons),
+ps_status AS (
+  SELECT DISTINCT participant_id, patient_status, RANK() OVER (PARTITION BY participant_id ORDER BY patient_status_modified DESC) ps_order
+  FROM `{pdr_project_id}.{dataview_id}.{participant_patient_status}`),
+pm_status AS (
+  SELECT DISTINCT pm.participant_id, pm.pm_status, RANK() OVER (PARTITION BY pm.participant_id ORDER BY pm_finalized DESC) pm_order
+  FROM `{pdr_project_id}.{dataview_id}.{participant_pm}` pm),
+bio_status AS (
+  SELECT participant_id, bbo_collection_method
+  FROM `{pdr_project_id}.{dataview_id}.{participant_biobank_order}`)
+SELECT
+  SUM(CASE WHEN pwe.person_id IS NOT NULL THEN 1 ELSE 0 END) AS ehr_data_available,
+  SUM(CASE WHEN LOWER(hpo_map.HPO_ID) = '{hpo_id}' THEN 1 ELSE 0 END) AS hpo_paired_participant,
+  SUM(e.ehr_consent_yes_flag) AS ehr_consent_yes,
+  SUM(CASE WHEN ps_status.patient_status = "YES" THEN 1 ELSE 0 END) AS patient_status_yes,
+  SUM(CASE WHEN pm_status.pm_status = "COMPLETED" THEN 1 ELSE 0 END) AS physical_measurement_completed,
+  SUM(CASE WHEN bio_status.bbo_collection_method = "ON_SITE" THEN 1 ELSE 0 END) AS biospecimen_on_site
+FROM `{project_id}.{dataset_id}.{hpo_id}_person` p
+LEFT JOIN pt_w_ehr pwe USING (person_id)
+LEFT JOIN paired_pt pp ON p.person_id = pp.participant_id
+LEFT JOIN ehr_consent e ON p.person_id = e.participant_id
+LEFT JOIN ps_status ON p.person_id = ps_status.participant_id AND ps_order = 1
+LEFT JOIN pm_status ON p.person_id = pm_status.participant_id AND pm_order = 1
+LEFT JOIN bio_status ON p.person_id = bio_status.participant_id AND bbo_collection_method = 'ON_SITE'
+LEFT JOIN `{ehr_project_id}.{ehr_ops_metrics}.{org_hpo_mapping}` hpo_map ON pp.ORGANIZATION = hpo_map.Org_ID
+"""
+
 # Used in get_drug_checks_in_results_html()
 DRUG_CHECKS_QUERY_VALIDATION = '''
 SELECT

@@ -15,6 +15,7 @@ from io import StringIO, open
 
 # Third party imports
 import dateutil
+import pandas as pd
 from flask import Flask
 from google.cloud import bigquery
 from google.cloud.storage.bucket import Blob
@@ -32,12 +33,18 @@ from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from constants.cdr_cleaner.clean_cdr import CRON_RETRACTION
 import constants.global_variables
+from constants.validation.main import (EHR_OPS_METRICS, EHR_RDR_PARTICIPANT,
+                                       DATAVIEW_ID, PARTICIPANT_STATUS,
+                                       PARTICIPANT_PATIENT_STATUS,
+                                       PARTICIPANT_PM,
+                                       PARTICIPANT_BIOBANK_ORDER,
+                                       ORG_HPO_MAPPING)
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
 from common import (ACHILLES_EXPORT_PREFIX_STRING,
                     ACHILLES_EXPORT_DATASOURCES_JSON, BIGQUERY_DATASET_ID,
-                    UNIONED_DATASET_ID)
+                    UNIONED_DATASET_ID, EHR_PROJECT_ID, PDR_PROJECT_ID)
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from retraction import retract_data_bq, retract_data_gcs
@@ -409,6 +416,19 @@ def generate_metrics(project_id, hpo_id, bucket, folder_prefix, summary):
             report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY] = query_rows(
                 nonunique_metrics_query)
 
+        # patient summary metrics
+        logging.info(f"Getting participant summary stats for {hpo_id}")
+        participant_stats_summary_query = get_participant_stats_summary_query(
+            hpo_id)
+        report_data[report_consts.PARTICIPANT_STATS_SUMMARY_KEY] = query_rows(
+            participant_stats_summary_query)
+
+        # patient level metrics
+        logging.info(f"Getting participant stats for {hpo_id}")
+        participant_stats_query = get_participant_stats_query(hpo_id)
+        report_data[report_consts.PARTICIPANT_STATS_KEY] = query_rows(
+            participant_stats_query)
+
         # drug class metrics
         logging.info(f"Getting drug class for {hpo_id}")
         drug_class_metrics_query = get_drug_class_counts_query(hpo_id)
@@ -529,6 +549,16 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix,
                  f"gs://{bucket.name}/{results_html_path}.")
     results_html_blob = bucket.blob(results_html_path)
     results_html_blob.upload_from_string(results_html)
+
+    participants_stats_df = pd.DataFrame(
+        report_data[report_consts.PARTICIPANT_STATS_KEY])
+    participant_stats_csv = participants_stats_df.to_csv(index=False)
+    participant_stats_csv_path = f'{folder_prefix}{common.PARTICIPANT_STATS_CSV}'
+    logging.info(f"Saving file {common.PARTICIPANT_STATS_CSV} to "
+                 f"gs://{bucket.name}/{participant_stats_csv_path}.")
+    participant_stats_csv_blob = bucket.blob(participant_stats_csv_path)
+    participant_stats_csv_blob.upload_from_string(participant_stats_csv,
+                                                  content_type='text/csv')
 
     processed_txt_path = f'{folder_prefix}{common.PROCESSED_TXT}'
     logging.info(f"Saving timestamp {processed_time_str} to "
@@ -687,6 +717,52 @@ def get_duplicate_counts_query(client, hpo_id):
     unioned_query = consts.UNION_ALL.join(sub_queries)
     return consts.DUPLICATE_IDS_WRAPPER.format(
         union_of_subqueries=unioned_query)
+
+
+def get_participant_stats_query(hpo_id):
+    """
+    Query to retrieve participant summary statistics for an HPO site
+
+    :param hpo_id:
+    :return: query
+    """
+    return render_query(
+        consts.PARTICIPANT_STATS_QUERY,
+        hpo_id=hpo_id,
+        ehr_project_id=EHR_PROJECT_ID,
+        ehr_ops_metrics=EHR_OPS_METRICS,
+        ehr_rdr_participant=EHR_RDR_PARTICIPANT,
+        pdr_project_id=PDR_PROJECT_ID,
+        dataview_id=DATAVIEW_ID,
+        participant_status=PARTICIPANT_STATUS,
+        participant_patient_status=PARTICIPANT_PATIENT_STATUS,
+        participant_pm=PARTICIPANT_PM,
+        participant_biobank_order=PARTICIPANT_BIOBANK_ORDER,
+        org_hpo_mapping=ORG_HPO_MAPPING,
+    )
+
+
+def get_participant_stats_summary_query(hpo_id):
+    """
+    Query to retrieve participant summary statistics for an HPO site
+
+    :param hpo_id:
+    :return: query
+    """
+    return render_query(
+        consts.PARTICIPANT_STATS_SUMMARY_QUERY,
+        hpo_id=hpo_id,
+        ehr_project_id=EHR_PROJECT_ID,
+        ehr_ops_metrics=EHR_OPS_METRICS,
+        ehr_rdr_participant=EHR_RDR_PARTICIPANT,
+        pdr_project_id=PDR_PROJECT_ID,
+        dataview_id=DATAVIEW_ID,
+        participant_status=PARTICIPANT_STATUS,
+        participant_patient_status=PARTICIPANT_PATIENT_STATUS,
+        participant_pm=PARTICIPANT_PM,
+        participant_biobank_order=PARTICIPANT_BIOBANK_ORDER,
+        org_hpo_mapping=ORG_HPO_MAPPING,
+    )
 
 
 def get_drug_class_counts_query(hpo_id):
