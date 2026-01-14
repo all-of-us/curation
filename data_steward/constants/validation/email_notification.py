@@ -22,6 +22,7 @@ TO_EMAILS = 'to_emails'
 CC_EMAILS = 'cc_emails'
 
 TRANSFER_DATA_DRC_URL = 'https://aou-ehr-ops.zendesk.com/hc/en-us/articles/1500012461721-Transferring-Data-to-the-DRC'
+RESULTS_HTML_ZENDESK_URL = 'https://aou-ehr-ops.zendesk.com/hc/en-us/articles/1500012365782-Results-html'
 
 # Email content
 EMAIL_BODY = """
@@ -37,6 +38,13 @@ If any of your files have not been successfully uploaded, please run the
  <a href="https://github.com/all-of-us/aou-ehr-file-check">local file check</a> before making your submission.<br>  
 To view the full set of curation reports, please visit the submission folder in your
  GCS bucket <a href="{{ submission_folder_url }}">here</a>.<br>
+<hr>
+ <b>✨ New Feature: Participant Summary Stats</b><br>
+A new section titled <b>Participant Summary Stats</b> has been added to the <code>results.html</code> file.<br>
+Detailed participant-level data are available in your bucket in the file: <code>participant_stats.csv</code><br>
+Please refer to this Zendesk page for more information on this new feature: 
+ <a href="{{ results_html_zendesk_url }}">Results.html Data Quality Report</a>.<br>
+ <hr>
 For more information on the reports and how to download them, please refer to
  <a href="{{ transfer_data_drc_url }}">Transferring data to the DRC</a>.</p>
 

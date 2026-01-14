@@ -95,7 +95,7 @@ SELECT DISTINCT
   p.person_id,
   CASE WHEN pwe.person_id IS NOT NULL THEN 1 ELSE 0 END AS ehr_data_available,
   CASE WHEN LOWER(hpo_map.HPO_ID) = '{hpo_id}' THEN 1 ELSE 0 END AS hpo_paired_participant,
-  pp.ORGANIZATION,
+  CASE WHEN LOWER(hpo_map.HPO_ID) = '{hpo_id}' THEN 'SAME_PAIRED_ORG' ELSE 'OTHER_PAIRED_ORG' END AS ORGANIZATION,
   e.ehr_consent_yes_flag,
   ps_status.patient_status,
   pm_status.pm_status,

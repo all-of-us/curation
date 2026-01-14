@@ -120,6 +120,7 @@ def generate_html_body(site_name, folder_uri, report_data):
     html_email_body = Template(consts.EMAIL_BODY).render(
         site_name=site_name,
         transfer_data_drc_url=consts.TRANSFER_DATA_DRC_URL,
+        results_html_zendesk_url=consts.RESULTS_HTML_ZENDESK_URL,
         submission_folder_url=submission_folder_url,
         eo_zendesk=consts.EHR_OPS_ZENDESK,
         aou_logo=consts.AOU_LOGO,
