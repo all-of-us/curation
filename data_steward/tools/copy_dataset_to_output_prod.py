@@ -213,7 +213,7 @@ def generate_output_prod(tier,
 
     if tier == 'controlled' and deid_stage == 'clean':
         serology_input = src_dataset_id.replace("deid_clean", "antibody_quest")
-        serology_output = output_dataset_name.replace("deid", "serology")
+        serology_output = f"{output_dataset_name}_serology"
         description = f'Serology dataset created from {serology_input} for {tier}{release_tag} CDR run'
         labels = {
             'clean': 'yes',
