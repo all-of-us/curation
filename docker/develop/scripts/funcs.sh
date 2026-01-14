@@ -261,7 +261,7 @@ function activate_gcloud() {
     # decrypt credentials, then write the decrypted contents to the filepath
     # specified by $GOOGLE_APPLICATION_CREDENTIALS
     echo "${GCLOUD_CREDENTIALS}" |
-      openssl enc -d -aes-256-cbc -base64 -A -md md5 -k "${GCLOUD_CREDENTIALS_KEY}" \
+      openssl enc -d -aes-256-cbc -base64 -A -pbkdf2 -iter 100000 -pass env:GCLOUD_CREDENTIALS_KEY \
         -out "${GOOGLE_APPLICATION_CREDENTIALS}"
   fi
 
