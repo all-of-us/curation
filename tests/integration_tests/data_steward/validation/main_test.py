@@ -303,16 +303,19 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('constants.validation.main.SUBMISSION_LAG_TIME_MINUTES', 0)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.main.get_participant_validation_summary_query')
+    @mock.patch('validation.main.get_participant_stats_query')
+    @mock.patch('validation.main.get_participant_stats_summary_query')
+    @mock.patch('validation.main.query_rows')
     @mock.patch('validation.main.setup_and_validate_participants')
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.all_required_files_loaded')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('api_util.check_cron')
-    def test_html_report_five_person(self, mock_check_cron, mock_first_run,
-                                     mock_required_files_loaded,
-                                     mock_has_all_required_files,
-                                     mock_setup_validate_participants,
-                                     mock_part_val_summary_query):
+    def test_html_report_five_person(
+            self, mock_check_cron, mock_first_run, mock_required_files_loaded,
+            mock_has_all_required_files, mock_setup_validate_participants,
+            mock_query_rows, mock_part_stats_summary_query,
+            mock_part_stats_query, mock_part_val_summary_query):
         mock_required_files_loaded.return_value = False
         mock_first_run.return_value = False
         mock_has_all_required_files.return_value = True
@@ -333,6 +336,39 @@ class ValidationMainTest(unittest.TestCase):
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
             client=self.bq_client, dataset_id=self.dataset_id)
+
+        fake_participant_stats = [
+            {
+                'person_id': 1,
+                'ehr_data_available': 1,
+                'hpo_paired_participant': 1,
+                'ORGANIZATION': 'SAME_PAIRED_ORG',
+                'ehr_consent_yes_flag': 1,
+                'patient_status': 'YES',
+                'pm_status': 'COMPLETED',
+                'bbo_collection_method': 'ON_SITE'
+            },
+            {
+                'person_id': 2,
+                'ehr_data_available': 1,
+                'hpo_paired_participant': 1,
+                'ORGANIZATION': 'SAME_PAIRED_ORG',
+                'ehr_consent_yes_flag': 1,
+                'patient_status': 'YES',
+                'pm_status': 'COMPLETED',
+                'bbo_collection_method': 'ON_SITE'
+            },
+        ]
+
+        # Use wraps to call the real function, but intercept specific cases
+        original_query_rows = main.query_rows
+
+        def query_rows_side_effect(query):
+            if query is mock_part_stats_query.return_value:
+                return fake_participant_stats
+            return original_query_rows(query)
+
+        mock_query_rows.side_effect = query_rows_side_effect
 
         main.app.testing = True
         with main.app.test_client() as test_client:
