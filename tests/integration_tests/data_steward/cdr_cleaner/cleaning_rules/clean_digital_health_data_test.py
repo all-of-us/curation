@@ -77,22 +77,17 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         """
 
         queries = []
-        dhss_query = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.{{table_name}}`
+        dhss_query = self.jinja_env.from_string(f"""
+                    INSERT INTO `{self.project_id}.{self.dataset_id}.{clean_dhd.DIGITAL_HEALTH_SHARING_STATUS}`
                     (person_id, wearable, status, history, authored_time)
                     VALUES
-                    (111,'fitbit','YES',[{'status':'YES','authored_time':'2020-01-01T12:01:01Z'}],'2020-01-01T12:01:01Z'),
-                    (222,'fitbit','YES',[{'status':'YES','authored_time':'2021-01-01T12:01:01Z'}],'2021-01-01T12:01:01Z'),
-                    (333,'appleHealthKit','YES',[{'status':'NO','authored_time':'2022-02-01T12:01:01Z'},
-                     {'status':'YES','authored_time':'2021-02-01T12:01:01Z'},
-                     {'status':'NO','authored_time':'2020-06-01T12:01:01Z'},
-                     {'status':'YES','authored_time':'2020-03-01T12:01:01Z'}],
-                     '2022-02-01T12:01:01Z')
-            """).render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            table_name=clean_dhd.DIGITAL_HEALTH_SHARING_STATUS,
-        )
+                    (111,'fitbit','YES',[{{'status':'YES','authored_time':'2020-01-01T12:01:01Z'}}],'2020-01-01T12:01:01Z'),
+                    (222,'fitbit','YES',[{{'status':'YES','authored_time':'2021-01-01T12:01:01Z'}}],'2021-01-01T12:01:01Z'),
+                    (333,'appleHealthKit','YES',[{{'status':'NO','authored_time':'2022-02-01T12:01:01Z'}},
+                     {{'status':'YES','authored_time':'2021-02-01T12:01:01Z'}},
+                     {{'status':'NO','authored_time':'2020-06-01T12:01:01Z'}},
+                     {{'status':'YES','authored_time':'2020-03-01T12:01:01Z'}}],
+                     '2022-02-01T12:01:01Z')""").render()
         queries.append(dhss_query)
 
         as_query = self.jinja_env.from_string("""
