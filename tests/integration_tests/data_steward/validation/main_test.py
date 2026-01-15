@@ -22,6 +22,7 @@ from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from tests import test_util
 from validation import main
+from validation.main import query_rows as original_query_rows
 from validation.metrics import required_labs
 
 
@@ -359,9 +360,6 @@ class ValidationMainTest(unittest.TestCase):
                 'bbo_collection_method': 'ON_SITE'
             },
         ]
-
-        # Use wraps to call the real function, but intercept specific cases
-        original_query_rows = main.query_rows
 
         def query_rows_side_effect(query):
             if query is mock_part_stats_query.return_value:
