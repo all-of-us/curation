@@ -22,7 +22,6 @@ from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from tests import test_util
 from validation import main
-from validation.main import query_rows as original_query_rows
 from validation.metrics import required_labs
 
 
@@ -306,7 +305,6 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('validation.main.get_participant_validation_summary_query')
     @mock.patch('validation.main.get_participant_stats_query')
     @mock.patch('validation.main.get_participant_stats_summary_query')
-    @mock.patch('validation.main.query_rows')
     @mock.patch('validation.main.setup_and_validate_participants')
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.all_required_files_loaded')
@@ -315,8 +313,8 @@ class ValidationMainTest(unittest.TestCase):
     def test_html_report_five_person(
             self, mock_check_cron, mock_first_run, mock_required_files_loaded,
             mock_has_all_required_files, mock_setup_validate_participants,
-            mock_query_rows, mock_part_stats_summary_query,
-            mock_part_stats_query, mock_part_val_summary_query):
+            mock_part_stats_summary_query, mock_part_stats_query,
+            mock_part_val_summary_query):
         mock_required_files_loaded.return_value = False
         mock_first_run.return_value = False
         mock_has_all_required_files.return_value = True
@@ -338,35 +336,15 @@ class ValidationMainTest(unittest.TestCase):
         required_labs.load_measurement_concept_sets_descendants_table(
             client=self.bq_client, dataset_id=self.dataset_id)
 
-        fake_participant_stats = [
-            {
-                'person_id': 1,
-                'ehr_data_available': 1,
-                'hpo_paired_participant': 1,
-                'ORGANIZATION': 'SAME_PAIRED_ORG',
-                'ehr_consent_yes_flag': 1,
-                'patient_status': 'YES',
-                'pm_status': 'COMPLETED',
-                'bbo_collection_method': 'ON_SITE'
-            },
-            {
-                'person_id': 2,
-                'ehr_data_available': 1,
-                'hpo_paired_participant': 1,
-                'ORGANIZATION': 'SAME_PAIRED_ORG',
-                'ehr_consent_yes_flag': 1,
-                'patient_status': 'YES',
-                'pm_status': 'COMPLETED',
-                'bbo_collection_method': 'ON_SITE'
-            },
-        ]
-
-        def query_rows_side_effect(query):
-            if query is mock_part_stats_query.return_value:
-                return fake_participant_stats
-            return original_query_rows(query)
-
-        mock_query_rows.side_effect = query_rows_side_effect
+        mock_part_stats_query.return_value = """
+          SELECT 1 as person_id, 1 as ehr_data_available, 1 as hpo_paired_participant,
+                 'SAME_PAIRED_ORG' as ORGANIZATION, 1 as ehr_consent_yes_flag,
+                 'YES' as patient_status, 'COMPLETED' as pm_status, 'ON_SITE' as bbo_collection_method
+          UNION ALL
+          SELECT 2 as person_id, 1 as ehr_data_available, 1 as hpo_paired_participant,
+                 'SAME_PAIRED_ORG' as ORGANIZATION, 1 as ehr_consent_yes_flag,
+                 'YES' as patient_status, 'COMPLETED' as pm_status, 'ON_SITE' as bbo_collection_method
+          """
 
         main.app.testing = True
         with main.app.test_client() as test_client:
