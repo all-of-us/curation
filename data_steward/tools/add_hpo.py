@@ -252,6 +252,8 @@ def add_src_hpos_allowed_state_csv(bq_client, hpo_id, us_state,
     hpo_file_df = add_src_hpos_allowed_state_file_df(
         bq_client, hpo_id, us_state, value_source_concept_id,
         src_hpos_allowed_state_path)
+    hpo_file_df['value_source_concept_id'] = pd.to_numeric(
+        hpo_file_df['value_source_concept_id'], errors='coerce').astype('Int64')
     hpo_file_df.to_csv(src_hpos_allowed_state_path,
                        quoting=csv.QUOTE_NONE,
                        index=False,
