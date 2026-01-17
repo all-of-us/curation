@@ -117,7 +117,7 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         """).render(project_id=self.project_id,
                     dataset_id=self.rdr_dataset_id,
                     ps_api_values=PS_API_VALUES)
-        queries.append(ps_api_query) 
+        queries.append(ps_api_query)
 
         as_query = self.jinja_env.from_string("""
                     INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
@@ -214,28 +214,39 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
             ]
         }, {
             'fq_table_name':
-                '.'.join([self.dataset_id, clean_dhd.DIGITAL_HEALTH_SHARING_STATUS]),
+                '.'.join(
+                    [self.dataset_id, clean_dhd.DIGITAL_HEALTH_SHARING_STATUS]),
             'fq_sandbox_table_name': [
                 sb_name for sb_name in self.fq_sandbox_table_names
                 if clean_dhd.DIGITAL_HEALTH_SHARING_STATUS in sb_name
             ][0],
-            'fields': ['person_id', 'wearable', 'status', 'authored_time', 'history'],
+            'fields': [
+                'person_id', 'wearable', 'status', 'authored_time', 'history'
+            ],
             'loaded_ids': [111, 222, 333],
             'sandboxed_ids': [],
             'cleaned_values': [
                 (111, 'fitbit', 'YES',
-                datetime.fromisoformat('2020-01-01T12:01:01+00:00'),
-                []),
+                 datetime.fromisoformat('2020-01-01T12:01:01+00:00'), []),
                 (222, 'fitbit', 'YES',
-                datetime.fromisoformat('2021-01-01T12:01:01+00:00'),
-                []),
+                 datetime.fromisoformat('2021-01-01T12:01:01+00:00'), []),
                 (333, 'appleHealthKit', 'YES',
-                datetime.fromisoformat('2022-02-01T12:01:01+00:00'),
-                [{'status': 'NO', 'authored_time': datetime.fromisoformat('2021-02-01T12:01:01+00:00')},
-                    {'status': 'YES', 'authored_time':
-        datetime.fromisoformat('2020-06-01T12:01:01+00:00')},
-                    {'status': 'NO', 'authored_time':
-        datetime.fromisoformat('2020-03-01T12:01:01+00:00')}])
+                 datetime.fromisoformat('2022-02-01T12:01:01+00:00'), [{
+                     'status':
+                         'NO',
+                     'authored_time':
+                         datetime.fromisoformat('2021-02-01T12:01:01+00:00')
+                 }, {
+                     'status':
+                         'YES',
+                     'authored_time':
+                         datetime.fromisoformat('2020-06-01T12:01:01+00:00')
+                 }, {
+                     'status':
+                         'NO',
+                     'authored_time':
+                         datetime.fromisoformat('2020-03-01T12:01:01+00:00')
+                 }])
             ]
         }, {
             'fq_table_name':
