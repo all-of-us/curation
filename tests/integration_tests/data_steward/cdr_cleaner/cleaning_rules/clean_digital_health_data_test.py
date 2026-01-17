@@ -13,7 +13,7 @@ from datetime import datetime
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_INTRADAY, HEART_RATE_SUMMARY, STEPS_INTRADAY
+from common import FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_INTRADAY, HEART_RATE_SUMMARY, PS_API_VALUES, STEPS_INTRADAY
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 import cdr_cleaner.cleaning_rules.clean_digital_health_data as clean_dhd
 
@@ -54,11 +54,12 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_digital_health_table = f'{cls.project_id}.{cls.dataset_id}.{clean_dhd.DIGITAL_HEALTH_SHARING_STATUS}'
+        cls.fq_ps_api_values_table = f'{cls.project_id}.{cls.rdr_dataset_id}.{PS_API_VALUES}'
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{table_id}'
             for table_id in FITBIT_TABLES
-        ] + [cls.fq_digital_health_table]
+        ] + [cls.fq_digital_health_table] + [cls.fq_ps_api_values_table]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -98,6 +99,25 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
                     dataset_id=self.dataset_id,
                     fitbit_table=clean_dhd.DIGITAL_HEALTH_SHARING_STATUS)
         queries.append(dhss_query)
+
+        ps_api_query = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{rdr_dataset_id}}.{{ps_api_values}}`
+            (person_id, wearable, status, authored_time, suspension_status, withdrawal_status)
+            VALUES
+            (111, 'fitbit', 'YES', TIMESTAMP '2020-01-01T12:01:01Z', 'NOT_SUSPENDED', 'NOT_WITHDRAWN'),
+            (222, 'fitbit', 'YES', TIMESTAMP '2021-01-01T12:01:01Z', 'NOT_SUSPENDED', 'NOT_WITHDRAWN'),
+            (333, 'appleHealthKit', 'YES', TIMESTAMP '2022-02-01T12:01:01Z', 'NOT_SUSPENDED',
+            'NOT_WITHDRAWN'),
+                (333, 'appleHealthKit', 'NO', TIMESTAMP '2021-02-01T12:01:01Z', 'NOT_SUSPENDED',
+            'NOT_WITHDRAWN'),
+                (333, 'appleHealthKit', 'YES', TIMESTAMP '2020-06-01T12:01:01Z', 'NOT_SUSPENDED',
+            'NOT_WITHDRAWN'),
+                (333, 'appleHealthKit', 'NO', TIMESTAMP '2020-03-01T12:01:01Z', 'NOT_SUSPENDED',
+            'NOT_WITHDRAWN')
+        """).render(project_id=self.project_id,
+                    dataset_id=self.rdr_dataset_id,
+                    ps_api_values=PS_API_VALUES)
+        queries.append(ps_api_query) 
 
         as_query = self.jinja_env.from_string("""
                     INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
@@ -191,6 +211,31 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [
                 (111, datetime.fromisoformat('2018-11-26').date()),
                 (222, datetime.fromisoformat('2019-11-26').date())
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.dataset_id, clean_dhd.DIGITAL_HEALTH_SHARING_STATUS]),
+            'fq_sandbox_table_name': [
+                sb_name for sb_name in self.fq_sandbox_table_names
+                if clean_dhd.DIGITAL_HEALTH_SHARING_STATUS in sb_name
+            ][0],
+            'fields': ['person_id', 'wearable', 'status', 'authored_time', 'history'],
+            'loaded_ids': [111, 222, 333],
+            'sandboxed_ids': [],
+            'cleaned_values': [
+                (111, 'fitbit', 'YES',
+                datetime.fromisoformat('2020-01-01T12:01:01+00:00'),
+                []),
+                (222, 'fitbit', 'YES',
+                datetime.fromisoformat('2021-01-01T12:01:01+00:00'),
+                []),
+                (333, 'appleHealthKit', 'YES',
+                datetime.fromisoformat('2022-02-01T12:01:01+00:00'),
+                [{'status': 'NO', 'authored_time': datetime.fromisoformat('2021-02-01T12:01:01+00:00')},
+                    {'status': 'YES', 'authored_time':
+        datetime.fromisoformat('2020-06-01T12:01:01+00:00')},
+                    {'status': 'NO', 'authored_time':
+        datetime.fromisoformat('2020-03-01T12:01:01+00:00')}])
             ]
         }, {
             'fq_table_name':

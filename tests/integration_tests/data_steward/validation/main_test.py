@@ -336,6 +336,11 @@ class ValidationMainTest(unittest.TestCase):
         required_labs.load_measurement_concept_sets_descendants_table(
             client=self.bq_client, dataset_id=self.dataset_id)
 
+        mock_part_stats_summary_query.return_value = """
+          SELECT 2 as ehr_consent_yes, 2 as ehr_data_available, 2 as hpo_paired_participant, 
+                 2 as patient_status_yes, 2 as physical_measurement_completed, 2 as biospecimen_on_site
+          """
+
         mock_part_stats_query.return_value = """
           SELECT 1 as person_id, 1 as ehr_data_available, 1 as hpo_paired_participant,
                  'SAME_PAIRED_ORG' as ORGANIZATION, 1 as ehr_consent_yes_flag,

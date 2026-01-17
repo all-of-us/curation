@@ -99,8 +99,8 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
                  dataset_id,
                  sandbox_dataset_id,
                  rdr_dataset_id=None,
-                 table_namer=None,
-                 api_project_id=None):
+                 api_project_id=None,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
