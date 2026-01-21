@@ -115,7 +115,7 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
                 (333, 'appleHealthKit', 'NO', TIMESTAMP '2020-03-01T12:01:01Z', 'NOT_SUSPENDED',
             'NOT_WITHDRAWN')
         """).render(project_id=self.project_id,
-                    dataset_id=self.rdr_dataset_id,
+                    rdr_dataset_id=self.rdr_dataset_id,
                     ps_api_values=PS_API_VALUES)
         queries.append(ps_api_query)
 
