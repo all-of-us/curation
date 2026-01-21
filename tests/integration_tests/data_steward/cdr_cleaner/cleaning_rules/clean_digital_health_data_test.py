@@ -13,7 +13,7 @@ from datetime import datetime
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_INTRADAY, HEART_RATE_SUMMARY, PS_API_VALUES, STEPS_INTRADAY
+from common import FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_INTRADAY, HEART_RATE_SUMMARY, PS_AWARDEE, STEPS_INTRADAY
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 import cdr_cleaner.cleaning_rules.clean_digital_health_data as clean_dhd
 
@@ -54,12 +54,12 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_digital_health_table = f'{cls.project_id}.{cls.dataset_id}.{clean_dhd.DIGITAL_HEALTH_SHARING_STATUS}'
-        cls.fq_ps_api_values_table = f'{cls.project_id}.{cls.rdr_dataset_id}.{PS_API_VALUES}'
+        cls.fq_ps_awardee_values_table = f'{cls.project_id}.{cls.rdr_dataset_id}.{PS_AWARDEE}'
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{table_id}'
             for table_id in FITBIT_TABLES
-        ] + [cls.fq_digital_health_table] + [cls.fq_ps_api_values_table]
+        ] + [cls.fq_digital_health_table] + [cls.fq_ps_awardee_values_table]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -69,6 +69,9 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
     @patch(
         'cdr_cleaner.cleaning_rules.clean_digital_health_data.PIPELINE_TABLES',
         os.environ.get('COMBINED_DATASET_ID'))
+    @patch(
+        'cdr_cleaner.cleaning_rules.clean_digital_health_data.DRC_OPS',
+        os.environ.get('RDR_DATASET_ID'))
     def test_clean_digital_health_data(self):
         """
         Tests perform as designed.
@@ -78,90 +81,70 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         """
 
         queries = []
-        dhss_query = self.jinja_env.from_string("""
-          INSERT INTO
-          `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-          (person_id, wearable, status, history, authored_time)
-          VALUES
-          (111, 'fitbit', 'YES', 
-              [STRUCT('YES' AS status, TIMESTAMP '2020-01-01T12:01:01Z' AS authored_time)],
-              TIMESTAMP '2020-01-01T12:01:01Z'),
-          (222, 'fitbit', 'YES', 
-              [STRUCT('YES' AS status, TIMESTAMP '2021-01-01T12:01:01Z' AS authored_time)],
-              TIMESTAMP '2021-01-01T12:01:01Z'),
-          (333, 'appleHealthKit', 'YES', 
-              [STRUCT('NO' AS status, TIMESTAMP '2022-02-01T12:01:01Z' AS authored_time),
-               STRUCT('YES' AS status, TIMESTAMP '2021-02-01T12:01:01Z' AS authored_time),
-               STRUCT('NO' AS status, TIMESTAMP '2020-06-01T12:01:01Z' AS authored_time),
-               STRUCT('YES' AS status, TIMESTAMP '2020-03-01T12:01:01Z' AS authored_time)],
-              TIMESTAMP '2022-02-01T12:01:01Z')
-        """).render(project_id=self.project_id,
-                    dataset_id=self.dataset_id,
-                    fitbit_table=clean_dhd.DIGITAL_HEALTH_SHARING_STATUS)
-        queries.append(dhss_query)
-
-        ps_api_query = self.jinja_env.from_string("""
-            INSERT INTO `{{project_id}}.{{rdr_dataset_id}}.{{ps_api_values}}`
-            (person_id, wearable, status, authored_time, suspension_status, withdrawal_status)
-            VALUES
-            (111, 'fitbit', 'YES', TIMESTAMP '2020-01-01T12:01:01Z', 'NOT_SUSPENDED', 'NOT_WITHDRAWN'),
-            (222, 'fitbit', 'YES', TIMESTAMP '2021-01-01T12:01:01Z', 'NOT_SUSPENDED', 'NOT_WITHDRAWN'),
-            (333, 'appleHealthKit', 'YES', TIMESTAMP '2022-02-01T12:01:01Z', 'NOT_SUSPENDED',
-            'NOT_WITHDRAWN'),
-                (333, 'appleHealthKit', 'NO', TIMESTAMP '2021-02-01T12:01:01Z', 'NOT_SUSPENDED',
-            'NOT_WITHDRAWN'),
-                (333, 'appleHealthKit', 'YES', TIMESTAMP '2020-06-01T12:01:01Z', 'NOT_SUSPENDED',
-            'NOT_WITHDRAWN'),
-                (333, 'appleHealthKit', 'NO', TIMESTAMP '2020-03-01T12:01:01Z', 'NOT_SUSPENDED',
-            'NOT_WITHDRAWN')
+        ps_awardee_query = self.jinja_env.from_string("""
+        INSERT INTO `{{project_id}}.{{rdr_dataset_id}}.{{ps_awardee_values}}`
+        (person_id, wearable, status, history, authored_time)
+        VALUES
+        (111, 'fitbit', 'YES', 
+            [STRUCT('YES' AS status, TIMESTAMP '2020-01-01T12:01:01Z' AS authored_time)],
+            TIMESTAMP '2020-01-01T12:01:01Z'),
+        (222, 'fitbit', 'YES', 
+            [STRUCT('YES' AS status, TIMESTAMP '2021-01-01T12:01:01Z' AS authored_time)],
+            TIMESTAMP '2021-01-01T12:01:01Z'),
+        (333, 'appleHealthKit', 'YES', 
+            [STRUCT('NO' AS status, TIMESTAMP '2022-02-01T12:01:01Z' AS authored_time),
+            STRUCT('YES' AS status, TIMESTAMP '2021-02-01T12:01:01Z' AS authored_time),
+            STRUCT('NO' AS status, TIMESTAMP '2020-06-01T12:01:01Z' AS authored_time),
+            STRUCT('YES' AS status, TIMESTAMP '2020-03-01T12:01:01Z' AS authored_time)],
+            TIMESTAMP '2022-02-01T12:01:01Z')
         """).render(project_id=self.project_id,
                     rdr_dataset_id=self.rdr_dataset_id,
-                    ps_api_values=PS_API_VALUES)
-        queries.append(ps_api_query)
+                    ps_awardee_values=PS_AWARDEE)
+        queries.append(ps_awardee_query)
 
         as_query = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-                    (person_id, date)
-                    VALUES
-                    (111, date('2018-11-26')),
-                    (222, date('2019-11-26')),
-                    (333, date('2020-11-26'))""").render(
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
+        (person_id, date)
+        VALUES
+        (111, date('2018-11-26')),
+        (222, date('2019-11-26')),
+        (333, date('2020-11-26'))""").render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             fitbit_table=ACTIVITY_SUMMARY)
         queries.append(as_query)
 
         hr_query = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` 
-                    (person_id, datetime)
-                    VALUES
-                    (111, '2018-11-26 00:00:00'),
-                    (222, '2019-11-26 00:00:00'),
-                    (333, '2020-11-26 00:00:00')""").render(
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` 
+        (person_id, datetime)
+        VALUES
+        (111, '2018-11-26 00:00:00'),
+        (222, '2019-11-26 00:00:00'),
+        (333, '2020-11-26 00:00:00')""").render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             fitbit_table=HEART_RATE_INTRADAY)
         queries.append(hr_query)
 
         hrs_query = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-                    (person_id, date)
-                    VALUES
-                    (111, date('2018-11-26')),
-                    (222, date('2019-11-26')),
-                    (333, date('2020-11-26'))""").render(
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
+        (person_id, date)
+        VALUES
+        (111, date('2018-11-26')),
+        (222, date('2019-11-26')),
+        (333, date('2020-11-26'))""").render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             fitbit_table=HEART_RATE_SUMMARY)
         queries.append(hrs_query)
 
         sid_query = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` 
-                    (person_id, datetime)
-                    VALUES
-                    (111, '2018-11-26 00:00:00'),
-                    (222, '2019-11-26 00:00:00'),
-                    (333, '2020-11-26 00:00:00')""").render(
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` 
+        (person_id, datetime)
+        VALUES
+        (111, '2018-11-26 00:00:00'),
+        (222, '2019-11-26 00:00:00'),
+        (333, '2020-11-26 00:00:00')""").render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             fitbit_table=STEPS_INTRADAY)

@@ -11,7 +11,7 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, FITBIT_TABLES, PIPELINE_TABLES, DIGITAL_HEALTH_SHARING_STATUS, PS_API_VALUES
+from common import DRC_OPS, JINJA_ENV, FITBIT_TABLES, PIPELINE_TABLES, DIGITAL_HEALTH_SHARING_STATUS, PS_AWARDEE
 from utils import pipeline_logging
 from google.cloud.bigquery import Table
 
@@ -35,60 +35,49 @@ SELECT *
 
 POPULATE_DIGITAL_HEALTH_SHARING_STATUS_TABLE_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.{{digital_health_sharing_status}}` (
-  person_id,
-  wearable,
-  status,
-  authored_time,
-  history
-)
-WITH deduped AS (
-  SELECT DISTINCT
     person_id,
     wearable,
     status,
     authored_time,
-    suspension_status,
-    withdrawal_status
-  FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
-),
-filtered AS (
-  SELECT *
-  FROM deduped
-  WHERE suspension_status = 'NOT_SUSPENDED'
-    AND withdrawal_status = 'NOT_WITHDRAWN'
-),
-ranked AS (
-  SELECT
-    f.*,
-    ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY authored_time DESC) AS rn
-  FROM filtered f
-),
-latest AS (
+    history
+  )
+  WITH extracted AS (
+    SELECT
+      person_id,
+      wearable,
+      JSON_VALUE(digital_health_sharing_status[wearable], '$.status') AS status,
+      SAFE.PARSE_TIMESTAMP(
+        '%Y-%m-%dT%H:%M:%SZ',
+        JSON_VALUE(digital_health_sharing_status[wearable], '$.authoredTime')
+      ) AS authored_time,
+      JSON_QUERY(digital_health_sharing_status[wearable], '$.history') AS history_json,
+      suspension_status,
+      withdrawal_status
+    FROM `{{project}}.{{drc_ops}}.{{ps_awardee_values_view}}`
+    WHERE digital_health_sharing_status IS NOT NULL
+  ),
+  filtered AS (
+    SELECT *
+    FROM extracted
+    WHERE suspension_status = 'not_deactivated'
+      AND withdrawal_status = 'not_withdrawn'
+  )
   SELECT
     person_id,
     wearable,
     status,
-    authored_time
-  FROM ranked
-  WHERE rn = 1
-),
-older AS (
-  SELECT
-    id,
-    ARRAY_AGG(STRUCT(status AS status, authored_time AS authored_time) ORDER BY authored_time DESC) AS history
-  FROM ranked
-  WHERE rn > 1
-  GROUP BY id
-)
-SELECT
-  l.person_id,
-  l.wearable,
-  l.status,
-  l.authored_time,
-  COALESCE(o.history, []) AS history
-FROM latest l
-LEFT JOIN older o
-USING (person_id)
+    authored_time,
+    IFNULL(
+      ARRAY(
+        SELECT AS STRUCT
+          JSON_VALUE(h, '$.status') AS status,
+          SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', JSON_VALUE(h, '$.authoredTime')) AS
+  authored_time
+        FROM UNNEST(JSON_QUERY_ARRAY(history_json)) AS h
+      ),
+      []
+    ) AS history
+  FROM filtered
 """)
 
 
@@ -141,9 +130,9 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
         q = POPULATE_DIGITAL_HEALTH_SHARING_STATUS_TABLE_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
-            rdr_dataset=self.rdr_dataset_id,
+            drc_ops=DRC_OPS,
             digital_health_sharing_status=DIGITAL_HEALTH_SHARING_STATUS,
-            ps_api_values=PS_API_VALUES)
+            ps_awardee_values_view=PS_AWARDEE)
         query_job = client.query(q)
         query_job.result()
         if query_job.exception():

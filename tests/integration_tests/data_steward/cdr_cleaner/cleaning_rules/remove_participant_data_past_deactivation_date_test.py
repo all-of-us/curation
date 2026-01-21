@@ -216,7 +216,7 @@ class RemoveParticipantDataPastDeactivationDateTest(
             PS_AWARDEE:
                 JINJA_ENV.from_string("""
                 INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
-                (participant_id, first_name, middle_name, last_name, street_address, street_address2, city,
+                (person_id, first_name, middle_name, last_name, street_address, street_address2, city,
                  state, zip_code, phone_number, email, date_of_birth, sex, suspension_status, suspension_time,
                  withdrawal_time, withdrawal_status, digital_health_sharing_status, wearable,
                  consent_for_electronic_health_records, organization)
