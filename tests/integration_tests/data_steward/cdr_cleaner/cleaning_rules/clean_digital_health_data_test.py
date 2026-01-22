@@ -91,9 +91,7 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
             JSON '{"fitbit": {"status": "YES", "authoredTime": "2021-01-01T12:01:01Z", "history": []}}',
             'not_deactivated', 'not_withdrawn'),
         (333, 'appleHealthKit',
-            JSON '{"appleHealthKit": {"status": "YES", "authoredTime": "2022-02-01T12:01:01Z", "history":
-        [{"status": "NO", "authoredTime": "2021-02-01T12:01:01Z"}, {"status": "YES", "authoredTime":
-        "2020-06-01T12:01:01Z"}, {"status": "NO", "authoredTime": "2020-03-01T12:01:01Z"}]}}',
+            JSON '{"appleHealthKit": {"status": "YES", "authoredTime": "2022-02-01T12:01:01Z", "history": [{"status": "NO", "authoredTime": "2021-02-01T12:01:01Z"}, {"status": "YES", "authoredTime":"2020-06-01T12:01:01Z"}, {"status": "NO", "authoredTime": "2020-03-01T12:01:01Z"}]}}',
             'not_deactivated', 'not_withdrawn')
         """).render(project_id=self.project_id,
                     rdr_dataset_id=self.rdr_dataset_id,
