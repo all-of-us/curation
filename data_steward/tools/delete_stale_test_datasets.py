@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import argparse
 import logging
 import os
+import re
 
 # Third party imports
 from google.api_core import exceptions
@@ -78,17 +79,18 @@ def _filter_stale_datasets(bq_client: BigQueryClient, first_n: int = None):
                 LOGGER.info(f"Skipping {dataset_name} - it is not old enough.")
                 continue
 
-            if len(list(bq_client.list_tables(dataset_name))) >= 1:
-                LOGGER.info(f"Skipping {dataset_name} - it has tables in it.")
-                continue
+            if not re.search(r'_\d_', dataset_name):
+                if len(list(bq_client.list_tables(dataset_name))) >= 1:
+                    LOGGER.info(f"Skipping {dataset_name} - it has tables in it.")
+                    continue
 
-            if len(list(bq_client.list_routines(dataset_name))) >= 1:
-                LOGGER.info(f"Skipping {dataset_name} - it has routines in it.")
-                continue
+                if len(list(bq_client.list_routines(dataset_name))) >= 1:
+                    LOGGER.info(f"Skipping {dataset_name} - it has routines in it.")
+                    continue
 
-            if len(list(bq_client.list_models(dataset_name))) >= 1:
-                LOGGER.info(f"Skipping {dataset_name} - it has models in it.")
-                continue
+                if len(list(bq_client.list_models(dataset_name))) >= 1:
+                    LOGGER.info(f"Skipping {dataset_name} - it has models in it.")
+                    continue
 
             stale_datasets.append(dataset_name)
             LOGGER.info(

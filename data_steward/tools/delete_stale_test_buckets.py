@@ -9,6 +9,7 @@ Stale buckets meet all of the following conditions:
 import argparse
 import logging
 from datetime import datetime, timezone
+import re
 
 # Project imports
 import app_identity
@@ -69,9 +70,10 @@ def _filter_stale_buckets(storage_client, first_n: int = None):
             LOGGER.info(f"Skipping {bucket.name} - it is not old enough.")
             continue
 
-        if len(list(storage_client.list_blobs(bucket.name))) >= 1:
-            LOGGER.info(f"Skipping {bucket.name} - it has objects in it.")
-            continue
+        if not re.search(r'_\d_', bucket.name):
+            if len(list(storage_client.list_blobs(bucket.name))) >= 1:
+                LOGGER.info(f"Skipping {bucket.name} - it has objects in it.")
+                continue
 
         stale_buckets.append(bucket.name)
         LOGGER.info(
