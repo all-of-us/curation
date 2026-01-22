@@ -3,7 +3,7 @@ Test the Google Cloud Storage Client and associated helper functions
 """
 # Python stl imports
 import os
-from time import time
+import time
 import unittest
 from unittest.mock import patch
 
