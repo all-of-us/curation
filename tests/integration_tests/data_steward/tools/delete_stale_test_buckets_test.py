@@ -3,6 +3,7 @@ Integration test for delete_stale_test_buckets module.
 """
 
 # Python imports
+import re
 from unittest import TestCase
 from unittest.mock import patch
 from datetime import datetime, timezone
@@ -41,5 +42,6 @@ class DeleteStaleTestBucketsTest(TestCase):
             self.assertGreaterEqual((self.now - bucket_created).days, 90)
 
             # Assert: Bucket is stale (2: Empty(=no blobs))
-            self.assertEqual(
-                len(list(self.storage_client.list_blobs(bucket_name))), 0)
+            if not re.search(r'_\d_', bucket_name):
+                self.assertEqual(
+                    len(list(self.storage_client.list_blobs(bucket_name))), 0)

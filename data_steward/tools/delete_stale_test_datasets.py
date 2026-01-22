@@ -94,6 +94,10 @@ def _filter_stale_datasets(bq_client: BigQueryClient, first_n: int = None):
                     LOGGER.info(
                         f"Skipping {dataset_name} - it has models in it.")
                     continue
+            else:
+                LOGGER.info(
+                    f"Deleting {dataset_name} - it is a temporary dataset created by Circle CI."
+                )
 
             stale_datasets.append(dataset_name)
             LOGGER.info(

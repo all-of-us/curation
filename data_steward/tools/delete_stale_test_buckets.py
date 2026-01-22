@@ -74,6 +74,10 @@ def _filter_stale_buckets(storage_client, first_n: int = None):
             if len(list(storage_client.list_blobs(bucket.name))) >= 1:
                 LOGGER.info(f"Skipping {bucket.name} - it has objects in it.")
                 continue
+        else:
+            LOGGER.info(
+                f"Deleting {bucket.name} - it is a temporary bucket created by Circle CI."
+            )
 
         stale_buckets.append(bucket.name)
         LOGGER.info(
