@@ -83,20 +83,19 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         queries = []
         ps_awardee_query = self.jinja_env.from_string("""
         INSERT INTO `{{project_id}}.{{rdr_dataset_id}}.{{ps_awardee_values}}`
-        (person_id, wearable, status, history, authored_time)
+        (person_id, wearable, digital_health_sharing_status, suspension_status, withdrawal_status)
         VALUES
-        (111, 'fitbit', 'YES', 
-            [STRUCT('YES' AS status, TIMESTAMP '2020-01-01T12:01:01Z' AS authored_time)],
-            TIMESTAMP '2020-01-01T12:01:01Z'),
-        (222, 'fitbit', 'YES', 
-            [STRUCT('YES' AS status, TIMESTAMP '2021-01-01T12:01:01Z' AS authored_time)],
-            TIMESTAMP '2021-01-01T12:01:01Z'),
-        (333, 'appleHealthKit', 'YES', 
-            [STRUCT('NO' AS status, TIMESTAMP '2022-02-01T12:01:01Z' AS authored_time),
-            STRUCT('YES' AS status, TIMESTAMP '2021-02-01T12:01:01Z' AS authored_time),
-            STRUCT('NO' AS status, TIMESTAMP '2020-06-01T12:01:01Z' AS authored_time),
-            STRUCT('YES' AS status, TIMESTAMP '2020-03-01T12:01:01Z' AS authored_time)],
-            TIMESTAMP '2022-02-01T12:01:01Z')
+        (111, 'fitbit',
+            JSON '{"fitbit": {"status": "YES", "authoredTime": "2020-01-01T12:01:01Z", "history": []}}',
+            'not_deactivated', 'not_withdrawn'),
+        (222, 'fitbit',
+            JSON '{"fitbit": {"status": "YES", "authoredTime": "2021-01-01T12:01:01Z", "history": []}}',
+            'not_deactivated', 'not_withdrawn'),
+        (333, 'appleHealthKit',
+            JSON '{"appleHealthKit": {"status": "YES", "authoredTime": "2022-02-01T12:01:01Z", "history":
+        [{"status": "NO", "authoredTime": "2021-02-01T12:01:01Z"}, {"status": "YES", "authoredTime":
+        "2020-06-01T12:01:01Z"}, {"status": "NO", "authoredTime": "2020-03-01T12:01:01Z"}]}}',
+            'not_deactivated', 'not_withdrawn')
         """).render(project_id=self.project_id,
                     rdr_dataset_id=self.rdr_dataset_id,
                     ps_awardee_values=PS_AWARDEE)
