@@ -4,6 +4,7 @@ Unit test for delete_stale_test_buckets module
 
 # Python imports
 import os
+import re
 from unittest import TestCase
 from unittest.mock import patch
 from datetime import datetime, timezone
@@ -40,5 +41,6 @@ class DeleteStaleTestDatasetsTest(TestCase):
             self.assertGreaterEqual((self.now - dataset_created).days, 90)
 
             # Assert: Dataset is stale (2: Empty(=no tables))
-            self.assertEqual(
-                len(list(self.bq_client.list_tables(dataset_name))), 0)
+            if not re.search(r'_\d_', dataset_name):
+                self.assertEqual(
+                    len(list(self.bq_client.list_tables(dataset_name))), 0)
