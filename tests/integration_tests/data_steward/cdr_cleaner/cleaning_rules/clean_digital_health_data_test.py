@@ -69,9 +69,8 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
     @patch(
         'cdr_cleaner.cleaning_rules.clean_digital_health_data.PIPELINE_TABLES',
         os.environ.get('COMBINED_DATASET_ID'))
-    @patch(
-        'cdr_cleaner.cleaning_rules.clean_digital_health_data.DRC_OPS',
-        os.environ.get('RDR_DATASET_ID'))
+    @patch('cdr_cleaner.cleaning_rules.clean_digital_health_data.DRC_OPS',
+           os.environ.get('RDR_DATASET_ID'))
     def test_clean_digital_health_data(self):
         """
         Tests perform as designed.
@@ -107,10 +106,10 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         VALUES
         (111, date('2018-11-26')),
         (222, date('2019-11-26')),
-        (333, date('2020-11-26'))""").render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            fitbit_table=ACTIVITY_SUMMARY)
+        (333, date('2020-11-26'))
+        """).render(project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    fitbit_table=ACTIVITY_SUMMARY)
         queries.append(as_query)
 
         hr_query = self.jinja_env.from_string("""
@@ -131,10 +130,9 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         VALUES
         (111, date('2018-11-26')),
         (222, date('2019-11-26')),
-        (333, date('2020-11-26'))""").render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            fitbit_table=HEART_RATE_SUMMARY)
+        (333, date('2020-11-26'))""").render(project_id=self.project_id,
+                                             dataset_id=self.dataset_id,
+                                             fitbit_table=HEART_RATE_SUMMARY)
         queries.append(hrs_query)
 
         sid_query = self.jinja_env.from_string("""
@@ -143,10 +141,9 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         VALUES
         (111, '2018-11-26 00:00:00'),
         (222, '2019-11-26 00:00:00'),
-        (333, '2020-11-26 00:00:00')""").render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            fitbit_table=STEPS_INTRADAY)
+        (333, '2020-11-26 00:00:00')""").render(project_id=self.project_id,
+                                                dataset_id=self.dataset_id,
+                                                fitbit_table=STEPS_INTRADAY)
         queries.append(sid_query)
 
         self.load_test_data(queries)
