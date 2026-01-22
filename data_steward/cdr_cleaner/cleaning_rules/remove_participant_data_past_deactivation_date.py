@@ -47,7 +47,7 @@ SELECT
     suspension_status,
     suspension_time AS deactivated_datetime
 FROM `{{project}}.{{drc_ops}}.{{ps_awardee_values_view}}`
-WHERE suspension_status = 'not_deactivated'
+WHERE suspension_status <> 'not_deactivated'
 """)
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
