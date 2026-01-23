@@ -51,8 +51,8 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         sandbox_tables = cls.rule_instance.get_sandbox_tablenames()
         cls.fq_sandbox_table_names = [
             f'{project_id}.{sandbox_id}.{table}' for table in sandbox_tables
-        ] + cls.rule_instance.sandbox_table_for(
-            clean_dhd.DIGITAL_HEALTH_SHARING_STATUS)
+        ] + [cls.rule_instance.sandbox_table_for(
+            clean_dhd.DIGITAL_HEALTH_SHARING_STATUS)]
 
         cls.fq_digital_health_table = f'{cls.project_id}.{cls.dataset_id}.{clean_dhd.DIGITAL_HEALTH_SHARING_STATUS}'
         cls.fq_ps_awardee_values_table = f'{cls.project_id}.{cls.rdr_dataset_id}.{PS_AWARDEE}'
