@@ -51,9 +51,6 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         sandbox_tables = cls.rule_instance.get_sandbox_tablenames()
         cls.fq_sandbox_table_names = [
             f'{project_id}.{sandbox_id}.{table}' for table in sandbox_tables
-        ] + [
-            f'{project_id}.{sandbox_id}.{cls.rule_instance.sandbox_table_for(
-                clean_dhd.DIGITAL_HEALTH_SHARING_STATUS)}'
         ]
 
         cls.fq_digital_health_table = f'{cls.project_id}.{cls.dataset_id}.{clean_dhd.DIGITAL_HEALTH_SHARING_STATUS}'
@@ -196,10 +193,7 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 '.'.join(
                     [self.dataset_id, clean_dhd.DIGITAL_HEALTH_SHARING_STATUS]),
-            'fq_sandbox_table_name': [
-                sb_name for sb_name in self.fq_sandbox_table_names
-                if clean_dhd.DIGITAL_HEALTH_SHARING_STATUS in sb_name
-            ][0],
+            'fq_sandbox_table_name': [],
             'fields': [
                 'person_id', 'wearable', 'status', 'authored_time', 'history'
             ],
