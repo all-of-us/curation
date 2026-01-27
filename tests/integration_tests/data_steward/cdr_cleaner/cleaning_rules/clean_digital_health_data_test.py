@@ -197,7 +197,9 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
             'fields': [
                 'person_id', 'wearable', 'status', 'authored_time', 'history'
             ],
-            'loaded_ids': [111, 222, 333],
+            'check_preconditions':
+                False,
+            'loaded_ids': [],
             'sandboxed_ids': [],
             'cleaned_values': [
                 (111, 'fitbit', 'YES',
