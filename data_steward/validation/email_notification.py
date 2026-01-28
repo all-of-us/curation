@@ -135,8 +135,9 @@ def get_aou_logo_b64():
     logo_path = os.path.join(achilles_images_path, consts.AOU_LOGO_PNG)
     with Image.open(logo_path) as img:
         img.thumbnail((300, 300), Image.LANCZOS)
+        rgb_img = img.convert('RGB')
         buffer = BytesIO()
-        img.save(buffer, format='JPEG', quality=85)
+        rgb_img.save(buffer, format='JPEG', quality=85)
         return base64.b64encode(buffer.getvalue()).decode()
 
 
