@@ -275,6 +275,8 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
     def test_create_cdm_tables(self):
         # pre-conditions
         # Sanity check
+        self.combined_dataset_id = COMBINED_DATASET_ID
+        test_util.delete_all_tables(self.bq_client, self.combined_dataset_id)
         tables_before = self.bq_client.list_tables(self.combined_dataset_id)
         table_names_before = [table.table_id for table in tables_before]
         for table in resources.CDM_TABLES:
