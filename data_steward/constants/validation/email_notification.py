@@ -55,7 +55,7 @@ If you have additional questions or wish to no longer receive these emails, plea
 
 <p style="font-size:115%;">EHR Ops team, DRC<br>
 <em>All of Us</em> Research Program<br>
-<img src="cid:{{ aou_logo }}"/></p>
+<img src="cid:{{ aou_logo }}" width="150" alt="All of Us Logo"/>
 """
 
 AOU_LOGO = 'aou_logo'

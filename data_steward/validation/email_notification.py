@@ -4,6 +4,8 @@ import logging
 import base64
 from io import BytesIO
 
+from PIL import Image
+
 # Third party imports
 from common import CDR_SCOPES
 from sendgrid import SendGridAPIClient
@@ -131,10 +133,11 @@ def generate_html_body(site_name, folder_uri, report_data):
 
 def get_aou_logo_b64():
     logo_path = os.path.join(achilles_images_path, consts.AOU_LOGO_PNG)
-    thumbnail_obj = BytesIO()
-    mpimg.thumbnail(logo_path, thumbnail_obj, scale=0.15)
-    logo_b64 = base64.b64encode(thumbnail_obj.getvalue()).decode()
-    return logo_b64
+    with Image.open(logo_path) as img:
+        img.thumbnail((300, 300), Image.LANCZOS)
+        buffer = BytesIO()
+        img.save(buffer, format='JPEG', quality=85)
+        return base64.b64encode(buffer.getvalue()).decode()
 
 
 def generate_email_message(hpo_id, results_html, folder_uri, report_data):
@@ -193,8 +196,8 @@ def generate_email_message(hpo_id, results_html, folder_uri, report_data):
     logo_inline_image = Attachment()
     logo_inline_image.file_content = FileContent(aou_logo_b64)
     logo_inline_image.file_name = FileName(consts.AOU_LOGO)
-    logo_inline_image.file_type = FileType('image/png')
-    logo_inline_image.disposition = Disposition('attachment')
+    logo_inline_image.file_type = FileType('image/jpeg')
+    logo_inline_image.disposition = Disposition('inline')
     logo_inline_image.content_id = ContentId(consts.AOU_LOGO)
     message.add_attachment(logo_inline_image)
 
