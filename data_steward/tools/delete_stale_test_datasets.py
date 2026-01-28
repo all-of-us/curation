@@ -142,7 +142,8 @@ def main(first_n):
         LOGGER.info(f"Running - bq_client.delete_dataset({stale_dataset})")
 
         try:
-            bq_client.delete_dataset(stale_dataset)
+            bq_client.delete_dataset(dataset=stale_dataset,
+                                     delete_contents=True)
         except exceptions.BadRequest as e:
             LOGGER.warning(
                 f"Failed to delete {stale_dataset}. Message: {e.message}")
