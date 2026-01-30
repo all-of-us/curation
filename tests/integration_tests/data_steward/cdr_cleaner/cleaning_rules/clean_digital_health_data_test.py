@@ -13,7 +13,7 @@ from datetime import datetime
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_INTRADAY, HEART_RATE_SUMMARY, STEPS_INTRADAY
+from common import FITBIT_TABLES, ACTIVITY_SUMMARY, HEART_RATE_INTRADAY, HEART_RATE_SUMMARY, PS_AWARDEE, STEPS_INTRADAY
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 import cdr_cleaner.cleaning_rules.clean_digital_health_data as clean_dhd
 
@@ -54,11 +54,12 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_digital_health_table = f'{cls.project_id}.{cls.dataset_id}.{clean_dhd.DIGITAL_HEALTH_SHARING_STATUS}'
+        cls.fq_ps_awardee_values_table = f'{cls.project_id}.{cls.rdr_dataset_id}.{PS_AWARDEE}'
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{table_id}'
             for table_id in FITBIT_TABLES
-        ] + [cls.fq_digital_health_table]
+        ] + [cls.fq_digital_health_table] + [cls.fq_ps_awardee_values_table]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -68,6 +69,8 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
     @patch(
         'cdr_cleaner.cleaning_rules.clean_digital_health_data.PIPELINE_TABLES',
         os.environ.get('COMBINED_DATASET_ID'))
+    @patch('cdr_cleaner.cleaning_rules.clean_digital_health_data.DRC_OPS',
+           os.environ.get('RDR_DATASET_ID'))
     def test_clean_digital_health_data(self):
         """
         Tests perform as designed.
@@ -77,70 +80,68 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         """
 
         queries = []
-        dhss_query = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.{{table_name}}`
-                    (person_id, wearable, status, history, authored_time)
-                    VALUES
-                    (111,'fitbit','YES',[{'status':'YES','authored_time':'2020-01-01T12:01:01Z'}],'2020-01-01T12:01:01Z'),
-                    (222,'fitbit','YES',[{'status':'YES','authored_time':'2021-01-01T12:01:01Z'}],'2021-01-01T12:01:01Z'),
-                    (333,'appleHealthKit','YES',[{'status':'NO','authored_time':'2022-02-01T12:01:01Z'},
-                     {'status':'YES','authored_time':'2021-02-01T12:01:01Z'},
-                     {'status':'NO','authored_time':'2020-06-01T12:01:01Z'},
-                     {'status':'YES','authored_time':'2020-03-01T12:01:01Z'}],
-                     '2022-02-01T12:01:01Z')
-            """).render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            table_name=clean_dhd.DIGITAL_HEALTH_SHARING_STATUS,
-        )
-        queries.append(dhss_query)
+        ps_awardee_query = self.jinja_env.from_string("""
+        INSERT INTO `{{project_id}}.{{rdr_dataset_id}}.{{ps_awardee_values}}`
+        (person_id, wearable, digital_health_sharing_status, suspension_status, withdrawal_status)
+        VALUES
+        (111, 'fitbit',
+            JSON '{"fitbit": {"status": "YES", "authoredTime": "2020-01-01T12:01:01Z", "history": []}}',
+            'not_deactivated', 'not_withdrawn'),
+        (222, 'fitbit',
+            JSON '{"fitbit": {"status": "YES", "authoredTime": "2021-01-01T12:01:01Z", "history": []}}',
+            'not_deactivated', 'not_withdrawn'),
+        (333, 'appleHealthKit',
+            JSON '{"appleHealthKit": {"status": "YES", "authoredTime": "2022-02-01T12:01:01Z", "history": [{"status": "NO", "authoredTime": "2021-02-01T12:01:01Z"}, {"status": "YES", "authoredTime":"2020-06-01T12:01:01Z"}, {"status": "NO", "authoredTime": "2020-03-01T12:01:01Z"}]}}',
+            'not_deactivated', 'not_withdrawn')
+        """).render(project_id=self.project_id,
+                    rdr_dataset_id=self.rdr_dataset_id,
+                    ps_awardee_values=PS_AWARDEE)
+        queries.append(ps_awardee_query)
 
         as_query = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-                    (person_id, date)
-                    VALUES
-                    (111, date('2018-11-26')),
-                    (222, date('2019-11-26')),
-                    (333, date('2020-11-26'))""").render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            fitbit_table=ACTIVITY_SUMMARY)
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
+        (person_id, date)
+        VALUES
+        (111, date('2018-11-26')),
+        (222, date('2019-11-26')),
+        (333, date('2020-11-26'))
+        """).render(project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    fitbit_table=ACTIVITY_SUMMARY)
         queries.append(as_query)
 
         hr_query = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` 
-                    (person_id, datetime)
-                    VALUES
-                    (111, '2018-11-26 00:00:00'),
-                    (222, '2019-11-26 00:00:00'),
-                    (333, '2020-11-26 00:00:00')""").render(
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` 
+        (person_id, datetime)
+        VALUES
+        (111, '2018-11-26 00:00:00'),
+        (222, '2019-11-26 00:00:00'),
+        (333, '2020-11-26 00:00:00')""").render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             fitbit_table=HEART_RATE_INTRADAY)
         queries.append(hr_query)
 
         hrs_query = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-                    (person_id, date)
-                    VALUES
-                    (111, date('2018-11-26')),
-                    (222, date('2019-11-26')),
-                    (333, date('2020-11-26'))""").render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            fitbit_table=HEART_RATE_SUMMARY)
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
+        (person_id, date)
+        VALUES
+        (111, date('2018-11-26')),
+        (222, date('2019-11-26')),
+        (333, date('2020-11-26'))""").render(project_id=self.project_id,
+                                             dataset_id=self.dataset_id,
+                                             fitbit_table=HEART_RATE_SUMMARY)
         queries.append(hrs_query)
 
         sid_query = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` 
-                    (person_id, datetime)
-                    VALUES
-                    (111, '2018-11-26 00:00:00'),
-                    (222, '2019-11-26 00:00:00'),
-                    (333, '2020-11-26 00:00:00')""").render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            fitbit_table=STEPS_INTRADAY)
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{fitbit_table}}` 
+        (person_id, datetime)
+        VALUES
+        (111, '2018-11-26 00:00:00'),
+        (222, '2019-11-26 00:00:00'),
+        (333, '2020-11-26 00:00:00')""").render(project_id=self.project_id,
+                                                dataset_id=self.dataset_id,
+                                                fitbit_table=STEPS_INTRADAY)
         queries.append(sid_query)
 
         self.load_test_data(queries)
@@ -187,6 +188,41 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [
                 (111, datetime.fromisoformat('2018-11-26').date()),
                 (222, datetime.fromisoformat('2019-11-26').date())
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join(
+                    [self.dataset_id, clean_dhd.DIGITAL_HEALTH_SHARING_STATUS]),
+            'fq_sandbox_table_name': [],
+            'fields': [
+                'person_id', 'wearable', 'status', 'authored_time', 'history'
+            ],
+            'check_preconditions':
+                False,
+            'loaded_ids': [],
+            'sandboxed_ids': [],
+            'cleaned_values': [
+                (111, 'fitbit', 'YES',
+                 datetime.fromisoformat('2020-01-01T12:01:01+00:00'), []),
+                (222, 'fitbit', 'YES',
+                 datetime.fromisoformat('2021-01-01T12:01:01+00:00'), []),
+                (333, 'appleHealthKit', 'YES',
+                 datetime.fromisoformat('2022-02-01T12:01:01+00:00'), [{
+                     'status':
+                         'NO',
+                     'authored_time':
+                         datetime.fromisoformat('2021-02-01T12:01:01+00:00')
+                 }, {
+                     'status':
+                         'YES',
+                     'authored_time':
+                         datetime.fromisoformat('2020-06-01T12:01:01+00:00')
+                 }, {
+                     'status':
+                         'NO',
+                     'authored_time':
+                         datetime.fromisoformat('2020-03-01T12:01:01+00:00')
+                 }])
             ]
         }, {
             'fq_table_name':

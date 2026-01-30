@@ -27,7 +27,7 @@ SCOPES = [
 ]
 
 GET_HPO_PARTICIPANT_DATA_QUERY = JINJA_ENV.from_string("""
-    SELECT participant_id AS person_id, first_name, middle_name, last_name, street_address,
+    SELECT person_id, first_name, middle_name, last_name, street_address,
     street_address2, city, state, zip_code, phone_number, email,
     date_of_birth, sex
     FROM `{{project}}.{{dataset}}.{{table}}`
@@ -38,7 +38,7 @@ GET_HPO_PARTICIPANT_DATA_QUERY = JINJA_ENV.from_string("""
 """)
 
 GET_FULL_PARTICIPANT_DATA_QUERY = JINJA_ENV.from_string("""
-    SELECT participant_id AS person_id, first_name, middle_name, last_name, street_address,
+    SELECT person_id, first_name, middle_name, last_name, street_address,
     street_address2, city, state, zip_code, phone_number, email,
     date_of_birth, sex
     FROM `{{project}}.{{dataset}}.{{table}}`

@@ -43,11 +43,11 @@ ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129', 'DC2631', 'DC3164']
 #    )
 POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY = JINJA_ENV.from_string("""
 SELECT
-    participant_id AS person_id,
+    person_id,
     suspension_status,
     suspension_time AS deactivated_datetime
-FROM `{{project}}.{{rdr_dataset}}.{{ps_api_values}}`
-WHERE suspension_status = 'NO_CONTACT'
+FROM `{{project}}.{{drc_ops}}.{{ps_awardee_values_view}}`
+WHERE suspension_status <> 'not_deactivated'
 """)
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
@@ -318,9 +318,9 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         q = POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
-            rdr_dataset='drc_ops',
+            drc_ops='drc_ops',
             deactivated_participants=DEACTIVATED_PARTICIPANTS,
-            ps_api_values='ps_awardee_values_view')
+            ps_awardee_values_view='ps_awardee_values_view')
         query_job = client.query(q)
         df = query_job.result().to_dataframe()
 

@@ -3,6 +3,7 @@ Test the Google Cloud Storage Client and associated helper functions
 """
 # Python stl imports
 import os
+import time
 import unittest
 from unittest.mock import patch
 
@@ -109,6 +110,7 @@ class GcsClientTest(unittest.TestCase):
         for sub_prefix in self.sub_prefixes:
             blob = bucket.blob(f'{sub_prefix}/obj.txt')
             blob.upload_from_string(self.data)
+            time.sleep(1.1)
 
     def tearDown(self):
         self.storage_client.empty_bucket(self.bucket_name)

@@ -28,7 +28,7 @@ EXPLICIT_IDENTIFIER_CONCEPTS = '_explicit_records_identifier_concepts'
 # Creates _explicit_identifier_concepts lookup table and populates with the concept_ids that are
 # from the concept table
 LOOKUP_TABLE_CREATION_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE IF NOT EXISTS `{{project_id}}.{{sandbox_dataset}}.{{lookup_table}}` AS 
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{lookup_table}}` AS 
 (
 with explicit_concept_ids AS
 (

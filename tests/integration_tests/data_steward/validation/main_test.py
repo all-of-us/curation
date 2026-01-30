@@ -303,16 +303,18 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('constants.validation.main.SUBMISSION_LAG_TIME_MINUTES', 0)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.main.get_participant_validation_summary_query')
+    @mock.patch('validation.main.get_participant_stats_query')
+    @mock.patch('validation.main.get_participant_stats_summary_query')
     @mock.patch('validation.main.setup_and_validate_participants')
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.all_required_files_loaded')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('api_util.check_cron')
-    def test_html_report_five_person(self, mock_check_cron, mock_first_run,
-                                     mock_required_files_loaded,
-                                     mock_has_all_required_files,
-                                     mock_setup_validate_participants,
-                                     mock_part_val_summary_query):
+    def test_html_report_five_person(
+            self, mock_check_cron, mock_first_run, mock_required_files_loaded,
+            mock_has_all_required_files, mock_setup_validate_participants,
+            mock_part_stats_summary_query, mock_part_stats_query,
+            mock_part_val_summary_query):
         mock_required_files_loaded.return_value = False
         mock_first_run.return_value = False
         mock_has_all_required_files.return_value = True
@@ -333,6 +335,21 @@ class ValidationMainTest(unittest.TestCase):
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
             client=self.bq_client, dataset_id=self.dataset_id)
+
+        mock_part_stats_summary_query.return_value = """
+          SELECT 2 as ehr_consent_yes, 2 as ehr_data_available, 2 as hpo_paired_participant, 
+                 2 as patient_status_yes, 2 as physical_measurement_completed, 2 as biospecimen_on_site
+          """
+
+        mock_part_stats_query.return_value = """
+          SELECT 1 as person_id, 1 as ehr_data_available, 1 as hpo_paired_participant,
+                 'SAME_PAIRED_ORG' as ORGANIZATION, 1 as ehr_consent_yes_flag,
+                 'YES' as patient_status, 'COMPLETED' as pm_status, 'ON_SITE' as bbo_collection_method
+          UNION ALL
+          SELECT 2 as person_id, 1 as ehr_data_available, 1 as hpo_paired_participant,
+                 'SAME_PAIRED_ORG' as ORGANIZATION, 1 as ehr_consent_yes_flag,
+                 'YES' as patient_status, 'COMPLETED' as pm_status, 'ON_SITE' as bbo_collection_method
+          """
 
         main.app.testing = True
         with main.app.test_client() as test_client:
