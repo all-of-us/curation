@@ -550,15 +550,16 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix,
     results_html_blob = bucket.blob(results_html_path)
     results_html_blob.upload_from_string(results_html)
 
-    participants_stats_df = pd.DataFrame(
-        report_data[report_consts.PARTICIPANT_STATS_KEY])
-    participant_stats_csv = participants_stats_df.to_csv(index=False)
-    participant_stats_csv_path = f'{folder_prefix}{common.PARTICIPANT_STATS_CSV}'
-    logging.info(f"Saving file {common.PARTICIPANT_STATS_CSV} to "
-                 f"gs://{bucket.name}/{participant_stats_csv_path}.")
-    participant_stats_csv_blob = bucket.blob(participant_stats_csv_path)
-    participant_stats_csv_blob.upload_from_string(participant_stats_csv,
-                                                  content_type='text/csv')
+    if report_consts.PARTICIPANT_STATS_KEY in report_data:
+        participants_stats_df = pd.DataFrame(
+            report_data[report_consts.PARTICIPANT_STATS_KEY])
+        participant_stats_csv = participants_stats_df.to_csv(index=False)
+        participant_stats_csv_path = f'{folder_prefix}{common.PARTICIPANT_STATS_CSV}'
+        logging.info(f"Saving file {common.PARTICIPANT_STATS_CSV} to "
+                     f"gs://{bucket.name}/{participant_stats_csv_path}.")
+        participant_stats_csv_blob = bucket.blob(participant_stats_csv_path)
+        participant_stats_csv_blob.upload_from_string(participant_stats_csv,
+                                                      content_type='text/csv')
 
     processed_txt_path = f'{folder_prefix}{common.PROCESSED_TXT}'
     logging.info(f"Saving timestamp {processed_time_str} to "
