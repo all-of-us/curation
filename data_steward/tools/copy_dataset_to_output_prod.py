@@ -182,8 +182,10 @@ def generate_output_prod(tier,
     LOGGER.info(
         f'Creating dataset {output_dataset_name} in {output_prod_project_id}...'
     )
-    dataset_object = bq_client.define_dataset(output_dataset_name, description,
-                                              labels, output_prod=True)
+    dataset_object = bq_client.define_dataset(output_dataset_name,
+                                              description,
+                                              labels,
+                                              output_prod=True)
     bq_client.create_dataset(dataset_object, exists_ok=False)
 
     # Optionally copy fitbit tables to source dataset
@@ -223,8 +225,10 @@ def generate_output_prod(tier,
         LOGGER.info(
             f'Creating dataset {serology_output} in {output_prod_project_id}...'
         )
-        dataset_object = bq_client.define_dataset(serology_output, description,
-                                                  labels, output_prod=True)
+        dataset_object = bq_client.define_dataset(serology_output,
+                                                  description,
+                                                  labels,
+                                                  output_prod=True)
         bq_client.create_dataset(dataset_object, exists_ok=False)
         _ = bq_client.copy_dataset(
             f'{src_project_id}.{serology_input}',

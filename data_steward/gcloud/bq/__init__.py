@@ -186,7 +186,9 @@ class BigQueryClient(Client):
         return DATASET_COLUMNS_TPL.render(project_id=self.project,
                                           dataset_id=dataset_id)
 
-    def define_dataset(self, dataset_id: str, description: str,
+    def define_dataset(self,
+                       dataset_id: str,
+                       description: str,
                        label_or_tag: dict,
                        output_prod=False) -> bigquery.Dataset:
         """
