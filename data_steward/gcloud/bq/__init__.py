@@ -186,8 +186,11 @@ class BigQueryClient(Client):
         return DATASET_COLUMNS_TPL.render(project_id=self.project,
                                           dataset_id=dataset_id)
 
-    def define_dataset(self, dataset_id: str, description: str,
-                       label_or_tag: dict) -> bigquery.Dataset:
+    def define_dataset(self,
+                       dataset_id: str,
+                       description: str,
+                       label_or_tag: dict,
+                       output_prod=False) -> bigquery.Dataset:
         """
         Define the dataset reference.
 
@@ -195,6 +198,8 @@ class BigQueryClient(Client):
         :param description:  description for the dataset
         :param label_or_tag:  labels for the dataset = Dict[str, str]
                             tags for the dataset = Dict[str, '']
+        :param output_prod:  boolean indicating whether the target dataset is
+                            output-prod or not. This will define dataset location.
 
         :return: a dataset reference object.
         :raises: google.api_core.exceptions.Conflict if the dataset already exists
@@ -214,7 +219,7 @@ class BigQueryClient(Client):
         dataset = bigquery.Dataset(dataset_id)
         dataset.description = description
         dataset.labels = label_or_tag
-        dataset.location = "US"
+        dataset.location = "us-central1" if output_prod else "US"
 
         return dataset
 
