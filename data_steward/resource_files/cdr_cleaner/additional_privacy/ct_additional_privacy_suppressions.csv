@@ -617,7 +617,7 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added
 314103,198944004,liveborn,snomed,2025-08-04
 320456,198945003,liveborn,snomed,2025-08-04
 44823229,642.01,liveborn,icd9cm,2025-08-04
-4135376,21112-8,liveborn; date of birth,loinc,2025-08-04
+3022007,21112-8,liveborn; date of birth,loinc,2025-08-04
 46236885,77963-7,liveborn; free text,loinc,2025-08-04
 4015270,169836001,liveborn,snomed,2025-08-04
 43533795,73771-8,liveborn,loinc,2025-08-04
