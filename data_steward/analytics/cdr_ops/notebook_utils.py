@@ -102,6 +102,41 @@ def execute(client, query, max_rows=False):
     return res
 
 
+def display_row_level_check_results(results_df, preview_rows=200):
+    """
+    Display summary + bounded preview while retaining full result dataframe.
+
+    :param results_df: pandas dataframe containing row-level check results
+    :param preview_rows: max rows to display in the preview
+    """
+    preview_rows = max(1, int(preview_rows))
+    total_rows = len(results_df)
+    print(f'Total row-level results: {total_rows}')
+
+    if total_rows == 0:
+        print('No row-level differences found.')
+        return
+
+    if 'test_id' in results_df.columns:
+        print('\nCounts by test_id')
+        import pandas as pd
+        with pd.option_context('display.max_rows', None):
+            display(
+                results_df.groupby('test_id', dropna=False).size().reset_index(
+                    name='row_count').sort_values('test_id'))
+
+    shown_rows = min(preview_rows, total_rows)
+    print(f'\nPreview (first {shown_rows} rows)')
+    import pandas as pd
+    with pd.option_context('display.max_rows', shown_rows):
+        display(results_df.head(preview_rows))
+
+    if total_rows > preview_rows:
+        print(
+            f'\nShowing first {preview_rows} of {total_rows} rows. Full results are retained in memory in this dataframe.'
+        )
+
+
 def render_message(results_df,
                    success_msg='',
                    failure_msg='',
