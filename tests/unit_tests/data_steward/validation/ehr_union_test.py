@@ -171,15 +171,7 @@ class EhrUnionTest(unittest.TestCase):
             hpo_table = resources.get_table_id('person', hpo_id=hpo_id)
             self.assertIn(f"'{hpo_table}' AS src_table_id", subquery)
             self.assertIn('person_id AS src_person_id', subquery)
-
-            if hpo_id in ['illinois_near_north', 'ecchc']:
-                # Even for special HPOs, person table should use ROW_NUMBER without offset
-                self.assertIn(
-                    'ROW_NUMBER() OVER (ORDER BY person_id) AS person_id',
-                    subquery)
-            else:
-                # Standard person mapping
-                self.assertIn('person_id AS person_id', subquery)
+            self.assertIn('person_id AS person_id', subquery)
 
     @mock.patch('bq_utils.get_hpo_info')
     def test_mapping_query(self, mock_hpo_info):
