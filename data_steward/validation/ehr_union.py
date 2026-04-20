@@ -196,18 +196,19 @@ def _mapping_subqueries(client, table_name, hpo_ids, dataset_id, project_id):
     # defining template locally (rather than top of module) so it is closer to code
     # that references it below
     hpo_subquery_tpl = JINJA_ENV.from_string('''
-    (SELECT '{{table_id}}' AS src_table_id,
-      {{table_name}}_id AS src_{{table_name}}_id,
-      -- offset is added to the destination key only if add_hpo_offset == True --
-      {%- if hpo_id in ['illinois_near_north', 'ecchc'] %}
-      ROW_NUMBER() OVER (ORDER BY {{table_name}}_id)
-        {%- if add_hpo_offset %} + {{hpo_offset}} {%- endif %} AS {{table_name}}_id
-      {%- else %}
-      {{table_name}}_id 
-        {%- if add_hpo_offset %} + {{hpo_offset}} {%- endif %} AS {{table_name}}_id
-      {%- endif %}
-      FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`)
-    ''')
+        (SELECT '{{table_id}}' AS src_table_id,
+          {{table_name}}_id AS src_{{table_name}}_id,
+          {%- if table_name == 'person' %}
+            {{table_name}}_id AS {{table_name}}_id
+          {%- elif hpo_id in ['clad', 'illinois_near_north', 'ecchc', 'seec_uprccc'] %}
+            ROW_NUMBER() OVER (ORDER BY {{table_name}}_id)
+            {%- if add_hpo_offset %} + {{hpo_offset}} {%- endif %} AS {{table_name}}_id
+          {%- else %}
+            {{table_name}}_id
+            {%- if add_hpo_offset %} + {{hpo_offset}} {%- endif %} AS {{table_name}}_id
+          {%- endif %}
+          FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`)
+        ''')
     result = []
     hpo_unique_identifiers = get_hpo_offsets(hpo_ids)
 
