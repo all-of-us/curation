@@ -11155,7 +11155,6 @@ PPI,OtherSpecify_OtherDrugsTextBox,Other Specify: Other Drugs Text Box,1585647,O
 PPI,notes,Additional notes,903137,Observation,DC-2277
 RxNorm Extension,OMOP5043059,COVID-19 convalescent plasma,33000,Drug,DC-2277
 SNOMED,103579009,Race,4013886,Observation,DC-2277
-SNOMED,263495000,Gender,4135376,Observation,DC-2277
 SNOMED,364699009,Ethnic group,4271761,Observation,DC-2277
 SNOMED,81730008,Abnormal sexual state,4305327,Condition,DC-2277
 SNOMED,83240001,Abnormal sexual state and development,4307247,Condition,DC-2277
