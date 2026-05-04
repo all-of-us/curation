@@ -70,6 +70,7 @@ from common import (AOU_DEATH, DEATH, MAPPING_PREFIX, PERSON, SURVEY_CONDUCT,
 from gcloud.bq import BigQueryClient
 from resources import fields_for, has_primary_key, CDM_TABLES
 from utils import pipeline_logging
+from tools.regenerate_etm_rt_ids import ETM_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -772,7 +773,7 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
                          rt_ids_view, mapping_source_dataset_id)
 
     # Discover and process any remaining tables
-    tables_to_skip = set(CDM_TABLES) | set(FITBIT_TABLES) | set(EXT_TABLES)
+    tables_to_skip = set(CDM_TABLES) | set(FITBIT_TABLES) | set(EXT_TABLES) | set(ETM_TABLES)
     copy_only_tables = set(VOCABULARY_TABLES) | set(ACHILLES_TABLES) | set(
         ACHILLES_HEEL_TABLES)
 
