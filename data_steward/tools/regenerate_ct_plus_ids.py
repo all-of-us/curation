@@ -17,8 +17,10 @@ four ways:
    sorting. The random value is materialized in an inner subquery so no
    nondeterministic function is evaluated inside a window ORDER BY. The mapping table
    is persisted, so the draw does not need to be reproducible and no salt or long
-   lived secret is introduced. Mappings are re-cut per release rather than appended,
-   since offsetting by a running maximum reintroduces ordering.
+   lived secret is introduced. Mappings are appended to across releases rather than
+   re-cut, so a row published once keeps its CT+ id for good. New ids sit above the
+   running maximum, which orders releases relative to each other, but the releases
+   ship as separate datasets so that boundary is already public.
 
 3) survey_conduct gets its provider_id, visit_occurrence_id and
    response_visit_occurrence_id foreign keys remapped. regenerate_rt_ids.py returns
@@ -61,7 +63,18 @@ Required Environment variables:
 
 The mapping dataset must be empty or produced by a previous CT+ run. Pointing this
 script at a mapping dataset an RT run produced would otherwise reuse that run's
-_mapping_person and hand CT+ the RT person_ids; the script fails fast instead.
+_mapping_person and hand CT+ the RT person_ids; the script fails fast instead. Point
+every release at the same mapping dataset, or ids will not persist between them.
+
+When to run: after the deid_clean stage, as the last step before the dataset is
+published, never between deid and deid_base. Two reasons. CreateDerivedTables runs in
+both CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES and
+CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES and mints observation_period_id,
+drug_era_id and condition_era_id from scratch, and MoveNLPtoDomains mints
+condition_occurrence_id off a running maximum at every stage, so ids assigned earlier
+are overwritten or joined by un-re-keyed ones. The first CT+ release also re-keys a
+copy of CT deid_clean, which fixes the mapping key space at that stage; a later
+release re-keying at any other stage would not match it.
 
 Usage:
   python regenerate_ct_plus_ids.py \
@@ -71,7 +84,7 @@ Usage:
     --pipeline_dataset_id <pipeline_tables_dataset> \
     --ct_plus_ids_view <rdr_participant_research_ids_view> \
     --mapping_dataset_id <mapping_tables_dataset> \
-    --mapping_source_dataset_id <optional_source_dataset_for_mappings>
+    --mapping_namespace <optional, defaults to DEFAULT_MAPPING_NAMESPACE>
 """
 import argparse
 import logging
@@ -105,6 +118,15 @@ CT_PLUS_PERSON_ID_COLUMN = 'controlled_tier_plus_id'
 # Marks a _mapping_person built by this script, so a mapping dataset produced by an
 # RT run is not silently reused. See assert_person_mapping_is_ct_plus().
 CT_PLUS_PERSON_MAPPING_SUFFIX = 'ct_plus'
+
+# Namespace stamped into src_table_id on every mapping row. It has to be a constant
+# rather than the input dataset name: both the append filter in mapping_query() and
+# the read side join in table_query() match on this literal, so a value derived from
+# the input dataset would stop matching the moment a later release runs against a
+# differently named dataset. Every source id would then be assigned a second, higher
+# id and the load would pick that one, silently breaking ID persistence across
+# releases with no error. Do not override this without changing both call sites.
+DEFAULT_MAPPING_NAMESPACE = 'ct_plus'
 
 # fact_relationship stores a domain concept id beside each fact id rather than a
 # foreign key column, so the remap has to switch on it. The domains below are the
@@ -165,9 +187,14 @@ def person_mapping_src_table_id(pipeline_dataset_id, ct_plus_ids_view):
     return f'{pipeline_dataset_id}.{ct_plus_ids_view}.{CT_PLUS_PERSON_MAPPING_SUFFIX}'
 
 
-def mapping_query(table_name, input_dataset_id, project_id, pipeline_dataset_id,
-                  ct_plus_ids_view, mapping_source_dataset_id,
-                  mapping_dataset_id):
+def mapping_query(table_name,
+                  input_dataset_id,
+                  project_id,
+                  pipeline_dataset_id,
+                  ct_plus_ids_view,
+                  mapping_namespace,
+                  mapping_dataset_id,
+                  append=False):
     """
     Get the query used to generate new IDs for a CDM table.
 
@@ -176,13 +203,20 @@ def mapping_query(table_name, input_dataset_id, project_id, pipeline_dataset_id,
     materialized in the inner subquery because BigQuery does not accept a
     nondeterministic expression directly in a window ORDER BY.
 
+    When appending, ids already mapped by an earlier release keep their value and only
+    unmapped source ids are drawn, so a row published in one release carries the same
+    CT+ id in every later one. New ids sit above the running maximum, which does order
+    releases relative to each other, but the releases ship as separate datasets so that
+    boundary is already public.
+
     :param table_name: name of CDM table
     :param input_dataset_id: identifies the BQ dataset containing the input table
     :param project_id: identifies the GCP project containing the dataset
     :param pipeline_dataset_id: identifies the pipeline_tables dataset (for person mapping)
     :param ct_plus_ids_view: view containing person_id to CT+ id mapping
-    :param mapping_source_dataset_id: original dataset used to create the mappings
+    :param mapping_namespace: constant stamped into src_table_id, see DEFAULT_MAPPING_NAMESPACE
     :param mapping_dataset_id: identifies the dataset where mapping tables are stored
+    :param append: if True, preserve existing mappings and only draw ids for new rows
     :return: the query
     """
     # Special handling for person table - use existing mapping from pipeline_tables.
@@ -200,16 +234,32 @@ def mapping_query(table_name, input_dataset_id, project_id, pipeline_dataset_id,
           AND {CT_PLUS_PERSON_ID_COLUMN} IS NOT NULL
         '''
 
+    mapping_table = mapping_table_for(table_name)
     id_field = f'{table_name}_id'
 
-    # For all other tables, draw a random permutation. Mapping tables are re-cut per
-    # release rather than appended: offsetting new IDs by the running maximum would
-    # place later arrivals above earlier ones and leak arrival order.
+    # When appending, start above every id already handed out and skip source ids that
+    # already have one, so previously published rows keep their CT+ id.
+    if append:
+        offset_expr = (
+            f'(SELECT COALESCE(MAX({id_field}), 0) '
+            f'FROM `{project_id}.{mapping_dataset_id}.{mapping_table}`)')
+        where_clause = f"""
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM `{project_id}.{mapping_dataset_id}.{mapping_table}` mt
+        WHERE mt.src_{id_field} = t.src_{id_field} AND
+              mt.src_table_id = '{mapping_namespace}.{table_name}'
+    )"""
+    else:
+        offset_expr = '0'
+        where_clause = ''
+
+    # For all other tables, draw a random permutation.
     return f'''
     SELECT
-        '{mapping_source_dataset_id}.{table_name}' AS src_table_id,
+        '{mapping_namespace}.{table_name}' AS src_table_id,
         src_{id_field},
-        ROW_NUMBER() OVER (ORDER BY shuffle_key) AS {id_field}
+        {offset_expr} + ROW_NUMBER() OVER (ORDER BY shuffle_key) AS {id_field}
     FROM (
         -- RAND() is drawn outside the DISTINCT: pulling it into the same SELECT
         -- would make every duplicate of {id_field} a distinct row and survive it
@@ -219,6 +269,7 @@ def mapping_query(table_name, input_dataset_id, project_id, pipeline_dataset_id,
             FROM `{project_id}.{input_dataset_id}.{table_name}`
         )
     ) t
+    {where_clause}
     '''
 
 
@@ -259,14 +310,20 @@ def assert_person_mapping_is_ct_plus(client, project_id, mapping_dataset_id,
 
 
 def mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
-            pipeline_dataset_id, ct_plus_ids_view, mapping_source_dataset_id,
+            pipeline_dataset_id, ct_plus_ids_view, mapping_namespace,
             mapping_dataset_id):
     """
-    Create a table that assigns new ids to records.
+    Create or extend the table that assigns new ids to records.
 
-    Mappings are re-cut per release, so an existing mapping table is truncated rather
-    than appended to. Appending would offset later IDs above earlier ones and leak
-    arrival order, which defeats the random permutation.
+    Mappings persist across releases. An existing mapping table is appended to rather
+    than truncated, so a row published in one release keeps its CT+ id in every later
+    one. Only source ids with no mapping yet are drawn.
+
+    person is the exception and is always rebuilt from the ids view, which is the source
+    of truth for controlled_tier_plus_id and is stable there. Skipping the rebuild would
+    leave participants who first appear in a later release with no mapping at all, and
+    because every person join is a LEFT JOIN their rows would load with person_id NULL
+    instead of failing.
 
     :param domain_table: name of the CDM table
     :param input_dataset_id: identifies dataset with source data
@@ -274,27 +331,37 @@ def mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
     :param project_id: identifies GCP project that contains the datasets
     :param pipeline_dataset_id: identifies pipeline_tables dataset (for person mapping)
     :param ct_plus_ids_view: view containing person_id to CT+ id mapping
-    :param mapping_source_dataset_id: original dataset used to create the mappings
+    :param mapping_namespace: constant stamped into src_table_id, see DEFAULT_MAPPING_NAMESPACE
     :param mapping_dataset_id: identifies the dataset where mapping tables are stored
     :return:
     """
-    mapping_source_dataset_id = mapping_source_dataset_id if mapping_source_dataset_id else input_dataset_id
+    mapping_namespace = mapping_namespace if mapping_namespace else DEFAULT_MAPPING_NAMESPACE
     mapping_table = mapping_table_for(domain_table)
+    client = BigQueryClient(project_id)
 
-    LOGGER.info(f"Creating mapping table {mapping_table}...")
+    append = (domain_table != PERSON and
+              client.table_exists(mapping_table, mapping_dataset_id))
+    if append:
+        LOGGER.info(f"Appending new '{domain_table}' ids to {mapping_table}. "
+                    f"Existing mappings are preserved.")
+        write_disposition = 'WRITE_APPEND'
+    else:
+        LOGGER.info(f"Creating mapping table {mapping_table}...")
+        write_disposition = 'WRITE_TRUNCATE'
+
     q = mapping_query(domain_table, input_dataset_id, project_id,
-                      pipeline_dataset_id, ct_plus_ids_view,
-                      mapping_source_dataset_id, mapping_dataset_id)
+                      pipeline_dataset_id, ct_plus_ids_view, mapping_namespace,
+                      mapping_dataset_id, append)
 
     LOGGER.info(f'Query for {mapping_table} is {q}')
     bq_utils.query(q,
                    destination_dataset_id=mapping_dataset_id,
                    destination_table_id=mapping_table,
-                   write_disposition='WRITE_TRUNCATE')
+                   write_disposition=write_disposition)
 
 
 def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
-                            mapping_source_dataset_id):
+                            mapping_namespace):
     """
     Returns a query that resolves fact_relationship fact ids to their new CT+ values.
 
@@ -311,7 +378,7 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
     :param input_dataset_id: identifies dataset containing source data
     :param project_id: identifies the GCP project
     :param mapping_dataset_id: identifies the dataset where mapping tables are stored
-    :param mapping_source_dataset_id: original dataset used to create the mappings
+    :param mapping_namespace: original dataset used to create the mappings
     :return: the query
     """
     case_exprs = {}
@@ -332,8 +399,7 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
     LEFT JOIN `{project_id}.{mapping_dataset_id}.{mapping_tbl}` AS {alias}
       ON fr.fact_id_{side} = {alias}.{src_field}
      AND fr.domain_concept_id_{side} = {domain_concept_id}
-     AND {alias}.src_table_id = '{mapping_source_dataset_id}.{domain_table}' '''
-                             )
+     AND {alias}.src_table_id = '{mapping_namespace}.{domain_table}' ''')
         case_exprs[side] = '\n            '.join(whens)
 
     joins = ''.join(join_exprs)
@@ -362,7 +428,7 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
 
 def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
                 pipeline_dataset_id, ct_plus_ids_view, mapping_dataset_id,
-                mapping_source_dataset_id):
+                mapping_namespace):
     """
     Returns a query to retrieve all records from an input table with new IDs.
 
@@ -378,11 +444,11 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
     :param pipeline_dataset_id: identifies the pipeline_tables dataset (for person mapping)
     :param ct_plus_ids_view: view containing person_id to CT+ id mapping
     :param mapping_dataset_id: identifies the dataset where mapping tables are stored
-    :param mapping_source_dataset_id: original dataset used to create the mappings
+    :param mapping_namespace: original dataset used to create the mappings
 
     :return: the query
     """
-    mapping_source_dataset_id = mapping_source_dataset_id if mapping_source_dataset_id else input_dataset_id
+    mapping_namespace = mapping_namespace if mapping_namespace else DEFAULT_MAPPING_NAMESPACE
     person_src_table_id = person_mapping_src_table_id(pipeline_dataset_id,
                                                       ct_plus_ids_view)
 
@@ -393,13 +459,12 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         return f'''
         LEFT JOIN `{project_id}.{mapping_dataset_id}.{mapping_tbl}` {join_alias}
           ON {src_table_alias}.{on_field} = {join_alias}.{src_field}
-         AND {join_alias}.src_table_id = '{mapping_source_dataset_id}.{join_table}'
+         AND {join_alias}.src_table_id = '{mapping_namespace}.{join_table}'
         '''
 
     if table_name == FACT_RELATIONSHIP:
         return fact_relationship_query(input_dataset_id, project_id,
-                                       mapping_dataset_id,
-                                       mapping_source_dataset_id)
+                                       mapping_dataset_id, mapping_namespace)
 
     # Fitbit tables do not have a domain-specific primary key. They only need person_id updated.
     # This logic is similar to tables without a primary key.
@@ -486,7 +551,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         `{project_id}.{mapping_dataset_id}.{mapping_table}` AS m
     ON
         t.survey_conduct_id = m.src_survey_conduct_id AND
-        m.src_table_id = '{mapping_source_dataset_id}.{table_name}'
+        m.src_table_id = '{mapping_namespace}.{table_name}'
     LEFT JOIN
         `{project_id}.{mapping_dataset_id}.{mapping_person}` AS mp
     ON
@@ -674,7 +739,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         mapping_survey_conduct = mapping_table_for(SURVEY_CONDUCT)
         questionnaire_response_join_expr = f'''
         LEFT JOIN `{project_id}.{mapping_dataset_id}.{mapping_survey_conduct}` mqr
-            ON t.questionnaire_response_id = mqr.src_survey_conduct_id AND mqr.src_table_id = '{mapping_source_dataset_id}.{SURVEY_CONDUCT}'
+            ON t.questionnaire_response_id = mqr.src_survey_conduct_id AND mqr.src_table_id = '{mapping_namespace}.{SURVEY_CONDUCT}'
         '''
 
     if table_name == PERSON:
@@ -718,7 +783,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         SELECT * EXCEPT(rn) FROM (
             SELECT *, ROW_NUMBER() OVER(PARTITION BY src_{table_name}_id ORDER BY {table_name}_id) as rn
             FROM `{project_id}.{mapping_dataset_id}.{mapping_table}`
-            WHERE src_table_id = '{mapping_source_dataset_id}.{table_name}'
+            WHERE src_table_id = '{mapping_namespace}.{table_name}'
         ) WHERE rn = 1
     ) AS m
     ON
@@ -742,7 +807,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
 
 def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
          pipeline_dataset_id, ct_plus_ids_view, mapping_dataset_id,
-         mapping_source_dataset_id):
+         mapping_namespace):
     """
     Loads a single domain table into the output dataset with new IDs.
 
@@ -753,11 +818,11 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
     :param project_id: identifies the GCP project
     :param pipeline_dataset_id: identifies the pipeline_tables dataset (for person mapping)
     :param mapping_dataset_id: identifies the dataset where mapping tables are stored
-    :param mapping_source_dataset_id: original dataset used to create the mappings
+    :param mapping_namespace: original dataset used to create the mappings
     :param ct_plus_ids_view: view containing person_id to CT+ id mapping
     :return:
     """
-    mapping_source_dataset_id = mapping_source_dataset_id if mapping_source_dataset_id else input_dataset_id
+    mapping_namespace = mapping_namespace if mapping_namespace else DEFAULT_MAPPING_NAMESPACE
     output_table = output_table_for(cdm_table)
     LOGGER.info(
         f'Loading {cdm_table} from {input_dataset_id} into {output_table}')
@@ -773,7 +838,7 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
 
     q = table_query(cdm_table, input_dataset_id, output_dataset_id, project_id,
                     pipeline_dataset_id, ct_plus_ids_view, mapping_dataset_id,
-                    mapping_source_dataset_id)
+                    mapping_namespace)
     if cdm_table == 'visit_detail' or cdm_table == 'visit_occurrence':
         LOGGER.info(q)
     query_result = bq_utils.query(q,
@@ -787,7 +852,7 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
 
 def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
                      project_id, mapping_dataset_id, pipeline_dataset_id,
-                     ct_plus_ids_view, mapping_source_dataset_id):
+                     ct_plus_ids_view, mapping_namespace):
     """
     Update an extension table with new IDs from its corresponding mapping table.
 
@@ -798,7 +863,7 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
     :param project_id: identifies the GCP project
     :param pipeline_dataset_id: identifies the pipeline_tables dataset (for person mapping)
     :param ct_plus_ids_view: view containing person_id to CT+ id mapping
-    :param mapping_source_dataset_id: original dataset used to create the mappings
+    :param mapping_namespace: original dataset used to create the mappings
 
     :return: query result
     """
@@ -819,7 +884,7 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
     LOGGER.info(f'Updating extension table {ext_table_name}')
 
     # Use the original source dataset for the join condition if provided, else use current input
-    source_dataset = mapping_source_dataset_id if mapping_source_dataset_id else input_dataset_id
+    source_dataset = mapping_namespace if mapping_namespace else DEFAULT_MAPPING_NAMESPACE
     person_src_table_id = person_mapping_src_table_id(pipeline_dataset_id,
                                                       ct_plus_ids_view)
 
@@ -850,7 +915,7 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
 
 
 def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
-         ct_plus_ids_view, mapping_dataset_id, mapping_source_dataset_id):
+         ct_plus_ids_view, mapping_dataset_id, mapping_namespace):
     """
     Create a new CDM dataset with regenerated IDs
 
@@ -860,7 +925,7 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
     :param mapping_dataset_id: dataset to store/lookup mapping tables
     :param pipeline_dataset_id: dataset containing rdr_participant_research_ids_view for person mapping
     :param ct_plus_ids_view: view containing person_id to CT+ id mapping
-    :param mapping_source_dataset_id: original dataset used to create the mappings
+    :param mapping_namespace: original dataset used to create the mappings
     :returns: list of tables generated successfully
     """
     bq_client = BigQueryClient(project_id)
@@ -921,8 +986,8 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
             continue
 
         mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
-                pipeline_dataset_id, ct_plus_ids_view,
-                mapping_source_dataset_id, mapping_dataset_id)
+                pipeline_dataset_id, ct_plus_ids_view, mapping_namespace,
+                mapping_dataset_id)
 
     # Load all tables with new IDs
     for table_name in CDM_TABLES:
@@ -932,7 +997,7 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
         LOGGER.info(f'Loading table {table_name}...')
         load(bq_client, table_name, input_dataset_id, output_dataset_id,
              project_id, pipeline_dataset_id, ct_plus_ids_view,
-             mapping_dataset_id, mapping_source_dataset_id)
+             mapping_dataset_id, mapping_namespace)
 
     # Load Fitbit tables if they exist
     LOGGER.info('Processing Fitbit tables (if they exist)...')
@@ -941,7 +1006,7 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
             LOGGER.info(f'Loading Fitbit table {fitbit_table}...')
             load(bq_client, fitbit_table, input_dataset_id, output_dataset_id,
                  project_id, pipeline_dataset_id, ct_plus_ids_view,
-                 mapping_dataset_id, mapping_source_dataset_id)
+                 mapping_dataset_id, mapping_namespace)
         else:
             LOGGER.info(f'Fitbit table {fitbit_table} does not exist, skipping')
 
@@ -950,7 +1015,7 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
     for ext_table in EXT_TABLES:
         update_ext_table(ext_table, input_dataset_id, output_dataset_id,
                          project_id, mapping_dataset_id, pipeline_dataset_id,
-                         ct_plus_ids_view, mapping_source_dataset_id)
+                         ct_plus_ids_view, mapping_namespace)
 
     # Discover and process any remaining tables
     tables_to_skip = set(CDM_TABLES) | set(FITBIT_TABLES) | set(EXT_TABLES)
@@ -985,13 +1050,13 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
             # 1. Create mapping for the primary key
             LOGGER.info(f"Creating mapping for {table_name}...")
             mapping(table_name, input_dataset_id, output_dataset_id, project_id,
-                    pipeline_dataset_id, ct_plus_ids_view,
-                    mapping_source_dataset_id, mapping_dataset_id)
+                    pipeline_dataset_id, ct_plus_ids_view, mapping_namespace,
+                    mapping_dataset_id)
             # 2. Load table with remapped PK and FKs
             LOGGER.info(f"Loading table {table_name}...")
             load(bq_client, table_name, input_dataset_id, output_dataset_id,
                  project_id, pipeline_dataset_id, ct_plus_ids_view,
-                 mapping_dataset_id, mapping_source_dataset_id)
+                 mapping_dataset_id, mapping_namespace)
         elif has_person_id:
             LOGGER.info(
                 f"Table '{table_name}' has person_id. Remapping person_id only."
@@ -1066,16 +1131,18 @@ if __name__ == '__main__':
         '--mapping_dataset_id',
         dest='mapping_dataset_id',
         required=True,
-        help='Dataset to store/lookup mapping tables. Can be a sandbox dataset.'
-    )
+        help='Dataset to store/lookup mapping tables. Can be a sandbox dataset. '
+        'Use the same one for every release so ids persist between them.')
     parser.add_argument(
-        '--mapping_source_dataset_id',
-        dest='mapping_source_dataset_id',
+        '--mapping_namespace',
+        dest='mapping_namespace',
         required=False,
-        help=
-        'Original dataset mappings were created from, if different from input.')
+        default=DEFAULT_MAPPING_NAMESPACE,
+        help='Constant stamped into src_table_id on every mapping row. Leave at '
+        f"the default ('{DEFAULT_MAPPING_NAMESPACE}'); a per release value breaks "
+        'id persistence silently.')
 
     args = parser.parse_args()
     main(args.input_dataset_id, args.output_dataset_id, args.project_id,
          args.pipeline_dataset_id, args.ct_plus_ids_view,
-         args.mapping_dataset_id, args.mapping_source_dataset_id)
+         args.mapping_dataset_id, args.mapping_namespace)

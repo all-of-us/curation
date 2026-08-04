@@ -24,17 +24,18 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.pipeline_dataset_id = 'fake_pipeline'
         self.ids_view = 'fake_ids_view'
 
-    def _mapping_query(self, table_name):
+    def _mapping_query(self, table_name, append=False):
         return ct.mapping_query(table_name, self.input_dataset_id,
                                 self.project_id, self.pipeline_dataset_id,
-                                self.ids_view, self.input_dataset_id,
-                                self.mapping_dataset_id)
+                                self.ids_view, ct.DEFAULT_MAPPING_NAMESPACE,
+                                self.mapping_dataset_id, append)
 
     def _table_query(self, table_name):
         return ct.table_query(table_name, self.input_dataset_id,
                               self.output_dataset_id, self.project_id,
                               self.pipeline_dataset_id, self.ids_view,
-                              self.mapping_dataset_id, self.input_dataset_id)
+                              self.mapping_dataset_id,
+                              ct.DEFAULT_MAPPING_NAMESPACE)
 
     def test_person_mapping_reads_ct_plus_columns(self):
         """The CT input's person_id is controlled_tier_id, not research_id."""
@@ -70,12 +71,31 @@ class RegenerateCtPlusIds(unittest.TestCase):
 
         self.assertNotIn('RAND()', distinct_clause)
 
-    def test_mapping_query_never_offsets_by_a_running_maximum(self):
-        """Appending would place later ids above earlier ones and leak arrival order."""
+    def test_first_release_draws_ids_without_an_offset(self):
+        """With no prior mapping there is nothing to preserve or sit above."""
         actual = self._mapping_query(MEASUREMENT)
 
         self.assertNotIn('MAX(', actual)
         self.assertNotIn('NOT EXISTS', actual)
+        self.assertIn('0 + ROW_NUMBER()', actual)
+
+    def test_later_releases_preserve_existing_ids(self):
+        """A row published in one release must keep its CT+ id in the next."""
+        actual = self._mapping_query(MEASUREMENT, append=True)
+
+        self.assertIn('COALESCE(MAX(measurement_id), 0)', actual)
+        self.assertIn('NOT EXISTS', actual)
+        self.assertIn('mt.src_measurement_id = t.src_measurement_id', actual)
+
+    def test_append_filter_and_load_filter_use_the_same_namespace(self):
+        """A per release stamp would strand earlier ids and reassign them silently."""
+        stamp = f"'{ct.DEFAULT_MAPPING_NAMESPACE}.{MEASUREMENT}'"
+
+        self.assertIn(f'mt.src_table_id = {stamp}',
+                      self._mapping_query(MEASUREMENT, append=True))
+        self.assertIn(stamp, self._table_query(MEASUREMENT))
+        self.assertNotIn(f"'{self.input_dataset_id}.{MEASUREMENT}'",
+                         self._mapping_query(MEASUREMENT, append=True))
 
     def test_survey_conduct_remaps_its_foreign_keys(self):
         actual = self._table_query(SURVEY_CONDUCT)
@@ -166,6 +186,36 @@ class RegenerateCtPlusIds(unittest.TestCase):
                                             self.mapping_dataset_id,
                                             self.pipeline_dataset_id,
                                             self.ids_view)
+
+    @mock.patch('tools.regenerate_ct_plus_ids.bq_utils.query')
+    @mock.patch('tools.regenerate_ct_plus_ids.BigQueryClient')
+    def test_existing_domain_mapping_is_appended_to(self, mock_client,
+                                                    mock_query):
+        """Truncating would hand every previously published row a new CT+ id."""
+        mock_client.return_value.table_exists.return_value = True
+
+        ct.mapping(MEASUREMENT, self.input_dataset_id, self.output_dataset_id,
+                   self.project_id, self.pipeline_dataset_id, self.ids_view,
+                   None, self.mapping_dataset_id)
+
+        self.assertEqual(mock_query.call_args.kwargs['write_disposition'],
+                         'WRITE_APPEND')
+        self.assertIn('NOT EXISTS', mock_query.call_args.args[0])
+
+    @mock.patch('tools.regenerate_ct_plus_ids.bq_utils.query')
+    @mock.patch('tools.regenerate_ct_plus_ids.BigQueryClient')
+    def test_person_mapping_is_rebuilt_from_the_view_every_run(
+            self, mock_client, mock_query):
+        """Skipping it would leave participants new in a later release unmapped."""
+        mock_client.return_value.table_exists.return_value = True
+
+        ct.mapping(PERSON, self.input_dataset_id, self.output_dataset_id,
+                   self.project_id, self.pipeline_dataset_id, self.ids_view,
+                   None, self.mapping_dataset_id)
+
+        self.assertEqual(mock_query.call_args.kwargs['write_disposition'],
+                         'WRITE_TRUNCATE')
+        self.assertIn(ct.CT_PLUS_PERSON_ID_COLUMN, mock_query.call_args.args[0])
 
     def test_missing_person_mapping_is_accepted(self):
         client = mock.MagicMock()
