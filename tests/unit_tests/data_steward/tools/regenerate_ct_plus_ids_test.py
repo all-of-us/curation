@@ -1,0 +1,179 @@
+"""Unit tests for the CT+ ID regeneration query builders."""
+import unittest
+from unittest import mock
+
+from common import (CARE_SITE, CONDITION_OCCURRENCE, DRUG_EXPOSURE, MEASUREMENT,
+                    OBSERVATION, PERSON, PROCEDURE_OCCURRENCE, PROVIDER,
+                    SURVEY_CONDUCT, VISIT_OCCURRENCE)
+from tools import regenerate_ct_plus_ids as ct
+
+
+class RegenerateCtPlusIds(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
+    def setUp(self):
+        self.project_id = 'fake_project'
+        self.input_dataset_id = 'fake_controlled_tier'
+        self.output_dataset_id = 'fake_controlled_tier_plus'
+        self.mapping_dataset_id = 'fake_mapping'
+        self.pipeline_dataset_id = 'fake_pipeline'
+        self.ids_view = 'fake_ids_view'
+
+    def _mapping_query(self, table_name):
+        return ct.mapping_query(table_name, self.input_dataset_id,
+                                self.project_id, self.pipeline_dataset_id,
+                                self.ids_view, self.input_dataset_id,
+                                self.mapping_dataset_id)
+
+    def _table_query(self, table_name):
+        return ct.table_query(table_name, self.input_dataset_id,
+                              self.output_dataset_id, self.project_id,
+                              self.pipeline_dataset_id, self.ids_view,
+                              self.mapping_dataset_id, self.input_dataset_id)
+
+    def test_person_mapping_reads_ct_plus_columns(self):
+        """The CT input's person_id is controlled_tier_id, not research_id."""
+        actual = self._mapping_query(PERSON)
+
+        self.assertIn('controlled_tier_id AS src_person_id', actual)
+        self.assertIn('controlled_tier_plus_id AS person_id', actual)
+        self.assertNotIn('research_id AS src_person_id', actual)
+        self.assertNotIn('registered_tier_id', actual)
+
+    def test_person_mapping_src_table_id_is_ct_plus_specific(self):
+        """An RT person mapping must not satisfy the CT+ join predicate."""
+        src_table_id = ct.person_mapping_src_table_id(self.pipeline_dataset_id,
+                                                      self.ids_view)
+
+        self.assertTrue(src_table_id.endswith(ct.CT_PLUS_PERSON_MAPPING_SUFFIX))
+        self.assertNotEqual(src_table_id,
+                            f'{self.pipeline_dataset_id}.{self.ids_view}')
+        self.assertIn(src_table_id, self._table_query(OBSERVATION))
+
+    def test_row_ids_are_a_random_permutation(self):
+        """Ordering by the source id would let CT and CT+ be aligned by sorting."""
+        actual = self._mapping_query(MEASUREMENT)
+
+        self.assertIn('ROW_NUMBER() OVER (ORDER BY shuffle_key)', actual)
+        self.assertIn('RAND() AS shuffle_key', actual)
+        self.assertNotIn('ORDER BY src_measurement_id', actual)
+
+    def test_row_id_shuffle_key_is_drawn_outside_the_distinct(self):
+        """RAND() inside the DISTINCT would let duplicate source ids survive it."""
+        actual = self._mapping_query(MEASUREMENT)
+        distinct_clause = actual.split('SELECT DISTINCT')[1].split('FROM')[0]
+
+        self.assertNotIn('RAND()', distinct_clause)
+
+    def test_mapping_query_never_offsets_by_a_running_maximum(self):
+        """Appending would place later ids above earlier ones and leak arrival order."""
+        actual = self._mapping_query(MEASUREMENT)
+
+        self.assertNotIn('MAX(', actual)
+        self.assertNotIn('NOT EXISTS', actual)
+
+    def test_survey_conduct_remaps_its_foreign_keys(self):
+        actual = self._table_query(SURVEY_CONDUCT)
+
+        self.assertIn('m.survey_conduct_id', actual)
+        self.assertIn('CAST(m.survey_conduct_id AS STRING)', actual)
+        self.assertIn('mpr.provider_id', actual)
+        self.assertIn('mvo.visit_occurrence_id', actual)
+        self.assertIn('rvo.visit_occurrence_id AS response_visit_occurrence_id',
+                      actual)
+        self.assertNotIn('t.provider_id,', actual)
+        self.assertNotIn('t.visit_occurrence_id,', actual)
+        self.assertNotIn('t.response_visit_occurrence_id,', actual)
+
+    def test_questionnaire_response_id_follows_survey_conduct(self):
+        actual = self._table_query(OBSERVATION)
+
+        self.assertIn('mqr.survey_conduct_id AS questionnaire_response_id',
+                      actual)
+        self.assertIn(ct.mapping_table_for(SURVEY_CONDUCT), actual)
+
+    def test_provider_id_is_remapped_wherever_it_is_referenced(self):
+        for table_name in (VISIT_OCCURRENCE, MEASUREMENT, CONDITION_OCCURRENCE):
+            with self.subTest(table_name=table_name):
+                actual = self._table_query(table_name)
+
+                self.assertIn('mpr.provider_id', actual)
+                self.assertIn(ct.mapping_table_for(PROVIDER), actual)
+
+    def test_fact_relationship_resolves_both_sides_per_domain(self):
+        actual = self._table_query(ct.FACT_RELATIONSHIP)
+
+        for domain_concept_id, domain_table in ct.DOMAIN_CONCEPT_ID_TO_TABLE.items(
+        ):
+            with self.subTest(domain_table=domain_table):
+                self.assertIn(ct.mapping_table_for(domain_table), actual)
+                self.assertIn(f'domain_concept_id_1 = {domain_concept_id}',
+                              actual)
+                self.assertIn(f'domain_concept_id_2 = {domain_concept_id}',
+                              actual)
+
+        self.assertIn('WHERE fact_id_1 IS NOT NULL', actual)
+        self.assertIn('AND fact_id_2 IS NOT NULL', actual)
+
+    def test_fact_relationship_domain_map_covers_the_observed_domains(self):
+        """Domains seen in the CT input. Anything else resolves to NULL and is dropped."""
+        expected = {
+            10: PROCEDURE_OCCURRENCE,
+            13: DRUG_EXPOSURE,
+            19: CONDITION_OCCURRENCE,
+            21: MEASUREMENT,
+            27: OBSERVATION,
+            57: CARE_SITE,
+        }
+
+        self.assertDictEqual(ct.DOMAIN_CONCEPT_ID_TO_TABLE, expected)
+
+    def test_aou_death_id_is_preserved(self):
+        """aou_death_id is a GUID and is shared with CT, matching RT."""
+        actual = self._table_query('aou_death')
+
+        self.assertIn('t.aou_death_id', actual)
+        self.assertIn('mp.person_id', actual)
+
+    def test_person_mapping_from_another_tier_is_rejected(self):
+        client = mock.MagicMock()
+        client.table_exists.return_value = True
+        client.query.return_value.result.return_value = [{
+            'src_table_id': f'{self.pipeline_dataset_id}.{self.ids_view}'
+        }]
+
+        with self.assertRaises(RuntimeError):
+            ct.assert_person_mapping_is_ct_plus(client, self.project_id,
+                                                self.mapping_dataset_id,
+                                                self.pipeline_dataset_id,
+                                                self.ids_view)
+
+    def test_person_mapping_from_a_previous_ct_plus_run_is_accepted(self):
+        client = mock.MagicMock()
+        client.table_exists.return_value = True
+        client.query.return_value.result.return_value = [{
+            'src_table_id':
+                ct.person_mapping_src_table_id(self.pipeline_dataset_id,
+                                               self.ids_view)
+        }]
+
+        ct.assert_person_mapping_is_ct_plus(client, self.project_id,
+                                            self.mapping_dataset_id,
+                                            self.pipeline_dataset_id,
+                                            self.ids_view)
+
+    def test_missing_person_mapping_is_accepted(self):
+        client = mock.MagicMock()
+        client.table_exists.return_value = False
+
+        ct.assert_person_mapping_is_ct_plus(client, self.project_id,
+                                            self.mapping_dataset_id,
+                                            self.pipeline_dataset_id,
+                                            self.ids_view)
+
+        client.query.assert_not_called()
