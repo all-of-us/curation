@@ -88,8 +88,7 @@ Usage:
 """
 import argparse
 import logging
-from google.cloud.bigquery import Table
-import bq_utils
+from google.cloud.bigquery import QueryJobConfig, Table
 
 from common import (AOU_DEATH, DEATH, MAPPING_PREFIX, PERSON, SURVEY_CONDUCT,
                     VISIT_DETAIL, VISIT_OCCURRENCE, CARE_SITE, LOCATION, NOTE,
@@ -143,12 +142,18 @@ DOMAIN_CONCEPT_ID_TO_TABLE = {
 }
 
 # Extension tables that need ID updates
+# Every _ext table whose parent gets re-keyed has to be listed here. One that is
+# missing does not fail: it falls through to the schema sniffing path at the end of
+# main(), matches 'no person_id, copy as-is', and is copied verbatim, so its ids still
+# point at the CT values while its parent has been re-keyed. specimen_ext and
+# visit_detail_ext were absent and were being copied that way, 44.8M and 48.1M rows
+# of dangling references in V9.
 EXT_TABLES = [
-    'person_ext', 'visit_occurrence_ext', 'condition_occurrence_ext',
-    'device_exposure_ext', 'drug_exposure_ext', 'measurement_ext', 'note_ext',
-    'note_nlp_ext', 'observation_ext', 'observation_period_ext',
-    'procedure_occurrence_ext', 'survey_conduct_ext', 'condition_era_ext',
-    'drug_era_ext'
+    'person_ext', 'visit_occurrence_ext', 'visit_detail_ext',
+    'condition_occurrence_ext', 'device_exposure_ext', 'drug_exposure_ext',
+    'measurement_ext', 'note_ext', 'note_nlp_ext', 'observation_ext',
+    'observation_period_ext', 'procedure_occurrence_ext', 'specimen_ext',
+    'survey_conduct_ext', 'condition_era_ext', 'drug_era_ext'
 ]
 
 
@@ -315,6 +320,53 @@ def assert_person_mapping_is_ct_plus(client, project_id, mapping_dataset_id,
             f'or one from a previous CT+ run.')
 
 
+def run_query_to_table(project_id,
+                       q,
+                       destination_dataset_id,
+                       destination_table_id,
+                       write_disposition='WRITE_TRUNCATE'):
+    """
+    Run a query into a destination table, in project_id, and wait for it to finish.
+
+    Every write in this script goes through here rather than through bq_utils.query,
+    for two reasons that together let a run destroy nothing, report success, and
+    produce an empty dataset:
+
+    bq_utils.query takes its destination project from app_identity.get_application_id(),
+    which reads $GOOGLE_CLOUD_PROJECT and ignores --project_id entirely. A run whose
+    environment points at another project submits every job there. Whether that writes
+    to the wrong project or merely fails depends on whether the destination dataset
+    happens to exist there.
+
+    It also submits with jobs().insert() and returns the handle without polling, so a
+    failed job is indistinguishable from a successful one. On 2026-08-05 a full run
+    logged 'CT+ ID regeneration complete' and exited 0 while all 90-odd of its jobs sat
+    in FAILURE state in an unrelated project.
+
+    job.result() below blocks and raises, and the destination is fully qualified with
+    project_id, so neither is possible.
+
+    :param project_id: identifies the GCP project the job runs and writes in
+    :param q: the query to run
+    :param destination_dataset_id: dataset the results are written to
+    :param destination_table_id: table the results are written to
+    :param write_disposition: WRITE_TRUNCATE, WRITE_APPEND or WRITE_EMPTY
+    :return: the completed QueryJob
+    :raises google.api_core.exceptions.GoogleAPICallError: if the job failed
+    """
+    client = BigQueryClient(project_id)
+    job = client.query(
+        q,
+        job_config=QueryJobConfig(
+            destination=
+            f'{project_id}.{destination_dataset_id}.{destination_table_id}',
+            write_disposition=write_disposition))
+    job.result()
+    LOGGER.info(f'Job {job.job_id} wrote '
+                f'{destination_dataset_id}.{destination_table_id}')
+    return job
+
+
 def assert_person_mapping_is_one_to_one(client, project_id, mapping_dataset_id):
     """
     Stop the run if _mapping_person is not one row per participant, both ways.
@@ -447,10 +499,11 @@ def mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
                       mapping_dataset_id, append)
 
     LOGGER.info(f'Query for {mapping_table} is {q}')
-    bq_utils.query(q,
-                   destination_dataset_id=mapping_dataset_id,
-                   destination_table_id=mapping_table,
-                   write_disposition=write_disposition)
+    run_query_to_table(project_id,
+                       q,
+                       destination_dataset_id=mapping_dataset_id,
+                       destination_table_id=mapping_table,
+                       write_disposition=write_disposition)
 
 
 def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
@@ -934,13 +987,13 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
                     mapping_namespace)
     if cdm_table == 'visit_detail' or cdm_table == 'visit_occurrence':
         LOGGER.info(q)
-    query_result = bq_utils.query(q,
-                                  destination_table_id=output_table,
-                                  destination_dataset_id=output_dataset_id)
-    query_job_id = query_result['jobReference']['jobId']
-    bq_utils.wait_on_jobs([query_job_id])
-    LOGGER.info(f'Job {query_job_id} completed for {cdm_table}')
-    return query_result
+    # wait_on_jobs used to be called here, but it only waits: it never inspects the
+    # job's error result, so a failed load was indistinguishable from a loaded table.
+    return run_query_to_table(project_id,
+                              q,
+                              destination_dataset_id=output_dataset_id,
+                              destination_table_id=output_table,
+                              write_disposition='WRITE_EMPTY')
 
 
 def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
@@ -1001,10 +1054,11 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
         AND m.src_table_id = '{person_src_table_id}'
     '''
 
-    return bq_utils.query(q,
-                          destination_table_id=ext_table_name,
-                          destination_dataset_id=output_dataset_id,
-                          write_disposition='WRITE_TRUNCATE')
+    return run_query_to_table(project_id,
+                              q,
+                              destination_dataset_id=output_dataset_id,
+                              destination_table_id=ext_table_name,
+                              write_disposition='WRITE_TRUNCATE')
 
 
 def main(input_dataset_id,
@@ -1182,10 +1236,11 @@ def main(input_dataset_id,
                     JOIN `{project_id}.{mapping_dataset_id}.{mapping_person}` mp
                         ON t.person_id = mp.src_person_id
                         AND mp.src_table_id = '{person_src_table_id}'"""
-            bq_utils.query(q,
-                           destination_table_id=table_name,
-                           destination_dataset_id=output_dataset_id,
-                           write_disposition='WRITE_TRUNCATE')
+            run_query_to_table(project_id,
+                               q,
+                               destination_dataset_id=output_dataset_id,
+                               destination_table_id=table_name,
+                               write_disposition='WRITE_TRUNCATE')
         else:
             LOGGER.info(
                 f"Table '{table_name}' has no person_id. Copying as-is.")

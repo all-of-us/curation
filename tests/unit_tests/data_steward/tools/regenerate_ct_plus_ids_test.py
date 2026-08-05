@@ -193,7 +193,7 @@ class RegenerateCtPlusIds(unittest.TestCase):
                                             self.pipeline_dataset_id,
                                             self.ids_view)
 
-    @mock.patch('tools.regenerate_ct_plus_ids.bq_utils.query')
+    @mock.patch('tools.regenerate_ct_plus_ids.run_query_to_table')
     @mock.patch('tools.regenerate_ct_plus_ids.BigQueryClient')
     def test_existing_domain_mapping_is_appended_to(self, mock_client,
                                                     mock_query):
@@ -206,9 +206,9 @@ class RegenerateCtPlusIds(unittest.TestCase):
 
         self.assertEqual(mock_query.call_args.kwargs['write_disposition'],
                          'WRITE_APPEND')
-        self.assertIn('NOT EXISTS', mock_query.call_args.args[0])
+        self.assertIn('NOT EXISTS', mock_query.call_args.args[1])
 
-    @mock.patch('tools.regenerate_ct_plus_ids.bq_utils.query')
+    @mock.patch('tools.regenerate_ct_plus_ids.run_query_to_table')
     @mock.patch('tools.regenerate_ct_plus_ids.BigQueryClient')
     def test_person_mapping_is_rebuilt_from_the_view_every_run(
             self, mock_client, mock_query):
@@ -221,7 +221,42 @@ class RegenerateCtPlusIds(unittest.TestCase):
 
         self.assertEqual(mock_query.call_args.kwargs['write_disposition'],
                          'WRITE_TRUNCATE')
-        self.assertIn(ct.CT_PLUS_PERSON_ID_COLUMN, mock_query.call_args.args[0])
+        self.assertIn(ct.CT_PLUS_PERSON_ID_COLUMN, mock_query.call_args.args[1])
+
+    @mock.patch('tools.regenerate_ct_plus_ids.BigQueryClient')
+    def test_writes_go_to_the_project_that_was_asked_for(self, mock_client):
+        """bq_utils.query took the project from $GOOGLE_CLOUD_PROJECT, not --project_id."""
+        ct.run_query_to_table(self.project_id, 'SELECT 1',
+                              self.mapping_dataset_id, 'some_table')
+
+        mock_client.assert_called_once_with(self.project_id)
+        destination = mock_client.return_value.query.call_args.kwargs[
+            'job_config'].destination
+        self.assertIn(self.project_id, str(destination))
+
+    @mock.patch('tools.regenerate_ct_plus_ids.BigQueryClient')
+    def test_a_failed_write_raises_instead_of_being_ignored(self, mock_client):
+        """A run once logged success while every one of its jobs sat in FAILURE."""
+        mock_client.return_value.query.return_value.result.side_effect = (
+            RuntimeError('job failed'))
+
+        with self.assertRaises(RuntimeError):
+            ct.run_query_to_table(self.project_id, 'SELECT 1',
+                                  self.mapping_dataset_id, 'some_table')
+
+    @mock.patch('tools.regenerate_ct_plus_ids.BigQueryClient')
+    def test_every_write_waits_for_its_job(self, mock_client):
+        """Submitting without polling makes a failed write look like a successful one."""
+        ct.run_query_to_table(self.project_id, 'SELECT 1',
+                              self.mapping_dataset_id, 'some_table')
+
+        mock_client.return_value.query.return_value.result.assert_called_once()
+
+    def test_every_ext_table_with_a_rekeyed_parent_is_listed(self):
+        """An unlisted _ext table is copied verbatim and its ids dangle, silently."""
+        for ext_table in ('specimen_ext', 'visit_detail_ext'):
+            with self.subTest(ext_table=ext_table):
+                self.assertIn(ext_table, ct.EXT_TABLES)
 
     @staticmethod
     def _person_mapping_client(row_count, src_count, ct_plus_count):
