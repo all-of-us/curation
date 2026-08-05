@@ -224,8 +224,14 @@ def mapping_query(table_name,
     if table_name == PERSON and pipeline_dataset_id:
         src_table_id = person_mapping_src_table_id(pipeline_dataset_id,
                                                    ct_plus_ids_view)
+        # DISTINCT because the ids view has been observed carrying byte identical
+        # duplicate participant rows. Every person join here is a LEFT JOIN, so a
+        # second row for one participant does not fail, it doubles that participant's
+        # rows in every loaded table. DISTINCT only collapses duplicates that agree on
+        # both ids; a participant carrying two different CT+ ids still survives it, and
+        # that case is what assert_person_mapping_is_one_to_one() catches.
         return f'''
-        SELECT
+        SELECT DISTINCT
             '{src_table_id}' AS src_table_id,
             {CT_PERSON_ID_COLUMN} AS src_person_id,
             {CT_PLUS_PERSON_ID_COLUMN} AS person_id
@@ -307,6 +313,93 @@ def assert_person_mapping_is_ct_plus(client, project_id, mapping_dataset_id,
             f'{sorted(unexpected)}, which was not produced by a CT+ run. '
             f'Expected {expected}. Point --mapping_dataset_id at an empty dataset '
             f'or one from a previous CT+ run.')
+
+
+def assert_person_mapping_is_one_to_one(client, project_id, mapping_dataset_id):
+    """
+    Stop the run if _mapping_person is not one row per participant, both ways.
+
+    This is checked after the mapping is built and before any table is loaded, because
+    neither direction fails on its own. Every person join is a LEFT JOIN keyed on
+    src_person_id, so one participant holding two CT+ ids silently doubles that
+    participant's rows in every loaded table. One CT+ id held by two participants is
+    worse and just as quiet: it merges two people into one in the released data.
+
+    The DISTINCT in mapping_query() already absorbs whole row duplicates from the ids
+    view, which have been observed there and are harmless. What is left for this check
+    is the disagreeing case, which is a genuine upstream defect and must not be
+    absorbed.
+
+    :param client: BigQueryClient
+    :param project_id: identifies the GCP project
+    :param mapping_dataset_id: identifies the dataset where mapping tables are stored
+    :raises RuntimeError: if any participant or any CT+ id appears more than once
+    """
+    mapping_person = mapping_table_for(PERSON)
+    if not client.table_exists(mapping_person, mapping_dataset_id):
+        return
+
+    q = f'''
+    SELECT
+        COUNT(*) AS row_count,
+        COUNT(DISTINCT src_person_id) AS src_count,
+        COUNT(DISTINCT person_id) AS ct_plus_count
+    FROM `{project_id}.{mapping_dataset_id}.{mapping_person}`
+    '''
+    row = list(client.query(q).result())[0]
+    row_count, src_count, ct_plus_count = (row['row_count'], row['src_count'],
+                                           row['ct_plus_count'])
+    if row_count == src_count == ct_plus_count:
+        return
+
+    raise RuntimeError(
+        f'{mapping_dataset_id}.{mapping_person} is not one to one: {row_count} rows '
+        f'over {src_count} participants and {ct_plus_count} CT+ ids. '
+        f'{"Some participant carries more than one CT+ id. " if src_count < row_count else ""}'
+        f'{"Some CT+ id is shared by more than one participant. " if ct_plus_count < row_count else ""}'
+        f'Loading against this mapping would duplicate or merge participants across '
+        f'every table. Fix the ids view before rerunning.')
+
+
+def assert_output_dataset_is_safe(client, output_dataset_id, allow_replace):
+    """
+    Stop the run if the output dataset already holds tables.
+
+    main() deletes and recreates every CDM table in the output dataset before loading
+    anything, so a mistyped or stale --output_dataset_id destroys whatever is there
+    with no prompt and no way back: the delete is followed immediately by a create
+    under the same name, which can put the prior version out of reach of time travel.
+    Nothing else in this script is destructive, so this one check covers the whole
+    blast radius.
+
+    An empty or absent dataset passes. A non-empty one requires --allow_replace, which
+    exists so re-running a release is possible but has to be typed deliberately.
+
+    :param client: BigQueryClient
+    :param output_dataset_id: identifies the dataset the run would write to
+    :param allow_replace: True if the caller has accepted that existing tables go away
+    :raises RuntimeError: if the dataset holds tables and allow_replace is False
+    """
+    if allow_replace:
+        LOGGER.info(
+            f'--allow_replace given, existing tables in {output_dataset_id} '
+            f'will be replaced.')
+        return
+
+    try:
+        existing = [
+            table.table_id for table in client.list_tables(output_dataset_id)
+        ]
+    except Exception:
+        # No dataset yet. main() creates it further down.
+        return
+
+    if existing:
+        raise RuntimeError(
+            f'{output_dataset_id} already holds {len(existing)} tables, for example '
+            f'{sorted(existing)[:5]}. This run would delete every CDM table in it '
+            f'before loading. Point --output_dataset_id at a new or empty dataset, '
+            f'or pass --allow_replace if replacing them is intended.')
 
 
 def mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
@@ -914,8 +1007,14 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
                           write_disposition='WRITE_TRUNCATE')
 
 
-def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
-         ct_plus_ids_view, mapping_dataset_id, mapping_namespace):
+def main(input_dataset_id,
+         output_dataset_id,
+         project_id,
+         pipeline_dataset_id,
+         ct_plus_ids_view,
+         mapping_dataset_id,
+         mapping_namespace,
+         allow_replace=False):
     """
     Create a new CDM dataset with regenerated IDs
 
@@ -926,6 +1025,7 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
     :param pipeline_dataset_id: dataset containing rdr_participant_research_ids_view for person mapping
     :param ct_plus_ids_view: view containing person_id to CT+ id mapping
     :param mapping_namespace: original dataset used to create the mappings
+    :param allow_replace: True to permit deleting tables already in the output dataset
     :returns: list of tables generated successfully
     """
     bq_client = BigQueryClient(project_id)
@@ -946,6 +1046,10 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
     # reuse that tier's _mapping_person and give CT+ its person_ids.
     assert_person_mapping_is_ct_plus(bq_client, project_id, mapping_dataset_id,
                                      pipeline_dataset_id, ct_plus_ids_view)
+
+    # Refuse to destroy an output dataset that already holds tables. This must come
+    # before the delete loop below, which drops every CDM table in it.
+    assert_output_dataset_is_safe(bq_client, output_dataset_id, allow_replace)
 
     # Create output dataset if it doesn't exist
     try:
@@ -988,6 +1092,11 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
         mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
                 pipeline_dataset_id, ct_plus_ids_view, mapping_namespace,
                 mapping_dataset_id)
+
+    # Refuse to load against a person mapping that would duplicate or merge
+    # participants. This has to come after the mapping loop that builds it.
+    assert_person_mapping_is_one_to_one(bq_client, project_id,
+                                        mapping_dataset_id)
 
     # Load all tables with new IDs
     for table_name in CDM_TABLES:
@@ -1141,8 +1250,15 @@ if __name__ == '__main__':
         help='Constant stamped into src_table_id on every mapping row. Leave at '
         f"the default ('{DEFAULT_MAPPING_NAMESPACE}'); a per release value breaks "
         'id persistence silently.')
+    parser.add_argument(
+        '--allow_replace',
+        dest='allow_replace',
+        action='store_true',
+        help='Permit deleting the tables already in --output_dataset_id. Without '
+        'this the run stops rather than destroying them. Only needed when '
+        'rebuilding an output dataset on purpose.')
 
     args = parser.parse_args()
     main(args.input_dataset_id, args.output_dataset_id, args.project_id,
          args.pipeline_dataset_id, args.ct_plus_ids_view,
-         args.mapping_dataset_id, args.mapping_namespace)
+         args.mapping_dataset_id, args.mapping_namespace, args.allow_replace)

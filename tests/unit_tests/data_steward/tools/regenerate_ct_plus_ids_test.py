@@ -46,6 +46,12 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertNotIn('research_id AS src_person_id', actual)
         self.assertNotIn('registered_tier_id', actual)
 
+    def test_person_mapping_drops_duplicate_view_rows(self):
+        """The ids view carries byte identical duplicates; a LEFT JOIN would fan out."""
+        actual = self._mapping_query(PERSON)
+
+        self.assertIn('SELECT DISTINCT', actual)
+
     def test_person_mapping_src_table_id_is_ct_plus_specific(self):
         """An RT person mapping must not satisfy the CT+ join predicate."""
         src_table_id = ct.person_mapping_src_table_id(self.pipeline_dataset_id,
@@ -216,6 +222,86 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertEqual(mock_query.call_args.kwargs['write_disposition'],
                          'WRITE_TRUNCATE')
         self.assertIn(ct.CT_PLUS_PERSON_ID_COLUMN, mock_query.call_args.args[0])
+
+    @staticmethod
+    def _person_mapping_client(row_count, src_count, ct_plus_count):
+        client = mock.MagicMock()
+        client.table_exists.return_value = True
+        client.query.return_value.result.return_value = [{
+            'row_count': row_count,
+            'src_count': src_count,
+            'ct_plus_count': ct_plus_count
+        }]
+        return client
+
+    def test_one_to_one_person_mapping_is_accepted(self):
+        client = self._person_mapping_client(1000, 1000, 1000)
+
+        ct.assert_person_mapping_is_one_to_one(client, self.project_id,
+                                               self.mapping_dataset_id)
+
+    def test_participant_with_two_ct_plus_ids_stops_the_run(self):
+        """DISTINCT does not collapse these, and the LEFT JOIN would double the rows."""
+        client = self._person_mapping_client(1001, 1000, 1001)
+
+        with self.assertRaises(RuntimeError) as ctx:
+            ct.assert_person_mapping_is_one_to_one(client, self.project_id,
+                                                   self.mapping_dataset_id)
+
+        self.assertIn('more than one CT+ id', str(ctx.exception))
+
+    def test_ct_plus_id_shared_by_two_participants_stops_the_run(self):
+        """Loading this would merge two people into one in the released data."""
+        client = self._person_mapping_client(1000, 1000, 999)
+
+        with self.assertRaises(RuntimeError) as ctx:
+            ct.assert_person_mapping_is_one_to_one(client, self.project_id,
+                                                   self.mapping_dataset_id)
+
+        self.assertIn('shared by more than one participant', str(ctx.exception))
+
+    def test_missing_person_mapping_skips_the_one_to_one_check(self):
+        client = mock.MagicMock()
+        client.table_exists.return_value = False
+
+        ct.assert_person_mapping_is_one_to_one(client, self.project_id,
+                                               self.mapping_dataset_id)
+
+        client.query.assert_not_called()
+
+    def test_non_empty_output_dataset_stops_the_run(self):
+        """main() drops every CDM table in the output dataset before loading."""
+        client = mock.MagicMock()
+        client.list_tables.return_value = [
+            mock.Mock(table_id='observation'),
+            mock.Mock(table_id='measurement')
+        ]
+
+        with self.assertRaises(RuntimeError) as ctx:
+            ct.assert_output_dataset_is_safe(client, self.output_dataset_id,
+                                             False)
+
+        self.assertIn(self.output_dataset_id, str(ctx.exception))
+
+    def test_empty_output_dataset_is_accepted(self):
+        client = mock.MagicMock()
+        client.list_tables.return_value = []
+
+        ct.assert_output_dataset_is_safe(client, self.output_dataset_id, False)
+
+    def test_absent_output_dataset_is_accepted(self):
+        """main() creates it further down, so a missing dataset is not an error."""
+        client = mock.MagicMock()
+        client.list_tables.side_effect = Exception('404 Not found')
+
+        ct.assert_output_dataset_is_safe(client, self.output_dataset_id, False)
+
+    def test_allow_replace_skips_the_check_without_listing(self):
+        client = mock.MagicMock()
+
+        ct.assert_output_dataset_is_safe(client, self.output_dataset_id, True)
+
+        client.list_tables.assert_not_called()
 
     def test_missing_person_mapping_is_accepted(self):
         client = mock.MagicMock()
