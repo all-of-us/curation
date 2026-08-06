@@ -267,6 +267,40 @@ class RegenerateCtPlusIds(unittest.TestCase):
             with self.subTest(ext_table=ext_table):
                 self.assertIn(ext_table, ct.EXT_TABLES)
 
+    def _ext_query(self, ext_table, base_in_output=True):
+        """Renders update_ext_table's query without running it."""
+        with mock.patch('tools.regenerate_ct_plus_ids.BigQueryClient') as client, \
+             mock.patch('tools.regenerate_ct_plus_ids.run_query_to_table') as write:
+            client.return_value.table_exists.return_value = base_in_output
+            ct.update_ext_table(ext_table, self.input_dataset_id,
+                                self.output_dataset_id, self.project_id,
+                                self.mapping_dataset_id, self.pipeline_dataset_id,
+                                self.ids_view, ct.DEFAULT_MAPPING_NAMESPACE)
+        return write.call_args.args[1]
+
+    def test_ext_rows_whose_base_row_was_dropped_are_not_carried_over(self):
+        """The load filters visit_detail on visit_occurrence_id, but the mapping still
+        holds the dropped rows, so the mapping join alone leaves the ext row pointing
+        at a primary key that is not in the output."""
+        query = self._ext_query('visit_detail_ext')
+
+        self.assertIn(f'{self.output_dataset_id}.visit_detail', query)
+        self.assertIn('b.visit_detail_id = m.visit_detail_id', query)
+
+    def test_the_base_row_check_covers_person_ext_too(self):
+        """person_ext takes a separate branch, which had the same gap."""
+        query = self._ext_query('person_ext')
+
+        self.assertIn(f'{self.output_dataset_id}.person', query)
+        self.assertIn('b.person_id = m.person_id', query)
+
+    def test_a_missing_base_table_does_not_break_the_ext_load(self):
+        """Joining a table that is not in the output would fail the whole run."""
+        query = self._ext_query('note_nlp_ext', base_in_output=False)
+
+        self.assertNotIn(f'{self.output_dataset_id}.note_nlp', query)
+        self.assertIn(f'{self.mapping_dataset_id}.', query)
+
     @staticmethod
     def _person_mapping_client(row_count, src_count, ct_plus_count):
         client = mock.MagicMock()

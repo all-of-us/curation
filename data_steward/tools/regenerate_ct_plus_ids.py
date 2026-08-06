@@ -1112,13 +1112,29 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
     person_src_table_id = person_mapping_src_table_id(pipeline_dataset_id,
                                                       ct_plus_ids_view)
 
+    # The mapping holds a row for every input row, including ones the load filtered
+    # out, so joining the mapping alone is not enough: the base row has to have
+    # survived into the output too. Without this, an ext row outlives the row it
+    # extends and points at a primary key that is not in the released data.
+    # visit_detail is the only table the load filters today, but keep the guard
+    # generic so a future filter cannot silently orphan its ext rows.
+    if client.table_exists(base_table, output_dataset_id):
+        base_join = f'''
+    JOIN `{project_id}.{output_dataset_id}.{base_table}` b
+        ON b.{id_field} = m.{id_field}'''
+    else:
+        LOGGER.warning(
+            f'{base_table} is not in {output_dataset_id}, so {ext_table_name} is '
+            f'loaded without checking that its base rows survived the load')
+        base_join = ''
+
     q = f'''
     SELECT
         m.{id_field},
         e.* EXCEPT({id_field})
     FROM `{project_id}.{input_dataset_id}.{ext_table_name}` e
     JOIN `{project_id}.{mapping_dataset_id}.{mapping_table}` m
-        ON e.{id_field} = m.src_{id_field} AND m.src_table_id = '{source_dataset}.{base_table}'
+        ON e.{id_field} = m.src_{id_field} AND m.src_table_id = '{source_dataset}.{base_table}'{base_join}
         '''
 
     if base_table == PERSON:
@@ -1129,7 +1145,7 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
     FROM `{project_id}.{input_dataset_id}.{ext_table_name}` e
     JOIN `{project_id}.{mapping_dataset_id}.{mapping_table}` m
         ON e.{id_field} = m.src_{id_field}
-        AND m.src_table_id = '{person_src_table_id}'
+        AND m.src_table_id = '{person_src_table_id}'{base_join}
     '''
 
     return run_query_to_table(project_id,
