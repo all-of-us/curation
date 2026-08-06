@@ -274,8 +274,9 @@ class RegenerateCtPlusIds(unittest.TestCase):
             client.return_value.table_exists.return_value = base_in_output
             ct.update_ext_table(ext_table, self.input_dataset_id,
                                 self.output_dataset_id, self.project_id,
-                                self.mapping_dataset_id, self.pipeline_dataset_id,
-                                self.ids_view, ct.DEFAULT_MAPPING_NAMESPACE)
+                                self.mapping_dataset_id,
+                                self.pipeline_dataset_id, self.ids_view,
+                                ct.DEFAULT_MAPPING_NAMESPACE)
         return write.call_args.args[1]
 
     def test_ext_rows_whose_base_row_was_dropped_are_not_carried_over(self):
