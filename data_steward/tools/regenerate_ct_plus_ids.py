@@ -1294,11 +1294,19 @@ def main(input_dataset_id,
             LOGGER.info(
                 f"Table '{table_name}' has a primary key and person_id. Full remapping will be applied."
             )
-            # 1. Create mapping for the primary key
-            LOGGER.info(f"Creating mapping for {table_name}...")
-            mapping(table_name, input_dataset_id, output_dataset_id, project_id,
-                    pipeline_dataset_id, ct_plus_ids_view, mapping_namespace,
-                    mapping_dataset_id)
+            # 1. Create mapping for the primary key, unless the primary key is
+            # deliberately preserved. aou_death_id is shared with CT by program
+            # decision, so table_query() reads it straight from the source row and
+            # a mapping built here would be written on every run and never read.
+            if table_name == AOU_DEATH:
+                LOGGER.info(
+                    f"Skipping mapping for {table_name}: {table_name}_id is preserved, not regenerated."
+                )
+            else:
+                LOGGER.info(f"Creating mapping for {table_name}...")
+                mapping(table_name, input_dataset_id, output_dataset_id,
+                        project_id, pipeline_dataset_id, ct_plus_ids_view,
+                        mapping_namespace, mapping_dataset_id)
             # 2. Load table with remapped PK and FKs
             LOGGER.info(f"Loading table {table_name}...")
             load(bq_client, table_name, input_dataset_id, output_dataset_id,

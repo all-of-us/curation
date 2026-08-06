@@ -167,6 +167,14 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertIn('t.aou_death_id', actual)
         self.assertIn('mp.person_id', actual)
 
+    def test_no_mapping_is_built_for_the_preserved_aou_death_id(self):
+        """table_query() reads aou_death_id from the source row, so a mapping
+        built for it is written on every run and never read."""
+        source = inspect.getsource(ct.main)
+        self.assertIn('if table_name == AOU_DEATH', source)
+        self.assertLess(source.index('if table_name == AOU_DEATH'),
+                        source.index('Creating mapping for'))
+
     def test_person_mapping_from_another_tier_is_rejected(self):
         client = mock.MagicMock()
         client.table_exists.return_value = True
