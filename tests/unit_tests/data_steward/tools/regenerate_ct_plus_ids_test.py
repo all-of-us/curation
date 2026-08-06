@@ -1,4 +1,5 @@
 """Unit tests for the CT+ ID regeneration query builders."""
+import inspect
 import unittest
 from unittest import mock
 
@@ -303,6 +304,63 @@ class RegenerateCtPlusIds(unittest.TestCase):
                                                self.mapping_dataset_id)
 
         client.query.assert_not_called()
+
+    @staticmethod
+    def _person_drift_client(shared_count, moved_count, examples=()):
+        client = mock.MagicMock()
+        client.table_exists.return_value = True
+        client.query.return_value.result.return_value = [{
+            'shared_count': shared_count,
+            'moved_count': moved_count,
+            'examples': list(examples)
+        }]
+        return client
+
+    def _assert_ids_have_not_moved(self, client):
+        ct.assert_person_ids_have_not_moved(client, self.project_id,
+                                            self.mapping_dataset_id,
+                                            self.pipeline_dataset_id,
+                                            self.ids_view)
+
+    def test_unchanged_person_ids_are_accepted(self):
+        self._assert_ids_have_not_moved(self._person_drift_client(1000, 0))
+
+    def test_a_reissued_ct_plus_person_id_stops_the_run(self):
+        """The view moving would re-key participants while row ids stay pinned."""
+        client = self._person_drift_client(1000, 3, examples=[11, 22, 33])
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self._assert_ids_have_not_moved(client)
+
+        message = str(ctx.exception)
+        self.assertIn('3 of 1000', message)
+        self.assertIn('11', message)
+
+    def test_first_run_skips_the_person_drift_check(self):
+        """There is no previous mapping to disagree with."""
+        client = mock.MagicMock()
+        client.table_exists.return_value = False
+
+        self._assert_ids_have_not_moved(client)
+
+        client.query.assert_not_called()
+
+    def test_person_drift_check_is_scoped_to_the_ct_plus_namespace(self):
+        """A mapping dataset can hold rows another tier's run wrote."""
+        client = self._person_drift_client(1000, 0)
+
+        self._assert_ids_have_not_moved(client)
+
+        q = client.query.call_args.args[0]
+        self.assertIn(
+            ct.person_mapping_src_table_id(self.pipeline_dataset_id,
+                                           self.ids_view), q)
+
+    def test_person_drift_check_runs_before_the_mapping_is_rebuilt(self):
+        """_mapping_person is WRITE_TRUNCATE, so the check must precede the loop."""
+        source = inspect.getsource(ct.main)
+        self.assertLess(source.index('assert_person_ids_have_not_moved'),
+                        source.index('Generating mapping tables'))
 
     def test_non_empty_output_dataset_stops_the_run(self):
         """main() drops every CDM table in the output dataset before loading."""

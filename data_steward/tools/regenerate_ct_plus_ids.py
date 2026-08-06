@@ -320,6 +320,80 @@ def assert_person_mapping_is_ct_plus(client, project_id, mapping_dataset_id,
             f'or one from a previous CT+ run.')
 
 
+def assert_person_ids_have_not_moved(client, project_id, mapping_dataset_id,
+                                     pipeline_dataset_id, ct_plus_ids_view):
+    """
+    Stop the run if a participant's CT+ person_id changed since the previous run.
+
+    Every other mapping table persists ids by appending: the mapping is the durable
+    record, so a source row that shifts underneath still keeps the CT+ id it was first
+    given. _mapping_person cannot work that way. It does not mint ids, it mirrors the
+    ones the RDR assigned in the ids view, so it is rebuilt with WRITE_TRUNCATE on
+    every run and whatever the view says this time simply becomes the answer.
+
+    That leaves person id persistence resting on the view alone, with nothing watching
+    it. If the view ever re-issues controlled_tier_plus_id values, every CT+ person_id
+    changes and every foreign key in every loaded table follows, while domain row ids
+    stay pinned by their own mappings. The release would ship with a row carrying the
+    same observation_id as last time attached to a different participant, and no error
+    anywhere. This check turns that into a stopped run.
+
+    A participant who has left the view is not an error: withdrawals happen and the
+    mapping simply carries a row the view no longer matches. Only a participant present
+    in both, under a changed CT+ id, fails.
+
+    :param client: BigQueryClient
+    :param project_id: identifies the GCP project
+    :param mapping_dataset_id: identifies the dataset where mapping tables are stored
+    :param pipeline_dataset_id: identifies the pipeline_tables dataset
+    :param ct_plus_ids_view: view containing person_id to CT+ id mapping
+    :raises RuntimeError: if any carried over participant's CT+ id has changed
+    """
+    mapping_person = mapping_table_for(PERSON)
+    if not client.table_exists(mapping_person, mapping_dataset_id):
+        return
+
+    expected = person_mapping_src_table_id(pipeline_dataset_id,
+                                           ct_plus_ids_view)
+    # DISTINCT on the view side for the same reason mapping_query() uses it: the view
+    # has been observed carrying byte identical duplicate rows, and joining against
+    # them would multiply the comparison rather than fail it.
+    q = f'''
+    WITH v AS (
+        SELECT DISTINCT
+            {CT_PERSON_ID_COLUMN} AS src_person_id,
+            {CT_PLUS_PERSON_ID_COLUMN} AS person_id
+        FROM `{project_id}.{pipeline_dataset_id}.{ct_plus_ids_view}`
+        WHERE {CT_PERSON_ID_COLUMN} IS NOT NULL
+          AND {CT_PLUS_PERSON_ID_COLUMN} IS NOT NULL
+    )
+    SELECT
+        COUNT(*) AS shared_count,
+        COUNTIF(m.person_id != v.person_id) AS moved_count,
+        ARRAY_AGG(IF(m.person_id != v.person_id, m.src_person_id, NULL)
+                  IGNORE NULLS LIMIT 5) AS examples
+    FROM `{project_id}.{mapping_dataset_id}.{mapping_person}` m
+    JOIN v USING (src_person_id)
+    WHERE m.src_table_id = '{expected}'
+    '''
+    row = list(client.query(q).result())[0]
+    shared_count, moved_count = row['shared_count'], row['moved_count']
+    if not moved_count:
+        LOGGER.info(
+            f'{mapping_person}: {shared_count} participants carried over '
+            f'from the previous run, all with unchanged CT+ ids.')
+        return
+
+    raise RuntimeError(
+        f'{mapping_dataset_id}.{mapping_person} disagrees with '
+        f'{pipeline_dataset_id}.{ct_plus_ids_view}: {moved_count} of {shared_count} '
+        f'carried over participants have a different CT+ id than they were given '
+        f'before, for example {sorted(row["examples"])}. Rebuilding the mapping would '
+        f'adopt the new ids silently and re-key those participants across every table '
+        f'while domain row ids stay put. Establish why the view changed before '
+        f'rerunning.')
+
+
 def run_query_to_table(project_id,
                        q,
                        destination_dataset_id,
@@ -421,8 +495,12 @@ def assert_output_dataset_is_safe(client, output_dataset_id, allow_replace):
     anything, so a mistyped or stale --output_dataset_id destroys whatever is there
     with no prompt and no way back: the delete is followed immediately by a create
     under the same name, which can put the prior version out of reach of time travel.
-    Nothing else in this script is destructive, so this one check covers the whole
-    blast radius.
+
+    This check covers the output dataset only. --mapping_dataset_id is destructive too,
+    because _mapping_person is rebuilt with WRITE_TRUNCATE on every run, but that one
+    replaces a table's contents rather than dropping the table, so time travel still
+    reaches the prior version. assert_person_mapping_is_ct_plus() and
+    assert_person_ids_have_not_moved() are what guard that dataset.
 
     An empty or absent dataset passes. A non-empty one requires --allow_replace, which
     exists so re-running a release is possible but has to be typed deliberately.
@@ -1099,6 +1177,12 @@ def main(input_dataset_id,
     # Refuse to run against a mapping dataset another tier produced. Doing so would
     # reuse that tier's _mapping_person and give CT+ its person_ids.
     assert_person_mapping_is_ct_plus(bq_client, project_id, mapping_dataset_id,
+                                     pipeline_dataset_id, ct_plus_ids_view)
+
+    # Refuse to re-key participants who already have a CT+ id. This has to run before
+    # the mapping loop below, which rebuilds _mapping_person with WRITE_TRUNCATE and
+    # so destroys the evidence it compares against.
+    assert_person_ids_have_not_moved(bq_client, project_id, mapping_dataset_id,
                                      pipeline_dataset_id, ct_plus_ids_view)
 
     # Refuse to destroy an output dataset that already holds tables. This must come
