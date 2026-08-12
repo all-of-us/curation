@@ -1,4 +1,5 @@
 import os
+from datetime import date
 
 import mock
 from dateutil import parser
@@ -64,8 +65,8 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                 (100, 1799, 5, 5, 5),
                 -- should be included --
                 (200, 1801, 5, 5, 5),
-                -- should not be included in sandbox table because of bad birth year --
-                (300, 2020, 5, 5, 5),
+                -- should be included; participants born this year are valid --
+                (300, {{current_year}}, 5, 5, 5),
                 -- should be included --
                 (400, 2000, 5, 5, 5),
                 -- should be included.  added for ai/an regression checks --
@@ -77,7 +78,8 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                 (800, 1985, 5, 5, 5)
         """).render(project=self.project_id,
                     dataset=self.dataset_id,
-                    table=PERSON)
+                    table=PERSON,
+                    current_year=date.today().year)
 
         primary_map_tmpl = self.jinja_env.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.{{table}}`
@@ -110,7 +112,8 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
           -- does have the basics --
           (50, 800, 1585838, 1585840, 1585838, '1900-01-01', 0),
           (60, 200, 1585838, 1585840, 1585838, '1900-01-01', 0),
-          (70, 400, 1585838, 1585840, 1585838, '1900-01-01', 0)
+          (70, 400, 1585838, 1585840, 1585838, '1900-01-01', 0),
+          (80, 300, 1585838, 1585840, 1585838, '1900-01-01', 0)
         """).render(project=self.project_id,
                     dataset=self.dataset_id,
                     table=OBSERVATION)
@@ -145,7 +148,7 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                     # No changes should be made
                     (100, 1799, 5, 5, 5),
                     (200, 1801, 5, 5, 5),
-                    (300, 2020, 5, 5, 5),
+                    (300, date.today().year, 5, 5, 5),
                     (400, 2000, 5, 5, 5),
                     (500, 1990, 5, 5, 5),
                     (600, 1980, 5, 5, 5),
@@ -162,7 +165,7 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                     'observation_concept_id', 'observation_date',
                     'observation_type_concept_id'
                 ],
-                'loaded_ids': [10, 20, 30, 40, 50, 60, 70],
+                'loaded_ids': [10, 20, 30, 40, 50, 60, 70, 80],
                 'cleaned_values': [
                     # No changes should be made
                     (10, 500, 1586140, 1586141, 1586140, obs_date, 0),
@@ -171,15 +174,17 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
                     (40, 700, 1000, 0, 1000, obs_date, 0),
                     (50, 800, 1585838, 1585840, 1585838, obs_date, 0),
                     (60, 200, 1585838, 1585840, 1585838, obs_date, 0),
-                    (70, 400, 1585838, 1585840, 1585838, obs_date, 0)
+                    (70, 400, 1585838, 1585840, 1585838, obs_date, 0),
+                    (80, 300, 1585838, 1585840, 1585838, obs_date, 0)
                 ],  # verifying the correct fields and data are sandboxed here
                 'fq_sandbox_table_name':
                     self.fq_sandbox_table_names[0],
                 'tables_created_on_setup': [self.fq_sandbox_table_names[1]],
                 'sandbox_fields': ['research_id', 'participant_id', 'is_aian'],
-                'sandboxed_ids': [20, 40, 50, 60, 80],
+                'sandboxed_ids': [20, 40, 50, 60, 70, 80],
                 'sandbox_values': [
                     (80, 200, 'no'),
+                    (70, 300, 'no'),
                     (60, 400, 'no'),
                     (50, 500, 'yes'),
                     (40, 600, 'no'),

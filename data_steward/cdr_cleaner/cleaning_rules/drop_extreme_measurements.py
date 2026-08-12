@@ -16,7 +16,7 @@ Original Issue: DC-624
 import logging
 
 # Project Imports
-from common import JINJA_ENV, MEASUREMENT
+from common import JINJA_ENV, MEASUREMENT, PIPELINE_TABLES
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.calculate_bmi import CalculateBmi
@@ -25,8 +25,11 @@ LOGGER = logging.getLogger(__name__)
 
 CREATE_SANDBOX = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
-SELECT * FROM `{{project}}.{{dataset}}.measurement` m
-WHERE
+SELECT m.* FROM `{{project}}.{{dataset}}.measurement` m
+LEFT JOIN `{{project}}.{{dataset}}.person` p USING (person_id)
+WHERE {{pipeline_tables}}.calculate_age(
+    m.measurement_date, EXTRACT(DATE FROM p.birth_datetime)) >= 18
+AND (
     (
         -- select BMI row associated with extreme height --
         EXISTS (
@@ -76,6 +79,7 @@ WHERE
         -- select all extreme BMI --
         OR (m.measurement_source_concept_id = 903124 AND m.value_as_number NOT BETWEEN 10 AND 125)    
     )
+)
 )
 """)
 
@@ -129,7 +133,8 @@ class DropExtremeMeasurements(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    sandbox_table=self.sandbox_table_for(MEASUREMENT))
+                    sandbox_table=self.sandbox_table_for(MEASUREMENT),
+                    pipeline_tables=PIPELINE_TABLES)
         }
 
         delete_query = {

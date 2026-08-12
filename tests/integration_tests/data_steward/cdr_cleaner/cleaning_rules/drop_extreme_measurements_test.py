@@ -11,7 +11,7 @@ import os
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, MEASUREMENT
+from common import JINJA_ENV, MEASUREMENT, PERSON
 from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -46,7 +46,26 @@ VALUES
     (503, 1, 3038553, '2023-01-01', '2023-01-01 01:00:00', 32865, 20, 'bmi', 903124),
     (504, 4, 3038553, '2023-01-01', '2023-01-01 04:00:00', 44818701, 20, 'bmi', 903124),
     -- Irrelevant concept. Not dropped --
-    (999, 1, 903135, '2023-01-01', '2023-01-01 01:00:00', 44818701, 250, 'waist-circumference-mean', 903135)
+    (999, 1, 903135, '2023-01-01', '2023-01-01 01:00:00', 44818701, 250, 'waist-circumference-mean', 903135),
+    -- Pediatric values outside adult ranges are not dropped. --
+    (1000, 10, 3036277, '2023-01-01', '2023-01-01 01:00:00', 44818701, 50, 'height', 903133),
+    (1001, 10, 3025315, '2023-01-01', '2023-01-01 01:00:00', 44818701, 20, 'weight', 903121)
+""")
+
+PERSON_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.person`
+(person_id, birth_datetime, year_of_birth, gender_concept_id, race_concept_id, ethnicity_concept_id)
+VALUES
+    (1, '1980-01-01', 1980, 0, 0, 0),
+    (2, '1980-01-01', 1980, 0, 0, 0),
+    (3, '1980-01-01', 1980, 0, 0, 0),
+    (4, '1980-01-01', 1980, 0, 0, 0),
+    (5, '1980-01-01', 1980, 0, 0, 0),
+    (6, '1980-01-01', 1980, 0, 0, 0),
+    (7, '1980-01-01', 1980, 0, 0, 0),
+    (8, '1980-01-01', 1980, 0, 0, 0),
+    (9, '1980-01-01', 1980, 0, 0, 0),
+    (10, '2015-01-01', 2015, 0, 0, 0)
 """)
 
 
@@ -74,7 +93,8 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
                 f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
         measurement_table_name = f'{cls.project_id}.{cls.dataset_id}.{MEASUREMENT}'
-        cls.fq_table_names = [measurement_table_name]
+        person_table_name = f'{cls.project_id}.{cls.dataset_id}.{PERSON}'
+        cls.fq_table_names = [measurement_table_name, person_table_name]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -89,8 +109,10 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
 
         extreme_measurement_template = EXTREME_MEASUREMENTS_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
+        person_template = PERSON_TEMPLATE.render(project_id=self.project_id,
+                                                 dataset_id=self.dataset_id)
 
-        self.load_test_data([extreme_measurement_template])
+        self.load_test_data([person_template, extreme_measurement_template])
 
     def test_field_cleaning(self):
         """
@@ -104,12 +126,12 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [
                 101, 102, 103, 104, 105, 106, 201, 202, 203, 301, 302, 303, 304,
-                401, 402, 501, 502, 503, 504, 999
+                401, 402, 501, 502, 503, 504, 999, 1000, 1001
             ],
             'sandboxed_ids': [101, 102, 103, 104, 105, 106, 301, 302, 303, 304],
             'fields': ['measurement_id'],
             'cleaned_values': [(201,), (202,), (203,), (401,), (402,), (501,),
-                               (502,), (503,), (504,), (999,)]
+                               (502,), (503,), (504,), (999,), (1000,), (1001,)]
         }]
 
         self.default_test(tables_and_counts)

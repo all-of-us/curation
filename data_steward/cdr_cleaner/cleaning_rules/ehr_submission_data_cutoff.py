@@ -80,9 +80,8 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
     def get_affected_tables(self):
         """
         This method gets all the tables that are affected by this cleaning rule which are all the CDM tables
-            except for the person table. The birth date field in the person table will be cleaned in another
-            cleaning rule where all participants under the age of 18 will be dropped. Ignoring this table will
-            optimize this cleaning rule's runtime.
+            except for the person table. Birth date is not a submission activity date, so the person table is
+            not subject to this cutoff rule.
 
         :return: list of affected tables
         """

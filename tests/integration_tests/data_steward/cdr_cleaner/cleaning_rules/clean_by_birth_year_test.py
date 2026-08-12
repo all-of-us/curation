@@ -4,6 +4,7 @@ Original Issue: DC-392
 """
 # Python imports
 import os
+from datetime import date
 
 # Third party imports
 from google.cloud import bigquery
@@ -27,10 +28,12 @@ INSERT_RAW_DATA = JINJA_ENV.from_string("""
   VALUES
   -- records to sandbox --
   (1,0,1899,0,0),
-  (4,0,2020,0,0),
+  (5,0,{{future_year}},0,0),
   -- records to keep --
   (2,0,1900,0,0),
-  (3,0,1975,0,0);
+  (3,0,1975,0,0),
+  -- participants born this year are valid --
+  (4,0,{{current_year}},0,0);
 
   INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (
       observation_id,
@@ -42,10 +45,11 @@ INSERT_RAW_DATA = JINJA_ENV.from_string("""
     VALUES
       -- records to sandbox --
       (1,1,0,'2020-01-01',0),
-      (2,4,0,'2020-01-01',0),
+      (2,5,0,'2020-01-01',0),
       -- records to keep --
       (3,2,0,'2020-01-01',0),
-      (4,3,0,'2020-01-01',0)
+      (4,3,0,'2020-01-01',0),
+      (5,4,0,'2020-01-01',0)
 """)
 
 
@@ -84,8 +88,11 @@ class CleanByBirthYearTest(BaseTest.CleaningRulesTestBase):
     def setUp(self):
         # Set the test project identifier
         super().setUp()
-        raw_data_load_query = INSERT_RAW_DATA.render(project_id=self.project_id,
-                                                     dataset_id=self.dataset_id)
+        raw_data_load_query = INSERT_RAW_DATA.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            current_year=date.today().year,
+            future_year=date.today().year + 1)
 
         # Load test data
         self.load_test_data([f'{raw_data_load_query}'])
@@ -111,22 +118,24 @@ class CleanByBirthYearTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
-            'loaded_ids': [1, 2, 3, 4],
-            'sandboxed_ids': [3, 4],
+            'loaded_ids': [1, 2, 3, 4, 5],
+            'sandboxed_ids': [1, 2],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_type_concept_id'
             ],
-            'cleaned_values': [(3, 2, 0, 0), (4, 3, 0, 0)]
+            'cleaned_values': [(3, 2, 0, 0), (4, 3, 0, 0), (5, 4, 0, 0)]
         }, {
-            'fq_table_name': f'{self.project_id}.{self.dataset_id}.{PERSON}',
-            'loaded_ids': [1, 2, 3, 4],
-            'sandboxed_ids': [1, 4],
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{PERSON}',
+            'loaded_ids': [1, 2, 3, 4, 5],
+            'sandboxed_ids': [1, 5],
             'fields': [
                 'person_id', 'gender_concept_id', 'year_of_birth',
                 'race_concept_id', 'ethnicity_concept_id'
             ],
-            'cleaned_values': [(2, 0, 1900, 0, 0), (3, 0, 1975, 0, 0)]
+            'cleaned_values': [(2, 0, 1900, 0, 0), (3, 0, 1975, 0, 0),
+                               (4, 0, date.today().year, 0, 0)]
         }]
 
         self.default_test(tables_and_counts)

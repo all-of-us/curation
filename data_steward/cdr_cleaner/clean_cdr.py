@@ -44,7 +44,6 @@ from cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records import R
 from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNonMatchingParticipant
 from cdr_cleaner.cleaning_rules.sandbox_and_remove_withdrawn_pids import SandboxAndRemoveWithdrawnPids
 from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import RemoveRecordsWithWrongDate
-from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveParticipantsUnder18Years
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
 from cdr_cleaner.cleaning_rules.replace_freetext_notes import ReplaceFreeTextNotes
 from cdr_cleaner.cleaning_rules.deid.eponymous_condition_suppression import EponymousConditionSuppression
@@ -191,7 +190,6 @@ RDR_CLEANING_CLASSES = [
     (CreateDeidQuestionnaireResponseMap,),
     (CreateAIANLookup,),
     (TruncateRdrData,),
-    (RemoveParticipantsUnder18Years,),
     (SandboxAndRemoveWithdrawnPids,),
     # execute SetConceptIdsForSurveyQuestionAnswers before PpiBranching gets executed
     # since PpiBranching relies on fully mapped concepts

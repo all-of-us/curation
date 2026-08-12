@@ -1,6 +1,5 @@
 """
-Year of birth should not be in the future, before 1900, or indicate
-the participant is less than 18 years old.
+Year of birth should not be in the future or before 1900.
 Using rule 18, 19 in Achilles Heel for reference.
 """
 import logging
@@ -15,7 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC392', 'DC809', 'DC3538']
 MIN_YEAR_OF_BIRTH = 1900
-MAX_YEAR_OF_BIRTH = '(EXTRACT(YEAR FROM CURRENT_DATE()) - 17)'
+MAX_YEAR_OF_BIRTH = 'EXTRACT(YEAR FROM CURRENT_DATE())'
 
 LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
   SELECT
@@ -67,8 +66,7 @@ class CleanByBirthYear(BaseCleaningRule):
         """
         desc = (
             'Sandbox and remove records when the participant\'s year of birth '
-            'indicates he/she was born before 1900, in the last 17 years, or in '
-            'the future.')
+            'indicates they were born before 1900 or in the future.')
 
         person_id_tables = resources.get_person_id_tables(AOU_REQUIRED)
 
