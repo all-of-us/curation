@@ -62,7 +62,7 @@ WITH
     SELECT person_id
     FROM `{{project_id}}.{{dataset_id}}.person` p
     WHERE p.year_of_birth < 1800
-    OR p.year_of_birth > (EXTRACT(YEAR FROM CURRENT_DATE()) - 17)
+    OR p.year_of_birth > EXTRACT(YEAR FROM CURRENT_DATE())
 )
 
 -- store the research_id, person_id, and their AIAN status of all participants --

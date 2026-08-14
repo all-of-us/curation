@@ -537,8 +537,12 @@ DROP_ROWS_QUERY = JINJA_ENV.from_string("""
     FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
     LEFT JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS me
     USING (measurement_id)
+    LEFT JOIN `{{project_id}}.{{dataset_id}}.person` AS p
+    USING (person_id)
     WHERE m.measurement_concept_id IN ({{ids_to_drop}})
     AND REGEXP_CONTAINS(me.src_id, r'(?i)EHR site')
+    AND {{pipeline_tables}}.calculate_age(
+      m.measurement_date, EXTRACT(DATE FROM p.birth_datetime)) >= 18
   )
 """)
 
@@ -620,7 +624,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     ids_to_drop=','.join(
-                        [str(con) for con in HEIGHT_CONCEPT_IDS]))
+                        [str(con) for con in HEIGHT_CONCEPT_IDS]),
+                    pipeline_tables=PIPELINE_TABLES)
         }
 
         insert_new_height_rows_query = {
@@ -667,7 +672,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     ids_to_drop=','.join(
-                        [str(con) for con in WEIGHT_CONCEPT_IDS]))
+                        [str(con) for con in WEIGHT_CONCEPT_IDS]),
+                    pipeline_tables=PIPELINE_TABLES)
         }
 
         insert_new_weight_rows_query = {
