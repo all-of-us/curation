@@ -522,7 +522,7 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
         ON
             t.person_id = m.src_person_id
         AND m.src_table_id = '{
-            pipeline_dataset_id}.{rt_ids_view}'
+        pipeline_dataset_id}.{rt_ids_view}'
         {location_join_expr}
         {care_site_join_expr}
         WHERE
@@ -773,7 +773,8 @@ def main(input_dataset_id, output_dataset_id, project_id, pipeline_dataset_id,
                          rt_ids_view, mapping_source_dataset_id)
 
     # Discover and process any remaining tables
-    tables_to_skip = set(CDM_TABLES) | set(FITBIT_TABLES) | set(EXT_TABLES) | set(ETM_TABLES)
+    tables_to_skip = set(CDM_TABLES) | set(FITBIT_TABLES) | set(
+        EXT_TABLES) | set(ETM_TABLES)
     copy_only_tables = set(VOCABULARY_TABLES) | set(ACHILLES_TABLES) | set(
         ACHILLES_HEEL_TABLES)
 
