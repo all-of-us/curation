@@ -28,6 +28,53 @@ class CleanCDRTest(unittest.TestCase):
         expected_stages = list([s for s in DataStage])
         self.assertEqual(actual_stages, expected_stages)
 
+    def test_controlled_tier_plus_data_stages(self):
+        """The three CT+ stages resolve and each maps to a cleaning-classes list."""
+        for stage_value in [
+                'controlled_tier_plus_deid', 'controlled_tier_plus_deid_base',
+                'controlled_tier_plus_deid_clean'
+        ]:
+            stage = DataStage(stage_value)
+            self.assertEqual(stage.value, stage_value)
+            self.assertIn(stage.value, cc.DATA_STAGE_RULES_MAPPING)
+            self.assertTrue(cc.DATA_STAGE_RULES_MAPPING[stage.value])
+
+    def test_controlled_tier_plus_lists_copy_controlled_tier(self):
+        """Each CT+ list is an independent copy of its CT counterpart.
+
+        Equality is true as of DL-2417; a follow-up that diverges a CT+ list
+        updates it. The identity checks are permanent.
+        """
+        pairs = [
+            (cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES,
+             cc.CONTROLLED_TIER_DEID_CLEANING_CLASSES),
+            (cc.CONTROLLED_TIER_PLUS_DEID_BASE_CLEANING_CLASSES,
+             cc.CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES),
+            (cc.CONTROLLED_TIER_PLUS_DEID_CLEAN_CLEANING_CLASSES,
+             cc.CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES),
+        ]
+        for ct_plus_classes, ct_classes in pairs:
+            self.assertEqual(ct_plus_classes, ct_classes)
+            self.assertIsNot(ct_plus_classes, ct_classes)
+
+    def test_parser_controlled_tier_plus_data_stages(self):
+        """The parser accepts the CT+ stages and resolves them to the CT rules."""
+        parser = cc.get_parser()
+        for stage_value, ct_stage_value in [
+            ('controlled_tier_plus_deid', 'controlled_tier_deid'),
+            ('controlled_tier_plus_deid_base', 'controlled_tier_deid_base'),
+            ('controlled_tier_plus_deid_clean', 'controlled_tier_deid_clean')
+        ]:
+            args = parser.parse_args([
+                '-p', self.project_id, '-d', self.dataset_id, '-b',
+                self.sandbox_dataset_id, '--data_stage', stage_value,
+                '--run_as', 'fake@fake.com'
+            ])
+            self.assertIn(args.data_stage, DataStage)
+            self.assertEqual(args.data_stage.value, stage_value)
+            self.assertEqual(cc.DATA_STAGE_RULES_MAPPING[args.data_stage.value],
+                             cc.DATA_STAGE_RULES_MAPPING[ct_stage_value])
+
     def test_parser(self):
         test_args = [
             '-p', self.project_id, '-d', self.dataset_id, '-b',
