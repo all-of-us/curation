@@ -1,9 +1,10 @@
 """
-Integration test for remove_participants_under_18years module
+Integration test for flag_participants_under_18years module
 
-Original Issues: DC-1724, DC-2260, DC2632, DL2416
+Original Issues: DL2416
 
-The intent is to remove data for participants under 18 years old  from all the domain tables."""
+The intent is to remove data for participants under 18 years old  from all the domain tables.
+"""
 
 # Python Imports
 import os
