@@ -25,7 +25,7 @@ VALUES
       /* Participant 2 ... 18 years 0 day old at consent*/
       /* Participant 3 ... 17 years 364 days old at consent -> To be sandboxed*/
       /* Participant 4 ... Younger than 18 years old at consent -> To be sandboxed*/
-      /* The data belonging to this participant from all the domain tables should be dropped.*/  
+      /* The data belonging to this participant from all the domain tables should be dropped.*/
       (1, '1970-01-01 00:00:00 UTC', 0, 1970, 0, 0),
       (2, '2002-01-01 00:00:00 UTC', 0, 2002, 0, 0),
       (3, '2003-03-01 00:00:00 UTC', 0, 2003, 0, 0),
@@ -71,7 +71,7 @@ class FlagParticipantsUnder18YearsTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = os.environ.get(PROJECT_ID)
 
         # Set the expected test datasets
-        cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
 
         cls.rule_instance = FlagParticipantsUnder18Years(
