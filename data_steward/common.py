@@ -305,6 +305,8 @@ DEID_QUESTIONNAIRE_RESPONSE_MAP = '_deid_questionnaire_response_map'
 
 AIAN_LIST = 'aian_list'
 
+UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
+
 # Participant Summary
 EHR_OPS = 'ehr_ops'
 DRC_OPS = 'drc_ops'
