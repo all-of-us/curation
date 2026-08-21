@@ -1,6 +1,5 @@
 """
-All data for any participant less than 18 years old at the time of consent needs to be dropped from
-all the tables. For RDR exports, they may be cleaned with the current date or a truncation date may be set.
+Record every participant who was under 18 at consent in a lookup table. Removal happens at the tier deid stages (DL-2418).
 
 Original Issues: DL2416
 """
@@ -17,9 +16,6 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
-UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
-
-
 PARTICIPANTS_UNDER_18_AT_CONSENT_QUERY = common.JINJA_ENV.from_string("""
     CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{under18_participant_lookup_table}}` AS (
     SELECT
@@ -29,8 +25,7 @@ PARTICIPANTS_UNDER_18_AT_CONSENT_QUERY = common.JINJA_ENV.from_string("""
     FROM (
         SELECT
         person_id,
-        FLOOR(CAST(FORMAT_DATE('%Y.%m%d', observation_date) AS FLOAT64)
-                - CAST(FORMAT_DATE('%Y.%m%d', DATE(birth_datetime)) AS FLOAT64)) AS age_at_consent
+        FLOOR({{pipeline_tables}}.calculate_age(observation_date, EXTRACT(DATE FROM birth_datetime))) AS age_at_consent
         FROM `{{project}}.{{dataset}}.observation`
         JOIN `{{project}}.{{dataset}}.person` USING (person_id)
         WHERE observation_source_concept_id = 1585482 OR observation_concept_id = 1585482
@@ -41,19 +36,14 @@ PARTICIPANTS_UNDER_18_AT_CONSENT_QUERY = common.JINJA_ENV.from_string("""
 """)
 
 
-
 class FlagParticipantsUnder18Years(BaseCleaningRule):
     """
     Record every participant under 18 years old at consent, with age, in the
     _under18_participants lookup. Flags only; deletes nothing. Removal happens
-    at the tier deid stages (companion ticket).
+    at the tier deid stages (DL-2418).
     """
 
-    def __init__(self,
-                 project_id,
-                 dataset_id,
-                 sandbox_dataset_id,
-                 cutoff_date=None):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper information.
 
@@ -71,11 +61,12 @@ class FlagParticipantsUnder18Years(BaseCleaningRule):
             # otherwise, default to using today's date as the date string
             self.cutoff_date = str(datetime.now().date())
         desc = (
-            'All EHR data associated with a participant who was younger than 18 years old at consent '
-            'is to be sandboxed and dropped from the CDR.')
+            "All EHR data associated with a participant who was younger than 18 years old at consent "
+            "is flagged so that the downstream logic can handle them accordingly."
+        )
 
         super().__init__(
-            issue_numbers=["DC1724", "DC2260", "DC2632", "DL2416"],
+            issue_numbers=["DL2416"],
             description=desc,
             affected_datasets=[cdr_consts.RDR],
             affected_tables=[],
@@ -91,7 +82,8 @@ class FlagParticipantsUnder18Years(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    under18_participant_lookup_table=UNDER18_PARTICIPANTS_LOOKUP_TABLE,
+                    pipeline_tables=common.PIPELINE_TABLES,
+                    under18_participant_lookup_table=common.UNDER18_PARTICIPANTS_LOOKUP_TABLE,
                 )
             }
         ]
@@ -118,25 +110,12 @@ class FlagParticipantsUnder18Years(BaseCleaningRule):
         """
         Returns an iterable of sandbox table names
         """
-        return [UNDER18_PARTICIPANTS_LOOKUP_TABLE]
+        return [common.UNDER18_PARTICIPANTS_LOOKUP_TABLE]
 
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
-
-    ext_parser = parser.get_argument_parser()
-    ext_parser.add_argument(
-        '-c',
-        '--cutoff_date',
-        dest='cutoff_date',
-        action='store',
-        help=
-        ('Cutoff date for data based on <table_name>_date and <table_name>_datetime fields.  '
-         'Should be in the form YYYY-MM-DD.'),
-        required=True,
-        type=validate_date_string,
-    )
 
     ext_parser = parser.get_argument_parser()
     ARGS = ext_parser.parse_args()
@@ -148,7 +127,6 @@ if __name__ == '__main__':
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id,
             [(FlagParticipantsUnder18Years,)],
-            ARGS.cutoff_date,
         )
         for query in query_list:
             LOGGER.info(query)
@@ -159,5 +137,4 @@ if __name__ == '__main__':
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id,
             [(FlagParticipantsUnder18Years,)],
-            ARGS.cutoff_date,
         )
