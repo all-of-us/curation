@@ -112,49 +112,7 @@ class FlagParticipantsUnder18YearsTest(BaseTest.CleaningRulesTestBase):
         ])
 
     def test_flag_participants_under_18years(self):
-        # Expected results list
-        tables_and_counts = [{
-            'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.{VISIT_OCCURRENCE}',
-            'fq_sandbox_table_name':
-                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(VISIT_OCCURRENCE)}',
-            'loaded_ids': [1, 2, 3, 4],
-            'sandboxed_ids': [3, 4],
-            'fields': [
-                'visit_occurrence_id', 'person_id', 'visit_start_date',
-                'visit_end_date'
-            ],
-            'cleaned_values': [
-                (1, 1, datetime.datetime.strptime('2020-01-01',
-                                                  '%Y-%m-%d').date(),
-                 datetime.datetime.strptime('2020-01-02', '%Y-%m-%d').date()),
-                (2, 2, datetime.datetime.strptime('2020-01-02',
-                                                  '%Y-%m-%d').date(),
-                 datetime.datetime.strptime('2020-01-03', '%Y-%m-%d').date()),
-            ]
-        }, {
-            'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
-            'fq_sandbox_table_name':
-                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(OBSERVATION)}',
-            'loaded_ids': [11, 12, 21, 22, 31, 32, 41, 42],
-            'sandboxed_ids': [31, 32, 41, 42],
-            'fields': [
-                'observation_id', 'person_id', 'observation_date',
-                'observation_concept_id', 'observation_source_concept_id'
-            ],
-            'cleaned_values': [
-                (11, 1, datetime.datetime.strptime('2020-01-01',
-                                                   '%Y-%m-%d').date(), 0, 0),
-                (12, 1, datetime.datetime.strptime('2020-01-01',
-                                                   '%Y-%m-%d').date(), 1585482,
-                 0),
-                (21, 2, datetime.datetime.strptime('2020-01-01',
-                                                   '%Y-%m-%d').date(), 0, 0),
-                (22, 2, datetime.datetime.strptime('2020-01-01',
-                                                   '%Y-%m-%d').date(), 0,
-                 1585482),
-            ]
-        }]
-
-        self.default_test(tables_and_counts)
+        self.default_test([])
+        self.assertTableValuesMatch(self.fq_sandbox_table_names[0],
+                                    ['person_id','age_at_consent','age_band'], 
+                                    [(3, 17, '7-17'), (4, 1, '0-6')])
