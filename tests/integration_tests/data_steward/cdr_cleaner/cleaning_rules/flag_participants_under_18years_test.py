@@ -8,7 +8,6 @@ The intent is to remove data for participants under 18 years old  from all the d
 
 # Python Imports
 import os
-import datetime
 
 # Project Imports
 from common import VISIT_OCCURRENCE, OBSERVATION, PERSON, JINJA_ENV
