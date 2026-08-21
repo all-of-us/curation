@@ -6,12 +6,10 @@ Original Issues: DL2416
 
 # Python imports
 import logging
-from datetime import datetime
 
 # Project imports
 import common
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from resources import validate_date_string
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
@@ -25,10 +23,11 @@ PARTICIPANTS_UNDER_18_AT_CONSENT_QUERY = common.JINJA_ENV.from_string("""
     FROM (
         SELECT
         person_id,
-        FLOOR({{pipeline_tables}}.calculate_age(observation_date, EXTRACT(DATE FROM birth_datetime))) AS age_at_consent
+        {{pipeline_tables}}.calculate_age(observation_date, EXTRACT(DATE FROM birth_datetime)) AS age_at_consent
         FROM `{{project}}.{{dataset}}.observation`
         JOIN `{{project}}.{{dataset}}.person` USING (person_id)
-        WHERE observation_source_concept_id = 1585482 OR observation_concept_id = 1585482
+        WHERE (observation_source_concept_id = 1585482 OR observation_concept_id = 1585482)
+        AND birth_datetime IS NOT NULL
     )
     WHERE age_at_consent < 18
     GROUP BY person_id
@@ -50,16 +49,8 @@ class FlagParticipantsUnder18Years(BaseCleaningRule):
         Set the issue numbers, description and affected datasets. As other tickets may affect
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
-
-        :params: cutoff_date: the last date that should be included in the
-            dataset
         """
-        try:
-            # set to provided date string if the date string is valid
-            self.cutoff_date = validate_date_string(cutoff_date)
-        except (TypeError, ValueError):
-            # otherwise, default to using today's date as the date string
-            self.cutoff_date = str(datetime.now().date())
+
         desc = (
             "All EHR data associated with a participant who was younger than 18 years old at consent "
             "is flagged so that the downstream logic can handle them accordingly."
