@@ -111,7 +111,7 @@ class FlagParticipantsUnder18YearsTest(BaseTest.CleaningRulesTestBase):
                 {observation_data_query}'''
         ])
 
-    def test_remove_participants_under_18years(self):
+    def test_flag_participants_under_18years(self):
         # Expected results list
         tables_and_counts = [{
             'fq_table_name':
