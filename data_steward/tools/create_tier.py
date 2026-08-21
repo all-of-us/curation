@@ -8,8 +8,11 @@ from datetime import datetime
 # Project imports
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
-from common import CDR_SCOPES, PIPELINE_TABLES, ZIP3_SES_MAP, DE_IDENTIFIED
-from resources import replace_special_characters_for_labels
+from common import (CDR_SCOPES, PIPELINE_TABLES, ZIP3_SES_MAP, DE_IDENTIFIED,
+                    CONTROLLED, CONTROLLED_PLUS, CT_DERIVED_TIERS, REGISTERED)
+from common import TIER_LIST
+from resources import (replace_special_characters_for_labels,
+                       get_pipeline_dataset_suffix, get_tier_dataset_prefix)
 from constants.cdr_cleaner import clean_cdr as consts
 from gcloud.bq import BigQueryClient
 from tools import add_cdr_metadata
@@ -19,20 +22,56 @@ from utils.parameter_validators import validate_release_tag_param
 
 LOGGER = logging.getLogger(__name__)
 
-TIER_LIST = ['controlled', 'registered']
 DEID_STAGE_LIST = ['deid', 'deid_base', 'deid_clean', 'fitbit_deid']
+
+# Resolves a (tier, deid_stage) pair to its DataStage value. Replaces the
+# f'{tier}_tier_{deid_stage}' concatenation, which cannot produce
+# 'controlled_tier_plus_deid' from a tier named 'controlled_plus' and fails with a
+# KeyError deep in the run rather than at the point of use. controlled_plus has no
+# fitbit entry on purpose: CT+ is a re-key of CT, so CT's fitbit deid pass has
+# already run and CT+ does not repeat it.
+TIER_DEID_STAGE_TO_DATA_STAGE = {
+    (REGISTERED, 'deid'): consts.REGISTERED_TIER_DEID,
+    (REGISTERED, 'deid_base'): consts.REGISTERED_TIER_DEID_BASE,
+    (REGISTERED, 'deid_clean'): consts.REGISTERED_TIER_DEID_CLEAN,
+    (REGISTERED, 'fitbit_deid'): consts.REGISTERED_TIER_FITBIT,
+    (CONTROLLED, 'deid'): consts.CONTROLLED_TIER_DEID,
+    (CONTROLLED, 'deid_base'): consts.CONTROLLED_TIER_DEID_BASE,
+    (CONTROLLED, 'deid_clean'): consts.CONTROLLED_TIER_DEID_CLEAN,
+    (CONTROLLED, 'fitbit_deid'): consts.CONTROLLED_TIER_FITBIT,
+    (CONTROLLED_PLUS, 'deid'): consts.CONTROLLED_TIER_PLUS_DEID,
+    (CONTROLLED_PLUS, 'deid_base'): consts.CONTROLLED_TIER_PLUS_DEID_BASE,
+    (CONTROLLED_PLUS, 'deid_clean'): consts.CONTROLLED_TIER_PLUS_DEID_CLEAN,
+}
 
 
 def validate_tier_param(tier):
     """
-    helper function to validate the tier parameter passed is either 'controlled' or 'registered'
+    helper function to validate the tier parameter passed is a known tier
 
     :param tier: tier parameter passed through from either a list or command line argument
     :return: nothing, breaks if not valid
     """
     if tier.lower() not in TIER_LIST:
-        msg = f"Parameter ERROR: {tier} is an incorrect input for the tier parameter, accepted: controlled or " \
-              f"registered"
+        msg = f"Parameter ERROR: {tier} is an incorrect input for the tier parameter, " \
+              f"accepted: {', '.join(TIER_LIST)}"
+        LOGGER.error(msg)
+        raise TypeError(msg)
+
+
+def get_data_stage(tier, deid_stage):
+    """
+    Resolve a tier and deid stage to the DataStage value naming its cleaning rule list.
+
+    :param tier: tier parameter, one of TIER_LIST
+    :param deid_stage: deid stage parameter, one of DEID_STAGE_LIST
+    :return: the data stage string, a value of consts.DataStage
+    """
+    try:
+        return TIER_DEID_STAGE_TO_DATA_STAGE[(tier, deid_stage)]
+    except KeyError:
+        msg = f"Parameter ERROR: no data stage is defined for tier {tier} at deid " \
+              f"stage {deid_stage}"
         LOGGER.error(msg)
         raise TypeError(msg)
 
@@ -69,9 +108,12 @@ def get_dataset_name(tier, release_tag, deid_stage):
     """
     Helper function to create the dataset name based on the given criteria
     This function should return a name for the final dataset only (not all steps along the way)
-    The function returns a string in the form: [C|R]{release_tag}_deid[_base|_clean]
+    The function returns a string in the form: [R|C|CP]{release_tag}_deid[_base|_clean][suffix]
 
-    :param tier: controlled or registered tier intended for the output dataset
+    The controlled_plus suffix keeps this script's CT-keyed output clear of
+    CP{release_tag}_deid_clean, the name regenerate_ct_plus_ids.py publishes.
+
+    :param tier: tier intended for the output dataset, one of TIER_LIST
     :param release_tag: release tag for dataset in the format of YYYYq#r#
     :param deid_stage: deid stage (deid, base or clean)
     :return: a string for the dataset name
@@ -79,9 +121,10 @@ def get_dataset_name(tier, release_tag, deid_stage):
     # validate parameters
     validate_create_tier_args(tier, deid_stage, release_tag)
 
-    tier = tier[0].upper()
+    prefix = get_tier_dataset_prefix(tier)
+    suffix = get_pipeline_dataset_suffix(tier)
 
-    dataset_name = f"{tier}{release_tag}_{deid_stage}"
+    dataset_name = f"{prefix}{release_tag}_{deid_stage}{suffix}"
 
     return dataset_name
 
@@ -216,8 +259,8 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     # Run cleaning rules
     cleaning_args = [
         '-p', project_id, '-d', datasets[consts.STAGING], '-b',
-        datasets[consts.SANDBOX], '--data_stage', f'{tier}_tier_{deid_stage}',
-        '--run_as', run_as, '--console_log'
+        datasets[consts.SANDBOX], '--data_stage',
+        get_data_stage(tier, deid_stage), '--run_as', run_as, '--console_log'
     ]
 
     # Will update the qa_handoff_date to current date
@@ -234,7 +277,8 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
             qa_handoff_date, '--etl_version', versions[0]
         ])
 
-        if tier == 'controlled':
+        # Membership, not equality: every CT-derived tier needs zip3_ses_map staged.
+        if tier in CT_DERIVED_TIERS:
             bq_client.copy_table(
                 f'{project_id}.{PIPELINE_TABLES}.{ZIP3_SES_MAP}',
                 f'{project_id}.{datasets[consts.STAGING]}.{ZIP3_SES_MAP}')
@@ -279,7 +323,7 @@ def parse_deid_args(args=None):
                         '--tier',
                         action='store',
                         dest='tier',
-                        help='controlled or registered tier',
+                        help='registered, controlled or controlled_plus tier',
                         required=True,
                         choices=TIER_LIST)
     parser.add_argument('-i',
@@ -322,8 +366,8 @@ def main(raw_args=None):
     pipeline_logging.configure(add_console_handler=args.console_log)
     # Identify the cleaning classes being run for specified data_stage
     # and validate if all the required arguments are supplied
-    cleaning_classes = clean_cdr.DATA_STAGE_RULES_MAPPING[
-        f'{args.tier}_tier_{args.deid_stage}']
+    cleaning_classes = clean_cdr.DATA_STAGE_RULES_MAPPING[get_data_stage(
+        args.tier, args.deid_stage)]
     clean_cdr.validate_custom_params(cleaning_classes, **kwargs)
 
     # Runs create_tier in order to generate the {args.tier}_tier_{args.data_stage} datasets and apply cleaning rules

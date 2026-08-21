@@ -9,11 +9,16 @@ import argparse
 import mock
 
 # Project imports
+from cdr_cleaner.clean_cdr import DATA_STAGE_RULES_MAPPING
 from constants.cdr_cleaner import clean_cdr as consts
 from tools.add_cdr_metadata import INSERT
 from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
-    validate_release_tag_param, create_datasets, get_dataset_name, create_tier, add_kwargs_to_args
-from common import CDR_SCOPES, DE_IDENTIFIED
+    validate_release_tag_param, create_datasets, get_dataset_name, create_tier, add_kwargs_to_args, \
+    get_data_stage, DEID_STAGE_LIST, TIER_DEID_STAGE_TO_DATA_STAGE
+from common import (CDR_SCOPES, CONTROLLED, CONTROLLED_PLUS, DE_IDENTIFIED,
+                    PIPELINE_DATASET_SUFFIX, PIPELINE_TABLES, REGISTERED,
+                    TIER_DATASET_PREFIX, TIER_LIST, ZIP3_SES_MAP)
+from resources import get_pipeline_dataset_suffix, get_tier_dataset_prefix
 
 
 class CreateTierTest(unittest.TestCase):
@@ -458,3 +463,110 @@ class CreateTierTest(unittest.TestCase):
             updated_qa_handoff_date_args)
         self.mock_bq_client.build_and_copy_contents.assert_called_with(
             datasets[consts.STAGING], final_dataset_name)
+
+
+class CreateTierControlledPlusTest(unittest.TestCase):
+    """
+    Covers the tier-generic naming and data-stage resolution added for CT+ (DL-2462).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
+    def setUp(self):
+        self.release_tag = '2020q4r3'
+        self.project_id = 'fake_project_id'
+        self.input_dataset = 'fake_input'
+        self.run_as = 'foo@bar.com'
+        self.credentials_filepath = 'fake/file/path.json'
+        self.mock_bq_client = mock.MagicMock()
+
+    def test_every_tier_has_a_prefix_and_a_suffix(self):
+        for tier in TIER_LIST:
+            self.assertIn(tier, TIER_DATASET_PREFIX)
+            self.assertIn(tier, PIPELINE_DATASET_SUFFIX)
+
+    def test_prefix_lookup_rejects_unknown_tier(self):
+        self.assertRaises(ValueError, get_tier_dataset_prefix, 'platinum')
+        self.assertRaises(ValueError, get_pipeline_dataset_suffix, 'platinum')
+
+    def test_controlled_plus_does_not_collide_with_controlled(self):
+        """The tier[0].upper() bug this replaces gave both tiers the same name."""
+        for deid_stage in DEID_STAGE_LIST:
+            if (CONTROLLED_PLUS,
+                    deid_stage) not in TIER_DEID_STAGE_TO_DATA_STAGE:
+                continue
+            names = {
+                tier: get_dataset_name(tier, self.release_tag, deid_stage)
+                for tier in TIER_LIST
+            }
+            self.assertEqual(len(set(names.values())), len(TIER_LIST),
+                             f'dataset names collide at {deid_stage}: {names}')
+
+    def test_controlled_plus_pipeline_output_is_not_the_published_name(self):
+        """create_tier must not write the name regenerate_ct_plus_ids.py publishes."""
+        name = get_dataset_name(CONTROLLED_PLUS, self.release_tag, 'deid_clean')
+        self.assertEqual(name, f'CP{self.release_tag}_deid_clean_pre_rekey')
+        self.assertNotEqual(name, f'CP{self.release_tag}_deid_clean')
+
+    def test_registered_and_controlled_names_are_unchanged(self):
+        """Guards the two live tiers against a regression from the prefix map."""
+        for deid_stage in DEID_STAGE_LIST:
+            self.assertEqual(
+                get_dataset_name(REGISTERED, self.release_tag, deid_stage),
+                f'R{self.release_tag}_{deid_stage}')
+            self.assertEqual(
+                get_dataset_name(CONTROLLED, self.release_tag, deid_stage),
+                f'C{self.release_tag}_{deid_stage}')
+
+    def test_every_tier_deid_stage_pair_resolves_to_a_real_data_stage(self):
+        """Enumerates the pairs rather than sampling them."""
+        stage_values = {stage.value for stage in consts.DataStage}
+        for (tier,
+             deid_stage), data_stage in TIER_DEID_STAGE_TO_DATA_STAGE.items():
+            self.assertIn(tier, TIER_LIST)
+            self.assertIn(deid_stage, DEID_STAGE_LIST)
+            self.assertIn(data_stage, stage_values)
+            self.assertIn(data_stage, DATA_STAGE_RULES_MAPPING)
+            self.assertEqual(data_stage, get_data_stage(tier, deid_stage))
+
+    def test_controlled_plus_has_no_fitbit_stage(self):
+        """CT+ is a re-key of CT, so CT's fitbit deid pass is not repeated."""
+        self.assertRaises(TypeError, get_data_stage, CONTROLLED_PLUS,
+                          'fitbit_deid')
+
+    @mock.patch('tools.add_cdr_metadata.get_etl_version')
+    @mock.patch('tools.create_tier.clean_cdr.main')
+    @mock.patch('tools.create_tier.auth.get_impersonation_credentials')
+    @mock.patch('tools.create_tier.BigQueryClient')
+    @mock.patch('tools.add_cdr_metadata.main')
+    @mock.patch('tools.create_tier.create_datasets')
+    def test_zip3_ses_map_is_copied_for_controlled_plus(
+            self, mock_create_datasets, mock_add_cdr_metadata_main, mock_client,
+            mock_impersonate_credentials, mock_cdr_main, mock_etl_version):
+        """Breakage 4: the equality check on 'controlled' skipped CT+ silently."""
+        for tier in (CONTROLLED, CONTROLLED_PLUS):
+            with self.subTest(tier=tier):
+                self.mock_bq_client.reset_mock()
+                final_dataset_name = get_dataset_name(tier, self.release_tag,
+                                                      'deid_base')
+                datasets = {
+                    consts.CLEAN: final_dataset_name,
+                    consts.STAGING: f'{final_dataset_name}_staging',
+                    consts.SANDBOX: f'{final_dataset_name}_sandbox'
+                }
+                mock_create_datasets.return_value = datasets
+                mock_client.return_value = self.mock_bq_client
+                mock_etl_version.return_value = ['test']
+
+                create_tier(self.credentials_filepath, self.project_id, tier,
+                            self.input_dataset, self.release_tag, 'deid_base',
+                            self.run_as)
+
+                self.mock_bq_client.copy_table.assert_called_with(
+                    f'{self.project_id}.{PIPELINE_TABLES}.{ZIP3_SES_MAP}',
+                    f'{self.project_id}.{datasets[consts.STAGING]}.{ZIP3_SES_MAP}'
+                )
