@@ -460,6 +460,77 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
+# CT+ cleaning classes, copied verbatim from the CONTROLLED_TIER_* lists
+# above. A CT change during the V9 window must be mirrored here deliberately.
+CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
+    (MoveNLPtoDomains,),
+    (RtCtPIDtoRID,),
+    (QRIDtoRID,),  # Should run before any row suppression rules
+    (TruncateEraTables,),
+    (NullPersonBirthdate,),
+    (TableSuppression,),
+    (ControlledTierReplacedConceptSuppression,),
+    (GeneralizeZipCodes,),  # Should run after any data remapping rules
+    # (RaceEthnicityRecordSuppression,),  # Should run after any data remapping rules
+    (
+        MotorVehicleAccidentSuppression,),
+    (VehicularAccidentConceptSuppression,),
+    (ExplicitIdentifierSuppression,),
+    (GeoLocationConceptSuppression,),
+    (BirthInformationSuppression,),
+    (YearOfBirthRecordsSuppression,),
+    (ControlledCopeSurveySuppression,),
+    (IDFieldSuppression,),  # Should run after any data remapping
+    (CancerConceptSuppression,),  # Should run after any data remapping rules
+    (SectionParticipationConceptSuppression,),
+    (CTAdditionalPrivacyConceptSuppression,),
+    (CTObservationPrivacySuppression,),
+    # (CTNPHObservationPrivacySuppression,), # Applies only to NPH data
+    (
+        StringFieldsSuppression,),
+    (AggregateZipCodes,),
+    (DeidentifyAIANZip3Values,),
+    (FreeTextSurveyResponseSuppression,),
+    (DropOrphanedSurveyConductIds,),
+    (DropOrphanedPIDS,),
+    (GenerateWearStudyTable,),
+    (DropViaSurveyConduct,),  # should run after wear study table creation
+    (RemoveExtraTables,),  # Should be last cleaning rule to be run
+    (CalculatePrimaryDeathRecord,),
+    (FilterNLPfromDomains,),
+    (RemoveNoteUsingNLP,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
+
+CONTROLLED_TIER_PLUS_DEID_BASE_CLEANING_CLASSES = [
+    (MoveNLPtoDomains,),
+    (FillSourceValueTextFields,),
+    (RepopulatePersonControlledTier,),
+    (CreateDerivedTables,),
+    (CreatePersonExtTable,),
+    (CalculatePrimaryDeathRecord,),
+    (CTRetroactivePrivacyConceptSuppression,),
+    (FilterNLPfromDomains,),
+    (RemoveNoteUsingNLP,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
+
+CONTROLLED_TIER_PLUS_DEID_CLEAN_CLEANING_CLASSES = [
+    (MoveNLPtoDomains,),
+    (MeasurementRecordsSuppression,),
+    (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
+    (UnitNormalization,),  # dependent on CleanHeightAndWeight
+    (DropZeroConceptIDs,),
+    (DropOrphanedSurveyConductIds,),
+    (CreateDerivedTables,),
+    (CalculatePrimaryDeathRecord,),
+    (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
+    (CTRetroactivePrivacyConceptSuppression,),
+    (FilterNLPfromDomains,),
+    (RemoveNoteUsingNLP,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
+
 DATA_CONSISTENCY_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
@@ -499,6 +570,12 @@ DATA_STAGE_RULES_MAPPING = {
         CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_FITBIT.value:
         CONTROLLED_TIER_FITBIT_CLEANING_CLASSES,
+    DataStage.CONTROLLED_TIER_PLUS_DEID.value:
+        CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES,
+    DataStage.CONTROLLED_TIER_PLUS_DEID_BASE.value:
+        CONTROLLED_TIER_PLUS_DEID_BASE_CLEANING_CLASSES,
+    DataStage.CONTROLLED_TIER_PLUS_DEID_CLEAN.value:
+        CONTROLLED_TIER_PLUS_DEID_CLEAN_CLEANING_CLASSES,
     DataStage.DATA_CONSISTENCY.value:
         DATA_CONSISTENCY_CLEANING_CLASSES,
     DataStage.CRON_RETRACTION.value:
