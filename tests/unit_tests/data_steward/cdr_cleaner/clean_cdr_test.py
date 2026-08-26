@@ -8,10 +8,9 @@ from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import 
 from constants.cdr_cleaner.clean_cdr import DataStage
 from tests.test_util import FakeRuleClass, fake_rule_func
 
-# The CT+ lists are hard copies of the CT lists, so drift between them is
-# otherwise invisible. Substituting a CT+ variant for its CT counterpart, at the
-# same position, is the only way a CT+ list may differ. Anything else fails the
-# copy-policy test below.
+# The CT+ lists are hard copies of the CT lists, so drift is otherwise
+# invisible. Swapping in a CT+ variant at the same position is the only allowed
+# difference; anything else fails the copy-policy test below.
 CT_PLUS_SUBSTITUTIONS = {
     RemoveFlaggedUnder18Participants: RemoveFlaggedUnder18ParticipantsCtPlus,
 }
@@ -19,10 +18,10 @@ CT_PLUS_SUBSTITUTIONS = {
 
 def expected_ct_plus_classes(ct_classes):
     """
-    A CT list rewritten the way its CT+ copy is allowed to differ from it.
+    A CT list rewritten the way its CT+ copy is allowed to differ.
 
     :param ct_classes: the CT cleaning-classes list
-    :return: the CT+ list this CT list should produce
+    :return: the CT+ list it should produce
     """
     return [(CT_PLUS_SUBSTITUTIONS.get(entry[0], entry[0]),) + tuple(entry[1:])
             for entry in ct_classes]
@@ -73,10 +72,9 @@ class CleanCDRTest(unittest.TestCase):
 
     def test_controlled_tier_plus_lists_copy_controlled_tier(self):
         """Each CT+ list is an independent copy of its CT counterpart, apart
-        from the CT+ variant substitutions declared at the top of this module.
+        from the substitutions declared at the top of this module.
 
-        A CT+ list that diverges some other way fails here, which is what keeps
-        the hard-copied lists honest. The identity checks are permanent.
+        Any other divergence fails here. The identity checks are permanent.
         """
         for ct_plus_classes, ct_classes in self._ct_plus_pairs():
             self.assertEqual(expected_ct_plus_classes(ct_classes),
@@ -86,8 +84,8 @@ class CleanCDRTest(unittest.TestCase):
     def test_controlled_tier_lists_carry_no_ct_plus_variant(self):
         """No CT+ variant leaks into a CT list.
 
-        The failure this guards against is the one that matters: a CT+ subclass
-        registered in a CT list would under-suppress the controlled tier.
+        A CT+ subclass registered in a CT list would under-suppress the
+        controlled tier.
         """
         ct_plus_rules = set(CT_PLUS_SUBSTITUTIONS.values())
 

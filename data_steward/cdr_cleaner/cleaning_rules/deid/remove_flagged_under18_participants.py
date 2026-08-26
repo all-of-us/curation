@@ -2,17 +2,12 @@
 Sandbox and remove all data for participants flagged as under 18 at consent.
 
 DL-2416 downgraded `RemoveParticipantsUnder18Years` to a lookup-only flag, so
-under-18 participants now flow through the RDR, combined and tier cleaning
-stages. This rule performs the removal that used to happen at the RDR stage,
-but at the tier stages instead, reading the participants to remove from the
-`_under18_participants` lookup that the flag rule writes to the RDR sandbox.
+the removal happens here, at the tier stages, reading who to remove from the
+`_under18_participants` lookup in the RDR sandbox. It matches on `person_id`,
+so it must run before person IDs are re-keyed to research IDs.
 
-An optional `age_band_to_retain` keeps one band in place. The CT+ pediatric run
-retains ages 0 to 6, which is what `RemoveFlaggedUnder18ParticipantsCtPlus`
-pins.
-
-This rule matches on `person_id` and the lookup is keyed by the original
-participant ID, so it must run before person IDs are re-keyed to research IDs.
+`age_band_to_retain` keeps one band; `RemoveFlaggedUnder18ParticipantsCtPlus`
+pins '0-6' for the CT+ pediatric run.
 
 Original Issues: DL2418
 """
@@ -32,16 +27,13 @@ from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 
 LOGGER = logging.getLogger(__name__)
 
-# The two band values written by FlagParticipantsUnder18Years. Keep in step with
-# the IF(MIN(age_at_consent) <= 6, '0-6', '7-17') expression in that rule.
+# Written by FlagParticipantsUnder18Years as IF(age <= 6, '0-6', '7-17').
 AGE_BANDS = ['0-6', '7-17']
 
 CT_PLUS_AGE_BAND_TO_RETAIN = '0-6'
 
-# CATI_TABLES plus aou_death. The RDR-stage rule this replaced ran before the
-# combined dataset was built, so CATI_TABLES was the whole surface. The tier
-# stages run on a copy of combined, which also carries aou_death, and leaving
-# it out would keep a removed participant's death record in the tier output.
+# The tier stages run on a copy of combined, which carries aou_death. The
+# RDR-stage rule this replaced ran before combined was built, so it had none.
 AFFECTED_TABLES = get_person_id_tables(common.CATI_TABLES + [common.AOU_DEATH])
 
 SANDBOX_ROWS = common.JINJA_ENV.from_string("""
@@ -102,9 +94,8 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
 
         :param under18_lookup_dataset_id: dataset holding the
-            _under18_participants lookup, which FlagParticipantsUnder18Years
-            writes to the RDR stage sandbox dataset
-        :param age_band_to_retain: one of AGE_BANDS to keep in place, or None to
+            _under18_participants lookup, the RDR stage sandbox
+        :param age_band_to_retain: an AGE_BANDS value to keep, or None to
             remove every flagged participant
         """
         desc = (
@@ -175,24 +166,15 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
 
     def setup_rule(self, client):
         """
-        Function to run any data upload options before executing a query.
+        Validate the age band, narrow the affected tables to those present, and
+        fail if the lookup is missing, so a mis-pointed dataset cannot turn the
+        removal into a silent no-op.
 
-        Validates the retained age band, narrows the affected tables to those
-        that exist in the dataset, and fails early if the lookup table is not
-        where under18_lookup_dataset_id says it is, so a mis-pointed dataset
-        cannot turn the removal into a silent no-op.
-
-        The engine calls this before it generates any query, so a bad parameter
-        still stops the run before anything executes. It is checked here rather
-        than in __init__ because the cleaning-rules reporter instantiates every
-        registered rule with a placeholder for each parameter.
-
-        Do not move this check into get_query_specs to also cover the
-        --list_queries path: the reporter calls get_query_specs on those
-        placeholder instances to fill the report's sql field, so validating
-        there breaks reporter_test.test_get_stage_elements. That path renders
-        SQL and executes nothing, and the band it was given is visible in the
-        rendered WHERE clause.
+        The band is checked here, not in __init__, because the cleaning-rules
+        reporter instantiates every rule with placeholder arguments. Do not move
+        it to get_query_specs either, which the reporter also calls. The engine
+        runs setup_rule before generating any query, so only the --list_queries
+        preview goes unchecked, and that executes nothing.
         """
         if (self.age_band_to_retain is not None and
                 self.age_band_to_retain not in AGE_BANDS):
@@ -213,9 +195,8 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
         if common.UNDER18_PARTICIPANTS_LOOKUP_TABLE not in lookup_tables:
             raise RuntimeError(
                 f'{common.UNDER18_PARTICIPANTS_LOOKUP_TABLE} not found in '
-                f'{self.project_id}.{self.under18_lookup_dataset_id}. Check the '
-                f'under18_lookup_dataset_id parameter points at the RDR stage '
-                f'sandbox dataset written by FlagParticipantsUnder18Years.')
+                f'{self.project_id}.{self.under18_lookup_dataset_id}. '
+                f'under18_lookup_dataset_id must name the RDR stage sandbox.')
 
     def setup_validation(self, client):
         """
@@ -238,11 +219,10 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
 
 class RemoveFlaggedUnder18ParticipantsCtPlus(RemoveFlaggedUnder18Participants):
     """
-    CT+ variant: retains participants aged 0 to 6, removes 7 to 17.
+    CT+ variant: retains ages 0 to 6, removes 7 to 17.
 
-    The retained band is pinned in code rather than passed at run time. The
-    engine only forwards CLI kwargs a constructor declares, so this subclass not
-    declaring age_band_to_retain is what makes the pinned value unoverridable.
+    The engine forwards only kwargs a constructor declares, so not declaring
+    age_band_to_retain here is what makes the pinned band unoverridable.
     """
 
     def __init__(self,

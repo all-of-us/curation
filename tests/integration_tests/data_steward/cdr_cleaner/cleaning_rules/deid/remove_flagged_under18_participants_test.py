@@ -86,10 +86,9 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
         # Set the test project identifier
         cls.project_id = os.environ.get(PROJECT_ID)
 
-        # Set the expected test datasets. The lookup lives in a dataset other
-        # than the one being cleaned, which is the point of the parameter: at the
-        # tier stages the rule cannot see the RDR sandbox through its own
-        # sandbox_dataset_id.
+        # The lookup sits in a dataset other than the one being cleaned, which
+        # is the point of the parameter: at the tier stages the rule cannot
+        # reach the RDR sandbox through its own sandbox_dataset_id.
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.under18_lookup_dataset_id = os.environ.get('RDR_DATASET_ID')
@@ -105,9 +104,8 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
                                     f'{cls.under18_lookup_dataset_id}.'
                                     f'{UNDER18_PARTICIPANTS_LOOKUP_TABLE}')
 
-        # Generates list of fully qualified table names and their corresponding
-        # sandbox table names. Only the two tested domain tables are listed; the
-        # rule narrows itself to the tables that exist in the dataset.
+        # Only the two tested domain tables. The rule narrows itself to the
+        # tables that exist in the dataset.
         for table_name in [VISIT_OCCURRENCE, OBSERVATION]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
@@ -124,10 +122,9 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
-        # Created here rather than through fq_table_names. That list is handed
-        # to create_tables, which resolves a schema by table name, and the
-        # lookup has no schema file, so every setUp after the first would fail.
-        # tearDown below drops it, mirroring DeidRulesTestBase.
+        # Not via fq_table_names: that list goes to create_tables, which
+        # resolves a schema by table name, and the lookup has no schema file.
+        # tearDown drops it, mirroring DeidRulesTestBase.
         self.client.create_table(
             Table(self.fq_lookup_table_name, UNDER18_LOOKUP_SCHEMA))
 
@@ -206,9 +203,9 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
         """
         The CT+ variant keeps the '0-6' band and removes '7-17'.
 
-        age_band_to_retain is passed here on purpose: the subclass does not
-        declare it, so the engine drops it and the pinned '0-6' stands. If it
-        were overridable, participant 4 would be removed and this test fails.
+        age_band_to_retain is passed on purpose: the subclass does not declare
+        it, so the engine drops it and the pinned '0-6' stands. Were it
+        overridable, participant 4 would be removed and this test would fail.
         """
         self.rule_instance = RemoveFlaggedUnder18ParticipantsCtPlus(
             self.project_id, self.dataset_id, self.sandbox_id, **self.kwargs)
@@ -227,10 +224,8 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
     def test_invalid_age_band_is_rejected(self):
         """
         An age band outside the two the lookup writes fails in setup_rule,
-        before the engine generates any query.
-
-        The band is checked ahead of anything that needs BigQuery, which is why
-        this passes no client.
+        before any query is generated. The check precedes anything needing
+        BigQuery, hence no client.
         """
         rule = RemoveFlaggedUnder18Participants(self.project_id,
                                                 self.dataset_id,
