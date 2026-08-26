@@ -124,12 +124,12 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
-        # The lookup has no schema in resources, so it is created explicitly
-        # rather than through create_tables. tearDown drops it after each test.
+        # Created here rather than through fq_table_names. That list is handed
+        # to create_tables, which resolves a schema by table name, and the
+        # lookup has no schema file, so every setUp after the first would fail.
+        # tearDown below drops it, mirroring DeidRulesTestBase.
         self.client.create_table(
             Table(self.fq_lookup_table_name, UNDER18_LOOKUP_SCHEMA))
-        if self.fq_lookup_table_name not in self.fq_table_names:
-            self.fq_table_names.append(self.fq_lookup_table_name)
 
         under18_lookup_data_query = UNDER18_LOOKUP_DATA_TEMPLATE.render(
             project_id=self.project_id,
@@ -146,6 +146,14 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
                 {visit_occurrence_data_query};
                 {observation_data_query}'''
         ])
+
+    def tearDown(self):
+        """
+        Drop the lookup table between tests, since setUp recreates it.
+        """
+        self.client.delete_table(self.fq_lookup_table_name, not_found_ok=True)
+
+        super().tearDown()
 
     def _tables_and_counts(self, sandboxed_visit_ids, cleaned_visit_values,
                            sandboxed_observation_ids,
@@ -218,14 +226,20 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
 
     def test_invalid_age_band_is_rejected(self):
         """
-        An age band outside the two the lookup writes fails at construction.
+        An age band outside the two the lookup writes fails in setup_rule,
+        before the engine generates any query.
+
+        The band is checked ahead of anything that needs BigQuery, which is why
+        this passes no client.
         """
+        rule = RemoveFlaggedUnder18Participants(self.project_id,
+                                                self.dataset_id,
+                                                self.sandbox_id,
+                                                age_band_to_retain='0-17',
+                                                **self.kwargs)
+
         with self.assertRaises(ValueError):
-            RemoveFlaggedUnder18Participants(self.project_id,
-                                             self.dataset_id,
-                                             self.sandbox_id,
-                                             age_band_to_retain='0-17',
-                                             **self.kwargs)
+            rule.setup_rule(None)
 
     def test_missing_lookup_dataset_fails_validation(self):
         """

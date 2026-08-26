@@ -38,7 +38,11 @@ AGE_BANDS = ['0-6', '7-17']
 
 CT_PLUS_AGE_BAND_TO_RETAIN = '0-6'
 
-AFFECTED_TABLES = [table for table in get_person_id_tables(common.CATI_TABLES)]
+# CATI_TABLES plus aou_death. The RDR-stage rule this replaced ran before the
+# combined dataset was built, so CATI_TABLES was the whole surface. The tier
+# stages run on a copy of combined, which also carries aou_death, and leaving
+# it out would keep a removed participant's death record in the tier output.
+AFFECTED_TABLES = get_person_id_tables(common.CATI_TABLES + [common.AOU_DEATH])
 
 SANDBOX_ROWS = common.JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
@@ -103,11 +107,6 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
         :param age_band_to_retain: one of AGE_BANDS to keep in place, or None to
             remove every flagged participant
         """
-        if age_band_to_retain is not None and age_band_to_retain not in AGE_BANDS:
-            raise ValueError(
-                f'age_band_to_retain must be one of {AGE_BANDS} or None, '
-                f'got {age_band_to_retain}')
-
         desc = (
             'All data associated with a participant flagged as younger than 18 years old '
             'at consent is sandboxed and dropped, except for the retained age band, if any.'
@@ -178,10 +177,29 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
         """
         Function to run any data upload options before executing a query.
 
-        Narrows the affected tables to those that exist in the dataset and fails
-        early if the lookup table is not where under18_lookup_dataset_id says it
-        is, so a mis-pointed dataset cannot turn the removal into a silent no-op.
+        Validates the retained age band, narrows the affected tables to those
+        that exist in the dataset, and fails early if the lookup table is not
+        where under18_lookup_dataset_id says it is, so a mis-pointed dataset
+        cannot turn the removal into a silent no-op.
+
+        The engine calls this before it generates any query, so a bad parameter
+        still stops the run before anything executes. It is checked here rather
+        than in __init__ because the cleaning-rules reporter instantiates every
+        registered rule with a placeholder for each parameter.
+
+        Do not move this check into get_query_specs to also cover the
+        --list_queries path: the reporter calls get_query_specs on those
+        placeholder instances to fill the report's sql field, so validating
+        there breaks reporter_test.test_get_stage_elements. That path renders
+        SQL and executes nothing, and the band it was given is visible in the
+        rendered WHERE clause.
         """
+        if (self.age_band_to_retain is not None and
+                self.age_band_to_retain not in AGE_BANDS):
+            raise ValueError(
+                f'age_band_to_retain must be one of {AGE_BANDS} or None, '
+                f'got {self.age_band_to_retain}')
+
         try:
             self.affected_tables = get_tables_in_dataset(
                 client, self.project_id, self.dataset_id, self.affected_tables)

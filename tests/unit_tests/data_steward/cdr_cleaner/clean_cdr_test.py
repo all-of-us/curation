@@ -3,8 +3,29 @@ import unittest
 from mock import patch
 
 import cdr_cleaner.clean_cdr as cc
+from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import (
+    RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus)
 from constants.cdr_cleaner.clean_cdr import DataStage
 from tests.test_util import FakeRuleClass, fake_rule_func
+
+# The CT+ lists are hard copies of the CT lists, so drift between them is
+# otherwise invisible. Substituting a CT+ variant for its CT counterpart, at the
+# same position, is the only way a CT+ list may differ. Anything else fails the
+# copy-policy test below.
+CT_PLUS_SUBSTITUTIONS = {
+    RemoveFlaggedUnder18Participants: RemoveFlaggedUnder18ParticipantsCtPlus,
+}
+
+
+def expected_ct_plus_classes(ct_classes):
+    """
+    A CT list rewritten the way its CT+ copy is allowed to differ from it.
+
+    :param ct_classes: the CT cleaning-classes list
+    :return: the CT+ list this CT list should produce
+    """
+    return [(CT_PLUS_SUBSTITUTIONS.get(entry[0], entry[0]),) + tuple(entry[1:])
+            for entry in ct_classes]
 
 
 class CleanCDRTest(unittest.TestCase):
@@ -39,13 +60,9 @@ class CleanCDRTest(unittest.TestCase):
             self.assertIn(stage.value, cc.DATA_STAGE_RULES_MAPPING)
             self.assertTrue(cc.DATA_STAGE_RULES_MAPPING[stage.value])
 
-    def test_controlled_tier_plus_lists_copy_controlled_tier(self):
-        """Each CT+ list is an independent copy of its CT counterpart.
-
-        Equality is true as of DL-2417; a follow-up that diverges a CT+ list
-        updates it. The identity checks are permanent.
-        """
-        pairs = [
+    def _ct_plus_pairs(self):
+        """(CT+ list, CT list) for the three CT+ stages."""
+        return [
             (cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES,
              cc.CONTROLLED_TIER_DEID_CLEANING_CLASSES),
             (cc.CONTROLLED_TIER_PLUS_DEID_BASE_CLEANING_CLASSES,
@@ -53,12 +70,33 @@ class CleanCDRTest(unittest.TestCase):
             (cc.CONTROLLED_TIER_PLUS_DEID_CLEAN_CLEANING_CLASSES,
              cc.CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES),
         ]
-        for ct_plus_classes, ct_classes in pairs:
-            self.assertEqual(ct_plus_classes, ct_classes)
+
+    def test_controlled_tier_plus_lists_copy_controlled_tier(self):
+        """Each CT+ list is an independent copy of its CT counterpart, apart
+        from the CT+ variant substitutions declared at the top of this module.
+
+        A CT+ list that diverges some other way fails here, which is what keeps
+        the hard-copied lists honest. The identity checks are permanent.
+        """
+        for ct_plus_classes, ct_classes in self._ct_plus_pairs():
+            self.assertEqual(expected_ct_plus_classes(ct_classes),
+                             ct_plus_classes)
             self.assertIsNot(ct_plus_classes, ct_classes)
 
+    def test_controlled_tier_lists_carry_no_ct_plus_variant(self):
+        """No CT+ variant leaks into a CT list.
+
+        The failure this guards against is the one that matters: a CT+ subclass
+        registered in a CT list would under-suppress the controlled tier.
+        """
+        ct_plus_rules = set(CT_PLUS_SUBSTITUTIONS.values())
+
+        for _, ct_classes in self._ct_plus_pairs():
+            for entry in ct_classes:
+                self.assertNotIn(entry[0], ct_plus_rules)
+
     def test_parser_controlled_tier_plus_data_stages(self):
-        """The parser accepts the CT+ stages and resolves them to the CT rules."""
+        """The parser accepts the CT+ stages and resolves them to the CT+ rules."""
         parser = cc.get_parser()
         for stage_value, ct_stage_value in [
             ('controlled_tier_plus_deid', 'controlled_tier_deid'),
@@ -72,8 +110,10 @@ class CleanCDRTest(unittest.TestCase):
             ])
             self.assertIn(args.data_stage, DataStage)
             self.assertEqual(args.data_stage.value, stage_value)
-            self.assertEqual(cc.DATA_STAGE_RULES_MAPPING[args.data_stage.value],
-                             cc.DATA_STAGE_RULES_MAPPING[ct_stage_value])
+            self.assertEqual(
+                cc.DATA_STAGE_RULES_MAPPING[args.data_stage.value],
+                expected_ct_plus_classes(
+                    cc.DATA_STAGE_RULES_MAPPING[ct_stage_value]))
 
     def test_parser(self):
         test_args = [
