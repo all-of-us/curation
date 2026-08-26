@@ -2,6 +2,7 @@ import logging
 from abc import abstractmethod
 from google.cloud.bigquery.client import Client
 from google.cloud.exceptions import GoogleCloudError
+from pandas.api.types import is_bool_dtype
 
 from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 from resources import get_concept_id_fields, has_domain_table_id
@@ -12,6 +13,47 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, quer
     get_delete_empty_sandbox_tables_queries
 
 LOGGER = logging.getLogger(__name__)
+
+# Boolean column on the privacy concept CSVs saying whether a concept stays
+# suppressed in CT+. Added by DL-2419, populated by DL-2421.
+CT_PLUS_SUPPRESSED = 'ct_plus_suppressed'
+
+# Appended to a CT lookup table name by the CT+ variants. The lookup loads
+# append rather than truncate, so a CT stage and a CT+ stage sharing a sandbox
+# dataset would otherwise union their concept sets and silently re-suppress the
+# concepts CT+ exists to keep.
+CT_PLUS_LOOKUP_SUFFIX = '_ct_plus'
+
+
+def keep_ct_plus_suppressed(df):
+    """
+    Return only the concept rows still suppressed in CT+.
+
+    Used by the CT+ variants of the CSV-driven suppression rules to narrow
+    their lookup, so the expanded concepts flow through the pipeline as
+    ordinary rows.
+
+    Fails rather than filtering on a column it cannot trust: a missing or
+    non-boolean column would otherwise release suppressed concepts, since a
+    string column makes every row compare unequal to True.
+
+    :param df: concept rows read from one or more privacy CSVs
+    :return: the subset whose CT_PLUS_SUPPRESSED value is True
+    :raises KeyError: if the frame has no CT_PLUS_SUPPRESSED column
+    :raises TypeError: if that column is not boolean
+    """
+    if CT_PLUS_SUPPRESSED not in df.columns:
+        raise KeyError(
+            f'{CT_PLUS_SUPPRESSED} column is missing from the privacy concept '
+            f'frame, so CT+ suppression cannot be narrowed safely.')
+
+    if not is_bool_dtype(df[CT_PLUS_SUPPRESSED]):
+        raise TypeError(
+            f'{CT_PLUS_SUPPRESSED} must be boolean, got '
+            f'{df[CT_PLUS_SUPPRESSED].dtype}. A non-boolean column means a '
+            f'blank or unexpected value in a privacy CSV.')
+
+    return df[df[CT_PLUS_SUPPRESSED]]
 
 
 class AbstractConceptSuppression(BaseCleaningRule):
