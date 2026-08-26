@@ -16,8 +16,8 @@ import logging
 import pandas as pd
 
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
-    keep_ct_plus_suppressed
+from cdr_cleaner.cleaning_rules.deid.concept_suppression import (
+    CT_PLUS_LOOKUP_SUFFIX, keep_ct_plus_suppressed)
 # Project imports
 from resources import CT_OBSERVATION_PRIVACY_CONCEPTS_PATH, CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH, \
     CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH
@@ -231,6 +231,16 @@ class CTObservationPrivacySuppressionCtPlus(CTObservationPrivacySuppression):
 
     Original Issue: DL-2428
     """
+
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
+        super().__init__(project_id, dataset_id, sandbox_dataset_id,
+                         table_namer)
+        self.ct_observation_postc_concept_table += CT_PLUS_LOOKUP_SUFFIX
+        self.ct_observation_rest_concept_table += CT_PLUS_LOOKUP_SUFFIX
 
     def get_postc_concepts_df(self):
         return keep_ct_plus_suppressed(super().get_postc_concepts_df())

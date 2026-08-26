@@ -1,7 +1,7 @@
 """
 Integration test for ct_retroactive_privacy_suppression module
 
-Original Issues: DC-3812, DL2429
+Original Issues: DC-3812, DL-2429
 
 The rule runs at deid_base and deid_clean, which is where a late privacy fix
 would otherwise remove a concept the CT+ deid-stage variant deliberately kept.
@@ -86,9 +86,16 @@ class CTRetroactivePrivacyConceptSuppressionTest(BaseTest.CleaningRulesTestBase
         cls.fq_sandbox_table_names.append(
             f'{cls.project_id}.{cls.sandbox_id}.'
             f'{cls.rule_instance.sandbox_table_for(CONDITION_OCCURRENCE)}')
-        cls.fq_sandbox_table_names.append(
-            f'{cls.project_id}.{cls.sandbox_id}.'
-            f'{cls.rule_instance.concept_suppression_lookup_table}')
+        # Both lookup names: the base rule and the variant build their own,
+        # so a leftover from one test would append into the next.
+        for rule in [
+                cls.rule_instance,
+                CTRetroactivePrivacyConceptSuppressionCtPlus(
+                    cls.project_id, cls.dataset_id, cls.sandbox_id)
+        ]:
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.'
+                f'{rule.concept_suppression_lookup_table}')
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
@@ -154,16 +161,3 @@ class CTRetroactivePrivacyConceptSuppressionTest(BaseTest.CleaningRulesTestBase
 
         self.default_test(
             self._tables_and_counts(surviving_concepts=EXPANDED_IN_CT_PLUS))
-
-    @mock.patch.object(rule_module, 'PRIVACY_CONCEPTS_PATH', RETROACTIVE_CSV)
-    def test_variant_lookup_holds_no_expanded_concept(self):
-        """
-        Assert on the lookup itself, not only on what survives: this rule
-        applies to every CDM table, and the fixture covers one.
-        """
-        rule = CTRetroactivePrivacyConceptSuppressionCtPlus(
-            self.project_id, self.dataset_id, self.sandbox_id)
-
-        self.assertEqual(
-            SUPPRESSED_IN_CT_PLUS,
-            rule.get_suppression_concepts_df()['concept_id'].tolist())

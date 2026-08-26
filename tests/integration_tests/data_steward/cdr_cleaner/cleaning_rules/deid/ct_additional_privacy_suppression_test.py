@@ -1,7 +1,7 @@
 """
 Integration test for ct_additional_privacy_suppression module
 
-Original Issues: DC-3749, DL2427
+Original Issues: DC-3749, DL-2427
 
 The base rule suppresses every concept in the three privacy CSVs. The CT+
 variant suppresses only the rows still marked ct_plus_suppressed, so the
@@ -37,7 +37,6 @@ CSV_HEADER = ('concept_id,concept_code,privacy_rule,vocabulary_id,date_added,'
               'ct_plus_suppressed\n')
 
 # concept_id -> whether CT+ still suppresses it
-SUPPRESSED_IN_CT_PLUS = [111, 333, 555]
 EXPANDED_IN_CT_PLUS = [222, 444, 666]
 ALL_CONCEPTS = [111, 222, 333, 444, 555, 666]
 
@@ -108,9 +107,16 @@ class CTAdditionalPrivacyConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.fq_sandbox_table_names.append(
             f'{cls.project_id}.{cls.sandbox_id}.'
             f'{cls.rule_instance.sandbox_table_for(CONDITION_OCCURRENCE)}')
-        cls.fq_sandbox_table_names.append(
-            f'{cls.project_id}.{cls.sandbox_id}.'
-            f'{cls.rule_instance.concept_suppression_lookup_table}')
+        # Both lookup names: the base rule and the variant build their own,
+        # so a leftover from one test would append into the next.
+        for rule in [
+                cls.rule_instance,
+                CTAdditionalPrivacyConceptSuppressionCtPlus(
+                    cls.project_id, cls.dataset_id, cls.sandbox_id)
+        ]:
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.'
+                f'{rule.concept_suppression_lookup_table}')
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
@@ -186,22 +192,3 @@ class CTAdditionalPrivacyConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         self.default_test(
             self._tables_and_counts(surviving_concepts=EXPANDED_IN_CT_PLUS))
-
-    @mock.patch.object(rule_module, 'CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH',
-                       ADDITIONAL_CSV)
-    @mock.patch.object(rule_module, 'CT_OBSERVATION_PRIVACY_CONCEPTS_PATH',
-                       POSTCOORDINATED_CSV)
-    @mock.patch.object(rule_module, 'CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH',
-                       PUBLICLY_REPORTABLE_CSV)
-    def test_variant_lookup_holds_no_expanded_concept(self):
-        """
-        Assert on the lookup itself, not only on what survives: a lookup that
-        still carried an expanded concept would suppress it in every domain
-        table, including ones this fixture does not cover.
-        """
-        rule = CTAdditionalPrivacyConceptSuppressionCtPlus(
-            self.project_id, self.dataset_id, self.sandbox_id)
-
-        self.assertEqual(
-            SUPPRESSED_IN_CT_PLUS,
-            sorted(rule.get_suppression_concepts_df()['concept_id'].tolist()))

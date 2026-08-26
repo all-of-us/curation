@@ -20,8 +20,9 @@ from gcloud.bq import bigquery
 from common import AOU_DEATH, CDM_TABLES, PERSON, OBSERVATION
 from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
-    AbstractBqLookupTableConceptSuppression, keep_ct_plus_suppressed
+from cdr_cleaner.cleaning_rules.deid.concept_suppression import (
+    AbstractBqLookupTableConceptSuppression, CT_PLUS_LOOKUP_SUFFIX,
+    keep_ct_plus_suppressed)
 
 # Third party imports
 from google.cloud.exceptions import GoogleCloudError
@@ -126,6 +127,15 @@ class CTAdditionalPrivacyConceptSuppressionCtPlus(
 
     Original Issue: DL-2427
     """
+
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
+        super().__init__(project_id, dataset_id, sandbox_dataset_id,
+                         table_namer)
+        self._concept_suppression_lookup_table += CT_PLUS_LOOKUP_SUFFIX
 
     def get_suppression_concepts_df(self):
         return keep_ct_plus_suppressed(super().get_suppression_concepts_df())

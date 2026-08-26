@@ -18,6 +18,12 @@ LOGGER = logging.getLogger(__name__)
 # suppressed in CT+. Added by DL-2419, populated by DL-2421.
 CT_PLUS_SUPPRESSED = 'ct_plus_suppressed'
 
+# Appended to a CT lookup table name by the CT+ variants. The lookup loads
+# append rather than truncate, so a CT stage and a CT+ stage sharing a sandbox
+# dataset would otherwise union their concept sets and silently re-suppress the
+# concepts CT+ exists to keep.
+CT_PLUS_LOOKUP_SUFFIX = '_ct_plus'
+
 
 def keep_ct_plus_suppressed(df):
     """

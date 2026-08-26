@@ -463,8 +463,11 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
-# CT+ cleaning classes, copied verbatim from the CONTROLLED_TIER_* lists
-# above. A CT change during the V9 window must be mirrored here deliberately.
+# CT+ cleaning classes, copied from the CONTROLLED_TIER_* lists above. A CT
+# change during the V9 window must be mirrored here deliberately. Where a CT+
+# variant stands in for its CT counterpart, the swap is declared in
+# CT_PLUS_SUBSTITUTIONS in tests/unit_tests/.../clean_cdr_test.py, which fails
+# on any divergence not listed there.
 CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (MoveNLPtoDomains,),
     (RtCtPIDtoRID,),

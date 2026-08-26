@@ -92,17 +92,25 @@ class CleanCDRTest(unittest.TestCase):
                              ct_plus_classes)
             self.assertIsNot(ct_plus_classes, ct_classes)
 
-    def test_controlled_tier_lists_carry_no_ct_plus_variant(self):
-        """No CT+ variant leaks into a CT list.
+    def test_only_ct_plus_lists_carry_ct_plus_variants(self):
+        """No CT+ variant leaks into a CT, RT or fitbit list.
 
-        A CT+ subclass registered in a CT list would under-suppress the
-        controlled tier.
+        A CT+ subclass registered elsewhere would under-suppress that tier.
+        Scans every cleaning-classes list, not only the three CT ones.
         """
         ct_plus_rules = set(CT_PLUS_SUBSTITUTIONS.values())
+        scanned = 0
 
-        for _, ct_classes in self._ct_plus_pairs():
-            for entry in ct_classes:
-                self.assertNotIn(entry[0], ct_plus_rules)
+        for name in dir(cc):
+            if (not name.endswith('_CLEANING_CLASSES') or
+                    name.startswith('CONTROLLED_TIER_PLUS_')):
+                continue
+            scanned += 1
+            for entry in getattr(cc, name):
+                self.assertNotIn(entry[0], ct_plus_rules, name)
+
+        # Guards against the scan silently matching nothing.
+        self.assertGreater(scanned, 10)
 
     def test_parser_controlled_tier_plus_data_stages(self):
         """The parser accepts the CT+ stages and resolves them to the CT+ rules."""
