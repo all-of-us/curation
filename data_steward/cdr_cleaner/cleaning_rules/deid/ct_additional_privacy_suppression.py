@@ -21,7 +21,7 @@ from common import AOU_DEATH, CDM_TABLES, PERSON, OBSERVATION
 from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
-    AbstractBqLookupTableConceptSuppression
+    AbstractBqLookupTableConceptSuppression, keep_ct_plus_suppressed
 
 # Third party imports
 from google.cloud.exceptions import GoogleCloudError
@@ -60,11 +60,20 @@ class CTAdditionalPrivacyConceptSuppression(
             concept_suppression_lookup_table=ct_additional_privacy_concept_table,
             table_namer=table_namer)
 
-    def create_suppression_lookup_table(self, client):
+    def get_suppression_concepts_df(self):
+        """
+        Assemble the concept rows that make up the suppression lookup.
+
+        Split out from create_suppression_lookup_table so the CT+ variant has
+        a single method to override.
+        """
         df_all = pd.read_csv(CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
         df_postc = pd.read_csv(CT_OBSERVATION_PRIVACY_CONCEPTS_PATH)
         df_pr = pd.read_csv(CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH)
-        df = pd.concat([df_all, df_postc, df_pr], ignore_index=True)
+        return pd.concat([df_all, df_postc, df_pr], ignore_index=True)
+
+    def create_suppression_lookup_table(self, client):
+        df = self.get_suppression_concepts_df()
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
         table_ref = dataset_ref.table(self.concept_suppression_lookup_table)
@@ -108,6 +117,18 @@ class CTAdditionalPrivacyConceptSuppression(
 
         """
         raise NotImplementedError("Please fix me.")
+
+
+class CTAdditionalPrivacyConceptSuppressionCtPlus(
+        CTAdditionalPrivacyConceptSuppression):
+    """
+    CT+ variant: suppress only the concepts not expanded in CT+.
+
+    Original Issue: DL-2427
+    """
+
+    def get_suppression_concepts_df(self):
+        return keep_ct_plus_suppressed(super().get_suppression_concepts_df())
 
 
 if __name__ == '__main__':

@@ -16,6 +16,8 @@ import logging
 import pandas as pd
 
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
+    keep_ct_plus_suppressed
 # Project imports
 from resources import CT_OBSERVATION_PRIVACY_CONCEPTS_PATH, CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH, \
     CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH
@@ -128,12 +130,29 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
                          affected_tables=[OBSERVATION],
                          table_namer=table_namer)
 
+    def get_postc_concepts_df(self):
+        """
+        Concept rows for the post-coordinated lookup.
+
+        Split out from setup_rule so the CT+ variant has a single method to
+        override.
+        """
+        return pd.read_csv(CT_OBSERVATION_PRIVACY_CONCEPTS_PATH)
+
+    def get_rest_concepts_df(self):
+        """
+        Concept rows for the second, non-post-coordinated lookup.
+        """
+        df_all = pd.read_csv(CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
+        df_pr = pd.read_csv(CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH)
+        return pd.concat([df_all, df_pr], ignore_index=True)
+
     def setup_rule(self, client, *args, **keyword_args):
         """
         Create the suppression lookup table in the sandbox dataset
         :param client:
         """
-        df = pd.read_csv(CT_OBSERVATION_PRIVACY_CONCEPTS_PATH)
+        df = self.get_postc_concepts_df()
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
         table_ref = dataset_ref.table(self.ct_observation_postc_concept_table)
@@ -144,9 +163,7 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
             raise GoogleCloudError(
                 f"Error running job {result.job_id}: {result.errors}")
 
-        df_all = pd.read_csv(CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
-        df_pr = pd.read_csv(CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH)
-        df = pd.concat([df_all, df_pr], ignore_index=True)
+        df = self.get_rest_concepts_df()
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
         table_ref = dataset_ref.table(self.ct_observation_rest_concept_table)
@@ -203,6 +220,23 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(table) for table in self.affected_tables]
+
+
+class CTObservationPrivacySuppressionCtPlus(CTObservationPrivacySuppression):
+    """
+    CT+ variant: suppress only the concepts not expanded in CT+.
+
+    Both lookups are narrowed, so an expanded concept survives whether it is
+    reached through the post-coordinated path or the other one.
+
+    Original Issue: DL-2428
+    """
+
+    def get_postc_concepts_df(self):
+        return keep_ct_plus_suppressed(super().get_postc_concepts_df())
+
+    def get_rest_concepts_df(self):
+        return keep_ct_plus_suppressed(super().get_rest_concepts_df())
 
 
 if __name__ == '__main__':

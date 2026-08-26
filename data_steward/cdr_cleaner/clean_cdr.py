@@ -19,8 +19,10 @@ from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
-from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import CTAdditionalPrivacyConceptSuppression
-from cdr_cleaner.cleaning_rules.deid.ct_observation_privacy_suppression import CTObservationPrivacySuppression
+from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import \
+    CTAdditionalPrivacyConceptSuppression, CTAdditionalPrivacyConceptSuppressionCtPlus
+from cdr_cleaner.cleaning_rules.deid.ct_observation_privacy_suppression import \
+    CTObservationPrivacySuppression, CTObservationPrivacySuppressionCtPlus
 from cdr_cleaner.cleaning_rules.deid.ct_nph_observation_privacy_suppression import CTNPHObservationPrivacySuppression
 from cdr_cleaner.cleaning_rules.deid.rt_additional_privacy_suppression import RTAdditionalPrivacyConceptSuppression
 from cdr_cleaner.cleaning_rules.deid.rt_observation_privacy_suppression import RTObservationPrivacySuppression
@@ -141,7 +143,8 @@ from cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts import Generalize
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.deid.recent_concept_suppression import RecentConceptSuppression
-from cdr_cleaner.cleaning_rules.deid.ct_retroactive_privacy_suppression import CTRetroactivePrivacyConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.ct_retroactive_privacy_suppression import \
+    CTRetroactivePrivacyConceptSuppression, CTRetroactivePrivacyConceptSuppressionCtPlus
 from cdr_cleaner.cleaning_rules.deid.rt_retroactive_privacy_suppression import RTRetroactivePrivacyConceptSuppression
 from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
 from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
@@ -483,8 +486,8 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (IDFieldSuppression,),  # Should run after any data remapping
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (SectionParticipationConceptSuppression,),
-    (CTAdditionalPrivacyConceptSuppression,),
-    (CTObservationPrivacySuppression,),
+    (CTAdditionalPrivacyConceptSuppressionCtPlus,),
+    (CTObservationPrivacySuppressionCtPlus,),
     # (CTNPHObservationPrivacySuppression,), # Applies only to NPH data
     (
         StringFieldsSuppression,),
@@ -509,7 +512,7 @@ CONTROLLED_TIER_PLUS_DEID_BASE_CLEANING_CLASSES = [
     (CreateDerivedTables,),
     (CreatePersonExtTable,),
     (CalculatePrimaryDeathRecord,),
-    (CTRetroactivePrivacyConceptSuppression,),
+    (CTRetroactivePrivacyConceptSuppressionCtPlus,),
     (FilterNLPfromDomains,),
     (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -525,7 +528,7 @@ CONTROLLED_TIER_PLUS_DEID_CLEAN_CLEANING_CLASSES = [
     (CreateDerivedTables,),
     (CalculatePrimaryDeathRecord,),
     (NoDataAfterDeath,),  # should run after CalculatePrimaryDeathRecord
-    (CTRetroactivePrivacyConceptSuppression,),
+    (CTRetroactivePrivacyConceptSuppressionCtPlus,),
     (FilterNLPfromDomains,),
     (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
