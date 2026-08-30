@@ -303,6 +303,9 @@ WEARABLES_DEVICE_ID_MASKING = 'wearables_device_id_masking'
 ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
 DEID_QUESTIONNAIRE_RESPONSE_MAP = '_deid_questionnaire_response_map'
 
+OPERATIONS_ANALYTICS = 'operations_analytics'
+EHR_UPLOAD_PIDS = 'ehr_upload_pids'
+
 AIAN_LIST = 'aian_list'
 
 UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
