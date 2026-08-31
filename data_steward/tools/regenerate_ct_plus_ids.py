@@ -394,6 +394,84 @@ def assert_person_ids_have_not_moved(client, project_id, mapping_dataset_id,
         f'rerunning.')
 
 
+def assert_person_mapping_covers_input(client, project_id, input_dataset_id,
+                                       pipeline_dataset_id, ct_plus_ids_view):
+    """
+    Stop the run if a participant in the input person table has no CT+ id.
+
+    The other four asserts all check the shape of the person mapping and none checks
+    that it is complete. Nothing else does either: every person join in table_query()
+    is a LEFT JOIN, so a participant the ids view does not cover is not an error
+    condition. Their rows load with a NULL person_id and the script exits 0 having
+    logged nothing unusual. Against a view state covering 329,940 of 747,029 CT
+    participants, that path issued a NULL person_id to 417,089 participants and
+    reported success.
+
+    This reads the ids view rather than _mapping_person because it has to answer before
+    anything is written, and _mapping_person is not rebuilt until the mapping loop, by
+    which point every output table has already been dropped and recreated. The view is
+    what that loop builds the mapping from, under the same two NOT NULL conditions, so
+    it is the same coverage answer available earlier.
+
+    Unlike the other asserts there is no missing table early return. _mapping_person is
+    legitimately absent on a first run; the input person table never is, and returning
+    on its absence would restore the silent pass this check exists to remove.
+
+    :param client: BigQueryClient
+    :param project_id: identifies the GCP project
+    :param input_dataset_id: identifies the dataset containing the input person table
+    :param pipeline_dataset_id: identifies the pipeline_tables dataset
+    :param ct_plus_ids_view: view containing person_id to CT+ id mapping
+    :raises RuntimeError: if the input person table is empty, or if any participant in
+        it has no row in the ids view
+    """
+    # DISTINCT on the view side for the same reason mapping_query() uses it: the view
+    # has been observed carrying byte identical duplicate rows, and joining against
+    # them would multiply the comparison rather than fail it.
+    q = f'''
+    WITH v AS (
+        SELECT DISTINCT {CT_PERSON_ID_COLUMN} AS src_person_id
+        FROM `{project_id}.{pipeline_dataset_id}.{ct_plus_ids_view}`
+        WHERE {CT_PERSON_ID_COLUMN} IS NOT NULL
+          AND {CT_PLUS_PERSON_ID_COLUMN} IS NOT NULL
+    ), p AS (
+        SELECT DISTINCT person_id
+        FROM `{project_id}.{input_dataset_id}.{PERSON}`
+    )
+    SELECT
+        COUNT(*) AS input_count,
+        COUNTIF(v.src_person_id IS NULL) AS unmapped_count,
+        ARRAY_AGG(IF(v.src_person_id IS NULL, p.person_id, NULL)
+                  IGNORE NULLS LIMIT 5) AS examples
+    FROM p
+    LEFT JOIN v ON v.src_person_id = p.person_id
+    '''
+    row = list(client.query(q).result())[0]
+    input_count, unmapped_count = row['input_count'], row['unmapped_count']
+
+    if not input_count:
+        raise RuntimeError(
+            f'{input_dataset_id}.{PERSON} holds no participants, so person mapping '
+            f'coverage was not evaluated. Zero unmapped over zero participants is not '
+            f'a passing check. Point --input_dataset_id at the CT dataset to re-key.'
+        )
+
+    if unmapped_count:
+        raise RuntimeError(
+            f'{pipeline_dataset_id}.{ct_plus_ids_view} covers '
+            f'{input_count - unmapped_count} of {input_count} participants in '
+            f'{input_dataset_id}.{PERSON}: {unmapped_count} have no CT+ id, for '
+            f'example {sorted(row["examples"])}. Every person join in the load is a '
+            f'LEFT JOIN, so this run would issue those participants a NULL person_id '
+            f'in every table and report success. Establish why the view is short '
+            f'before rerunning.')
+
+    LOGGER.info(
+        f'{pipeline_dataset_id}.{ct_plus_ids_view} covers all {input_count} '
+        f'participants in {input_dataset_id}.{PERSON}, {unmapped_count} unmapped.'
+    )
+
+
 def run_query_to_table(project_id,
                        q,
                        destination_dataset_id,
@@ -1155,6 +1233,58 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
                               write_disposition='WRITE_TRUNCATE')
 
 
+def input_fitbit_tables(client, input_dataset_id):
+    """
+    List the fitbit tables the input dataset actually holds.
+
+    main() pre-creates these alongside the CDM tables. They load through load() with
+    WRITE_EMPTY like every CDM table but were never pre-created or cleared, so
+    --allow_replace, whose whole purpose is rebuilding an output dataset on purpose,
+    aborted on the first fitbit table a previous attempt had populated and left
+    dropping the output dataset by hand as the only recovery.
+
+    The list is filtered by what the input holds, matching the load loop in main().
+    Pre-creating the rest would ship an empty table in the release for a feed that was
+    never there.
+
+    :param client: BigQueryClient
+    :param input_dataset_id: identifies the dataset containing input data
+    :return: the fitbit tables present in the input dataset, in FITBIT_TABLES order
+    """
+    return [
+        table for table in FITBIT_TABLES
+        if client.table_exists(table, input_dataset_id)
+    ]
+
+
+def create_empty_output_table(client, project_id, output_dataset_id, table):
+    """
+    Drop and recreate one output table, so its load writes into a known schema.
+
+    :param client: BigQueryClient
+    :param project_id: identifies the GCP project
+    :param output_dataset_id: identifies the dataset to create the table in
+    :param table: name of the table to create
+    """
+    result_table = output_table_for(table)
+    LOGGER.info(f'Creating {output_dataset_id}.{result_table}...')
+
+    schema_list = client.get_table_schema(table)
+    fq_table_name = f'{project_id}.{output_dataset_id}.{result_table}'
+
+    clustering_fields = None
+    # Add clustering for tables with person_id
+    if any(field.name == 'person_id' for field in schema_list):
+        clustering_fields = ['person_id']
+
+    table_to_create = Table(fq_table_name, schema=schema_list)
+    if clustering_fields:
+        table_to_create.clustering_fields = clustering_fields
+
+    client.delete_table(fq_table_name, not_found_ok=True)
+    client.create_table(table_to_create)
+
+
 def main(input_dataset_id,
          output_dataset_id,
          project_id,
@@ -1205,6 +1335,12 @@ def main(input_dataset_id,
     # before the delete loop below, which drops every CDM table in it.
     assert_output_dataset_is_safe(bq_client, output_dataset_id, allow_replace)
 
+    # Refuse to load against an ids view that does not cover every input participant.
+    # This must come before the pre-create loop below for the same reason: a run that
+    # gets that far has already dropped and recreated every output table.
+    assert_person_mapping_covers_input(bq_client, project_id, input_dataset_id,
+                                       pipeline_dataset_id, ct_plus_ids_view)
+
     # Create output dataset if it doesn't exist
     try:
         bq_client.get_dataset(output_dataset_id)
@@ -1213,28 +1349,17 @@ def main(input_dataset_id,
         LOGGER.info(f'Creating dataset {output_dataset_id}')
         bq_client.create_dataset(output_dataset_id, exists_ok=True)
 
-    # Create empty output tables to ensure proper schema, clustering, etc.
-    for table in CDM_TABLES:
-        result_table = output_table_for(table)
-        LOGGER.info(f'Creating {output_dataset_id}.{result_table}...')
+    # Resolved once and reused by the fitbit load loop below, so the tables that get
+    # pre-created and the tables that get loaded cannot disagree.
+    present_fitbit_tables = input_fitbit_tables(bq_client, input_dataset_id)
 
-        # Get schema for the table
-        schema_list = bq_client.get_table_schema(table)
-
-        # Create table with proper schema and clustering
-        fq_table_name = f'{project_id}.{output_dataset_id}.{result_table}'
-
-        clustering_fields = None
-        # Add clustering for tables with person_id
-        if any(field.name == 'person_id' for field in schema_list):
-            clustering_fields = ['person_id']
-
-        table_to_create = Table(fq_table_name, schema=schema_list)
-        if clustering_fields:
-            table_to_create.clustering_fields = clustering_fields
-
-        bq_client.delete_table(fq_table_name, not_found_ok=True)
-        bq_client.create_table(table_to_create)
+    # Create empty output tables to ensure proper schema, clustering, etc. This covers
+    # the fitbit tables the input holds as well as the CDM tables, so a rerun with
+    # --allow_replace does not meet an already-populated table on either side. See
+    # input_fitbit_tables().
+    for table in CDM_TABLES + present_fitbit_tables:
+        create_empty_output_table(bq_client, project_id, output_dataset_id,
+                                  table)
 
     # Create mapping tables if they don't already exist
     LOGGER.info(f'Generating mapping tables in {mapping_dataset_id}...')
@@ -1265,13 +1390,13 @@ def main(input_dataset_id,
     # Load Fitbit tables if they exist
     LOGGER.info('Processing Fitbit tables (if they exist)...')
     for fitbit_table in FITBIT_TABLES:
-        if bq_client.table_exists(fitbit_table, input_dataset_id):
-            LOGGER.info(f'Loading Fitbit table {fitbit_table}...')
-            load(bq_client, fitbit_table, input_dataset_id, output_dataset_id,
-                 project_id, pipeline_dataset_id, ct_plus_ids_view,
-                 mapping_dataset_id, mapping_namespace)
-        else:
+        if fitbit_table not in present_fitbit_tables:
             LOGGER.info(f'Fitbit table {fitbit_table} does not exist, skipping')
+            continue
+        LOGGER.info(f'Loading Fitbit table {fitbit_table}...')
+        load(bq_client, fitbit_table, input_dataset_id, output_dataset_id,
+             project_id, pipeline_dataset_id, ct_plus_ids_view,
+             mapping_dataset_id, mapping_namespace)
 
     # Update extension tables with new IDs
     LOGGER.info('Updating extension tables...')

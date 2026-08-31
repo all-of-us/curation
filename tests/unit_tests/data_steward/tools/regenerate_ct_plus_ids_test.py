@@ -3,9 +3,11 @@ import inspect
 import unittest
 from unittest import mock
 
-from common import (CARE_SITE, CONDITION_OCCURRENCE, DRUG_EXPOSURE, MEASUREMENT,
-                    OBSERVATION, PERSON, PROCEDURE_OCCURRENCE, PROVIDER,
-                    SURVEY_CONDUCT, VISIT_OCCURRENCE)
+from common import (CARE_SITE, CONDITION_OCCURRENCE, DRUG_EXPOSURE,
+                    FITBIT_TABLES, MEASUREMENT, OBSERVATION, PERSON,
+                    PROCEDURE_OCCURRENCE, PROVIDER, SURVEY_CONDUCT,
+                    VISIT_OCCURRENCE)
+from resources import CDM_TABLES
 from tools import regenerate_ct_plus_ids as ct
 
 
@@ -449,3 +451,136 @@ class RegenerateCtPlusIds(unittest.TestCase):
                                             self.ids_view)
 
         client.query.assert_not_called()
+
+    @staticmethod
+    def _coverage_client(input_count, unmapped_count, examples=()):
+        client = mock.MagicMock()
+        client.query.return_value.result.return_value = [{
+            'input_count': input_count,
+            'unmapped_count': unmapped_count,
+            'examples': list(examples)
+        }]
+        return client
+
+    def _assert_mapping_covers_input(self, client):
+        ct.assert_person_mapping_covers_input(client, self.project_id,
+                                              self.input_dataset_id,
+                                              self.pipeline_dataset_id,
+                                              self.ids_view)
+
+    def test_a_fully_covered_input_is_accepted(self):
+        self._assert_mapping_covers_input(self._coverage_client(747029, 0))
+
+    def test_a_partially_covered_input_stops_the_run(self):
+        """Every person join is a LEFT JOIN, so the uncovered ones load as NULL."""
+        client = self._coverage_client(747029, 417089, examples=[11, 22, 33])
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self._assert_mapping_covers_input(client)
+
+        message = str(ctx.exception)
+        self.assertIn('329940 of 747029', message)
+        self.assertIn('417089 have no CT+ id', message)
+        self.assertIn('11', message)
+
+    def test_an_input_covered_by_nothing_stops_the_run(self):
+        client = self._coverage_client(747029, 747029, examples=[11])
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self._assert_mapping_covers_input(client)
+
+        self.assertIn('0 of 747029', str(ctx.exception))
+
+    def test_an_empty_input_person_table_is_not_a_pass(self):
+        """Zero unmapped over zero participants is vacuous, not covered."""
+        client = self._coverage_client(0, 0)
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self._assert_mapping_covers_input(client)
+
+        self.assertIn('not evaluated', str(ctx.exception))
+
+    def test_the_passing_path_reports_both_counts(self):
+        """A covered input and an absent one must not log the same thing."""
+        client = self._coverage_client(747029, 0)
+
+        with self.assertLogs(ct.LOGGER, level='INFO') as logged:
+            self._assert_mapping_covers_input(client)
+
+        self.assertIn('747029', ''.join(logged.output))
+
+    def test_coverage_is_measured_against_participants_holding_a_ct_plus_id(
+            self):
+        """A view row with a NULL CT+ id covers nobody."""
+        client = self._coverage_client(10, 0)
+
+        self._assert_mapping_covers_input(client)
+
+        q = client.query.call_args.args[0]
+        self.assertIn(f'{ct.CT_PLUS_PERSON_ID_COLUMN} IS NOT NULL', q)
+        self.assertIn(f'{self.input_dataset_id}.{PERSON}', q)
+
+    def test_the_coverage_check_runs_before_any_output_table_is_touched(self):
+        """A run that fails it has to leave the output dataset as it found it."""
+        source = inspect.getsource(ct.main)
+
+        self.assertLess(source.index('assert_person_mapping_covers_input'),
+                        source.index('create_empty_output_table'))
+
+    def test_fitbit_tables_in_the_input_are_listed_for_pre_creation(self):
+        client = mock.MagicMock()
+        client.table_exists.return_value = True
+
+        self.assertEqual(ct.input_fitbit_tables(client, self.input_dataset_id),
+                         FITBIT_TABLES)
+
+    def test_a_fitbit_table_absent_from_the_input_is_not_listed(self):
+        """Creating it would ship an empty table for a feed that was never there."""
+        client = mock.MagicMock()
+        client.table_exists.return_value = False
+
+        self.assertEqual(ct.input_fitbit_tables(client, self.input_dataset_id),
+                         [])
+
+    def _created_output_tables(self, fitbit_in_input):
+        """Runs main() with every write mocked out and returns the tables it created."""
+        for name in ('assert_person_mapping_is_ct_plus',
+                     'assert_person_ids_have_not_moved',
+                     'assert_output_dataset_is_safe',
+                     'assert_person_mapping_covers_input',
+                     'assert_person_mapping_is_one_to_one', 'mapping', 'load',
+                     'update_ext_table'):
+            mock.patch(f'tools.regenerate_ct_plus_ids.{name}').start()
+        client = mock.patch(
+            'tools.regenerate_ct_plus_ids.BigQueryClient').start()
+        self.addCleanup(mock.patch.stopall)
+
+        bq_client = client.return_value
+        bq_client.get_table_schema.return_value = []
+        bq_client.list_tables.return_value = []
+        bq_client.table_exists.side_effect = (
+            lambda table, dataset: fitbit_in_input and table in FITBIT_TABLES)
+
+        ct.main(self.input_dataset_id, self.output_dataset_id, self.project_id,
+                self.pipeline_dataset_id, self.ids_view,
+                self.mapping_dataset_id, ct.DEFAULT_MAPPING_NAMESPACE)
+
+        return [
+            call.args[0].table_id
+            for call in bq_client.create_table.call_args_list
+        ]
+
+    def test_output_preparation_covers_the_fitbit_tables(self):
+        """Their loads use WRITE_EMPTY too, so an already-populated one aborts a
+        rerun that --allow_replace was supposed to make possible."""
+        created = self._created_output_tables(fitbit_in_input=True)
+
+        for table in CDM_TABLES + FITBIT_TABLES:
+            with self.subTest(table=table):
+                self.assertIn(table, created)
+
+    def test_a_fitbit_table_absent_from_the_input_is_not_created(self):
+        created = self._created_output_tables(fitbit_in_input=False)
+
+        self.assertFalse(set(FITBIT_TABLES) & set(created))
+        self.assertIn(PERSON, created)
