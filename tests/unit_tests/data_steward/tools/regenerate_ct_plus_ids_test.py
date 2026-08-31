@@ -3,9 +3,11 @@ import inspect
 import unittest
 from unittest import mock
 
-from common import (CARE_SITE, CONDITION_OCCURRENCE, DRUG_EXPOSURE, MEASUREMENT,
-                    OBSERVATION, PERSON, PROCEDURE_OCCURRENCE, PROVIDER,
-                    SURVEY_CONDUCT, VISIT_OCCURRENCE)
+from common import (AOU_DEATH, CARE_SITE, CONDITION_OCCURRENCE, DRUG_EXPOSURE,
+                    FITBIT_TABLES, MEASUREMENT, OBSERVATION, PERSON,
+                    PROCEDURE_OCCURRENCE, PROVIDER, SURVEY_CONDUCT,
+                    VISIT_OCCURRENCE)
+from resources import CDM_TABLES
 from tools import regenerate_ct_plus_ids as ct
 
 
@@ -449,3 +451,210 @@ class RegenerateCtPlusIds(unittest.TestCase):
                                             self.ids_view)
 
         client.query.assert_not_called()
+
+    @staticmethod
+    def _coverage_client(input_count, unmapped_count, examples=()):
+        client = mock.MagicMock()
+        client.query.return_value.result.return_value = [{
+            'input_count': input_count,
+            'unmapped_count': unmapped_count,
+            'examples': list(examples)
+        }]
+        return client
+
+    def _assert_mapping_covers_input(self, client):
+        ct.assert_person_mapping_covers_input(client, self.project_id,
+                                              self.input_dataset_id,
+                                              self.pipeline_dataset_id,
+                                              self.ids_view)
+
+    def test_a_fully_covered_input_is_accepted(self):
+        self._assert_mapping_covers_input(self._coverage_client(747029, 0))
+
+    def test_a_partially_covered_input_stops_the_run(self):
+        """Every person join is a LEFT JOIN, so the uncovered ones load as NULL."""
+        client = self._coverage_client(747029, 417089, examples=[11, 22, 33])
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self._assert_mapping_covers_input(client)
+
+        message = str(ctx.exception)
+        self.assertIn('329940 of 747029', message)
+        self.assertIn('417089 have no CT+ id', message)
+        self.assertIn('11', message)
+
+    def test_an_input_covered_by_nothing_stops_the_run(self):
+        client = self._coverage_client(747029, 747029, examples=[11])
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self._assert_mapping_covers_input(client)
+
+        self.assertIn('0 of 747029', str(ctx.exception))
+
+    def test_an_empty_input_person_table_is_not_a_pass(self):
+        """Zero unmapped over zero participants is vacuous, not covered."""
+        client = self._coverage_client(0, 0)
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self._assert_mapping_covers_input(client)
+
+        self.assertIn('not evaluated', str(ctx.exception))
+
+    def test_the_passing_path_reports_both_counts(self):
+        """A covered input and an absent one must not log the same thing."""
+        client = self._coverage_client(747029, 0)
+
+        with self.assertLogs(ct.LOGGER, level='INFO') as logged:
+            self._assert_mapping_covers_input(client)
+
+        self.assertIn('747029', ''.join(logged.output))
+
+    def test_coverage_is_measured_against_participants_holding_a_ct_plus_id(
+            self):
+        """A view row with a NULL CT+ id covers nobody."""
+        client = self._coverage_client(10, 0)
+
+        self._assert_mapping_covers_input(client)
+
+        q = client.query.call_args.args[0]
+        self.assertIn(f'{ct.CT_PLUS_PERSON_ID_COLUMN} IS NOT NULL', q)
+        self.assertIn(f'{self.input_dataset_id}.{PERSON}', q)
+
+    def test_the_coverage_check_runs_before_any_output_table_is_touched(self):
+        """A run that fails it has to leave the output dataset as it found it."""
+        source = inspect.getsource(ct.main)
+
+        self.assertLess(source.index('assert_person_mapping_covers_input'),
+                        source.index('create_empty_output_table'))
+
+    def _run_main(self, discovery_tables=(), fitbit_in_input=True):
+        """Runs main() with every write mocked out. Returns the client and load mocks."""
+        self.addCleanup(mock.patch.stopall)
+        for name in ('assert_person_mapping_is_ct_plus',
+                     'assert_person_ids_have_not_moved',
+                     'assert_output_dataset_is_safe',
+                     'assert_person_mapping_covers_input',
+                     'assert_person_mapping_is_one_to_one', 'mapping',
+                     'update_ext_table', 'copy_table_to_output'):
+            mock.patch(f'tools.regenerate_ct_plus_ids.{name}').start()
+        load = mock.patch('tools.regenerate_ct_plus_ids.load').start()
+        client = mock.patch(
+            'tools.regenerate_ct_plus_ids.BigQueryClient').start()
+
+        def _field(name):
+            field = mock.Mock()
+            field.name = name
+            return field
+
+        bq_client = client.return_value
+        bq_client.get_table_schema.return_value = []
+        bq_client.table_exists.side_effect = (
+            lambda table, dataset: fitbit_in_input or table not in FITBIT_TABLES
+        )
+        bq_client.list_tables.return_value = [
+            mock.Mock(table_id=table) for table in discovery_tables
+        ]
+        bq_client.get_table.return_value.schema = [
+            _field('person_id'), _field(f'{AOU_DEATH}_id')
+        ]
+
+        ct.main(self.input_dataset_id,
+                self.output_dataset_id,
+                self.project_id,
+                self.pipeline_dataset_id,
+                self.ids_view,
+                self.mapping_dataset_id,
+                ct.DEFAULT_MAPPING_NAMESPACE,
+                allow_replace=True)
+
+        return bq_client, load
+
+    @staticmethod
+    def _dispositions(load, tables):
+        """Maps table name to the write disposition main() loaded it with."""
+        return {
+            call.args[1]: call.kwargs.get('write_disposition', 'WRITE_EMPTY')
+            for call in load.call_args_list
+            if call.args[1] in tables
+        }
+
+    def test_only_cdm_tables_are_pre_created(self):
+        """A resource schema imposed on the others would change the shipped table,
+        and aou_death declares person_id REQUIRED while the load LEFT JOINs it."""
+        bq_client, _ = self._run_main(discovery_tables=[AOU_DEATH])
+
+        created = [
+            call.args[0].table_id
+            for call in bq_client.create_table.call_args_list
+        ]
+
+        self.assertCountEqual(created, CDM_TABLES)
+        self.assertNotIn(AOU_DEATH, created)
+        self.assertFalse(set(FITBIT_TABLES) & set(created))
+
+    def test_fitbit_loads_truncate_so_a_rerun_can_replace_them(self):
+        """They are not pre-created, so WRITE_EMPTY aborted a rerun on the first one
+        a previous attempt had populated."""
+        _, load = self._run_main()
+
+        dispositions = self._dispositions(load, FITBIT_TABLES)
+
+        self.assertEqual(len(dispositions), len(FITBIT_TABLES))
+        for table, disposition in dispositions.items():
+            with self.subTest(table=table):
+                self.assertEqual(disposition, 'WRITE_TRUNCATE')
+
+    def test_a_discovered_table_with_a_key_and_person_id_truncates(self):
+        """aou_death takes this branch, and so would any table added in its shape."""
+        _, load = self._run_main(discovery_tables=[AOU_DEATH])
+
+        self.assertEqual(self._dispositions(load, [AOU_DEATH]),
+                         {AOU_DEATH: 'WRITE_TRUNCATE'})
+
+    def test_cdm_loads_still_write_empty_against_their_prepared_tables(self):
+        """The disposition is what catches a load aimed at a table main() did not
+        drop and recreate first."""
+        _, load = self._run_main()
+
+        dispositions = self._dispositions(load, CDM_TABLES)
+
+        self.assertTrue(dispositions)
+        self.assertEqual(set(dispositions.values()), {'WRITE_EMPTY'})
+
+    def test_a_fitbit_table_absent_from_the_input_is_not_loaded(self):
+        """The skip has to survive the disposition change; truncating a table the
+        input never had would create an empty one in the release."""
+        _, load = self._run_main(fitbit_in_input=False)
+
+        self.assertEqual(self._dispositions(load, FITBIT_TABLES), {})
+        self.assertTrue(self._dispositions(load, CDM_TABLES))
+
+    def test_a_copied_table_replaces_what_a_previous_attempt_left(self):
+        """copy_table() with no job_config takes the API default of WRITE_EMPTY."""
+        client = mock.MagicMock()
+
+        ct.copy_table_to_output(client, self.project_id, self.input_dataset_id,
+                                self.output_dataset_id, 'concept')
+
+        job_config = client.copy_table.call_args.kwargs['job_config']
+        self.assertEqual(job_config.write_disposition, 'WRITE_TRUNCATE')
+
+    def test_a_failed_copy_raises_instead_of_being_ignored(self):
+        """The job used to be discarded, so a failed copy left a missing table
+        behind and the run went on to log completion."""
+        client = mock.MagicMock()
+        client.copy_table.return_value.result.side_effect = RuntimeError(
+            'copy failed')
+
+        with self.assertRaises(RuntimeError):
+            ct.copy_table_to_output(client, self.project_id,
+                                    self.input_dataset_id,
+                                    self.output_dataset_id, 'concept')
+
+    def test_every_copy_waits_for_its_job(self):
+        client = mock.MagicMock()
+
+        ct.copy_table_to_output(client, self.project_id, self.input_dataset_id,
+                                self.output_dataset_id, 'concept')
+
+        client.copy_table.return_value.result.assert_called_once()
