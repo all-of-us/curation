@@ -88,7 +88,7 @@ Usage:
 """
 import argparse
 import logging
-from google.cloud.bigquery import QueryJobConfig, Table
+from google.cloud.bigquery import CopyJobConfig, QueryJobConfig, Table
 
 from common import (AOU_DEATH, DEATH, MAPPING_PREFIX, PERSON, SURVEY_CONDUCT,
                     VISIT_DETAIL, VISIT_OCCURRENCE, CARE_SITE, LOCATION, NOTE,
@@ -416,6 +416,11 @@ def assert_person_mapping_covers_input(client, project_id, input_dataset_id,
     Unlike the other asserts there is no missing table early return. _mapping_person is
     legitimately absent on a first run; the input person table never is, and returning
     on its absence would restore the silent pass this check exists to remove.
+
+    Note for a pediatric run: this aborts by construction. The pipeline keys person_id
+    to CT research ids and this script converts afterwards by joining controlled_tier_id,
+    and pediatric participants hold no CT research id, so they have no view row. That is
+    the check working, not a regression; pediatric keying is a separate change.
 
     :param client: BigQueryClient
     :param project_id: identifies the GCP project
@@ -1107,11 +1112,25 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
     '''
 
 
-def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
-         pipeline_dataset_id, ct_plus_ids_view, mapping_dataset_id,
-         mapping_namespace):
+def load(client,
+         cdm_table,
+         input_dataset_id,
+         output_dataset_id,
+         project_id,
+         pipeline_dataset_id,
+         ct_plus_ids_view,
+         mapping_dataset_id,
+         mapping_namespace,
+         write_disposition='WRITE_EMPTY'):
     """
     Loads a single domain table into the output dataset with new IDs.
+
+    WRITE_EMPTY is right for the CDM tables, which main() drops and recreates first, so
+    the disposition is what catches a load aimed at a table that was not prepared. The
+    tables outside CDM_TABLES are not pre-created: their destination schema comes from
+    this query, and imposing a resource schema on them instead would both change the
+    shipped table and turn an unmapped person_id into a required-field abort. They pass
+    WRITE_TRUNCATE, which makes their loads idempotent without touching their schema.
 
     :param client: BigQueryClient
     :param cdm_table: name of the CDM table (e.g. 'person', 'visit_occurrence')
@@ -1122,6 +1141,8 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
     :param mapping_dataset_id: identifies the dataset where mapping tables are stored
     :param mapping_namespace: original dataset used to create the mappings
     :param ct_plus_ids_view: view containing person_id to CT+ id mapping
+    :param write_disposition: WRITE_EMPTY for a pre-created table, WRITE_TRUNCATE for
+        one whose schema this query defines. See the note above.
     :return:
     """
     mapping_namespace = mapping_namespace if mapping_namespace else DEFAULT_MAPPING_NAMESPACE
@@ -1149,7 +1170,7 @@ def load(client, cdm_table, input_dataset_id, output_dataset_id, project_id,
                               q,
                               destination_dataset_id=output_dataset_id,
                               destination_table_id=output_table,
-                              write_disposition='WRITE_EMPTY')
+                              write_disposition=write_disposition)
 
 
 def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
@@ -1233,28 +1254,29 @@ def update_ext_table(ext_table_name, input_dataset_id, output_dataset_id,
                               write_disposition='WRITE_TRUNCATE')
 
 
-def input_fitbit_tables(client, input_dataset_id):
+def copy_table_to_output(client, project_id, input_dataset_id,
+                         output_dataset_id, table_name):
     """
-    List the fitbit tables the input dataset actually holds.
+    Copy one table through to the output dataset, replacing whatever is there.
 
-    main() pre-creates these alongside the CDM tables. They load through load() with
-    WRITE_EMPTY like every CDM table but were never pre-created or cleared, so
-    --allow_replace, whose whole purpose is rebuilding an output dataset on purpose,
-    aborted on the first fitbit table a previous attempt had populated and left
-    dropping the output dataset by hand as the only recovery.
-
-    The list is filtered by what the input holds, matching the load loop in main().
-    Pre-creating the rest would ship an empty table in the release for a feed that was
-    never there.
+    Both copy paths in main() called copy_table() with no job_config and discarded the
+    job it returns. An unset write disposition takes the API default of WRITE_EMPTY, so
+    a rerun into a dataset a previous attempt had filled failed on every copy, and
+    because the job was never waited on it failed silently and the run went on to log
+    completion. Truncating makes the rerun work; result() makes a failure visible, the
+    same correction run_query_to_table() already carries.
 
     :param client: BigQueryClient
+    :param project_id: identifies the GCP project
     :param input_dataset_id: identifies the dataset containing input data
-    :return: the fitbit tables present in the input dataset, in FITBIT_TABLES order
+    :param output_dataset_id: identifies the dataset to copy into
+    :param table_name: name of the table to copy
     """
-    return [
-        table for table in FITBIT_TABLES
-        if client.table_exists(table, input_dataset_id)
-    ]
+    job = client.copy_table(
+        f'{project_id}.{input_dataset_id}.{table_name}',
+        f'{project_id}.{output_dataset_id}.{table_name}',
+        job_config=CopyJobConfig(write_disposition='WRITE_TRUNCATE'))
+    job.result()
 
 
 def create_empty_output_table(client, project_id, output_dataset_id, table):
@@ -1349,15 +1371,11 @@ def main(input_dataset_id,
         LOGGER.info(f'Creating dataset {output_dataset_id}')
         bq_client.create_dataset(output_dataset_id, exists_ok=True)
 
-    # Resolved once and reused by the fitbit load loop below, so the tables that get
-    # pre-created and the tables that get loaded cannot disagree.
-    present_fitbit_tables = input_fitbit_tables(bq_client, input_dataset_id)
-
-    # Create empty output tables to ensure proper schema, clustering, etc. This covers
-    # the fitbit tables the input holds as well as the CDM tables, so a rerun with
-    # --allow_replace does not meet an already-populated table on either side. See
-    # input_fitbit_tables().
-    for table in CDM_TABLES + present_fitbit_tables:
+    # Create empty output tables to ensure proper schema, clustering, etc. Only the
+    # CDM tables are prepared this way: every other group defines its own destination
+    # schema at load time and is made rerunnable by its write disposition instead, so a
+    # rerun with --allow_replace does not meet an already-populated table anywhere.
+    for table in CDM_TABLES:
         create_empty_output_table(bq_client, project_id, output_dataset_id,
                                   table)
 
@@ -1390,13 +1408,22 @@ def main(input_dataset_id,
     # Load Fitbit tables if they exist
     LOGGER.info('Processing Fitbit tables (if they exist)...')
     for fitbit_table in FITBIT_TABLES:
-        if fitbit_table not in present_fitbit_tables:
+        if not bq_client.table_exists(fitbit_table, input_dataset_id):
             LOGGER.info(f'Fitbit table {fitbit_table} does not exist, skipping')
             continue
         LOGGER.info(f'Loading Fitbit table {fitbit_table}...')
-        load(bq_client, fitbit_table, input_dataset_id, output_dataset_id,
-             project_id, pipeline_dataset_id, ct_plus_ids_view,
-             mapping_dataset_id, mapping_namespace)
+        # Not pre-created, so this load defines the destination and truncation is what
+        # lets --allow_replace resume past this phase.
+        load(bq_client,
+             fitbit_table,
+             input_dataset_id,
+             output_dataset_id,
+             project_id,
+             pipeline_dataset_id,
+             ct_plus_ids_view,
+             mapping_dataset_id,
+             mapping_namespace,
+             write_disposition='WRITE_TRUNCATE')
 
     # Update extension tables with new IDs
     LOGGER.info('Updating extension tables...')
@@ -1431,6 +1458,11 @@ def main(input_dataset_id,
         has_person_id = any(field.name == 'person_id' for field in schema)
         has_pk = any(field.name == id_field for field in schema)
 
+        # aou_death is the only table reaching this branch in V9, but the condition
+        # is generic: any table carrying both a person_id and its own <name>_id lands
+        # here. None of them is pre-created and an arbitrary one has no resource schema
+        # to pre-create it from, so the load truncates rather than relying on a prepared
+        # destination. That keeps the branch rerunnable whatever turns up in it.
         if has_person_id and has_pk:
             LOGGER.info(
                 f"Table '{table_name}' has a primary key and person_id. Full remapping will be applied."
@@ -1450,9 +1482,16 @@ def main(input_dataset_id,
                         mapping_namespace, mapping_dataset_id)
             # 2. Load table with remapped PK and FKs
             LOGGER.info(f"Loading table {table_name}...")
-            load(bq_client, table_name, input_dataset_id, output_dataset_id,
-                 project_id, pipeline_dataset_id, ct_plus_ids_view,
-                 mapping_dataset_id, mapping_namespace)
+            load(bq_client,
+                 table_name,
+                 input_dataset_id,
+                 output_dataset_id,
+                 project_id,
+                 pipeline_dataset_id,
+                 ct_plus_ids_view,
+                 mapping_dataset_id,
+                 mapping_namespace,
+                 write_disposition='WRITE_TRUNCATE')
         elif has_person_id:
             LOGGER.info(
                 f"Table '{table_name}' has person_id. Remapping person_id only."
@@ -1477,9 +1516,8 @@ def main(input_dataset_id,
         else:
             LOGGER.info(
                 f"Table '{table_name}' has no person_id. Copying as-is.")
-            bq_client.copy_table(
-                f'{project_id}.{input_dataset_id}.{table_name}',
-                f'{project_id}.{output_dataset_id}.{table_name}')
+            copy_table_to_output(bq_client, project_id, input_dataset_id,
+                                 output_dataset_id, table_name)
 
     # Copy vocabulary and Achilles tables directly
     LOGGER.info(
@@ -1487,9 +1525,8 @@ def main(input_dataset_id,
     )
     for table_name in copy_only_tables:
         if bq_client.table_exists(table_name, input_dataset_id):
-            bq_client.copy_table(
-                f'{project_id}.{input_dataset_id}.{table_name}',
-                f'{project_id}.{output_dataset_id}.{table_name}')
+            copy_table_to_output(bq_client, project_id, input_dataset_id,
+                                 output_dataset_id, table_name)
 
     LOGGER.info('CT+ ID regeneration complete')
 
