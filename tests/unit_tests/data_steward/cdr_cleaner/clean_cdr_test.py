@@ -3,6 +3,8 @@ import unittest
 from mock import patch
 
 import cdr_cleaner.clean_cdr as cc
+from cdr_cleaner.cleaning_rules.deid.ct_plus_pid_rid_map import CtPlusPIDtoRID
+from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
 from constants.cdr_cleaner.clean_cdr import DataStage
 from tests.test_util import FakeRuleClass, fake_rule_func
 
@@ -42,23 +44,50 @@ class CleanCDRTest(unittest.TestCase):
     def test_controlled_tier_plus_lists_copy_controlled_tier(self):
         """Each CT+ list is an independent copy of its CT counterpart.
 
-        Equality is true as of DL-2417; a follow-up that diverges a CT+ list
-        updates it. The identity checks are permanent.
+        The base and clean lists are still equal to their CT counterparts. The deid
+        list diverged in DL-2477, which substitutes the PID to RID rule; that one
+        difference is asserted in test_controlled_tier_plus_deid_substitutes_pid_rid
+        and is excluded here. The identity checks are permanent.
         """
-        pairs = [
-            (cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES,
-             cc.CONTROLLED_TIER_DEID_CLEANING_CLASSES),
+        equal_pairs = [
             (cc.CONTROLLED_TIER_PLUS_DEID_BASE_CLEANING_CLASSES,
              cc.CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES),
             (cc.CONTROLLED_TIER_PLUS_DEID_CLEAN_CLEANING_CLASSES,
              cc.CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES),
         ]
-        for ct_plus_classes, ct_classes in pairs:
+        for ct_plus_classes, ct_classes in equal_pairs:
             self.assertEqual(ct_plus_classes, ct_classes)
             self.assertIsNot(ct_plus_classes, ct_classes)
 
+        self.assertIsNot(cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES,
+                         cc.CONTROLLED_TIER_DEID_CLEANING_CLASSES)
+
+    def test_controlled_tier_plus_deid_substitutes_pid_rid(self):
+        """CT+ runs CtPlusPIDtoRID where CT runs RtCtPIDtoRID, and nothing else differs.
+
+        CT+ cannot reuse RtCtPIDtoRID because that rule sources _deid_map from
+        primary_pid_rid_mapping, which does not cover pediatric participants, and
+        PIDtoRID deletes every participant the map omits rather than failing.
+        """
+        ct_plus = cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        ct = cc.CONTROLLED_TIER_DEID_CLEANING_CLASSES
+
+        self.assertIn((CtPlusPIDtoRID,), ct_plus)
+        self.assertNotIn((RtCtPIDtoRID,), ct_plus)
+
+        # The registered and controlled tiers keep the original rule and its source.
+        self.assertIn((RtCtPIDtoRID,), ct)
+        self.assertNotIn((CtPlusPIDtoRID,), ct)
+
+        # Substitution in place: same length, same position, one differing entry.
+        self.assertEqual(len(ct_plus), len(ct))
+        self.assertEqual(ct_plus.index((CtPlusPIDtoRID,)),
+                         ct.index((RtCtPIDtoRID,)))
+        differences = [(a, b) for a, b in zip(ct_plus, ct) if a != b]
+        self.assertEqual(differences, [((CtPlusPIDtoRID,), (RtCtPIDtoRID,))])
+
     def test_parser_controlled_tier_plus_data_stages(self):
-        """The parser accepts the CT+ stages and resolves them to the CT rules."""
+        """The parser accepts the CT+ stages and resolves each to its rules list."""
         parser = cc.get_parser()
         for stage_value, ct_stage_value in [
             ('controlled_tier_plus_deid', 'controlled_tier_deid'),
@@ -72,8 +101,16 @@ class CleanCDRTest(unittest.TestCase):
             ])
             self.assertIn(args.data_stage, DataStage)
             self.assertEqual(args.data_stage.value, stage_value)
-            self.assertEqual(cc.DATA_STAGE_RULES_MAPPING[args.data_stage.value],
-                             cc.DATA_STAGE_RULES_MAPPING[ct_stage_value])
+            if stage_value == 'controlled_tier_plus_deid':
+                # Diverged in DL-2477, see
+                # test_controlled_tier_plus_deid_substitutes_pid_rid.
+                self.assertNotEqual(
+                    cc.DATA_STAGE_RULES_MAPPING[args.data_stage.value],
+                    cc.DATA_STAGE_RULES_MAPPING[ct_stage_value])
+            else:
+                self.assertEqual(
+                    cc.DATA_STAGE_RULES_MAPPING[args.data_stage.value],
+                    cc.DATA_STAGE_RULES_MAPPING[ct_stage_value])
 
     def test_parser(self):
         test_args = [
