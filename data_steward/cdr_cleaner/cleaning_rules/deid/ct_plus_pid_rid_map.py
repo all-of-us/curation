@@ -20,6 +20,16 @@ The RID written here is controlled_tier_id, matching the controlled tier, becaus
 regenerate_ct_plus_ids.py converts CT IDs to CT+ IDs after the pipeline finishes and joins
 its input person_id against that same column. Keying to controlled_tier_plus_id here would
 leave the script nothing to convert from.
+
+The shift column is carried through unchanged but is not read anywhere in CT or CT+: the
+three rules that read _deid_map.shift are all registered in registered tier lists only
+(DateUnShiftCopeResponses in REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES,
+FitbitDateShiftRule in REGISTERED_TIER_FITBIT_CLEANING_CLASSES, and
+SurveyConductDateShiftRule commented out). This matters because the view sources the shift
+from primary_pid_rid_mapping, so once the view stops inner joining that table, pediatric
+participants will appear here with a NULL shift. That is inert today and is why a NULL
+shift is not filtered out; filtering on it would delete the very cohort this rule exists
+to keep. Anyone adding a date shifting rule to a CT+ stage has to resolve that first.
 """
 # Python Imports
 import logging
@@ -30,6 +40,27 @@ from common import (JINJA_ENV, PIPELINE_TABLES,
                     RDR_PARTICIPANT_RESEARCH_IDS_VIEW)
 
 LOGGER = logging.getLogger(__name__)
+
+# A participant carrying two rows that disagree on the ID or the shift. SELECT DISTINCT
+# below collapses only byte identical duplicates, which is the shape the view has been
+# observed carrying; a disagreeing pair survives it and would leave PIDtoRID's
+# UPDATE ... FROM matching two source rows for one target row, which BigQuery rejects
+# mid-run, after output tables have already been written.
+CONFLICTING_PARTICIPANTS_TMPL = JINJA_ENV.from_string("""
+WITH conflicting AS (
+    SELECT participant_id
+    FROM `{{project_id}}.{{ids_dataset_id}}.{{ids_view_id}}`
+    WHERE participant_id IS NOT NULL
+      AND controlled_tier_id IS NOT NULL
+    GROUP BY participant_id
+    HAVING COUNT(DISTINCT FORMAT('%T', STRUCT(controlled_tier_id,
+                                              registered_tier_date_shift))) > 1
+)
+SELECT
+    COUNT(*) AS conflicting_count,
+    ARRAY_AGG(participant_id ORDER BY participant_id LIMIT 5) AS examples
+FROM conflicting
+""")
 
 BUILD_DEID_MAP_TMPL = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` AS
@@ -75,22 +106,51 @@ class CtPlusPIDtoRID(RtCtPIDtoRID):
         self.ids_dataset_id = ids_dataset_id
         self.ids_view_id = ids_view_id
 
+    def assert_one_row_per_participant(self, client):
+        """
+        Stop the run if the research IDs view disagrees with itself about a participant.
+
+        The view is maintained outside this repository and has been observed carrying
+        duplicate participant rows. Byte identical duplicates are harmless and the
+        SELECT DISTINCT in build_deid_map() removes them. A pair that disagrees on
+        controlled_tier_id or on the shift is not harmless and does not survive as a
+        choice this rule is entitled to make silently: the map would carry the
+        participant twice, and PIDtoRID's UPDATE ... FROM would then match two source
+        rows for one target row, which BigQuery rejects. Failing here costs a run that
+        has written nothing; failing there costs one that has already rewritten tables.
+
+        :param client: BigQueryClient
+        :raises RuntimeError: if any participant has rows that disagree
+        """
+        query = CONFLICTING_PARTICIPANTS_TMPL.render(
+            project_id=self.project_id,
+            ids_dataset_id=self.ids_dataset_id,
+            ids_view_id=self.ids_view_id)
+        row = list(client.query(query).result())[0]
+
+        if row['conflicting_count']:
+            raise RuntimeError(
+                f'{self.ids_dataset_id}.{self.ids_view_id} carries disagreeing rows '
+                f'for {row["conflicting_count"]} participants, for example '
+                f'{sorted(row["examples"])}. Each has more than one combination of '
+                f'controlled_tier_id and registered_tier_date_shift, so there is no '
+                f'single research_id to map it to. Resolve the view before rerunning.'
+            )
+
     def build_deid_map(self, client):
         """
         Build the sandbox _deid_map from the research IDs view.
 
-        SELECT DISTINCT because the view has been observed carrying byte identical
-        duplicate participant rows. Every substitution PIDtoRID performs is an UPDATE
-        joined on person_id, so a second row for one participant would multiply that
-        participant's rows in every affected table rather than raise.
-
         A NULL controlled_tier_id is excluded rather than carried. PIDtoRID sets
         person_id from the map unconditionally, so a NULL RID would be written into
         person_id and would not be caught by the delete path, which only removes
-        participants the map does not mention at all.
+        participants the map does not mention at all. A NULL shift is deliberately not
+        excluded; see the module docstring.
 
         :param client: BigQueryClient
         """
+        self.assert_one_row_per_participant(client)
+
         query = BUILD_DEID_MAP_TMPL.render(deid_map=self.deid_map,
                                            project_id=self.project_id,
                                            ids_dataset_id=self.ids_dataset_id,

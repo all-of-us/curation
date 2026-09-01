@@ -77,12 +77,17 @@ class CtPlusPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                                  f'{RDR_PARTICIPANT_RESEARCH_IDS_VIEW}')
 
         # The fixture stands in for pipeline_tables.rdr_participant_research_ids_view.
-        cls.rule_instance = CtPlusPIDtoRID(
-            cls.project_id,
-            cls.dataset_id,
-            cls.sandbox_id,
-            ids_dataset_id=cls.sandbox_id,
-            ids_view_id=RDR_PARTICIPANT_RESEARCH_IDS_VIEW)
+        # default_test() runs the rule through clean_dataset(), which builds its own
+        # instance rather than reusing rule_instance, so the fixture location has to be
+        # passed as kwargs too or that instance falls back to the real pipeline_tables
+        # view. get_custom_kwargs filters on the constructor signature, so both names
+        # reach it.
+        cls.kwargs = {
+            'ids_dataset_id': cls.sandbox_id,
+            'ids_view_id': RDR_PARTICIPANT_RESEARCH_IDS_VIEW
+        }
+        cls.rule_instance = CtPlusPIDtoRID(cls.project_id, cls.dataset_id,
+                                           cls.sandbox_id, **cls.kwargs)
 
         table_ids = [CONDITION_OCCURRENCE, PERSON]
         cls.fq_table_names = [
@@ -97,19 +102,28 @@ class CtPlusPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
         super().setUpClass()
 
+    @classmethod
+    def tearDownClass(cls):
+        cls.client.delete_table(cls.fq_ids_view_table, not_found_ok=True)
+        super().tearDownClass()
+
     def setUp(self):
         """Create the tables the rule reads, including the ids view fixture."""
         super().setUp()
 
+        # Recreated here rather than registered in fq_table_names. That list is a class
+        # attribute the base setUp feeds to create_tables(), which resolves each name
+        # against resource_files/schemas and raises on one it does not know; appending
+        # this fixture to it would break every test method after the first.
+        self.client.delete_table(self.fq_ids_view_table, not_found_ok=True)
         self.client.create_table(Table(self.fq_ids_view_table, IDS_VIEW_SCHEMA))
-        self.fq_table_names.append(self.fq_ids_view_table)
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
-    def load_fixtures(self):
-        """Load the ids view, the stale map, and the CDM tables."""
-        ids_view_query = self.jinja_env.from_string("""
+    def load_ids_view(self, extra_rows=''):
+        """Load the ids view fixture, optionally with rows a test adds."""
+        query = self.jinja_env.from_string("""
         INSERT INTO `{{fq_ids_view_table}}`
         (participant_id, controlled_tier_id, controlled_tier_plus_id,
          registered_tier_date_shift)
@@ -119,14 +133,18 @@ class CtPlusPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             ({{mainline_pid}}, {{mainline_rid}}, 3001, 100),
             ({{pediatric_pid}}, {{pediatric_rid}}, 3002, 101),
             -- no controlled_tier_id, so no RID to substitute --
-            ({{no_ct_id_pid}}, NULL, 3003, 102)
+            ({{no_ct_id_pid}}, NULL, 3003, 102){{extra_rows}}
         """).render(fq_ids_view_table=self.fq_ids_view_table,
                     mainline_pid=MAINLINE_PID,
                     mainline_rid=MAINLINE_RID,
                     pediatric_pid=PEDIATRIC_PID,
                     pediatric_rid=PEDIATRIC_RID,
-                    no_ct_id_pid=NO_CT_ID_PID)
+                    no_ct_id_pid=NO_CT_ID_PID,
+                    extra_rows=extra_rows)
+        self.load_test_data([query])
 
+    def load_fixtures(self):
+        """Load the ids view, the stale map, and the CDM tables."""
         # Stands in for a map copied from primary_pid_rid_mapping by an earlier run.
         # It omits the pediatric participant and holds a different RID for the
         # mainline one, so reuse of it is visible in the output.
@@ -176,8 +194,8 @@ class CtPlusPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                     no_ct_id_pid=NO_CT_ID_PID,
                     uncovered_pid=UNCOVERED_PID)
 
-        self.load_test_data(
-            [ids_view_query, stale_map_query, person_query, co_query])
+        self.load_ids_view()
+        self.load_test_data([stale_map_query, person_query, co_query])
 
     def read_deid_map(self):
         """Return the rebuilt map as a sorted list of (person_id, research_id, shift)."""
@@ -211,6 +229,22 @@ class CtPlusPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
         self.assertEqual(self.read_deid_map(), first)
 
+    def test_disagreeing_view_rows_abort(self):
+        """A participant with two conflicting rows stops the run before anything is written.
+
+        SELECT DISTINCT removes byte identical duplicates only. A pair disagreeing on
+        the ID or the shift would put the participant in the map twice and make
+        PIDtoRID's UPDATE match two source rows for one target row.
+        """
+        # same participant, different controlled_tier_id
+        self.load_ids_view(
+            extra_rows=f',\n            ({PEDIATRIC_PID}, 7777, 3002, 101)')
+
+        with self.assertRaises(RuntimeError) as cm:
+            self.rule_instance.setup_rule(self.client)
+
+        self.assertIn(str(PEDIATRIC_PID), str(cm.exception))
+
     def test_field_cleaning(self):
         """The pediatric participant survives and every survivor carries its CT ID.
 
@@ -219,10 +253,11 @@ class CtPlusPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         1002 is the pediatric participant, absent from the stale map and kept here.
         1003 and 1004 have no controlled_tier_id in the view and are deleted, which
         is the inherited behaviour for a participant the map does not cover.
+
+        setup_rule is not called here. default_test() runs the rule through
+        clean_dataset(), which performs the setup itself.
         """
         self.load_fixtures()
-
-        self.rule_instance.setup_rule(self.client)
 
         person_sb_table, co_sb_table = '', ''
         for table in self.fq_sandbox_table_names:
