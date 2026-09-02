@@ -148,17 +148,44 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertIn('AND fact_id_2 IS NOT NULL', actual)
 
     def test_fact_relationship_domain_map_covers_the_observed_domains(self):
-        """Domains seen in the CT input. Anything else resolves to NULL and is dropped."""
+        """Domains seen in the CT input, plus person for the CT+ pediatric
+        adult-child linkage records. Anything else resolves to NULL and is dropped."""
         expected = {
             10: PROCEDURE_OCCURRENCE,
             13: DRUG_EXPOSURE,
             19: CONDITION_OCCURRENCE,
             21: MEASUREMENT,
             27: OBSERVATION,
+            56: PERSON,
             57: CARE_SITE,
         }
 
         self.assertDictEqual(ct.DOMAIN_CONCEPT_ID_TO_TABLE, expected)
+
+    def test_fact_relationship_person_side_uses_the_person_mapping_src_table_id(
+            self):
+        """_mapping_person is stamped by person_mapping_src_table_id(), not
+        '<namespace>.person'. The generic predicate matches no row, and the join is a
+        LEFT JOIN under a NOT NULL filter, so every linkage row would be dropped with
+        no error."""
+        actual = self._table_query(ct.FACT_RELATIONSHIP)
+        expected = ct.person_mapping_src_table_id(self.pipeline_dataset_id,
+                                                  self.ids_view)
+
+        self.assertIn(f"src_table_id = '{expected}'", actual)
+        self.assertNotIn(
+            f"src_table_id = '{ct.DEFAULT_MAPPING_NAMESPACE}.{PERSON}'", actual)
+
+    def test_fact_relationship_keeps_the_namespace_src_table_id_for_other_domains(
+            self):
+        """Only the person domain takes the special src_table_id."""
+        actual = self._table_query(ct.FACT_RELATIONSHIP)
+
+        for domain_table in (MEASUREMENT, OBSERVATION, CARE_SITE):
+            with self.subTest(domain_table=domain_table):
+                self.assertIn(
+                    f"src_table_id = '{ct.DEFAULT_MAPPING_NAMESPACE}.{domain_table}'",
+                    actual)
 
     def test_aou_death_id_is_preserved(self):
         """aou_death_id is a GUID and is shared with CT, matching RT."""
