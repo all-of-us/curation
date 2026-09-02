@@ -47,6 +47,7 @@ from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import RemoveReco
 from cdr_cleaner.cleaning_rules.flag_participants_under_18years import FlagParticipantsUnder18Years
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
 from cdr_cleaner.cleaning_rules.replace_freetext_notes import ReplaceFreeTextNotes
+from cdr_cleaner.cleaning_rules.replace_pediatric_measurement_codes import ReplacePediatricMeasurementCodes
 from cdr_cleaner.cleaning_rules.deid.eponymous_condition_suppression import EponymousConditionSuppression
 from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import UpdateFamilyHistoryCodes
 from cdr_cleaner.cleaning_rules.remove_operational_pii_fields import RemoveOperationalPiiFields
@@ -226,6 +227,7 @@ RDR_CLEANING_CLASSES = [
     (CleanSmokingPpi,),
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
+    (ReplacePediatricMeasurementCodes,),
     (CalculateBmi,),
     (DropExtremeMeasurements,),
     (DropMultipleMeasurements,),
