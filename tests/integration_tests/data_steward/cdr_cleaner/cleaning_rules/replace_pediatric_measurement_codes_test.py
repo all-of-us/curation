@@ -6,9 +6,9 @@ Original Issues: DL-2480
 Asserts that each of the five pediatric growth-measurement placeholder codes is
 replaced by its specified LOINC code in measurement_source_value and by that
 code's concept id in both measurement_source_concept_id and
-measurement_concept_id, that a row arriving under the PMI code with unresolved
-concept ids is replaced the same way, and that neither a correctly annotated
-row nor a measurement outside the replacement map is touched.
+measurement_concept_id, and that nothing else is touched: not a measurement
+outside the replacement map, and not a row carrying the PMI code for one of the
+five, which the predicate deliberately does not reach.
 """
 # Python imports
 import os
@@ -58,8 +58,9 @@ class ReplacePediatricMeasurementCodesTest(BaseTest.CleaningRulesTestBase):
 
     def test_replace_pediatric_measurement_codes(self):
         """
-        Nine rows: the five placeholders, one PMI-coded row on each side of the
-        unresolved guard, and two measurements outside the replacement map.
+        Nine rows: the five placeholders, two measurements outside the
+        replacement map, and two rows carrying the PMI code for a growth
+        percentile, which the predicate does not reach.
         """
         insert_fake_measurements = self.jinja_env.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.measurement`
@@ -82,9 +83,14 @@ class ReplacePediatricMeasurementCodesTest(BaseTest.CleaningRulesTestBase):
           (806, 6, 3036277, '2026-05-01', "2026-05-01 05:30:00+00", NULL, 0, 0, 110, 0, 0, NULL, NULL, NULL, NULL, NULL, "height", 903133, "cm", ""),
         -- LOINC code outside the replacement map, must not be modified --
           (807, 7, 3013762, '2026-05-01', "2026-05-01 05:30:00+00", NULL, 0, 0, 18, 0, 0, NULL, NULL, NULL, NULL, NULL, "8302-2", 0, "", ""),
-        -- PMI code for a growth percentile, unresolved, must be replaced --
+        -- PMI code for a growth percentile, unresolved. Out of scope: the predicate
+        -- keys on the placeholder code only, so this row must not be modified. If the
+        -- RDR row shape is confirmed to be this one, this expectation flips. --
           (808, 8, 0, '2026-05-01', "2026-05-01 05:30:00+00", NULL, 0, 0, 55, 0, 0, NULL, NULL, NULL, NULL, NULL, "growth-percentile-weight-for-age", 0, "", ""),
-        -- PMI code for a growth percentile, already resolved, must not be modified --
+        -- PMI code for a growth percentile, already resolved, must not be modified.
+        -- Forward-looking rather than observed: no growth-percentile PMI concept
+        -- exists in the vocabulary today, so this shape can only arise once one is
+        -- minted, which is what a confirmed PMI row shape would require. --
           (809, 9, 40762638, '2026-05-01', "2026-05-01 05:30:00+00", NULL, 0, 0, 48, 0, 0, NULL, NULL, NULL, NULL, NULL, "growth-percentile-bmi-for-age", 903124, "", "")
         """).render(project=self.project_id, dataset=self.dataset_id)
 
@@ -102,7 +108,7 @@ class ReplacePediatricMeasurementCodesTest(BaseTest.CleaningRulesTestBase):
                 'measurement_source_concept_id', 'measurement_concept_id'
             ],
             'loaded_ids': [801, 802, 803, 804, 805, 806, 807, 808, 809],
-            'sandboxed_ids': [801, 802, 803, 804, 805, 808],
+            'sandboxed_ids': [801, 802, 803, 804, 805],
             'cleaned_values': [
                 (801, '8336-0', 3013131, 3013131),
                 (802, '8303-0', 3036798, 3036798),
@@ -111,8 +117,51 @@ class ReplacePediatricMeasurementCodesTest(BaseTest.CleaningRulesTestBase):
                 (805, '59576-9', 40762638, 40762638),
                 (806, 'height', 903133, 3036277),
                 (807, '8302-2', 0, 3013762),
-                (808, '8336-0', 3013131, 3013131),
+                (808, 'growth-percentile-weight-for-age', 0, 0),
                 (809, 'growth-percentile-bmi-for-age', 903124, 40762638),
+            ]
+        }]
+
+        self.default_test(tables_and_counts)
+
+    def test_placeholder_with_no_matching_row(self):
+        """
+        Four of the five replacement map entries match nothing here.
+
+        The rule must replace the one placeholder present and leave the
+        unmatched entries as a no-op rather than failing or emitting rows.
+        """
+        insert_fake_measurements = self.jinja_env.from_string("""
+        INSERT INTO `{{project}}.{{dataset}}.measurement`
+        (measurement_id, person_id, measurement_concept_id, measurement_date, measurement_datetime,
+        measurement_time, measurement_type_concept_id, operator_concept_id, value_as_number, value_as_concept_id,
+        unit_concept_id, range_low, range_high, provider_id, visit_occurrence_id, visit_detail_id,
+        measurement_source_value, measurement_source_concept_id, unit_source_value, value_source_value)
+        VALUES
+        -- the only placeholder present; the other four map entries match no row --
+          (811, 1, 0, '2026-05-01', "2026-05-01 05:30:00+00", NULL, 0, 0, 55, 0, 0, NULL, NULL, NULL, NULL, NULL, "22222-0", 0, "", ""),
+        -- outside the replacement map, must not be modified --
+          (812, 2, 3036277, '2026-05-01', "2026-05-01 05:30:00+00", NULL, 0, 0, 110, 0, 0, NULL, NULL, NULL, NULL, NULL, "height", 903133, "cm", "")
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        self.load_test_data([insert_fake_measurements])
+
+        tables_and_counts = [{
+            'name':
+                self.fq_table_names[0].split('.')[-1],
+            'fq_table_name':
+                self.fq_table_names[0],
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[0],
+            'fields': [
+                'measurement_id', 'measurement_source_value',
+                'measurement_source_concept_id', 'measurement_concept_id'
+            ],
+            'loaded_ids': [811, 812],
+            'sandboxed_ids': [811],
+            'cleaned_values': [
+                (811, '8336-0', 3013131, 3013131),
+                (812, 'height', 903133, 3036277),
             ]
         }]
 
