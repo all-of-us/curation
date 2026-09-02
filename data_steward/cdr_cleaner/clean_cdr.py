@@ -45,6 +45,7 @@ from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNon
 from cdr_cleaner.cleaning_rules.sandbox_and_remove_withdrawn_pids import SandboxAndRemoveWithdrawnPids
 from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import RemoveRecordsWithWrongDate
 from cdr_cleaner.cleaning_rules.flag_participants_under_18years import FlagParticipantsUnder18Years
+from cdr_cleaner.cleaning_rules.route_pediatric_adult_observations import RoutePediatricAdultObservations
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
 from cdr_cleaner.cleaning_rules.replace_freetext_notes import ReplaceFreeTextNotes
 from cdr_cleaner.cleaning_rules.deid.eponymous_condition_suppression import EponymousConditionSuppression
@@ -192,6 +193,12 @@ RDR_CLEANING_CLASSES = [
     (CreateAIANLookup,),
     (TruncateRdrData,),
     (FlagParticipantsUnder18Years,),
+    # RoutePediatricAdultObservations reads the adult-child pairs from
+    # fact_relationship, so the rule that derives them (DL-2482) belongs between these
+    # two once it lands. Until then this emits nothing and records every pediatric
+    # response as unresolved, which is the designed behaviour and not a silent pass.
+    (
+        RoutePediatricAdultObservations,),
     (SandboxAndRemoveWithdrawnPids,),
     # execute SetConceptIdsForSurveyQuestionAnswers before PpiBranching gets executed
     # since PpiBranching relies on fully mapped concepts

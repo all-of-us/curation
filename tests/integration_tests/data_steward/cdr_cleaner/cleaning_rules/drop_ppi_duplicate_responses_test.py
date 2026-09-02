@@ -59,7 +59,11 @@ class DropPpiDuplicateResponsesTest(BaseTest.CleaningRulesTestBase):
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.observation',
-            f'{project_id}.{dataset_id}.cope_survey_semantic_version_map'
+            f'{project_id}.{dataset_id}.cope_survey_semantic_version_map',
+            # joined by the DL-2483 exclusion, which identifies a record emitted onto
+            # a linked adult by its observation belonging to a different participant
+            # than the survey that produced it
+            f'{project_id}.{dataset_id}.survey_conduct'
         ]
 
         # call super to set up the client, create datasets, and create
@@ -149,6 +153,65 @@ VALUES
             'cleaned_values': [(123, 111111111), (345, 333333333),
                                (456, 444444444), (567, 555555555),
                                (901, 999999999)]
+        }]
+
+        self.default_test(tables_and_counts)
+
+    def test_emitted_pediatric_adult_record_is_excluded(self):
+        """
+        A record emitted onto a linked adult from a pediatric survey (DL-2483) must not
+        take part in the duplicate ranking.
+
+        Adult 500 answered EducationLevel_HighestGrade at enrollment in 2015, and a
+        pediatric reassessment for their child lands on them in 2026. The reassessment
+        is later, so without the exclusion it would rank first and the enrollment
+        answer would be deleted. Both must survive.
+
+        Income_AnnualIncome is the control: an ordinary duplicate on the same adult,
+        both rows belonging to the adult's own surveys, is still deleted. Without it
+        this test would also pass if the exclusion disabled the rule outright.
+        """
+        observation_tmpl = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.observation`
+        (observation_id, person_id, observation_concept_id, observation_date,
+         observation_datetime, observation_type_concept_id, observation_source_concept_id,
+         observation_source_value, value_source_value, questionnaire_response_id)
+        VALUES
+        -- adult 500's own enrollment answer --
+          (1001, 500, 40771091, DATE('2015-01-01'), TIMESTAMP('2015-01-01'), 45905771,
+           1585940, 'EducationLevel_HighestGrade', 'HighestGrade_CollegeGraduate', 700),
+        -- emitted onto adult 500 from child 501's pediatric survey, and later --
+          (1002, 500, 40771091, DATE('2026-01-01'), TIMESTAMP('2026-01-01'), 45905771,
+           1585940, 'EducationLevel_HighestGrade', 'HighestGrade_AdvancedDegree', 800),
+        -- control: an ordinary duplicate on the adult's own surveys, still deleted --
+          (1003, 500, 46235933, DATE('2015-01-01'), TIMESTAMP('2015-01-01'), 45905771,
+           1585375, 'Income_AnnualIncome', 'AnnualIncome_10k25k', 700),
+          (1004, 500, 46235933, DATE('2016-01-01'), TIMESTAMP('2016-01-01'), 45905771,
+           1585375, 'Income_AnnualIncome', 'AnnualIncome_50k75k', 701)
+        """)
+
+        survey_conduct_tmpl = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.survey_conduct`
+        (survey_conduct_id, person_id, survey_concept_id, survey_source_value)
+        VALUES
+          (700, 500, 1586134, 'TheBasics'),
+          (701, 500, 1586134, 'TheBasics'),
+        -- keyed to the child, which is what marks 1002 as emitted --
+          (800, 501, 0, 'ped_basics')
+        """)
+
+        self.load_test_data([
+            observation_tmpl.render(fq_dataset_name=self.fq_dataset_name),
+            survey_conduct_tmpl.render(fq_dataset_name=self.fq_dataset_name)
+        ])
+
+        tables_and_counts = [{
+            'fq_table_name': '.'.join([self.fq_dataset_name, 'observation']),
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
+            'loaded_ids': [1001, 1002, 1003, 1004],
+            'sandboxed_ids': [1003],
+            'fields': ['observation_id', 'questionnaire_response_id'],
+            'cleaned_values': [(1001, 700), (1002, 800), (1004, 701)]
         }]
 
         self.default_test(tables_and_counts)
