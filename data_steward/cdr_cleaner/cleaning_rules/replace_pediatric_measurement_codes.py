@@ -18,12 +18,13 @@ A placeholder row carries its code in measurement_source_value with both concept
 id columns at 0, so replacing the source value alone would leave the row
 unresolvable. All three columns are set.
 
-The predicate accepts either code the row may arrive under. A placeholder source
-value is always wrong, so it is always replaced. A PMI-coded row is replaced only
-when it is unresolved, which is what a placeholder row looks like on that path;
-a correctly annotated PMI-coded row is left alone.
+The predicate keys on the placeholder code in measurement_source_value. Which
+of the two RDR measurement row shapes the pediatric placeholders arrive in is
+not yet confirmed; if they arrive under the PMI code instead, the predicate
+keys on that column value rather than this one and nothing else changes.
 
-Pediatric measurement codes outside the replacement map are not touched.
+Pediatric measurement codes outside the replacement map are not touched, and
+neither is a row already annotated to a real concept.
 """
 
 # Python imports
@@ -42,6 +43,10 @@ JIRA_ISSUE_NUMBERS = ['DL2480']
 # in a lookup table because the set is five fixed rows: in the module it stays
 # visible in code review and versioned with the rule that reads it. Revisit only
 # if the set stops being small and static.
+#
+# 'field' and 'pmi_code' are documentation: they name the measurement each
+# placeholder stands for and the code it would carry on the other RDR row shape.
+# Only placeholder_code, loinc_code and concept_id are rendered into SQL.
 PLACEHOLDER_REPLACEMENTS = [
     {
         'field': 'Growth Percentile Weight for Age',
@@ -90,7 +95,6 @@ WITH replacements AS (
   SELECT * FROM UNNEST([
   {% for r in replacements %}
     STRUCT(
-      '{{r.pmi_code}}' AS pmi_code,
       '{{r.placeholder_code}}' AS placeholder_code,
       '{{r.loinc_code}}' AS loinc_code,
       {{r.concept_id}} AS concept_id
@@ -106,7 +110,6 @@ SELECT
 FROM `{{project}}.{{dataset}}.measurement` m
 JOIN replacements r
 ON m.measurement_source_value = r.placeholder_code
-  OR (m.measurement_source_value = r.pmi_code AND m.measurement_concept_id = 0)
 )
 """)
 
