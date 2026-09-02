@@ -13,6 +13,23 @@ The pediatric participant's own row is left in place. The PRD's verb is create, 
 under the relationship extension table it states that observation "Preserves the
 original participant-provided responses", so preservation is the default here.
 
+Two adults' worth of notes on what this deliberately does not collapse.
+
+An adult linked to more than one pediatric participant gets one record per child per
+item, so an adult with two children answering the same question ends up with two rows
+for that concept. That is intended. Each row comes from a separate survey completion
+and carries its own questionnaire_response_id, so the two stay distinguishable, and
+collapsing them would discard the fact that the adult answered twice. It follows the
+COPE precedent, where the same question re-asked across waves is kept rather than
+deduplicated.
+
+This rule runs before SetConceptIdsForSurveyQuestionsAnswers and FixUnmappedSurveyAnswers,
+so an emitted copy can carry a resolved observation_concept_id while the pediatric
+participant's own row still carries 0 until those later rules reach it. The two rows
+for one response therefore disagree on that column for part of the RDR run. That is
+expected: the later rules key on observation_source_concept_id, which both rows share,
+so both converge before the stage ends.
+
 Original Issues: DL2483
 """
 
@@ -33,7 +50,38 @@ LOGGER = logging.getLogger(__name__)
 # arrives as 0 for these responses, exactly as it does today for HPOSitePairing and
 # ProgramUpdate. survey_source_value carries the instrument name either way, so this
 # predicate keeps working unchanged once a concept is minted.
+#
+# Matched case-insensitively, so these must stay lowercase. survey_source_value mixes
+# conventions across surveys ('TheBasics' beside 'sdoh' and 'cope_vaccine1'), and a
+# casing change upstream would otherwise make this rule emit nothing and route every
+# response to the unresolved lookup, which is indistinguishable from the state before
+# the linkage rule lands. raw_rdr_export_qc.py matches these values with (?i) for the
+# same reason.
 PEDIATRIC_BASICS_SURVEY_SOURCE_VALUES = ['ped_basics']
+
+# Relationship concepts that can legitimately appear on a pediatric-to-adult row, which
+# is the inverse direction of the pairs DL-2482 emits: Natural Child, Grandchild,
+# Natural Sibling, Second Degree Blood Relative, Cousin, and the Legal Child derived
+# when the genetic-relation question is answered No.
+#
+# TODO(DL-2482): confirm against the ids that rule actually emits. It is not built yet,
+# and the Peds Relationship OMOP Management Proposal's inverse table lists no inverse
+# for the Other and Prefer-not-to-answer answers, so those may need adding here.
+#
+# This narrows the candidates; it cannot fully identify the adult on its own. Natural
+# Sibling, Second Degree Blood Relative and Cousin are symmetric, so a sibling-to-
+# sibling row carries the same concept as a child-to-adult row for a participant whose
+# consenting adult is their sibling, which the real data does contain. Excluding
+# counterparts who are themselves pediatric is what separates those two, and it stays
+# the primary guard.
+ADULT_LINK_RELATIONSHIP_CONCEPT_IDS = [
+    4326600,  # Natural Child
+    4311425,  # Grandchild
+    4218412,  # Natural Sibling
+    44783070,  # Second Degree Blood Relative
+    4206333,  # Cousin
+    4032151,  # Legal Child
+]
 
 # The twelve Pediatric Basics items that are about the parent or guardian. The
 # numbering is the survey's own and is non-contiguous: the omitted numbers are items
@@ -140,38 +188,74 @@ items AS (
 pediatric_surveys AS (
     SELECT survey_conduct_id, person_id
     FROM `{{project}}.{{dataset}}.{{survey_conduct}}`
-    WHERE survey_source_value IN (
+    WHERE LOWER(survey_source_value) IN (
         {%- for v in survey_source_values %}'{{v}}'{{ ", " if not loop.last }}{% endfor %})
 ),
-guardian_about_responses AS (
-    /* Matched on either the source value or the source concept id. A pediatric row
-       can arrive with observation_source_concept_id = 0 while carrying the PPI code,
-       so keying on the concept id alone would silently skip it. The survey filter is
-       applied first, so this cannot reach an adult Basics row carrying the same
-       code. */
-    SELECT o.*, i.standard_concept_id
+pediatric_responses AS (
+    SELECT o.*
     FROM `{{project}}.{{dataset}}.{{obs}}` o
     JOIN pediatric_surveys ps
       ON ps.survey_conduct_id = o.questionnaire_response_id
-    JOIN items i
-      ON LOWER(o.observation_source_value) = i.field
-      OR o.observation_source_concept_id = i.mapped_concept_id
 ),
-linkage AS (
-    /* One row per pediatric participant. The pairs are emitted in both directions,
-       so reading only side 1 already gives each participant its counterpart once.
-       Excluding counterparts who are themselves pediatric keeps a sibling pair from
-       being read as an adult link. n_adults is carried so an ambiguous participant
-       can be recorded rather than fanned out into one record per candidate adult. */
+matched_responses AS (
+    /* Source value first, concept id only as a fallback. A pediatric row can arrive
+       with observation_source_concept_id = 0 while carrying the PPI code, so keying
+       on the concept id alone would silently skip it, but matching on either with an
+       OR would emit two records for one response if the two columns disagree, which
+       is the dirty-data case the fallback exists for. Each join matches at most one
+       item: field and mapped_concept_id are both unique across the twelve. The survey
+       filter is applied first, so this cannot reach an adult row carrying the same
+       PPI code. */
+    SELECT
+        r.*,
+        COALESCE(by_value.field, by_concept.field) AS matched_field,
+        COALESCE(by_value.standard_concept_id,
+                 by_concept.standard_concept_id) AS standard_concept_id
+    FROM pediatric_responses r
+    LEFT JOIN items by_value
+      ON by_value.field = LOWER(r.observation_source_value)
+    LEFT JOIN items by_concept
+      ON by_concept.mapped_concept_id = r.observation_source_concept_id
+),
+guardian_about_responses AS (
+    SELECT * FROM matched_responses WHERE matched_field IS NOT NULL
+),
+person_pairs AS (
+    /* The pairs are emitted in both directions, so reading only side 1 already gives
+       each participant its counterpart once. */
     SELECT
         fr.fact_id_1 AS pediatric_person_id,
-        ANY_VALUE(fr.fact_id_2) AS adult_person_id,
-        COUNT(DISTINCT fr.fact_id_2) AS n_adults
-    FROM `{{project}}.{{dataset}}.{{fact_relationship}}` fr
-    WHERE fr.domain_concept_id_1 = {{person_domain_concept_id}}
-      AND fr.domain_concept_id_2 = {{person_domain_concept_id}}
-      AND fr.fact_id_2 NOT IN (SELECT person_id FROM pediatric_surveys)
-    GROUP BY fr.fact_id_1
+        fr.fact_id_2 AS counterpart_person_id,
+        fr.fact_id_2 IN (SELECT person_id FROM pediatric_surveys)
+          AS counterpart_is_pediatric,
+        fr.relationship_concept_id IN (
+            {%- for c in adult_link_relationship_concept_ids %}{{c}}{{ ", " if not loop.last }}{% endfor %})
+          AS relationship_is_adult_link
+    FROM (
+        SELECT fact_id_1, fact_id_2, relationship_concept_id
+        FROM `{{project}}.{{dataset}}.{{fact_relationship}}`
+        WHERE domain_concept_id_1 = {{person_domain_concept_id}}
+          AND domain_concept_id_2 = {{person_domain_concept_id}}
+    ) fr
+),
+linkage AS (
+    /* One row per pediatric participant that has any person domain pair at all.
+       Disqualified counterparts are classified rather than filtered out, so the
+       unresolved lookup can say which of the four ways a participant failed to
+       resolve rather than reporting every one of them as having no linkage row.
+       n_adults is carried so an ambiguous participant is recorded rather than fanned
+       out into one record per candidate adult. ANY_VALUE ignores NULLs, so it returns
+       the single qualifying counterpart when there is exactly one. */
+    SELECT
+        pediatric_person_id,
+        COUNT(*) AS n_pairs,
+        COUNTIF(counterpart_is_pediatric) AS n_pediatric_counterparts,
+        COUNT(DISTINCT IF(NOT counterpart_is_pediatric AND relationship_is_adult_link,
+                          counterpart_person_id, NULL)) AS n_adults,
+        ANY_VALUE(IF(NOT counterpart_is_pediatric AND relationship_is_adult_link,
+                     counterpart_person_id, NULL)) AS adult_person_id
+    FROM person_pairs
+    GROUP BY pediatric_person_id
 )
 """
 
@@ -232,9 +316,15 @@ SELECT
     r.person_id,
     r.questionnaire_response_id,
     r.observation_source_value,
-    IF(l.pediatric_person_id IS NULL,
-       'no person domain linkage row for this participant',
-       'linked to more than one adult') AS unresolved_reason
+    CASE
+      WHEN l.pediatric_person_id IS NULL
+        THEN 'no person domain linkage row for this participant'
+      WHEN l.n_adults = 0 AND l.n_pediatric_counterparts = l.n_pairs
+        THEN 'every linked counterpart is a pediatric participant'
+      WHEN l.n_adults = 0
+        THEN 'no counterpart carries an adult link relationship'
+      ELSE 'linked to more than one adult'
+    END AS unresolved_reason
 FROM guardian_about_responses r
 LEFT JOIN linkage l
   ON l.pediatric_person_id = r.person_id
@@ -297,14 +387,24 @@ class RoutePediatricAdultObservations(BaseCleaningRule):
     def _source_params(self):
         """Parameters shared by the emit and unresolved queries."""
         return {
-            'project': self.project_id,
-            'dataset': self.dataset_id,
-            'obs': OBSERVATION,
-            'survey_conduct': SURVEY_CONDUCT,
-            'fact_relationship': FACT_RELATIONSHIP,
-            'items': GUARDIAN_ABOUT_ITEMS,
-            'survey_source_values': PEDIATRIC_BASICS_SURVEY_SOURCE_VALUES,
-            'person_domain_concept_id': PERSON_DOMAIN_CONCEPT_ID,
+            'project':
+                self.project_id,
+            'dataset':
+                self.dataset_id,
+            'obs':
+                OBSERVATION,
+            'survey_conduct':
+                SURVEY_CONDUCT,
+            'fact_relationship':
+                FACT_RELATIONSHIP,
+            'items':
+                GUARDIAN_ABOUT_ITEMS,
+            'survey_source_values':
+                PEDIATRIC_BASICS_SURVEY_SOURCE_VALUES,
+            'person_domain_concept_id':
+                PERSON_DOMAIN_CONCEPT_ID,
+            'adult_link_relationship_concept_ids':
+                ADULT_LINK_RELATIONSHIP_CONCEPT_IDS,
         }
 
     def setup_rule(self, client):
