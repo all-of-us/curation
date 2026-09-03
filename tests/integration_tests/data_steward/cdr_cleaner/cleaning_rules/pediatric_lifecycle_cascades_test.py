@@ -301,3 +301,35 @@ class PediatricLifecycleCascadesTest(BaseTest.CleaningRulesTestBase):
         self.assertNotIn(104, deactivated)
         self.assertNotIn(105, deactivated)
         self.assertNotIn(205, deactivated)
+
+        # Per event, the cohort it acted on. These are named diagnostics rather
+        # than independent coverage: they are derived from the same `deactivated`
+        # result the equality assertion above already pins, so none of them can
+        # fail unless that assertion does. They earn their place by naming the
+        # event in the failure message instead of reporting one dict mismatch.
+        acted_on = {
+            'pediatric participant deactivates in their own right':
+                sorted(p for p in deactivated if p in (206,)),
+            'adult withdraws, child deactivated at the withdrawal date':
+                sorted(p for p in deactivated if deactivated[p] == '2020-01-01'
+                      ),
+            'adult deactivates, child deactivated at that date':
+                sorted(p for p in deactivated
+                       if deactivated[p] == '2020-06-01' and p >= 200),
+            'adult deactivates in their own right, unchanged behaviour':
+                sorted(p for p in deactivated if p < 200),
+        }
+        self.assertEqual(
+            acted_on['pediatric participant deactivates in their '
+                     'own right'], [206])
+        self.assertEqual(
+            acted_on['adult withdraws, child deactivated at the withdrawal '
+                     'date'], [201, 207])
+        self.assertEqual(
+            acted_on['adult deactivates, child deactivated at that date'],
+            [202, 203, 204])
+        self.assertEqual(
+            acted_on['adult deactivates in their own right, unchanged '
+                     'behaviour'], [102, 103])
+        for event, cohort in acted_on.items():
+            self.assertTrue(cohort, f'no participant acted on for: {event}')

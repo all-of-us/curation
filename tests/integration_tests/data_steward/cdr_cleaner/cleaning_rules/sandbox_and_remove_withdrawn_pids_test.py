@@ -149,13 +149,17 @@ FACT_RELATIONSHIP_TEMPLATE = JINJA_ENV.from_string("""
         (56, 102, 56, 203, 4032151),
         -- 210 is in the 7-17 band, so this is not a CT+ pediatric pair. --
         (56, 103, 56, 210, 4326600),
+        -- 210 is 7-17 and so cannot consent for anyone. A sibling relationship --
+        -- to 0-6 participant 201 must not make them 201's guardian, which is --
+        -- what an anti-join restricted to the 0-6 band would have allowed. --
+        (56, 210, 56, 201, 4218412),
         -- 999 is not in the cohort lookup at all. --
         (56, 104, 56, 999, 4326600),
         -- Natural Sibling is symmetric and both sides are pediatric, so the --
         -- relationship concept alone cannot tell them apart. Not a pair. --
         (56, 203, 56, 220, 4218412),
-        -- Blood relative is not one of the adult link relationships. --
-        (56, 105, 56, 201, 4053608),
+        -- Not a family relationship concept at all, so not a pair. --
+        (56, 105, 56, 201, 0),
         -- A self reference is never a pair. --
         (56, 201, 56, 201, 4326600),
         -- A measurement to observation row, which this query must ignore. --
@@ -232,9 +236,17 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         cls.fq_sandbox_table_names.append(cls.fq_links_table)
 
         # `fact_relationship` supplies the adult to pediatric pairs. It carries no
-        # `person_id` column, so the removal never touches it.
+        # `person_id` column, so the removal never touches it. This one does have
+        # a schema file, so the base class can create it.
         cls.fq_table_names.append(
             f'{cls.project_id}.{cls.dataset_id}.{FACT_RELATIONSHIP}')
+
+        # Created and dropped by this class rather than by the base class,
+        # because neither has a schema file to resolve.
+        cls.fq_withdrawn_dups_table = (
+            f'{cls.project_id}.{cls.dataset_id}.{cls.withdrawn_dups_table}')
+        cls.fq_under18_table = (f'{cls.project_id}.{cls.sandbox_id}.'
+                                f'{UNDER18_PARTICIPANTS_LOOKUP_TABLE}')
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
@@ -245,10 +257,15 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
-        # Create a temp lookup_table in rdr dataset for testing
-        lookup_table_name = f'{self.project_id}.{self.dataset_id}.{self.withdrawn_dups_table}'
-        self.client.create_table(Table(lookup_table_name, LOOKUP_TABLE_SCHEMA))
-        self.fq_table_names.append(lookup_table_name)
+        # Neither of these two fixture tables has a schema file, and
+        # `BaseTest.setUp` resolves every name in `fq_table_names` through
+        # `resources.fields_for`, which raises on a name it cannot find. So they
+        # are created here and dropped in `tearDown` instead of being added to
+        # that list. `fq_table_names` is a class attribute, so appending to it
+        # also leaks across test methods.
+        self.client.create_table(Table(self.fq_withdrawn_dups_table,
+                                       LOOKUP_TABLE_SCHEMA),
+                                 exists_ok=True)
 
         # Build temp records lookup table query
         lookup_table_query = LOOKUP_TABLE_TEMPLATE.render(
@@ -256,13 +273,10 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             dataset_id=self.dataset_id,
             lookup_table=self.withdrawn_dups_table)
 
-        # Create the pediatric cohort lookup, which is written by
-        # FlagParticipantsUnder18Years at this same stage rather than by this rule
-        under18_table_name = (f'{self.project_id}.{self.sandbox_id}.'
-                              f'{UNDER18_PARTICIPANTS_LOOKUP_TABLE}')
-        self.client.create_table(Table(under18_table_name, UNDER18_SCHEMA),
+        # The pediatric cohort lookup, written by FlagParticipantsUnder18Years at
+        # this same stage rather than by this rule.
+        self.client.create_table(Table(self.fq_under18_table, UNDER18_SCHEMA),
                                  exists_ok=True)
-        self.fq_table_names.append(under18_table_name)
 
         under18_query = UNDER18_TEMPLATE.render(
             project_id=self.project_id,
@@ -288,6 +302,15 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         # Load test data
         self.load_test_data([lookup_table_query] + table_test_queries)
 
+    def tearDown(self):
+        """
+        Drop the two fixture tables that are deliberately absent from
+        `fq_table_names`, so the next test method starts clean.
+        """
+        for fq_table in [self.fq_withdrawn_dups_table, self.fq_under18_table]:
+            self.client.delete_table(fq_table, not_found_ok=True)
+        super().tearDown()
+
     def test_pediatric_guardian_links_are_derived(self):
         """
         The rule resolves the adult to pediatric pairs while `fact_relationship`
@@ -299,7 +322,7 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
                 f'SELECT COUNT(*) AS n FROM '
                 f'`{self.project_id}.{self.dataset_id}.{FACT_RELATIONSHIP}`').
             result())[0].n
-        self.assertEqual(loaded, 9,
+        self.assertEqual(loaded, 10,
                          'the fact_relationship fixture did not load')
 
         # Runs the rule with no per-table expectations; the pairs lookup is what
@@ -312,11 +335,17 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
                 FROM `{self.fq_links_table}`
             """).result())
 
-        # 103 to 210 is outside the 0-6 band, 104 to 999 is not in the cohort,
-        # 203 to 220 is a symmetric sibling relationship between two pediatric
-        # participants, 105 to 201 is not an adult link relationship, 201 to 201
+        # 103 to 210 puts a 7-17 participant on the child side, 210 to 201 puts
+        # one on the adult side, 104 to 999 is not in the cohort, 203 to 220 is
+        # a sibling relationship between two pediatric participants, 201 to 201
         # is a self reference, and the 21 to 27 row is not person to person.
+        # None of them is a pair.
         self.assertEqual(pairs, [(101, 201), (101, 202), (102, 203)])
+
+        # Stated separately because it is the case a band-restricted anti-join
+        # would have got wrong: a 17 year old sibling is in the lookup, so they
+        # are not eligible to be anyone's guardian.
+        self.assertNotIn((210, 201), pairs)
 
     def test_sandbox_and_remove_pids_list(self):
         """

@@ -102,13 +102,14 @@ all_deactivations AS (
     FROM derived_deactivations
 )
 /* One row per participant. A pediatric participant reachable by more than one
-   route keeps the earliest date, so the most protective cut-off wins. The
-   COALESCE keeps a status when every candidate date is NULL, which is what the
-   unaggregated query used to return. */
+   route keeps the earliest date, so the most protective cut-off wins, and the
+   status reported is the one belonging to that date. A group whose every
+   candidate date is NULL yields NULL here and fails the load on the required
+   `deactivated_datetime` column, which is the pre-existing behaviour. */
 SELECT
     person_id,
-    COALESCE(ANY_VALUE(suspension_status HAVING MIN deactivated_datetime),
-             ANY_VALUE(suspension_status)) AS suspension_status,
+    ANY_VALUE(suspension_status HAVING MIN deactivated_datetime)
+        AS suspension_status,
     MIN(deactivated_datetime) AS deactivated_datetime
 FROM all_deactivations
 GROUP BY person_id
@@ -407,13 +408,29 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
 
         derived = df[df['suspension_status'].astype(str).str.startswith(
             'deactivated_by_linked_adult_')] if not df.empty else df
+        pairs = list(
+            client.query(f"""
+                SELECT COUNT(*) AS n
+                FROM `{self.project_id}.{self.rdr_sandbox_dataset_id}"""
+                         f""".{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}`
+            """).result())[0].n
+
         LOGGER.info(
             f"`{self.destination_table}` will hold {len(df)} deactivated "
             f"participants, {len(derived)} of them pediatric participants "
-            f"deactivated by a linked adult. A zero pediatric count means the "
-            f"cascade was not evaluated, not that it found nothing to do: check "
-            f"`{self.rdr_sandbox_dataset_id}."
-            f"{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}` is populated.")
+            f"deactivated by a linked adult, resolved from {pairs} adult to "
+            f"pediatric pairs.")
+
+        if not pairs:
+            LOGGER.warning(
+                f"`{self.rdr_sandbox_dataset_id}."
+                f"{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}` is empty, so the "
+                f"pediatric cascade was not evaluated at all. This is not the "
+                f"same as evaluating it and finding nothing to do.")
+        elif not len(derived):
+            LOGGER.info(
+                f"The pediatric cascade was evaluated against {pairs} pairs "
+                f"and found no linked adult with a lifecycle event.")
 
         # To store dataframe in a BQ dataset table named _deactivated_participants
         psr.store_participant_data(df, client, self.destination_table)
