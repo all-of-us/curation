@@ -9,7 +9,7 @@
         "type": "STRING",
         "name": "suspension_status",
         "mode": "required",
-        "description": "The status of suspension for a participant. Enumerated values: NOT_SUSPENDED and NO_CONTACT"
+        "description": "The status of suspension for a participant, as supplied by the participant summary, or the reason a linked adult's lifecycle event deactivated this participant. Supplied values include NOT_SUSPENDED and NO_CONTACT; derived values are deactivated_by_linked_adult_withdrawal and deactivated_by_linked_adult_deactivation"
     },
     {
         "type": "TIMESTAMP",

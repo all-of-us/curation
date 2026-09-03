@@ -16,7 +16,8 @@ import logging
 from pandas import DataFrame
 
 # Project imports
-from common import AOU_DEATH, FITBIT_TABLES, JINJA_ENV, PS_API_VALUES
+from common import (AOU_DEATH, FITBIT_TABLES, JINJA_ENV,
+                    PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE, PS_API_VALUES)
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import utils.participant_summary_requests as psr
 from google.cloud.bigquery import Table
@@ -35,19 +36,83 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 
 # For reference
 DEACTIVATION_ISSUE_NUMBERS = ['DC686', 'DC1184', 'DC1799']
-ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129', 'DC2631', 'DC3164']
+ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129', 'DC2631', 'DC3164', 'DL2486']
 
 #INSERT INTO `{{project}}.{{dataset}}.{{deactivated_participants}}`
 #    (
 #    person_id, suspension_status, deactivated_datetime
 #    )
 POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY = JINJA_ENV.from_string("""
+WITH ps AS (
+    SELECT
+        person_id,
+        suspension_status,
+        suspension_time,
+        withdrawal_status,
+        withdrawal_time
+    FROM `{{project}}.{{drc_ops}}.{{ps_awardee_values_view}}`
+),
+own_deactivations AS (
+    /* Unchanged: a participant deactivated in their own right, whatever their age. */
+    SELECT
+        person_id,
+        suspension_status,
+        suspension_time AS deactivated_datetime
+    FROM ps
+    WHERE suspension_status <> 'not_deactivated'
+),
+adult_events AS (
+    /* A lifecycle event on an adult that a linked pediatric participant inherits
+       as a deactivation. Keyed on the participant summary rather than on the RDR
+       withdrawals list: that list is a removal list rather than a withdrawal
+       list, and half of it is marked NOT_WITHDRAWN and carries no date. */
+    SELECT
+        person_id,
+        withdrawal_time AS event_datetime,
+        'deactivated_by_linked_adult_withdrawal' AS derived_status
+    FROM ps
+    WHERE withdrawal_status <> 'not_withdrawn'
+      AND withdrawal_time IS NOT NULL
+    UNION ALL
+    SELECT
+        person_id,
+        suspension_time,
+        'deactivated_by_linked_adult_deactivation'
+    FROM ps
+    WHERE suspension_status <> 'not_deactivated'
+      AND suspension_time IS NOT NULL
+),
+derived_deactivations AS (
+    SELECT
+        links.pediatric_person_id AS person_id,
+        adult_events.derived_status AS suspension_status,
+        adult_events.event_datetime AS deactivated_datetime
+    FROM `{{project}}.{{rdr_sandbox_dataset}}.{{pediatric_links_table}}` AS links
+    JOIN adult_events
+        ON adult_events.person_id = links.adult_person_id
+),
+all_deactivations AS (
+    /* Columns are listed rather than starred: UNION ALL matches on position, so
+       a column added to one branch and not the other would misalign silently
+       wherever the types happen to agree. */
+    SELECT person_id, suspension_status, deactivated_datetime
+    FROM own_deactivations
+    UNION ALL
+    SELECT person_id, suspension_status, deactivated_datetime
+    FROM derived_deactivations
+)
+/* One row per participant. A pediatric participant reachable by more than one
+   route keeps the earliest date, so the most protective cut-off wins, and the
+   status reported is the one belonging to that date. A group whose every
+   candidate date is NULL yields NULL here and fails the load on the required
+   `deactivated_datetime` column, which is the pre-existing behaviour. */
 SELECT
     person_id,
-    suspension_status,
-    suspension_time AS deactivated_datetime
-FROM `{{project}}.{{drc_ops}}.{{ps_awardee_values_view}}`
-WHERE suspension_status <> 'not_deactivated'
+    ANY_VALUE(suspension_status HAVING MIN deactivated_datetime)
+        AS suspension_status,
+    MIN(deactivated_datetime) AS deactivated_datetime
+FROM all_deactivations
+GROUP BY person_id
 """)
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
@@ -135,6 +200,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
+                 rdr_sandbox_dataset_id,
                  table_namer=None,
                  rdr_dataset_id=None,
                  api_project_id=None):
@@ -145,6 +211,19 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         may affect this SQL, append them to the list of Jira Issues.
 
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+
+        `rdr_sandbox_dataset_id` is the RDR stage sandbox, which is where the
+        adult to pediatric pairs are written. It is deliberately declared with no
+        default, unlike `rdr_dataset_id` and `api_project_id`: `get_custom_kwargs`
+        raises only for a parameter that has none, and a default would let this
+        rule construct with no linkage and cascade to nobody. It is not the same
+        thing as `rdr_dataset_id`, which is the RDR dataset itself.
+
+        It sits ahead of `table_namer` rather than after `api_project_id` because
+        a parameter with no default cannot follow one that has a default, and
+        because `reporter.get_stage_elements` instantiates every rule with
+        positional arguments, so a keyword-only parameter would break the report
+        for every rule in the combined and fitbit stages.
         """
         desc = (
             'Sandbox and drop records dated after the date of deactivation for participants'
@@ -164,6 +243,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
                          table_namer=table_namer)
         self.api_project_id = api_project_id
         self.rdr_dataset = rdr_dataset_id
+        self.rdr_sandbox_dataset_id = rdr_sandbox_dataset_id
         self.destination_table = (f'{self.project_id}.{self.sandbox_dataset_id}'
                                   f'.{DEACTIVATED_PARTICIPANTS}')
         self.deact_table_ref = gbq.TableReference.from_string(
@@ -320,9 +400,37 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
             dataset=self.dataset_id,
             drc_ops='drc_ops',
             deactivated_participants=DEACTIVATED_PARTICIPANTS,
-            ps_awardee_values_view='ps_awardee_values_view')
+            ps_awardee_values_view='ps_awardee_values_view',
+            rdr_sandbox_dataset=self.rdr_sandbox_dataset_id,
+            pediatric_links_table=PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE)
         query_job = client.query(q)
         df = query_job.result().to_dataframe()
+
+        derived = df[df['suspension_status'].astype(str).str.startswith(
+            'deactivated_by_linked_adult_')] if not df.empty else df
+        pairs = list(
+            client.query(f"""
+                SELECT COUNT(*) AS n
+                FROM `{self.project_id}.{self.rdr_sandbox_dataset_id}"""
+                         f""".{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}`
+            """).result())[0].n
+
+        LOGGER.info(
+            f"`{self.destination_table}` will hold {len(df)} deactivated "
+            f"participants, {len(derived)} of them pediatric participants "
+            f"deactivated by a linked adult, resolved from {pairs} adult to "
+            f"pediatric pairs.")
+
+        if not pairs:
+            LOGGER.warning(
+                f"`{self.rdr_sandbox_dataset_id}."
+                f"{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}` is empty, so the "
+                f"pediatric cascade was not evaluated at all. This is not the "
+                f"same as evaluating it and finding nothing to do.")
+        elif not len(derived):
+            LOGGER.info(
+                f"The pediatric cascade was evaluated against {pairs} pairs "
+                f"and found no linked adult with a lifecycle event.")
 
         # To store dataframe in a BQ dataset table named _deactivated_participants
         psr.store_participant_data(df, client, self.destination_table)
@@ -382,6 +490,13 @@ if __name__ == '__main__':
         dest='api_project_id',
         help='Identifies the RDR project for participant summary API',
         required=True)
+    ext_parser.add_argument(
+        '--rdr_sandbox_dataset_id',
+        action='store',
+        dest='rdr_sandbox_dataset_id',
+        help=('Identifies the RDR stage sandbox holding the adult to pediatric '
+              'participant pairs'),
+        required=True)
     ARGS = ext_parser.parse_args()
 
     if ARGS.list_queries:
@@ -393,6 +508,7 @@ if __name__ == '__main__':
             [(RemoveParticipantDataPastDeactivationDate,)],
             api_project_id=ARGS.api_project_id,
             rdr_dataset_id=ARGS.rdr_dataset_id,
+            rdr_sandbox_dataset_id=ARGS.rdr_sandbox_dataset_id,
             table_namer='manual')
         for query in query_list:
             LOGGER.info(query)
@@ -405,4 +521,5 @@ if __name__ == '__main__':
             [(RemoveParticipantDataPastDeactivationDate,)],
             api_project_id=ARGS.api_project_id,
             rdr_dataset_id=ARGS.rdr_dataset_id,
+            rdr_sandbox_dataset_id=ARGS.rdr_sandbox_dataset_id,
             table_namer='manual')
