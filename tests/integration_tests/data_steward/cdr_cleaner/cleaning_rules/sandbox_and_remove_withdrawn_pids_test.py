@@ -10,7 +10,9 @@ from google.cloud.bigquery import Table
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, RDR_DATASET_ID, OBSERVATION, PERSON, AOU_DEATH
+from common import (AOU_DEATH, FACT_RELATIONSHIP, JINJA_ENV, OBSERVATION,
+                    PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE, PERSON,
+                    RDR_DATASET_ID, UNDER18_PARTICIPANTS_LOOKUP_TABLE)
 from cdr_cleaner.cleaning_rules.sandbox_and_remove_withdrawn_pids import SandboxAndRemoveWithdrawnPids
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -110,6 +112,56 @@ LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
         (403)
 """)
 
+UNDER18_SCHEMA = [{
+    "type": "integer",
+    "name": "person_id",
+    "mode": "nullable"
+}, {
+    "type": "integer",
+    "name": "age_at_consent",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "age_band",
+    "mode": "nullable"
+}]
+
+UNDER18_TEMPLATE = JINJA_ENV.from_string("""
+    INSERT INTO `{{project_id}}.{{sandbox_id}}.{{under18_table}}`
+        (person_id, age_at_consent, age_band)
+    VALUES
+        (201, 3, '0-6'),
+        (202, 5, '0-6'),
+        (203, 2, '0-6'),
+        (220, 4, '0-6'),
+        -- 210 is under 18 but outside the CT+ pediatric cohort. --
+        (210, 12, '7-17')
+""")
+
+FACT_RELATIONSHIP_TEMPLATE = JINJA_ENV.from_string("""
+    INSERT INTO `{{project_id}}.{{dataset_id}}.fact_relationship`
+        (domain_concept_id_1, fact_id_1, domain_concept_id_2, fact_id_2, relationship_concept_id)
+    VALUES
+        -- Adult 101 is linked to two pediatric participants. Both are pairs. --
+        (56, 101, 56, 201, 4326600),
+        (56, 101, 56, 202, 4311425),
+        -- Adult 102 is linked to one. --
+        (56, 102, 56, 203, 4032151),
+        -- 210 is in the 7-17 band, so this is not a CT+ pediatric pair. --
+        (56, 103, 56, 210, 4326600),
+        -- 999 is not in the cohort lookup at all. --
+        (56, 104, 56, 999, 4326600),
+        -- Natural Sibling is symmetric and both sides are pediatric, so the --
+        -- relationship concept alone cannot tell them apart. Not a pair. --
+        (56, 203, 56, 220, 4218412),
+        -- Blood relative is not one of the adult link relationships. --
+        (56, 105, 56, 201, 4053608),
+        -- A self reference is never a pair. --
+        (56, 201, 56, 201, 4326600),
+        -- A measurement to observation row, which this query must ignore. --
+        (21, 5, 27, 6, 4326600)
+""")
+
 LOOKUP_TABLE_SCHEMA = [{
     "type": "integer",
     "name": "person_id",
@@ -172,6 +224,18 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
                 f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_name)}'
             )
 
+        # The pairs lookup the rule now derives. It is created by the rule, so it
+        # belongs in the sandbox list, which is both cleaned up and asserted
+        # absent before the run.
+        cls.fq_links_table = (f'{cls.project_id}.{cls.sandbox_id}.'
+                              f'{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}')
+        cls.fq_sandbox_table_names.append(cls.fq_links_table)
+
+        # `fact_relationship` supplies the adult to pediatric pairs. It carries no
+        # `person_id` column, so the removal never touches it.
+        cls.fq_table_names.append(
+            f'{cls.project_id}.{cls.dataset_id}.{FACT_RELATIONSHIP}')
+
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
 
@@ -192,6 +256,22 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
             dataset_id=self.dataset_id,
             lookup_table=self.withdrawn_dups_table)
 
+        # Create the pediatric cohort lookup, which is written by
+        # FlagParticipantsUnder18Years at this same stage rather than by this rule
+        under18_table_name = (f'{self.project_id}.{self.sandbox_id}.'
+                              f'{UNDER18_PARTICIPANTS_LOOKUP_TABLE}')
+        self.client.create_table(Table(under18_table_name, UNDER18_SCHEMA),
+                                 exists_ok=True)
+        self.fq_table_names.append(under18_table_name)
+
+        under18_query = UNDER18_TEMPLATE.render(
+            project_id=self.project_id,
+            sandbox_id=self.sandbox_id,
+            under18_table=UNDER18_PARTICIPANTS_LOOKUP_TABLE)
+
+        fact_relationship_query = FACT_RELATIONSHIP_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+
         # Build test data queries
         observation_records_query = OBSERVATION_TABLE_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
@@ -202,11 +282,41 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
 
         table_test_queries = [
             observation_records_query, person_records_query,
-            aou_death_records_query
+            aou_death_records_query, under18_query, fact_relationship_query
         ]
 
         # Load test data
         self.load_test_data([lookup_table_query] + table_test_queries)
+
+    def test_pediatric_guardian_links_are_derived(self):
+        """
+        The rule resolves the adult to pediatric pairs while `fact_relationship`
+        and the cohort lookup are both in reach, because the later stages that
+        consume them carry neither table.
+        """
+        loaded = list(
+            self.client.query(
+                f'SELECT COUNT(*) AS n FROM '
+                f'`{self.project_id}.{self.dataset_id}.{FACT_RELATIONSHIP}`').
+            result())[0].n
+        self.assertEqual(loaded, 9,
+                         'the fact_relationship fixture did not load')
+
+        # Runs the rule with no per-table expectations; the pairs lookup is what
+        # this test asserts on.
+        self.default_test([])
+
+        pairs = sorted((row.adult_person_id, row.pediatric_person_id)
+                       for row in self.client.query(f"""
+                SELECT adult_person_id, pediatric_person_id
+                FROM `{self.fq_links_table}`
+            """).result())
+
+        # 103 to 210 is outside the 0-6 band, 104 to 999 is not in the cohort,
+        # 203 to 220 is a symmetric sibling relationship between two pediatric
+        # participants, 105 to 201 is not an adult link relationship, 201 to 201
+        # is a self reference, and the 21 to 27 row is not person to person.
+        self.assertEqual(pairs, [(101, 201), (101, 202), (102, 203)])
 
     def test_sandbox_and_remove_pids_list(self):
         """

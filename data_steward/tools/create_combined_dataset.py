@@ -60,6 +60,13 @@ def parse_combined_args(raw_args=None):
                         dest='api_project_id',
                         required=True,
                         help='Name of the Participant summary API project.')
+    parser.add_argument(
+        '--rdr_sandbox_dataset_id',
+        action='store',
+        dest='rdr_sandbox_dataset_id',
+        required=True,
+        help=('RDR stage sandbox holding the adult to pediatric '
+              'participant pairs.'))
     parser.add_argument('-l',
                         '--console_log',
                         dest='console_log',
@@ -151,6 +158,8 @@ def main(raw_args=None):
         args.ehr_dataset_id,
         '--api_project_id',
         args.api_project_id,
+        '--rdr_sandbox_dataset_id',
+        args.rdr_sandbox_dataset_id,
         '--ehr_duplicates_dataset',
         args.ehr_duplicates_dataset,
         '--ehr_duplicates_table',

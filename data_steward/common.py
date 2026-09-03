@@ -307,6 +307,10 @@ AIAN_LIST = 'aian_list'
 
 UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
 
+# Adult to pediatric participant pairs, derived once at the RDR stage and read by
+# the later stages, which do not all carry `fact_relationship`.
+PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE = '_pediatric_guardian_links'
+
 # Participant Summary
 EHR_OPS = 'ehr_ops'
 DRC_OPS = 'drc_ops'
