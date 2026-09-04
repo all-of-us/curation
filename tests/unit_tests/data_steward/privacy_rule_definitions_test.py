@@ -6,6 +6,7 @@ definitions file names no label the CSVs do not use.
 Original Issue: DL-2494
 """
 import csv
+import re
 import unittest
 
 import resources
@@ -24,6 +25,12 @@ DEFINITION_COLUMNS = [
     'privacy_rule', 'data_type', 'definition', 'publicly_reportable',
     'source_ticket'
 ]
+
+# The two enums the folder README documents. Kept here so a typo such as 'ehr'
+# or 'Yes' fails rather than quietly widening the vocabulary.
+DATA_TYPES = {'EHR', 'PPI'}
+PUBLICLY_REPORTABLE = {'yes', 'no', 'not stated'}
+TICKET_PATTERN = re.compile(r'^(?:DC|DL|DST|EDQ)-\d+$')
 
 
 def read_csv(path):
@@ -96,3 +103,27 @@ class PrivacyRuleDefinitionsTest(unittest.TestCase):
                 self.assertTrue(
                     row[column].strip(), f'{column} is empty for privacy_rule '
                     f'{row["privacy_rule"]!r}')
+
+    def test_data_type_vocabulary(self):
+        found = {row['data_type'] for row in self.definitions}
+        self.assertEqual(
+            set(), found - DATA_TYPES,
+            f'data_type values outside {sorted(DATA_TYPES)}: '
+            f'{sorted(found - DATA_TYPES)}')
+
+    def test_publicly_reportable_vocabulary(self):
+        found = {row['publicly_reportable'] for row in self.definitions}
+        self.assertEqual(
+            set(), found - PUBLICLY_REPORTABLE,
+            f'publicly_reportable values outside {sorted(PUBLICLY_REPORTABLE)}: '
+            f'{sorted(found - PUBLICLY_REPORTABLE)}')
+
+    def test_source_ticket_is_a_ticket_tag(self):
+        malformed = sorted({
+            row['source_ticket']
+            for row in self.definitions
+            if not TICKET_PATTERN.match(row['source_ticket'])
+        })
+        self.assertEqual([], malformed,
+                         f'source_ticket values that are not a ticket tag: '
+                         f'{malformed}')
