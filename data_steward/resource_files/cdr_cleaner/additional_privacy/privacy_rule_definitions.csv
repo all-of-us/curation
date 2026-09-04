@@ -1,0 +1,44 @@
+privacy_rule,data_type,definition,publicly_reportable,source_ticket
+,EHR,"Not a category. Five ICD9CM rows carried with no category label: multiparity (V61.5), observation following accident at work and following other accident (V71.3, V71.4), and counseling for parent-foster child and parent-adopted child problems (V61.24, V61.25). The last two are family-dynamics codes for which neither source workbook defines a category.",not stated,DC-3812
+06apr20 NIH List,EHR,"Not a category. A dated cross-category list delivered by NIH on 2020-04-06 whose 34 concepts span motor vehicle accident, assault, perinatal and newborn subject matter. It is kept under its own label to preserve the provenance of that delivery, not because it names a distinct topic.",not stated,DC-3772
+Assault/Homicide,EHR,"Assault and abuse suppressed retroactively: victim of sexual aggression, and observation and evaluation for suspected abuse and neglect.",yes,DC-3812
+Free Text,PPI,"Survey questions whose answer is participant-entered free text. The shipped rows are 'Please specify' follow-ups on COPE, CDC COVID and Everyday Discrimination items, plus two free-text boxes naming an organ and a tissue.",not stated,DC-3812
+Gender/Sex,EHR,"Conditions revealing intersex status or a difference of sex development, and gender identity conditions, coded in ICD10CM and SNOMED.",no,DC-3812
+Geolocation,PPI,"The SpectrumHealthSitePairing survey item, whose answer identifies the participant's recruitment site and therefore their approximate location.",no,DC-3812
+Legal Intervention,EHR,"Legal and custody circumstances: children in foster or welfare custody, family disruption due to divorce or legal separation, and examination for medicolegal reasons. Despite the shared name, this covers legal process and custody, not injury inflicted by law enforcement, which is what legal_intervention and legal.csv cover.",yes,DC-3812
+Liveborn infants,EHR,"Low birth weight status of a liveborn infant, banded by birth weight. Three bands ship: V21.31, V21.33 and V21.35.",yes,DC-3812
+Living situation,EHR,Family living circumstances. The single code is family disruption due to the return of a family member from military deployment (V61.02).,no,DC-3812
+Perinatal (including birth trauma),EHR,"Supervision of high-risk pregnancy on account of prior abortion or grand multiparity, and lower uterine segment cesarean section.",no,DC-3812
+Suicide,EHR,Suicide and self-inflicted injury by crashing of a motor vehicle (E958.5).,yes,DC-3812
+abortion,EHR,"Abortion and termination of pregnancy: spontaneous, induced, illegally induced and failed attempts, their complications, and the procedures and DRGs that record them.",not stated,DC-3979
+assault/homicide,EHR,"Assault, homicide and maltreatment recorded on the participant's own record: confirmed and suspected child and adult abuse and neglect, personal history of abuse, and counseling following abuse.",yes,DC-3749
+assault.csv,EHR,"Assault and homicide external-cause codes, including the perpetrator-of-abuse codes that name the perpetrator's relationship to the participant, and late effects of purposely inflicted injury.",yes,DC-3772
+birth.csv,EHR,"Birth outcome codes recording single and multiple births, the place of birth, the mode of delivery, and whether each mate of a multiple birth was liveborn or stillborn.",not stated,DC-3772
+date of birth,EHR,"The participant's date of birth recorded as a coded observation (LOINC 21112-8, SNOMED 184099003).",yes,DC-3979
+delivery-proc.csv,EHR,"Obstetric delivery procedures: forceps and vacuum-assisted delivery, breech extraction, internal and external version, episiotomy, and replacement of a prolapsed umbilical cord.",not stated,DC-3772
+drowning.csv,EHR,"Drowning and submersion, whether accidental, self-inflicted or of undetermined intent, including submersion during water sports and in domestic settings.",yes,DC-3772
+free text,EHR,Coded slots whose recorded value is free text rather than a coded answer.,not stated,DC-3979
+legal.csv,EHR,"Injury due to legal intervention by law enforcement, including late effects. The supplied list also carries terrorism codes, which overlap terrorism.csv.",yes,DC-3772
+legal_intervention,EHR,"Injury due to legal intervention by law enforcement. The supplied list also carries illegally induced abortion codes (ICD9CM 636.x), which overlap abortion.",yes,DC-3749
+liveborn,EHR,"Pregnancy, childbirth and the puerperium as a whole: complications of pregnancy and delivery (ICD9CM 630 to 679, ICD10CM chapter O), delivery encounters and liveborn birth observations, delivery procedures, and delivery DRGs. The largest label in the set at over a thousand concepts, and considerably broader than its name suggests.",not stated,DC-3979
+liveborn_infants,EHR,Liveborn infant as the outcome of delivery recorded as a coded condition.,yes,DC-3749
+location,EHR,Place of occurrence of an external cause of injury (ICD10CM Y92.x) together with the care setting in which an encounter took place.,no,DC-3749
+military.csv,EHR,"Injury due to war operations and military weapons, including injury by explosives, firearms, nuclear, chemical and biological warfare, and injury occurring after cessation of hostilities.",yes,DC-3772
+military_operations,EHR,"Military service and deployment as a personal or family circumstance: deployment status, history of deployment, and family disruption caused by a family member's deployment or return. Distinct from military.csv, which is injury caused by war operations.",yes,DC-3749
+motor vehicle accident,EHR,"Motor vehicle accident circumstances recorded on the participant's own record: chiefly place of occurrence being a street, highway or transport vehicle (ICD10CM Y92.81x), plus motor vehicle exhaust gas poisoning.",yes,DC-3749
+multiples,EHR,"Multiple gestation and multiple birth: twin and higher-order pregnancy, preterm labour of a multiple pregnancy, grand multiparity, and pregnancy continuing after the death or elective reduction of one fetus.",not stated,DC-3979
+old_spreadsheet_list,EHR,"Not a category. Two ICD9CM general-symptom codes (780 general symptoms, 782 symptoms involving skin and other integumentary tissue) carried forward from a predecessor spreadsheet whose source is no longer recoverable.",not stated,DC-3772
+operations_of_war,EHR,Exposure to war and hostilities recorded as a social circumstance rather than as an injury.,yes,DC-3749
+perinatal,EHR,"Conditions originating in the perinatal period, including birth trauma, prematurity-related conditions, feeding problems of the newborn, and effects on the newborn of maternal exposures.",no,DC-3749
+perinatal.csv,EHR,"Perinatal conditions of the newborn: extreme immaturity and preterm birth banded by birth weight, birth asphyxia, fetal distress in a liveborn infant, and meconium staining.",no,DC-3772
+pregnancy,EHR,"Pregnancy status and supervision of pregnancy, including supervision on account of grand multiparity.",not stated,DC-3979
+space.csv,EHR,Prolonged stay in a weightless environment and the effects of weightlessness.,yes,DC-3772
+stillborn,EHR,Stillbirth and intrauterine fetal death.,not stated,DC-3979
+suffocation,EHR,Suffocation and asphyxiation recorded on the participant's own record.,yes,DC-3749
+suffocation.csv,EHR,"Suffocation, strangulation, hanging and asphyxiation, whether accidental, self-inflicted, inflicted by another or of undetermined intent.",yes,DC-3772
+suicide,EHR,Suicide and self-inflicted injury recorded on the participant's own record.,yes,DC-3749
+suicide.csv,EHR,"Suicide and self-inflicted injury and poisoning by all means, including late effects of self-inflicted injury.",yes,DC-3772
+terrorism,EHR,Terrorism recorded on the participant's own record.,yes,DC-3749
+terrorism.csv,EHR,"Terrorism by all means, its secondary effects, and late effects of injury due to terrorism and war operations.",yes,DC-3772
+unknown COD.csv,EHR,"Death from an unknown, unattended or ill-defined cause, including sudden infant death syndrome, instantaneous death, and death occurring within 24 hours of onset without other explanation.",not stated,DC-3772
+vehicle.csv,EHR,"Transport accidents: motor vehicle traffic and non-traffic accidents, and other road, water, air and off-road transport accidents, coded by the role of the injured party.",yes,DC-3772
