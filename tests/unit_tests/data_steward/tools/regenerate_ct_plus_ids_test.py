@@ -432,6 +432,61 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertLess(source.index('assert_person_ids_have_not_moved'),
                         source.index('Generating mapping tables'))
 
+    @staticmethod
+    def _linkage_client(in_count, out_count, exists=True):
+        client = mock.MagicMock()
+        client.table_exists.return_value = exists
+        client.query.return_value.result.return_value = [{
+            'in_count': in_count,
+            'out_count': out_count
+        }]
+        return client
+
+    def _assert_linkage_survived(self, client):
+        ct.assert_person_linkage_survived_the_remap(client, self.project_id,
+                                                    self.input_dataset_id,
+                                                    self.output_dataset_id)
+
+    def test_every_linkage_row_surviving_is_accepted(self):
+        self._assert_linkage_survived(self._linkage_client(2, 2))
+
+    def test_no_linkage_rows_leaves_the_check_inert(self):
+        """The state today: the export carries no person domain row."""
+        self._assert_linkage_survived(self._linkage_client(0, 0))
+
+    def test_a_dropped_linkage_row_stops_the_run(self):
+        """The participant is absent from the ids view, so _mapping_person has no row
+        and the NOT NULL filter removes the linkage record with no error."""
+        client = self._linkage_client(2, 1)
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self._assert_linkage_survived(client)
+
+        self.assertIn('kept 1 of 2', str(ctx.exception))
+
+    def test_missing_fact_relationship_skips_the_linkage_check(self):
+        client = self._linkage_client(0, 0, exists=False)
+
+        self._assert_linkage_survived(client)
+
+        client.query.assert_not_called()
+
+    def test_linkage_check_counts_the_person_domain_on_both_sides(self):
+        client = self._linkage_client(0, 0)
+
+        self._assert_linkage_survived(client)
+
+        q = client.query.call_args.args[0]
+        self.assertIn(f'domain_concept_id_1 = {ct.PERSON_DOMAIN_CONCEPT_ID}', q)
+        self.assertIn(f'domain_concept_id_2 = {ct.PERSON_DOMAIN_CONCEPT_ID}', q)
+
+    def test_linkage_check_runs_after_fact_relationship_is_loaded(self):
+        """It reads the output table, so it cannot precede the load loop."""
+        source = inspect.getsource(ct.main)
+        self.assertLess(
+            source.index('Loading table'),
+            source.index('assert_person_linkage_survived_the_remap'))
+
     def test_non_empty_output_dataset_stops_the_run(self):
         """main() drops every CDM table in the output dataset before loading."""
         client = mock.MagicMock()
