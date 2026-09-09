@@ -612,6 +612,12 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
     because the join is a LEFT JOIN under a NOT NULL filter, every person domain row
     would be dropped with no error rather than failing the run.
 
+    A person domain row is dropped just as quietly when _mapping_person simply holds no
+    row for the participant, which is the state of every pediatric participant while the
+    CT+ ids view stays capped at primary_pid_rid_mapping. The src_table_id above is what
+    makes the join reachable; assert_person_linkage_survived_the_remap() is what reports
+    the rows that were reachable and still found nothing.
+
     :param input_dataset_id: identifies dataset containing source data
     :param project_id: identifies the GCP project
     :param mapping_dataset_id: identifies the dataset where mapping tables are stored
@@ -665,6 +671,60 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
     WHERE fact_id_1 IS NOT NULL
       AND fact_id_2 IS NOT NULL
     '''
+
+
+def assert_person_linkage_survived_the_remap(client, project_id,
+                                             input_dataset_id,
+                                             output_dataset_id):
+    """
+    Stop the run if the remap dropped person domain fact_relationship rows.
+
+    A person domain row is an adult-child linkage record, and both of its fact ids are
+    person_ids resolved through _mapping_person. That mapping is built entirely from
+    the CT+ ids view, which inner joins pipeline_tables.primary_pid_rid_mapping and is
+    capped at its population. The view omits every pediatric participant today, so a
+    linkage row naming one finds no mapping row, resolves to NULL, and is removed by
+    the NOT NULL filter in fact_relationship_query() with no error.
+
+    That is the same failure the per domain src_table_id fixes, reached a different
+    way: one is a predicate that matches no row, this is a mapping that holds no row.
+    Neither raises on its own, because dropping unresolvable fact ids is what the
+    filter is for.
+
+    The check is inert while no linkage rows exist, since zero in is zero out. It fires
+    the first time linkage records are emitted against an ids view that does not cover
+    the participants they name.
+
+    :param client: BigQueryClient
+    :param project_id: identifies the GCP project
+    :param input_dataset_id: identifies the dataset the remap read
+    :param output_dataset_id: identifies the dataset the remap wrote
+    :raises RuntimeError: if fewer person domain rows came out than went in
+    """
+    if not (client.table_exists(FACT_RELATIONSHIP, input_dataset_id) and
+            client.table_exists(FACT_RELATIONSHIP, output_dataset_id)):
+        return
+
+    q = f'''
+    SELECT
+        (SELECT COUNT(*)
+         FROM `{project_id}.{input_dataset_id}.{FACT_RELATIONSHIP}`
+         WHERE domain_concept_id_1 = {PERSON_DOMAIN_CONCEPT_ID}
+            OR domain_concept_id_2 = {PERSON_DOMAIN_CONCEPT_ID}) AS in_count,
+        (SELECT COUNT(*)
+         FROM `{project_id}.{output_dataset_id}.{FACT_RELATIONSHIP}`
+         WHERE domain_concept_id_1 = {PERSON_DOMAIN_CONCEPT_ID}
+            OR domain_concept_id_2 = {PERSON_DOMAIN_CONCEPT_ID}) AS out_count
+    '''
+    row = list(client.query(q).result())[0]
+    in_count, out_count = row['in_count'], row['out_count']
+
+    if out_count < in_count:
+        raise RuntimeError(
+            f'{output_dataset_id}.{FACT_RELATIONSHIP} kept {out_count} of '
+            f'{in_count} person domain linkage rows. The missing rows name a '
+            f'participant the CT+ ids view does not cover, so _mapping_person '
+            f'holds no row for them and the remap dropped them silently.')
 
 
 def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
@@ -1279,6 +1339,12 @@ def main(input_dataset_id,
         load(bq_client, table_name, input_dataset_id, output_dataset_id,
              project_id, pipeline_dataset_id, ct_plus_ids_view,
              mapping_dataset_id, mapping_namespace)
+
+    # Refuse to finish having silently dropped adult-child linkage records. This has to
+    # come after the load loop that writes fact_relationship.
+    assert_person_linkage_survived_the_remap(bq_client, project_id,
+                                             input_dataset_id,
+                                             output_dataset_id)
 
     # Load Fitbit tables if they exist
     LOGGER.info('Processing Fitbit tables (if they exist)...')
