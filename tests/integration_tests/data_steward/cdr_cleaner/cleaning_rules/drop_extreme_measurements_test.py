@@ -8,12 +8,17 @@ DC-1211
 import os
 
 # Third party imports
+from google.cloud.exceptions import GoogleCloudError
 
 # Project Imports
 from app_identity import PROJECT_ID
+from cdr_cleaner import clean_cdr_engine as engine
 from common import JINJA_ENV, MEASUREMENT, PERSON
 from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+
+PEDIATRIC_PERSON_ID = 10
+PEDIATRIC_MEASUREMENT_IDS = [1000, 1001]
 
 EXTREME_MEASUREMENTS_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.measurement`
@@ -47,9 +52,27 @@ VALUES
     (504, 4, 3038553, '2023-01-01', '2023-01-01 04:00:00', 44818701, 20, 'bmi', 903124),
     -- Irrelevant concept. Not dropped --
     (999, 1, 903135, '2023-01-01', '2023-01-01 01:00:00', 44818701, 250, 'waist-circumference-mean', 903135),
-    -- Pediatric values outside adult ranges are not dropped. --
+    -- Pediatric. 50cm and 20kg are extreme for an adult and ordinary for an eight year old, so --
+    -- both rows match the value bounds and survive only because of the >= 18 age filter. --
     (1000, 10, 3036277, '2023-01-01', '2023-01-01 01:00:00', 44818701, 50, 'height', 903133),
     (1001, 10, 3025315, '2023-01-01', '2023-01-01 01:00:00', 44818701, 20, 'weight', 903121)
+""")
+
+# A height of 89cm is below the adult lower bound, so the value half of the sandbox
+# predicate is satisfied and the age filter has to be evaluated for this row.
+UNDATED_MEASUREMENT_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.measurement`
+(measurement_id, person_id, measurement_concept_id, measurement_date, measurement_datetime,
+measurement_type_concept_id, value_as_number, measurement_source_value, measurement_source_concept_id)
+VALUES
+    ({{measurement_id}}, {{person_id}}, 3036277, '2023-01-01', '2023-01-01 07:00:00', 44818701, 89, 'height', 903133)
+""")
+
+NULL_BIRTH_DATETIME_PERSON_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.person`
+(person_id, birth_datetime, year_of_birth, gender_concept_id, race_concept_id, ethnicity_concept_id)
+VALUES
+    (11, NULL, 1980, 0, 0, 0)
 """)
 
 PERSON_TEMPLATE = JINJA_ENV.from_string("""
@@ -113,6 +136,89 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
                                                  dataset_id=self.dataset_id)
 
         self.load_test_data([person_template, extreme_measurement_template])
+
+    def _measurement_ids(self, fq_table_name, where='TRUE'):
+        """
+        Return the measurement_ids in a table, ordered, so counts and membership
+        can both be asserted from one read.
+        """
+        query = (f'SELECT measurement_id FROM `{fq_table_name}` '
+                 f'WHERE {where} ORDER BY measurement_id')
+        return [row.measurement_id for row in self.client.query(query).result()]
+
+    def _run_rule(self):
+        engine.clean_dataset(self.project_id, self.dataset_id, self.sandbox_id,
+                             [(self.rule_instance.__class__,)], **self.kwargs)
+
+    def test_pediatric_measurements_are_not_dropped(self):
+        """
+        Test that pediatric rows are outside the rule, which is intended.
+
+        1000 and 1001 hold a height and a weight that fall outside the adult
+        bounds this rule enforces, and both belong to a participant born in 2015.
+        The age filter is the only thing keeping them, so they must still be in
+        measurement after the rule runs and must never reach the sandbox. The
+        fixture count is asserted first so a pass cannot come from an empty
+        fixture.
+        """
+        loaded = self._measurement_ids(self.fq_table_names[0],
+                                       f'person_id = {PEDIATRIC_PERSON_ID}')
+        self.assertEqual(loaded, PEDIATRIC_MEASUREMENT_IDS)
+
+        self._run_rule()
+
+        surviving = self._measurement_ids(self.fq_table_names[0],
+                                          f'person_id = {PEDIATRIC_PERSON_ID}')
+        self.assertEqual(surviving, PEDIATRIC_MEASUREMENT_IDS)
+
+        sandboxed = self._measurement_ids(self.fq_sandbox_table_names[0])
+        self.assertEqual([
+            measurement_id for measurement_id in sandboxed
+            if measurement_id in PEDIATRIC_MEASUREMENT_IDS
+        ], [])
+
+    def test_null_birth_datetime_aborts_the_rule(self):
+        """
+        Test the outcome for a participant whose birth_datetime is NULL.
+
+        person.birth_datetime is nullable and calculate_age raises rather than
+        returning NULL, so the rule aborts instead of skipping the row. This
+        pins that outcome: whoever changes it has to change this test too.
+        """
+        self.load_test_data([
+            NULL_BIRTH_DATETIME_PERSON_TEMPLATE.render(
+                project_id=self.project_id, dataset_id=self.dataset_id),
+            UNDATED_MEASUREMENT_TEMPLATE.render(project_id=self.project_id,
+                                                dataset_id=self.dataset_id,
+                                                measurement_id=1100,
+                                                person_id=11)
+        ])
+
+        with self.assertRaises(GoogleCloudError) as caught:
+            self._run_rule()
+
+        self.assertIn('date_of_birth cannot be NULL', str(caught.exception))
+
+    def test_measurement_without_a_person_row_aborts_the_rule(self):
+        """
+        Test the outcome for a measurement whose participant is absent from person.
+
+        person is reached through a LEFT JOIN, so an unmatched measurement carries
+        a NULL birth_datetime into calculate_age and aborts the rule for the same
+        reason a NULL column does, with the same message and no mention of the
+        participant or the rule.
+        """
+        self.load_test_data([
+            UNDATED_MEASUREMENT_TEMPLATE.render(project_id=self.project_id,
+                                                dataset_id=self.dataset_id,
+                                                measurement_id=1101,
+                                                person_id=12)
+        ])
+
+        with self.assertRaises(GoogleCloudError) as caught:
+            self._run_rule()
+
+        self.assertIn('date_of_birth cannot be NULL', str(caught.exception))
 
     def test_field_cleaning(self):
         """

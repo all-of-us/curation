@@ -6,6 +6,16 @@ Original Issues: DC-416, DC-701
 The intent of this cleaning rule is to delete zero/null/implausible height/weight rows
 and inserting normalized rows (cm and kg). This cleaning rule also expects `measurement_ext` table to be
 present in the dataset
+
+This rule runs at the registered tier and controlled tier deid_clean stages and reaches EHR-sourced height
+and weight rows, which is the only place those rows are checked for implausible values.
+
+Pediatric measurements are outside this rule on purpose. Every bound and every site median below is derived
+from an adult population, and a healthy child sits outside them, so each of the three blocks that reads a
+measurement is gated on `calculate_age(...) >= 18` and no row belonging to a participant under 18 is
+normalized, sandboxed or deleted. Growth-standard bounds for the pediatric population are a separate piece
+of work; until they exist, a pediatric row that would fail an adult bound stays present and checkable rather
+than being deleted.
 """
 
 # Python imports
@@ -181,6 +191,12 @@ WITH
     LEFT JOIN persons USING (person_id)
     LEFT JOIN sites USING (measurement_id)
     LEFT JOIN outlierHt_pts USING (person_id)
+    -- Adult-only by design: the height bounds and site medians below are adult ones, so participants --
+    -- under 18 are excluded here rather than normalized or dropped against limits that do not apply. --
+    -- This filter requires a birth date. calculate_age raises 'date_of_birth cannot be NULL' instead --
+    -- of returning NULL, and persons is reached through a LEFT JOIN, so a measurement whose --
+    -- participant is missing from person, or whose birth_datetime is NULL, aborts this rule rather --
+    -- than skipping the row. --
     WHERE {{pipeline_tables}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) >= 18
   ),
   -- Height disagreement: count == 2, sd > 10 --
@@ -365,6 +381,12 @@ WITH
     LEFT JOIN sites USING (measurement_id)
     LEFT JOIN outlierWt_pts_high USING (person_id)
     LEFT JOIN outlierWt_pts_low USING (person_id)
+    -- Adult-only by design: the weight bounds and site medians below are adult ones, so participants --
+    -- under 18 are excluded here rather than normalized or dropped against limits that do not apply. --
+    -- This filter requires a birth date. calculate_age raises 'date_of_birth cannot be NULL' instead --
+    -- of returning NULL, and persons is reached through a LEFT JOIN, so a measurement whose --
+    -- participant is missing from person, or whose birth_datetime is NULL, aborts this rule rather --
+    -- than skipping the row. --
     WHERE {{pipeline_tables}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) >= 18
   ),
   --3) Check medians by site, concept_id, unit_concept_id --
@@ -541,6 +563,12 @@ DROP_ROWS_QUERY = JINJA_ENV.from_string("""
     USING (person_id)
     WHERE m.measurement_concept_id IN ({{ids_to_drop}})
     AND REGEXP_CONTAINS(me.src_id, r'(?i)EHR site')
+    -- Adult-only by design: the rows queued for deletion were selected against adult bounds, so --
+    -- participants under 18 are excluded here and none of their rows are deleted. --
+    -- This filter requires a birth date. calculate_age raises 'date_of_birth cannot be NULL' instead --
+    -- of returning NULL, and person is reached through a LEFT JOIN, so a measurement whose --
+    -- participant is missing from person, or whose birth_datetime is NULL, aborts this rule rather --
+    -- than skipping the row. --
     AND {{pipeline_tables}}.calculate_age(
       m.measurement_date, EXTRACT(DATE FROM p.birth_datetime)) >= 18
   )

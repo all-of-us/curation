@@ -9,14 +9,24 @@ participant.
 
 This is expected to drop a very small number of rows (less than 300 total) based on values in the current CDR.
 
-Original Issue: DC-624 
+Pediatric measurements are outside this rule on purpose. The bounds below are adult bounds, and a healthy
+child sits outside every one of them, so the sandbox query is gated on `calculate_age(...) >= 18` and no row
+belonging to a participant under 18 is ever sandboxed or deleted. Growth-standard bounds for the pediatric
+population are a separate piece of work; until they exist, a pediatric row that would fail an adult bound
+stays present and checkable rather than being deleted.
+
+The rule is RDR-scoped (`affected_datasets=[cdr_consts.RDR]`), so it evaluates program-collected physical
+measurements only and never reaches EHR-sourced height, weight or BMI.
+
+Original Issue: DC-624
 """
 
 # Python Imports
 import logging
 
 # Project Imports
-from common import JINJA_ENV, MEASUREMENT, PIPELINE_TABLES
+from common import (BMI_SOURCE_CONCEPT_ID, HEIGHT_SOURCE_CONCEPT_ID, JINJA_ENV,
+                    MEASUREMENT, PIPELINE_TABLES, WEIGHT_SOURCE_CONCEPT_ID)
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.calculate_bmi import CalculateBmi
@@ -27,6 +37,11 @@ CREATE_SANDBOX = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
 SELECT m.* FROM `{{project}}.{{dataset}}.measurement` m
 LEFT JOIN `{{project}}.{{dataset}}.person` p USING (person_id)
+-- Adult-only by design: the bounds below are adult bounds, so participants under 18 are excluded here --
+-- rather than having their rows deleted against limits that do not apply to them. --
+-- This filter requires a birth date. calculate_age raises 'date_of_birth cannot be NULL' instead of --
+-- returning NULL, and person is reached through a LEFT JOIN, so a measurement whose participant is --
+-- missing from person, or whose birth_datetime is NULL, aborts this rule rather than skipping the row. --
 WHERE {{pipeline_tables}}.calculate_age(
     m.measurement_date, EXTRACT(DATE FROM p.birth_datetime)) >= 18
 AND (
@@ -36,48 +51,48 @@ AND (
             WITH extreme_heights AS (
                 SELECT person_id, measurement_type_concept_id, measurement_datetime
                 FROM `{{project}}.{{dataset}}.measurement`
-                WHERE measurement_source_concept_id = 903133 AND value_as_number NOT BETWEEN 90 AND 228
+                WHERE measurement_source_concept_id = {{height_concept_id}} AND value_as_number NOT BETWEEN 90 AND 228
             )
             SELECT 1 FROM extreme_heights
-            WHERE m.measurement_source_concept_id = 903124
+            WHERE m.measurement_source_concept_id = {{bmi_concept_id}}
             AND m.person_id = extreme_heights.person_id
             AND m.measurement_type_concept_id = extreme_heights.measurement_type_concept_id
             AND m.measurement_datetime = extreme_heights.measurement_datetime
         )
         -- select all extreme height --
-        OR (m.measurement_source_concept_id = 903133 AND m.value_as_number NOT BETWEEN 90 AND 228)
+        OR (m.measurement_source_concept_id = {{height_concept_id}} AND m.value_as_number NOT BETWEEN 90 AND 228)
     ) OR (
         -- select BMI row associated with extreme weight --
         EXISTS (
             WITH extreme_weights AS (
                 SELECT person_id, measurement_type_concept_id, measurement_datetime
                 FROM `{{project}}.{{dataset}}.measurement`
-                WHERE measurement_source_concept_id = 903121 AND value_as_number NOT BETWEEN 30 AND 250
+                WHERE measurement_source_concept_id = {{weight_concept_id}} AND value_as_number NOT BETWEEN 30 AND 250
             )
             SELECT 1 FROM extreme_weights
-            WHERE m.measurement_source_concept_id = 903124
+            WHERE m.measurement_source_concept_id = {{bmi_concept_id}}
             AND m.person_id = extreme_weights.person_id
             AND m.measurement_type_concept_id = extreme_weights.measurement_type_concept_id
             AND m.measurement_datetime = extreme_weights.measurement_datetime
         )
         -- select all extreme weight --
-        OR (m.measurement_source_concept_id = 903121 AND m.value_as_number NOT BETWEEN 30 AND 250)
+        OR (m.measurement_source_concept_id = {{weight_concept_id}} AND m.value_as_number NOT BETWEEN 30 AND 250)
     ) OR (
         -- select height & weight rows associated with extreme BMI --
         EXISTS (
             WITH extreme_bmi AS (
                 SELECT person_id, measurement_type_concept_id, measurement_datetime
                 FROM `{{project}}.{{dataset}}.measurement`
-                WHERE measurement_source_concept_id = 903124 AND value_as_number NOT BETWEEN 10 AND 125
+                WHERE measurement_source_concept_id = {{bmi_concept_id}} AND value_as_number NOT BETWEEN 10 AND 125
             )
             SELECT 1 FROM extreme_bmi
-            WHERE m.measurement_source_concept_id IN (903133, 903121)
+            WHERE m.measurement_source_concept_id IN ({{height_concept_id}}, {{weight_concept_id}})
             AND m.person_id = extreme_bmi.person_id
             AND m.measurement_type_concept_id = extreme_bmi.measurement_type_concept_id
             AND m.measurement_datetime = extreme_bmi.measurement_datetime
         )
         -- select all extreme BMI --
-        OR (m.measurement_source_concept_id = 903124 AND m.value_as_number NOT BETWEEN 10 AND 125)    
+        OR (m.measurement_source_concept_id = {{bmi_concept_id}} AND m.value_as_number NOT BETWEEN 10 AND 125)    
     )
 )
 )
@@ -134,7 +149,10 @@ class DropExtremeMeasurements(BaseCleaningRule):
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
                     sandbox_table=self.sandbox_table_for(MEASUREMENT),
-                    pipeline_tables=PIPELINE_TABLES)
+                    pipeline_tables=PIPELINE_TABLES,
+                    height_concept_id=HEIGHT_SOURCE_CONCEPT_ID,
+                    weight_concept_id=WEIGHT_SOURCE_CONCEPT_ID,
+                    bmi_concept_id=BMI_SOURCE_CONCEPT_ID)
         }
 
         delete_query = {

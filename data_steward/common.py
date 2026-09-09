@@ -229,6 +229,15 @@ CHILD_TO_PARENT_MEASUREMENT_CONCEPT_ID = 581437
 DIASTOLIC_TO_SYSTOLIC_CONCEPT_ID = 46233682
 SYSTOLIC_TO_DIASTOLIC_CONCEPT_ID = 46233683
 
+# PPI measurement source concepts for the program-collected physical measurements.
+# These are the ids the measurement cleaning rules key on, so they are named here
+# rather than repeated as literals: if a future RDR feed mints its own height,
+# weight or BMI concepts instead of reusing these, this is the single list that
+# changes, and every rule keyed on it stops matching at the same time.
+HEIGHT_SOURCE_CONCEPT_ID = 903133
+WEIGHT_SOURCE_CONCEPT_ID = 903121
+BMI_SOURCE_CONCEPT_ID = 903124
+
 LATEST_REPORTS_JSON = 'latest_reports.json'
 LATEST_RESULTS_JSON = 'latest_results.json'
 REPORT_FOR_ACHILLES = 'achilles'
