@@ -148,7 +148,13 @@ class RemoveEhrDataWithoutConsentTest(BaseTest.CleaningRulesTestBase):
         # Set the expected test datasets
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
-        cls.duplicates_dataset = 'duplicates_dataset'
+        # The EHR duplicates table must live outside cls.dataset_id so the rule is
+        # exercised across datasets, but the dataset name has to be unique per test
+        # run. A fixed name here is shared by every branch and every parallel CI
+        # container, and tearDown drops the table, so a concurrent run deletes this
+        # one's fixture mid-test. RDR_DATASET_ID already carries the branch and the
+        # container index, which is the isolation this needs.
+        cls.duplicates_dataset = os.environ.get('RDR_DATASET_ID')
         cls.duplicates_table = 'duplicates_table'
 
         cls.rule_instance = RemoveEhrDataWithoutConsent(
