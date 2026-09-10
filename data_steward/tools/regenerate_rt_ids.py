@@ -127,7 +127,9 @@ def mapping_query(table_name,
     :param append: if True, generate IDs that can be appended to an existing mapping table
     :return: the query
     """
-    # Special handling for person table - use existing mapping from pipeline_tables
+    # Special handling for person table - use existing mapping from pipeline_tables.
+    # The view no longer discards rows with a NULL research_id as a side effect of an
+    # inner join, so guard them here or they enter _mapping_person as a NULL person.
     if table_name == PERSON and pipeline_dataset_id:
         return f'''
         SELECT
@@ -135,6 +137,8 @@ def mapping_query(table_name,
             research_id AS src_person_id,
             registered_tier_id AS person_id
         FROM `{project_id}.{pipeline_dataset_id}.{rt_ids_view}`
+        WHERE research_id IS NOT NULL
+          AND registered_tier_id IS NOT NULL
         '''
 
     mapping_table = mapping_table_for(table_name)
