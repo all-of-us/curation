@@ -1,9 +1,9 @@
 concept_id,concept_code,privacy_rule,vocabulary_id,date_added,ct_plus_suppressed
-40213244,53,military_operations,cvx,2024-03-08,true
-45923856,126582,assault/homicide,ciel,2024-03-08,true
-2102032,1157F,legal_intervention,cpt4,2024-03-08,true
+40213244,53,military_operations,cvx,2024-03-08,false
+45923856,126582,assault/homicide,ciel,2024-03-08,false
+2102032,1157F,legal_intervention,cpt4,2024-03-08,false
 2721594,S9989,location,hcpcs,2024-03-08,true
-2721666,T2007,motor vehicle accident,hcpcs,2024-03-08,true
+2721666,T2007,motor vehicle accident,hcpcs,2024-03-08,false
 40771514,68989-3,location,loinc,2024-03-08,true
 40771522,68997-6,location,loinc,2024-03-08,true
 3041797,52532-9,location,loinc,2024-03-08,true
@@ -16,59 +16,59 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added,ct_plus_suppressed
 36305361,87720-9,location,loinc,2024-03-08,true
 40766239,63512-8,location,loinc,2024-03-08,true
 21492869,80431-0,location,loinc,2024-03-08,true
-37020140,91390-5,assault/homicide,loinc,2024-03-08,true
-40758409,55280-2,military_operations,loinc,2024-03-08,true
-44786929,74286-6,motor vehicle accident,loinc,2024-03-08,true
-44837772,V15.42,assault/homicide,icd9cm,2024-03-08,true
-44829474,995.52,assault/homicide,icd9cm,2024-03-08,true
-44832927,995.82,assault/homicide,icd9cm,2024-03-08,true
-44833141,V62.83,assault/homicide,icd9cm,2024-03-08,true
-44836610,V15.41,assault/homicide,icd9cm,2024-03-08,true
-44823647,995.85,assault/homicide,icd9cm,2024-03-08,true
-44831987,V61.11,assault/homicide,icd9cm,2024-03-08,true
-44831788,995.81,assault/homicide,icd9cm,2024-03-08,true
-44832925,995.59,assault/homicide,icd9cm,2024-03-08,true
-44831786,995.51,assault/homicide,icd9cm,2024-03-08,true
-44821603,V71.81,assault/homicide,icd9cm,2024-03-08,true
-44831789,995.84,assault/homicide,icd9cm,2024-03-08,true
-44828581,V61.1,assault/homicide,icd9cm,2024-03-08,true
-44821408,995.80,assault/homicide,icd9cm,2024-03-08,true
-44828342,995.50,assault/homicide,icd9cm,2024-03-08,true
-44835510,V61.21,assault/homicide,icd9cm,2024-03-08,true
-44820252,995.53,assault/homicide,icd9cm,2024-03-08,true
-44831785,995.5,assault/homicide,icd9cm,2024-03-08,true
-44834122,995.83,assault/homicide,icd9cm,2024-03-08,true
-44820392,V15.4,assault/homicide,icd9cm,2024-03-08,true
-44824838,995.54,assault/homicide,icd9cm,2024-03-08,true
-44824377,636.40,legal_intervention,icd9cm,2024-03-08,true
-44830204,636.91,legal_intervention,icd9cm,2024-03-08,true
-44833708,636.90,legal_intervention,icd9cm,2024-03-08,true
-44822074,636.20,legal_intervention,icd9cm,2024-03-08,true
-44827922,636.70,legal_intervention,icd9cm,2024-03-08,true
-44830203,636.50,legal_intervention,icd9cm,2024-03-08,true
-44821588,V61.03,legal_intervention,icd9cm,2024-03-08,true
-44834317,V61.01,military_operations,icd9cm,2024-03-08,true
-44831990,V62.2,military_operations,icd9cm,2024-03-08,true
-44822729,V61.0,military_operations,icd9cm,2024-03-08,true
-44826231,V61.02,military_operations,icd9cm,2024-03-08,true
-44822587,E885.0,motor vehicle accident,icd9cm,2024-03-08,true
-44822579,E868.2,motor vehicle accident,icd9cm,2024-03-08,true
-4319155,95877004,operations_of_war,snomed,2024-03-08,true
-443271,274912004,suicide,snomed,2024-03-08,true
-443279,287185009,suicide,snomed,2024-03-08,true
-4230638,88817006,suicide,snomed,2024-03-08,true
-443278,287181000,suicide,snomed,2024-03-08,true
-4076658,225048008,suicide,snomed,2024-03-08,true
-432810,219356008,suicide,snomed,2024-03-08,true
-439236,219335006,suicide,snomed,2024-03-08,true
-4053381,160333008,suicide,snomed,2024-03-08,true
-433107,219340003,suicide,snomed,2024-03-08,true
-440314,219336007,suicide,snomed,2024-03-08,true
-4075234,225049000,suicide,snomed,2024-03-08,true
-436892,219358009,suicide,snomed,2024-03-08,true
-436605,287186005,suicide,snomed,2024-03-08,true
-436878,219359001,suicide,snomed,2024-03-08,true
-434849,287184008,suicide,snomed,2024-03-08,true
+37020140,91390-5,assault/homicide,loinc,2024-03-08,false
+40758409,55280-2,military_operations,loinc,2024-03-08,false
+44786929,74286-6,motor vehicle accident,loinc,2024-03-08,false
+44837772,V15.42,assault/homicide,icd9cm,2024-03-08,false
+44829474,995.52,assault/homicide,icd9cm,2024-03-08,false
+44832927,995.82,assault/homicide,icd9cm,2024-03-08,false
+44833141,V62.83,assault/homicide,icd9cm,2024-03-08,false
+44836610,V15.41,assault/homicide,icd9cm,2024-03-08,false
+44823647,995.85,assault/homicide,icd9cm,2024-03-08,false
+44831987,V61.11,assault/homicide,icd9cm,2024-03-08,false
+44831788,995.81,assault/homicide,icd9cm,2024-03-08,false
+44832925,995.59,assault/homicide,icd9cm,2024-03-08,false
+44831786,995.51,assault/homicide,icd9cm,2024-03-08,false
+44821603,V71.81,assault/homicide,icd9cm,2024-03-08,false
+44831789,995.84,assault/homicide,icd9cm,2024-03-08,false
+44828581,V61.1,assault/homicide,icd9cm,2024-03-08,false
+44821408,995.80,assault/homicide,icd9cm,2024-03-08,false
+44828342,995.50,assault/homicide,icd9cm,2024-03-08,false
+44835510,V61.21,assault/homicide,icd9cm,2024-03-08,false
+44820252,995.53,assault/homicide,icd9cm,2024-03-08,false
+44831785,995.5,assault/homicide,icd9cm,2024-03-08,false
+44834122,995.83,assault/homicide,icd9cm,2024-03-08,false
+44820392,V15.4,assault/homicide,icd9cm,2024-03-08,false
+44824838,995.54,assault/homicide,icd9cm,2024-03-08,false
+44824377,636.40,legal_intervention,icd9cm,2024-03-08,false
+44830204,636.91,legal_intervention,icd9cm,2024-03-08,false
+44833708,636.90,legal_intervention,icd9cm,2024-03-08,false
+44822074,636.20,legal_intervention,icd9cm,2024-03-08,false
+44827922,636.70,legal_intervention,icd9cm,2024-03-08,false
+44830203,636.50,legal_intervention,icd9cm,2024-03-08,false
+44821588,V61.03,legal_intervention,icd9cm,2024-03-08,false
+44834317,V61.01,military_operations,icd9cm,2024-03-08,false
+44831990,V62.2,military_operations,icd9cm,2024-03-08,false
+44822729,V61.0,military_operations,icd9cm,2024-03-08,false
+44826231,V61.02,military_operations,icd9cm,2024-03-08,false
+44822587,E885.0,motor vehicle accident,icd9cm,2024-03-08,false
+44822579,E868.2,motor vehicle accident,icd9cm,2024-03-08,false
+4319155,95877004,operations_of_war,snomed,2024-03-08,false
+443271,274912004,suicide,snomed,2024-03-08,false
+443279,287185009,suicide,snomed,2024-03-08,false
+4230638,88817006,suicide,snomed,2024-03-08,false
+443278,287181000,suicide,snomed,2024-03-08,false
+4076658,225048008,suicide,snomed,2024-03-08,false
+432810,219356008,suicide,snomed,2024-03-08,false
+439236,219335006,suicide,snomed,2024-03-08,false
+4053381,160333008,suicide,snomed,2024-03-08,false
+433107,219340003,suicide,snomed,2024-03-08,false
+440314,219336007,suicide,snomed,2024-03-08,false
+4075234,225049000,suicide,snomed,2024-03-08,false
+436892,219358009,suicide,snomed,2024-03-08,false
+436605,287186005,suicide,snomed,2024-03-08,false
+436878,219359001,suicide,snomed,2024-03-08,false
+434849,287184008,suicide,snomed,2024-03-08,false
 4330840,224858000,location,snomed,2024-03-08,true
 4119859,257656006,location,snomed,2024-03-08,true
 4075636,223687006,location,snomed,2024-03-08,true
@@ -187,156 +187,156 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added,ct_plus_suppressed
 434705,198707009,perinatal,snomed,2024-03-08,true
 4296024,76799001,perinatal,snomed,2024-03-08,true
 441915,7802000,perinatal,snomed,2024-03-08,true
-439397,371704001,terrorism,snomed,2024-03-08,true
-440577,78523004,terrorism,snomed,2024-03-08,true
-37017129,713346006,terrorism,snomed,2024-03-08,true
-4316720,217120005,suffocation,snomed,2024-03-08,true
-4316721,217121009,suffocation,snomed,2024-03-08,true
-4151405,269795008,suffocation,snomed,2024-03-08,true
-4279614,66466001,suffocation,snomed,2024-03-08,true
-436589,217115005,suffocation,snomed,2024-03-08,true
-4074169,219365001,suffocation,snomed,2024-03-08,true
-4090129,281255004,suffocation,snomed,2024-03-08,true
-4312316,217118007,suffocation,snomed,2024-03-08,true
-4310775,217116006,suffocation,snomed,2024-03-08,true
-437449,397940009,assault/homicide,snomed,2024-03-08,true
-40479849,444557007,assault/homicide,snomed,2024-03-08,true
-45768441,706872008,assault/homicide,snomed,2024-03-08,true
-45763732,700229002,assault/homicide,snomed,2024-03-08,true
-4026164,225825002,assault/homicide,snomed,2024-03-08,true
-4279142,65367001,assault/homicide,snomed,2024-03-08,true
-36713088,288411000119107,assault/homicide,snomed,2024-03-08,true
-4150851,311465003,assault/homicide,snomed,2024-03-08,true
-437460,95922009,assault/homicide,snomed,2024-03-08,true
-436313,102458000,assault/homicide,snomed,2024-03-08,true
-43020449,237451000119100,assault/homicide,snomed,2024-03-08,true
-4208970,313215004,assault/homicide,snomed,2024-03-08,true
-45757173,10761061000119107,assault/homicide,snomed,2024-03-08,true
-439391,371778002,assault/homicide,snomed,2024-03-08,true
-438943,225826001,assault/homicide,snomed,2024-03-08,true
-4074047,219221007,assault/homicide,snomed,2024-03-08,true
-45765604,702579009,assault/homicide,snomed,2024-03-08,true
-443549,419916003,assault/homicide,snomed,2024-03-08,true
-762055,288331000119108,assault/homicide,snomed,2024-03-08,true
-4197467,313214000,assault/homicide,snomed,2024-03-08,true
-602337,12399371000119105,assault/homicide,snomed,2024-03-08,true
-4171711,42085001,assault/homicide,snomed,2024-03-08,true
-4163494,291838005,assault/homicide,snomed,2024-03-08,true
-46270374,29231000119109,assault/homicide,snomed,2024-03-08,true
-435131,95930005,assault/homicide,snomed,2024-03-08,true
-438043,225824003,assault/homicide,snomed,2024-03-08,true
-435151,371779005,assault/homicide,snomed,2024-03-08,true
-4208350,313070006,assault/homicide,snomed,2024-03-08,true
-4297375,386702006,assault/homicide,snomed,2024-03-08,true
-4197468,313216003,assault/homicide,snomed,2024-03-08,true
-4300517,78077007,assault/homicide,snomed,2024-03-08,true
-4153697,283545005,assault/homicide,snomed,2024-03-08,true
-4302066,418506006,assault/homicide,snomed,2024-03-08,true
-45757135,10756261000119102,assault/homicide,snomed,2024-03-08,true
-4236321,90774003,assault/homicide,snomed,2024-03-08,true
-4169278,418189009,assault/homicide,snomed,2024-03-08,true
-443256,276849007,assault/homicide,snomed,2024-03-08,true
-4026163,225818009,assault/homicide,snomed,2024-03-08,true
-4193573,313217007,assault/homicide,snomed,2024-03-08,true
-45757171,10760981000119107,assault/homicide,snomed,2024-03-08,true
-4058280,161472001,assault/homicide,snomed,2024-03-08,true
-46271794,710045002,assault/homicide,snomed,2024-03-08,true
-36684960,459521000124102,assault/homicide,snomed,2024-03-08,true
-43020429,149141000119102,assault/homicide,snomed,2024-03-08,true
-40482897,445272000,assault/homicide,snomed,2024-03-08,true
-4210749,56890008,assault/homicide,snomed,2024-03-08,true
-602338,12399411000119106,assault/homicide,snomed,2024-03-08,true
-441481,406137001,assault/homicide,snomed,2024-03-08,true
-4020158,213015009,assault/homicide,snomed,2024-03-08,true
-37204043,787209003,assault/homicide,snomed,2024-03-08,true
-40483738,443913008,assault/homicide,snomed,2024-03-08,true
-4172624,50084004,assault/homicide,snomed,2024-03-08,true
-4054939,243069004,assault/homicide,snomed,2024-03-08,true
-45757136,10756301000119105,assault/homicide,snomed,2024-03-08,true
-4061289,17044007,assault/homicide,snomed,2024-03-08,true
-45757172,10761021000119102,assault/homicide,snomed,2024-03-08,true
-4022125,225823009,assault/homicide,snomed,2024-03-08,true
-4318126,95921002,assault/homicide,snomed,2024-03-08,true
-44784256,698301002,assault/homicide,snomed,2024-03-08,true
-40481828,442084003,assault/homicide,snomed,2024-03-08,true
-4161447,371773006,assault/homicide,snomed,2024-03-08,true
-36684962,459541000124109,assault/homicide,snomed,2024-03-08,true
-43020450,237461000119103,assault/homicide,snomed,2024-03-08,true
-45757170,10760941000119102,assault/homicide,snomed,2024-03-08,true
-765389,288381000119109,assault/homicide,snomed,2024-03-08,true
-4305831,418715001,assault/homicide,snomed,2024-03-08,true
-4306655,419620001,assault/homicide,snomed,2024-03-08,true
-45768458,706893006,assault/homicide,snomed,2024-03-08,true
-436001,371774000,assault/homicide,snomed,2024-03-08,true
-37207733,293611000119101,assault/homicide,snomed,2024-03-08,true
-441364,80113008,assault/homicide,snomed,2024-03-08,true
-36684961,459531000124104,assault/homicide,snomed,2024-03-08,true
-36715173,720684005,assault/homicide,snomed,2024-03-08,true
-43021802,473453008,assault/homicide,snomed,2024-03-08,true
-4320042,95934001,assault/homicide,snomed,2024-03-08,true
-762058,288401000119109,assault/homicide,snomed,2024-03-08,true
-4113020,284607007,assault/homicide,snomed,2024-03-08,true
-4107655,284465006,assault/homicide,snomed,2024-03-08,true
-36713087,288391000119107,assault/homicide,snomed,2024-03-08,true
-4182566,429746005,assault/homicide,snomed,2024-03-08,true
-35625043,768011006,assault/homicide,snomed,2024-03-08,true
-4053113,160877008,assault/homicide,snomed,2024-03-08,true
-4278848,66190008,assault/homicide,snomed,2024-03-08,true
-4022124,225820007,assault/homicide,snomed,2024-03-08,true
-36717284,288371000119106,assault/homicide,snomed,2024-03-08,true
-4235695,406138006,assault/homicide,snomed,2024-03-08,true
-36715279,720824009,assault/homicide,snomed,2024-03-08,true
-762124,29221000119106,assault/homicide,snomed,2024-03-08,true
-43020442,207871000119100,assault/homicide,snomed,2024-03-08,true
-439395,371775004,assault/homicide,snomed,2024-03-08,true
-4160622,371772001,assault/homicide,snomed,2024-03-08,true
-443080,213017001,assault/homicide,snomed,2024-03-08,true
+439397,371704001,terrorism,snomed,2024-03-08,false
+440577,78523004,terrorism,snomed,2024-03-08,false
+37017129,713346006,terrorism,snomed,2024-03-08,false
+4316720,217120005,suffocation,snomed,2024-03-08,false
+4316721,217121009,suffocation,snomed,2024-03-08,false
+4151405,269795008,suffocation,snomed,2024-03-08,false
+4279614,66466001,suffocation,snomed,2024-03-08,false
+436589,217115005,suffocation,snomed,2024-03-08,false
+4074169,219365001,suffocation,snomed,2024-03-08,false
+4090129,281255004,suffocation,snomed,2024-03-08,false
+4312316,217118007,suffocation,snomed,2024-03-08,false
+4310775,217116006,suffocation,snomed,2024-03-08,false
+437449,397940009,assault/homicide,snomed,2024-03-08,false
+40479849,444557007,assault/homicide,snomed,2024-03-08,false
+45768441,706872008,assault/homicide,snomed,2024-03-08,false
+45763732,700229002,assault/homicide,snomed,2024-03-08,false
+4026164,225825002,assault/homicide,snomed,2024-03-08,false
+4279142,65367001,assault/homicide,snomed,2024-03-08,false
+36713088,288411000119107,assault/homicide,snomed,2024-03-08,false
+4150851,311465003,assault/homicide,snomed,2024-03-08,false
+437460,95922009,assault/homicide,snomed,2024-03-08,false
+436313,102458000,assault/homicide,snomed,2024-03-08,false
+43020449,237451000119100,assault/homicide,snomed,2024-03-08,false
+4208970,313215004,assault/homicide,snomed,2024-03-08,false
+45757173,10761061000119107,assault/homicide,snomed,2024-03-08,false
+439391,371778002,assault/homicide,snomed,2024-03-08,false
+438943,225826001,assault/homicide,snomed,2024-03-08,false
+4074047,219221007,assault/homicide,snomed,2024-03-08,false
+45765604,702579009,assault/homicide,snomed,2024-03-08,false
+443549,419916003,assault/homicide,snomed,2024-03-08,false
+762055,288331000119108,assault/homicide,snomed,2024-03-08,false
+4197467,313214000,assault/homicide,snomed,2024-03-08,false
+602337,12399371000119105,assault/homicide,snomed,2024-03-08,false
+4171711,42085001,assault/homicide,snomed,2024-03-08,false
+4163494,291838005,assault/homicide,snomed,2024-03-08,false
+46270374,29231000119109,assault/homicide,snomed,2024-03-08,false
+435131,95930005,assault/homicide,snomed,2024-03-08,false
+438043,225824003,assault/homicide,snomed,2024-03-08,false
+435151,371779005,assault/homicide,snomed,2024-03-08,false
+4208350,313070006,assault/homicide,snomed,2024-03-08,false
+4297375,386702006,assault/homicide,snomed,2024-03-08,false
+4197468,313216003,assault/homicide,snomed,2024-03-08,false
+4300517,78077007,assault/homicide,snomed,2024-03-08,false
+4153697,283545005,assault/homicide,snomed,2024-03-08,false
+4302066,418506006,assault/homicide,snomed,2024-03-08,false
+45757135,10756261000119102,assault/homicide,snomed,2024-03-08,false
+4236321,90774003,assault/homicide,snomed,2024-03-08,false
+4169278,418189009,assault/homicide,snomed,2024-03-08,false
+443256,276849007,assault/homicide,snomed,2024-03-08,false
+4026163,225818009,assault/homicide,snomed,2024-03-08,false
+4193573,313217007,assault/homicide,snomed,2024-03-08,false
+45757171,10760981000119107,assault/homicide,snomed,2024-03-08,false
+4058280,161472001,assault/homicide,snomed,2024-03-08,false
+46271794,710045002,assault/homicide,snomed,2024-03-08,false
+36684960,459521000124102,assault/homicide,snomed,2024-03-08,false
+43020429,149141000119102,assault/homicide,snomed,2024-03-08,false
+40482897,445272000,assault/homicide,snomed,2024-03-08,false
+4210749,56890008,assault/homicide,snomed,2024-03-08,false
+602338,12399411000119106,assault/homicide,snomed,2024-03-08,false
+441481,406137001,assault/homicide,snomed,2024-03-08,false
+4020158,213015009,assault/homicide,snomed,2024-03-08,false
+37204043,787209003,assault/homicide,snomed,2024-03-08,false
+40483738,443913008,assault/homicide,snomed,2024-03-08,false
+4172624,50084004,assault/homicide,snomed,2024-03-08,false
+4054939,243069004,assault/homicide,snomed,2024-03-08,false
+45757136,10756301000119105,assault/homicide,snomed,2024-03-08,false
+4061289,17044007,assault/homicide,snomed,2024-03-08,false
+45757172,10761021000119102,assault/homicide,snomed,2024-03-08,false
+4022125,225823009,assault/homicide,snomed,2024-03-08,false
+4318126,95921002,assault/homicide,snomed,2024-03-08,false
+44784256,698301002,assault/homicide,snomed,2024-03-08,false
+40481828,442084003,assault/homicide,snomed,2024-03-08,false
+4161447,371773006,assault/homicide,snomed,2024-03-08,false
+36684962,459541000124109,assault/homicide,snomed,2024-03-08,false
+43020450,237461000119103,assault/homicide,snomed,2024-03-08,false
+45757170,10760941000119102,assault/homicide,snomed,2024-03-08,false
+765389,288381000119109,assault/homicide,snomed,2024-03-08,false
+4305831,418715001,assault/homicide,snomed,2024-03-08,false
+4306655,419620001,assault/homicide,snomed,2024-03-08,false
+45768458,706893006,assault/homicide,snomed,2024-03-08,false
+436001,371774000,assault/homicide,snomed,2024-03-08,false
+37207733,293611000119101,assault/homicide,snomed,2024-03-08,false
+441364,80113008,assault/homicide,snomed,2024-03-08,false
+36684961,459531000124104,assault/homicide,snomed,2024-03-08,false
+36715173,720684005,assault/homicide,snomed,2024-03-08,false
+43021802,473453008,assault/homicide,snomed,2024-03-08,false
+4320042,95934001,assault/homicide,snomed,2024-03-08,false
+762058,288401000119109,assault/homicide,snomed,2024-03-08,false
+4113020,284607007,assault/homicide,snomed,2024-03-08,false
+4107655,284465006,assault/homicide,snomed,2024-03-08,false
+36713087,288391000119107,assault/homicide,snomed,2024-03-08,false
+4182566,429746005,assault/homicide,snomed,2024-03-08,false
+35625043,768011006,assault/homicide,snomed,2024-03-08,false
+4053113,160877008,assault/homicide,snomed,2024-03-08,false
+4278848,66190008,assault/homicide,snomed,2024-03-08,false
+4022124,225820007,assault/homicide,snomed,2024-03-08,false
+36717284,288371000119106,assault/homicide,snomed,2024-03-08,false
+4235695,406138006,assault/homicide,snomed,2024-03-08,false
+36715279,720824009,assault/homicide,snomed,2024-03-08,false
+762124,29221000119106,assault/homicide,snomed,2024-03-08,false
+43020442,207871000119100,assault/homicide,snomed,2024-03-08,false
+439395,371775004,assault/homicide,snomed,2024-03-08,false
+4160622,371772001,assault/homicide,snomed,2024-03-08,false
+443080,213017001,assault/homicide,snomed,2024-03-08,false
 4060687,199607009,liveborn_infants,snomed,2024-03-08,true
 4048144,206266009,liveborn_infants,snomed,2024-03-08,true
 440167,53443007,liveborn_infants,snomed,2024-03-08,true
 4319561,21987001,liveborn_infants,snomed,2024-03-08,true
 314478,22271007,liveborn_infants,snomed,2024-03-08,true
-195595,4576001,legal_intervention,snomed,2024-03-08,true
-443705,18684002,legal_intervention,snomed,2024-03-08,true
-44782688,128391000119101,legal_intervention,snomed,2024-03-08,true
-442596,61752008,legal_intervention,snomed,2024-03-08,true
-439325,198743003,legal_intervention,snomed,2024-03-08,true
-436169,74978008,legal_intervention,snomed,2024-03-08,true
-444048,38784004,legal_intervention,snomed,2024-03-08,true
-760973,125161000119103,military_operations,snomed,2024-03-08,true
-439235,276853009,military_operations,snomed,2024-03-08,true
-4156363,272379006,military_operations,snomed,2024-03-08,true
-4326265,75148009,military_operations,snomed,2024-03-08,true
-4202389,318784009,military_operations,snomed,2024-03-08,true
-4177669,49588008,military_operations,snomed,2024-03-08,true
-4274420,365474007,military_operations,snomed,2024-03-08,true
-4271764,364703007,military_operations,snomed,2024-03-08,true
-4199872,301705009,military_operations,snomed,2024-03-08,true
-4121313,302768007,military_operations,snomed,2024-03-08,true
-4105261,281575007,military_operations,snomed,2024-03-08,true
-37395583,288001000119103,military_operations,snomed,2024-03-08,true
-437167,218081007,military_operations,snomed,2024-03-08,true
-435155,219334005,military_operations,snomed,2024-03-08,true
-44783184,699241002,military_operations,snomed,2024-03-08,true
-440615,71677004,military_operations,snomed,2024-03-08,true
-4215475,71783008,motor vehicle accident,snomed,2024-03-08,true
-4071162,21753002,motor vehicle accident,snomed,2024-03-08,true
-4121550,257418003,motor vehicle accident,snomed,2024-03-08,true
-436874,217935007,motor vehicle accident,snomed,2024-03-08,true
-433374,242397005,motor vehicle accident,snomed,2024-03-08,true
-435443,17886000,motor vehicle accident,snomed,2024-03-08,true
-442041,216836004,motor vehicle accident,snomed,2024-03-08,true
-4314870,216312009,motor vehicle accident,snomed,2024-03-08,true
-4045163,12247004,motor vehicle accident,snomed,2024-03-08,true
-4072665,242119003,motor vehicle accident,snomed,2024-03-08,true
-439615,217150002,motor vehicle accident,snomed,2024-03-08,true
-437748,309535002,motor vehicle accident,snomed,2024-03-08,true
-4331312,22674006,motor vehicle accident,snomed,2024-03-08,true
-4055396,242693000,motor vehicle accident,snomed,2024-03-08,true
-4263727,46160005,motor vehicle accident,snomed,2024-03-08,true
-436292,217897003,motor vehicle accident,snomed,2024-03-08,true
-432534,269716005,motor vehicle accident,snomed,2024-03-08,true
-35225253,Z65.5,operations_of_war,icd10cm,2024-03-08,true
+195595,4576001,legal_intervention,snomed,2024-03-08,false
+443705,18684002,legal_intervention,snomed,2024-03-08,false
+44782688,128391000119101,legal_intervention,snomed,2024-03-08,false
+442596,61752008,legal_intervention,snomed,2024-03-08,false
+439325,198743003,legal_intervention,snomed,2024-03-08,false
+436169,74978008,legal_intervention,snomed,2024-03-08,false
+444048,38784004,legal_intervention,snomed,2024-03-08,false
+760973,125161000119103,military_operations,snomed,2024-03-08,false
+439235,276853009,military_operations,snomed,2024-03-08,false
+4156363,272379006,military_operations,snomed,2024-03-08,false
+4326265,75148009,military_operations,snomed,2024-03-08,false
+4202389,318784009,military_operations,snomed,2024-03-08,false
+4177669,49588008,military_operations,snomed,2024-03-08,false
+4274420,365474007,military_operations,snomed,2024-03-08,false
+4271764,364703007,military_operations,snomed,2024-03-08,false
+4199872,301705009,military_operations,snomed,2024-03-08,false
+4121313,302768007,military_operations,snomed,2024-03-08,false
+4105261,281575007,military_operations,snomed,2024-03-08,false
+37395583,288001000119103,military_operations,snomed,2024-03-08,false
+437167,218081007,military_operations,snomed,2024-03-08,false
+435155,219334005,military_operations,snomed,2024-03-08,false
+44783184,699241002,military_operations,snomed,2024-03-08,false
+440615,71677004,military_operations,snomed,2024-03-08,false
+4215475,71783008,motor vehicle accident,snomed,2024-03-08,false
+4071162,21753002,motor vehicle accident,snomed,2024-03-08,false
+4121550,257418003,motor vehicle accident,snomed,2024-03-08,false
+436874,217935007,motor vehicle accident,snomed,2024-03-08,false
+433374,242397005,motor vehicle accident,snomed,2024-03-08,false
+435443,17886000,motor vehicle accident,snomed,2024-03-08,false
+442041,216836004,motor vehicle accident,snomed,2024-03-08,false
+4314870,216312009,motor vehicle accident,snomed,2024-03-08,false
+4045163,12247004,motor vehicle accident,snomed,2024-03-08,false
+4072665,242119003,motor vehicle accident,snomed,2024-03-08,false
+439615,217150002,motor vehicle accident,snomed,2024-03-08,false
+437748,309535002,motor vehicle accident,snomed,2024-03-08,false
+4331312,22674006,motor vehicle accident,snomed,2024-03-08,false
+4055396,242693000,motor vehicle accident,snomed,2024-03-08,false
+4263727,46160005,motor vehicle accident,snomed,2024-03-08,false
+436292,217897003,motor vehicle accident,snomed,2024-03-08,false
+432534,269716005,motor vehicle accident,snomed,2024-03-08,false
+35225253,Z65.5,operations_of_war,icd10cm,2024-03-08,false
 45595452,Y92.010,location,icd10cm,2024-03-08,true
 45547261,Y92.160,location,icd10cm,2024-03-08,true
 45609892,Y92.143,location,icd10cm,2024-03-08,true
@@ -428,123 +428,123 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added,ct_plus_suppressed
 45585768,Y92.020,location,icd10cm,2024-03-08,true
 45571290,Y92.011,location,icd10cm,2024-03-08,true
 45566379,Y92.197,location,icd10cm,2024-03-08,true
-45561001,T76.32XA,assault/homicide,icd10cm,2024-03-08,true
-45556215,T74.01XA,assault/homicide,icd10cm,2024-03-08,true
-45592318,O9A.313,assault/homicide,icd10cm,2024-03-08,true
-45604503,T74.4XXA,assault/homicide,icd10cm,2024-03-08,true
-45561610,Z04.71,assault/homicide,icd10cm,2024-03-08,true
-45604509,T76.21XS,assault/homicide,icd10cm,2024-03-08,true
-45556216,T74.22XA,assault/homicide,icd10cm,2024-03-08,true
-45560994,T74.11XD,assault/homicide,icd10cm,2024-03-08,true
-45585194,T74.12XD,assault/homicide,icd10cm,2024-03-08,true
-45592320,O9A.413,assault/homicide,icd10cm,2024-03-08,true
-45590752,Z69.021,assault/homicide,icd10cm,2024-03-08,true
-45599709,T74.12XS,assault/homicide,icd10cm,2024-03-08,true
-45585195,T74.22XD,assault/homicide,icd10cm,2024-03-08,true
-1575158,T74.9,assault/homicide,icd10cm,2024-03-08,true
-45605172,Z91.410,assault/homicide,icd10cm,2024-03-08,true
-1595798,Z91.42,assault/homicide,icd10cm,2024-03-08,true
-45536996,T74.11XA,assault/homicide,icd10cm,2024-03-08,true
-19246,T76.22,assault/homicide,icd10cm,2024-03-08,true
-45604504,T74.92XA,assault/homicide,icd10cm,2024-03-08,true
-45590772,Z91.411,assault/homicide,icd10cm,2024-03-08,true
-45604507,T76.01XD,assault/homicide,icd10cm,2024-03-08,true
-45582603,O9A.311,assault/homicide,icd10cm,2024-03-08,true
-19225,T74.91,assault/homicide,icd10cm,2024-03-08,true
-45546656,T74.21XS,assault/homicide,icd10cm,2024-03-08,true
-45534327,O9A.419,assault/homicide,icd10cm,2024-03-08,true
-45551441,T74.21XD,assault/homicide,icd10cm,2024-03-08,true
-45594865,T74.91XA,assault/homicide,icd10cm,2024-03-08,true
-45536999,T76.22XD,assault/homicide,icd10cm,2024-03-08,true
-45541788,T74.92XD,assault/homicide,icd10cm,2024-03-08,true
-45576174,Z69.11,assault/homicide,icd10cm,2024-03-08,true
-45575515,T74.91XS,assault/homicide,icd10cm,2024-03-08,true
-45600351,Z69.81,assault/homicide,icd10cm,2024-03-08,true
-45585196,T74.31XS,assault/homicide,icd10cm,2024-03-08,true
-45553623,O9A.319,assault/homicide,icd10cm,2024-03-08,true
-45609957,Z62.812,assault/homicide,icd10cm,2024-03-08,true
-45536998,T76.22XA,assault/homicide,icd10cm,2024-03-08,true
-45594871,T76.91XS,assault/homicide,icd10cm,2024-03-08,true
-45570671,T74.32XA,assault/homicide,icd10cm,2024-03-08,true
-45547337,Z69.010,assault/homicide,icd10cm,2024-03-08,true
-45572916,O9A.42,assault/homicide,icd10cm,2024-03-08,true
-45604502,T74.32XS,assault/homicide,icd10cm,2024-03-08,true
-45546664,T76.12XD,assault/homicide,icd10cm,2024-03-08,true
-45551444,T76.31XS,assault/homicide,icd10cm,2024-03-08,true
-45609292,T76.21XA,assault/homicide,icd10cm,2024-03-08,true
-45585204,T76.02XS,assault/homicide,icd10cm,2024-03-08,true
-1575155,T74.1,assault/homicide,icd10cm,2024-03-08,true
-45585847,Z62.811,assault/homicide,icd10cm,2024-03-08,true
-1575156,T74.2,assault/homicide,icd10cm,2024-03-08,true
-35225252,Z65.4,assault/homicide,icd10cm,2024-03-08,true
-1575166,T76.2,assault/homicide,icd10cm,2024-03-08,true
-45606682,O9A.312,assault/homicide,icd10cm,2024-03-08,true
-45556219,T76.91XD,assault/homicide,icd10cm,2024-03-08,true
-45570670,T74.31XD,assault/homicide,icd10cm,2024-03-08,true
-45561002,T76.91XA,assault/homicide,icd10cm,2024-03-08,true
-45585880,Z91.419,assault/homicide,icd10cm,2024-03-08,true
-45585205,T76.11XA,assault/homicide,icd10cm,2024-03-08,true
-45609287,T74.22XS,assault/homicide,icd10cm,2024-03-08,true
-45587403,O9A.32,assault/homicide,icd10cm,2024-03-08,true
-45566446,Z62.810,assault/homicide,icd10cm,2024-03-08,true
-1576139,Z62.81,assault/homicide,icd10cm,2024-03-08,true
-45560998,T76.02XA,assault/homicide,icd10cm,2024-03-08,true
-45587405,O9A.52,assault/homicide,icd10cm,2024-03-08,true
-45560993,T74.01XD,assault/homicide,icd10cm,2024-03-08,true
-45580372,T76.11XD,assault/homicide,icd10cm,2024-03-08,true
-45599711,T74.31XA,assault/homicide,icd10cm,2024-03-08,true
-45572917,O9A.513,assault/homicide,icd10cm,2024-03-08,true
-45551440,T74.12XA,assault/homicide,icd10cm,2024-03-08,true
-45546665,T76.22XS,assault/homicide,icd10cm,2024-03-08,true
-45585193,T74.02XS,assault/homicide,icd10cm,2024-03-08,true
-45546663,T76.12XA,assault/homicide,icd10cm,2024-03-08,true
-45609291,T76.01XA,assault/homicide,icd10cm,2024-03-08,true
-1595725,T74.51XS,assault/homicide,icd10cm,2024-03-08,true
-45570668,T74.02XA,assault/homicide,icd10cm,2024-03-08,true
-45592319,O9A.411,assault/homicide,icd10cm,2024-03-08,true
-19248,T76.32,assault/homicide,icd10cm,2024-03-08,true
-45590695,Z04.72,assault/homicide,icd10cm,2024-03-08,true
-45599710,T74.21XA,assault/homicide,icd10cm,2024-03-08,true
-45590746,Z62.819,assault/homicide,icd10cm,2024-03-08,true
-1595794,Z62.813,assault/homicide,icd10cm,2024-03-08,true
-1595780,Z04.81,assault/homicide,icd10cm,2024-03-08,true
-45572915,O9A.412,assault/homicide,icd10cm,2024-03-08,true
-45599712,T74.92XS,assault/homicide,icd10cm,2024-03-08,true
-45546654,T74.01XS,assault/homicide,icd10cm,2024-03-08,true
-1575165,T76.1,assault/homicide,icd10cm,2024-03-08,true
-45604508,T76.21XD,assault/homicide,icd10cm,2024-03-08,true
-45546666,T76.31XA,assault/homicide,icd10cm,2024-03-08,true
-45609288,T74.91XD,assault/homicide,icd10cm,2024-03-08,true
-45561000,T76.31XD,assault/homicide,icd10cm,2024-03-08,true
-1554018,Y35.399A,legal_intervention,icd10cm,2024-03-08,true
-1554051,Y35.839A,legal_intervention,icd10cm,2024-03-08,true
-1554034,Y35.819A,legal_intervention,icd10cm,2024-03-08,true
-1554039,Y35.831A,legal_intervention,icd10cm,2024-03-08,true
-766505,Y35.899A,legal_intervention,icd10cm,2024-03-08,true
-1553974,Y35.049A,legal_intervention,icd10cm,2024-03-08,true
-1554055,Y35.99XA,legal_intervention,icd10cm,2024-03-08,true
-1554047,Y35.833A,legal_intervention,icd10cm,2024-03-08,true
-45600334,Z56.82,military_operations,icd10cm,2024-03-08,true
-45547334,Z63.71,military_operations,icd10cm,2024-03-08,true
-45552093,Z63.31,military_operations,icd10cm,2024-03-08,true
-45556806,Y99.1,military_operations,icd10cm,2024-03-08,true
-45580992,Y92.815,motor vehicle accident,icd10cm,2024-03-08,true
-45561474,X82.0XXA,motor vehicle accident,icd10cm,2024-03-08,true
-45556796,Y92.810,motor vehicle accident,icd10cm,2024-03-08,true
-45566385,Y92.813,motor vehicle accident,icd10cm,2024-03-08,true
-725641,V00.841A,motor vehicle accident,icd10cm,2024-03-08,true
-45561599,Y92.814,motor vehicle accident,icd10cm,2024-03-08,true
-725642,V00.841D,motor vehicle accident,icd10cm,2024-03-08,true
-45576112,Y92.816,motor vehicle accident,icd10cm,2024-03-08,true
-45605082,Y92.812,motor vehicle accident,icd10cm,2024-03-08,true
-45580772,W05.2XXA,motor vehicle accident,icd10cm,2024-03-08,true
-45595466,Y92.818,motor vehicle accident,icd10cm,2024-03-08,true
-725649,V00.848A,motor vehicle accident,icd10cm,2024-03-08,true
-45585780,Y92.811,motor vehicle accident,icd10cm,2024-03-08,true
-45556581,W05.1XXD,motor vehicle accident,icd10cm,2024-03-08,true
-45609676,W05.2XXD,motor vehicle accident,icd10cm,2024-03-08,true
-45551831,W05.1XXA,motor vehicle accident,icd10cm,2024-03-08,true
-8905,26,military_operations,cms place of service,2024-03-08,true
+45561001,T76.32XA,assault/homicide,icd10cm,2024-03-08,false
+45556215,T74.01XA,assault/homicide,icd10cm,2024-03-08,false
+45592318,O9A.313,assault/homicide,icd10cm,2024-03-08,false
+45604503,T74.4XXA,assault/homicide,icd10cm,2024-03-08,false
+45561610,Z04.71,assault/homicide,icd10cm,2024-03-08,false
+45604509,T76.21XS,assault/homicide,icd10cm,2024-03-08,false
+45556216,T74.22XA,assault/homicide,icd10cm,2024-03-08,false
+45560994,T74.11XD,assault/homicide,icd10cm,2024-03-08,false
+45585194,T74.12XD,assault/homicide,icd10cm,2024-03-08,false
+45592320,O9A.413,assault/homicide,icd10cm,2024-03-08,false
+45590752,Z69.021,assault/homicide,icd10cm,2024-03-08,false
+45599709,T74.12XS,assault/homicide,icd10cm,2024-03-08,false
+45585195,T74.22XD,assault/homicide,icd10cm,2024-03-08,false
+1575158,T74.9,assault/homicide,icd10cm,2024-03-08,false
+45605172,Z91.410,assault/homicide,icd10cm,2024-03-08,false
+1595798,Z91.42,assault/homicide,icd10cm,2024-03-08,false
+45536996,T74.11XA,assault/homicide,icd10cm,2024-03-08,false
+19246,T76.22,assault/homicide,icd10cm,2024-03-08,false
+45604504,T74.92XA,assault/homicide,icd10cm,2024-03-08,false
+45590772,Z91.411,assault/homicide,icd10cm,2024-03-08,false
+45604507,T76.01XD,assault/homicide,icd10cm,2024-03-08,false
+45582603,O9A.311,assault/homicide,icd10cm,2024-03-08,false
+19225,T74.91,assault/homicide,icd10cm,2024-03-08,false
+45546656,T74.21XS,assault/homicide,icd10cm,2024-03-08,false
+45534327,O9A.419,assault/homicide,icd10cm,2024-03-08,false
+45551441,T74.21XD,assault/homicide,icd10cm,2024-03-08,false
+45594865,T74.91XA,assault/homicide,icd10cm,2024-03-08,false
+45536999,T76.22XD,assault/homicide,icd10cm,2024-03-08,false
+45541788,T74.92XD,assault/homicide,icd10cm,2024-03-08,false
+45576174,Z69.11,assault/homicide,icd10cm,2024-03-08,false
+45575515,T74.91XS,assault/homicide,icd10cm,2024-03-08,false
+45600351,Z69.81,assault/homicide,icd10cm,2024-03-08,false
+45585196,T74.31XS,assault/homicide,icd10cm,2024-03-08,false
+45553623,O9A.319,assault/homicide,icd10cm,2024-03-08,false
+45609957,Z62.812,assault/homicide,icd10cm,2024-03-08,false
+45536998,T76.22XA,assault/homicide,icd10cm,2024-03-08,false
+45594871,T76.91XS,assault/homicide,icd10cm,2024-03-08,false
+45570671,T74.32XA,assault/homicide,icd10cm,2024-03-08,false
+45547337,Z69.010,assault/homicide,icd10cm,2024-03-08,false
+45572916,O9A.42,assault/homicide,icd10cm,2024-03-08,false
+45604502,T74.32XS,assault/homicide,icd10cm,2024-03-08,false
+45546664,T76.12XD,assault/homicide,icd10cm,2024-03-08,false
+45551444,T76.31XS,assault/homicide,icd10cm,2024-03-08,false
+45609292,T76.21XA,assault/homicide,icd10cm,2024-03-08,false
+45585204,T76.02XS,assault/homicide,icd10cm,2024-03-08,false
+1575155,T74.1,assault/homicide,icd10cm,2024-03-08,false
+45585847,Z62.811,assault/homicide,icd10cm,2024-03-08,false
+1575156,T74.2,assault/homicide,icd10cm,2024-03-08,false
+35225252,Z65.4,assault/homicide,icd10cm,2024-03-08,false
+1575166,T76.2,assault/homicide,icd10cm,2024-03-08,false
+45606682,O9A.312,assault/homicide,icd10cm,2024-03-08,false
+45556219,T76.91XD,assault/homicide,icd10cm,2024-03-08,false
+45570670,T74.31XD,assault/homicide,icd10cm,2024-03-08,false
+45561002,T76.91XA,assault/homicide,icd10cm,2024-03-08,false
+45585880,Z91.419,assault/homicide,icd10cm,2024-03-08,false
+45585205,T76.11XA,assault/homicide,icd10cm,2024-03-08,false
+45609287,T74.22XS,assault/homicide,icd10cm,2024-03-08,false
+45587403,O9A.32,assault/homicide,icd10cm,2024-03-08,false
+45566446,Z62.810,assault/homicide,icd10cm,2024-03-08,false
+1576139,Z62.81,assault/homicide,icd10cm,2024-03-08,false
+45560998,T76.02XA,assault/homicide,icd10cm,2024-03-08,false
+45587405,O9A.52,assault/homicide,icd10cm,2024-03-08,false
+45560993,T74.01XD,assault/homicide,icd10cm,2024-03-08,false
+45580372,T76.11XD,assault/homicide,icd10cm,2024-03-08,false
+45599711,T74.31XA,assault/homicide,icd10cm,2024-03-08,false
+45572917,O9A.513,assault/homicide,icd10cm,2024-03-08,false
+45551440,T74.12XA,assault/homicide,icd10cm,2024-03-08,false
+45546665,T76.22XS,assault/homicide,icd10cm,2024-03-08,false
+45585193,T74.02XS,assault/homicide,icd10cm,2024-03-08,false
+45546663,T76.12XA,assault/homicide,icd10cm,2024-03-08,false
+45609291,T76.01XA,assault/homicide,icd10cm,2024-03-08,false
+1595725,T74.51XS,assault/homicide,icd10cm,2024-03-08,false
+45570668,T74.02XA,assault/homicide,icd10cm,2024-03-08,false
+45592319,O9A.411,assault/homicide,icd10cm,2024-03-08,false
+19248,T76.32,assault/homicide,icd10cm,2024-03-08,false
+45590695,Z04.72,assault/homicide,icd10cm,2024-03-08,false
+45599710,T74.21XA,assault/homicide,icd10cm,2024-03-08,false
+45590746,Z62.819,assault/homicide,icd10cm,2024-03-08,false
+1595794,Z62.813,assault/homicide,icd10cm,2024-03-08,false
+1595780,Z04.81,assault/homicide,icd10cm,2024-03-08,false
+45572915,O9A.412,assault/homicide,icd10cm,2024-03-08,false
+45599712,T74.92XS,assault/homicide,icd10cm,2024-03-08,false
+45546654,T74.01XS,assault/homicide,icd10cm,2024-03-08,false
+1575165,T76.1,assault/homicide,icd10cm,2024-03-08,false
+45604508,T76.21XD,assault/homicide,icd10cm,2024-03-08,false
+45546666,T76.31XA,assault/homicide,icd10cm,2024-03-08,false
+45609288,T74.91XD,assault/homicide,icd10cm,2024-03-08,false
+45561000,T76.31XD,assault/homicide,icd10cm,2024-03-08,false
+1554018,Y35.399A,legal_intervention,icd10cm,2024-03-08,false
+1554051,Y35.839A,legal_intervention,icd10cm,2024-03-08,false
+1554034,Y35.819A,legal_intervention,icd10cm,2024-03-08,false
+1554039,Y35.831A,legal_intervention,icd10cm,2024-03-08,false
+766505,Y35.899A,legal_intervention,icd10cm,2024-03-08,false
+1553974,Y35.049A,legal_intervention,icd10cm,2024-03-08,false
+1554055,Y35.99XA,legal_intervention,icd10cm,2024-03-08,false
+1554047,Y35.833A,legal_intervention,icd10cm,2024-03-08,false
+45600334,Z56.82,military_operations,icd10cm,2024-03-08,false
+45547334,Z63.71,military_operations,icd10cm,2024-03-08,false
+45552093,Z63.31,military_operations,icd10cm,2024-03-08,false
+45556806,Y99.1,military_operations,icd10cm,2024-03-08,false
+45580992,Y92.815,motor vehicle accident,icd10cm,2024-03-08,false
+45561474,X82.0XXA,motor vehicle accident,icd10cm,2024-03-08,false
+45556796,Y92.810,motor vehicle accident,icd10cm,2024-03-08,false
+45566385,Y92.813,motor vehicle accident,icd10cm,2024-03-08,false
+725641,V00.841A,motor vehicle accident,icd10cm,2024-03-08,false
+45561599,Y92.814,motor vehicle accident,icd10cm,2024-03-08,false
+725642,V00.841D,motor vehicle accident,icd10cm,2024-03-08,false
+45576112,Y92.816,motor vehicle accident,icd10cm,2024-03-08,false
+45605082,Y92.812,motor vehicle accident,icd10cm,2024-03-08,false
+45580772,W05.2XXA,motor vehicle accident,icd10cm,2024-03-08,false
+45595466,Y92.818,motor vehicle accident,icd10cm,2024-03-08,false
+725649,V00.848A,motor vehicle accident,icd10cm,2024-03-08,false
+45585780,Y92.811,motor vehicle accident,icd10cm,2024-03-08,false
+45556581,W05.1XXD,motor vehicle accident,icd10cm,2024-03-08,false
+45609676,W05.2XXD,motor vehicle accident,icd10cm,2024-03-08,false
+45551831,W05.1XXA,motor vehicle accident,icd10cm,2024-03-08,false
+8905,26,military_operations,cms place of service,2024-03-08,false
 45587269,O04.89,abortion,icd10cm,2025-08-04,true
 45539079,O04.80,abortion,icd10cm,2025-08-04,true
 45582600,O99.814,liveborn,icd10cm,2025-08-04,true
@@ -1181,10 +1181,10 @@ concept_id,concept_code,privacy_rule,vocabulary_id,date_added,ct_plus_suppressed
 44832591,675.22,liveborn,icd9cm,2025-08-04,true
 44819929,675.21,liveborn,icd9cm,2025-08-04,true
 4014720,169961004,liveborn,snomed,2025-08-04,true
-4209211,440425000,multiples,snomed,2025-08-04,true
+4209211,440425000,multiples,snomed,2025-08-04,false
 4091280,252114001,abortion,snomed,2025-08-04,true
 4090055,252113007,abortion,snomed,2025-08-04,true
-4208183,440013005,multiples,snomed,2025-08-04,true
+4208183,440013005,multiples,snomed,2025-08-04,false
 45534322,O99.214,liveborn,icd10cm,2025-08-04,true
 44821032,649.12,liveborn,icd9cm,2025-08-04,true
 44836089,649.11,liveborn,icd9cm,2025-08-04,true
