@@ -57,4 +57,16 @@ The two halves differ by two orders of magnitude in how much data they touch. Me
 
 ### Note on the retroactive file
 
-Five concept IDs are `false` in the two files above while their rows in `ct_retroactive_privacy_suppression.csv` stay `true`: 4210749 and 44821603 (`Assault/Homicide`), 44821588 (`Legal Intervention`), 44822621 (`Suicide`) and 44826231 (`Living situation`). The retroactive rule is the narrower one and wins, so those five concepts stay suppressed in CT+ even though their category is expanded. This needs confirming with the program before release.
+Five concept IDs are `false` in the two files above while their rows in `ct_retroactive_privacy_suppression.csv` stay `true`. The two files label them differently, so both labels are given.
+
+| concept_id | Released under | Retroactive file label | Concept |
+|---|---|---|---|
+| 4210749 | `assault/homicide` | `Assault/Homicide` | victim of sexual aggression |
+| 44821603 | `assault/homicide` | `Assault/Homicide` | observation and evaluation for suspected abuse and neglect |
+| 44821588 | `legal_intervention` | `Legal Intervention` | family disruption due to divorce or legal separation |
+| 44822621 | `suicide.csv` | `Suicide` | suicide and self-inflicted injury by crashing of motor vehicle |
+| 44826231 | `military_operations` | `Living situation` | family disruption due to return of family member from military deployment |
+
+These five stay suppressed in CT+ regardless of the flip, because the retroactive rule runs at a later stage than the rules that read these two files. `CTAdditionalPrivacyConceptSuppression` and `CTObservationPrivacySuppression` run at `controlled_plus_deid`, while `CTRetroactivePrivacyConceptSuppression` runs at `controlled_plus_deid_base`, so whatever the earlier stage releases the later one removes. That holds only while every row of `ct_retroactive_privacy_suppression.csv` is `true`, which is what keeps this file untouched.
+
+This needs confirming with the program before release.
