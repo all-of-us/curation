@@ -19,8 +19,7 @@ from google.cloud.bigquery import TableReference
 # Project imports
 from common import (AOU_DEATH, JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH,
                     PERSON, SURVEY_CONDUCT, HEART_RATE_INTRADAY, SLEEP_LEVEL,
-                    STEPS_INTRADAY, DEVICE, SLEEP_LEVEL_SHORT, PS_AWARDEE,
-                    DRC_OPS)
+                    STEPS_INTRADAY, DEVICE, SLEEP_LEVEL_SHORT, PS_AWARDEE)
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
@@ -49,6 +48,16 @@ class RemoveParticipantDataPastDeactivationDateTest(
         sandbox_id = f"{dataset_id}_sandbox"
         cls.sandbox_id = sandbox_id
 
+        # The rule reads the participant summary view out of DRC_OPS, a dataset name
+        # that is fixed for the whole project. This test writes its own fixture rows
+        # into that view, and setUp does not truncate before inserting, so a parallel
+        # CI container or another branch running this same test doubles every row and
+        # the JOIN in SANDBOX_QUERY then sandboxes each record twice. Stand in a
+        # per-run dataset instead; RDR_DATASET_ID already carries the branch and the
+        # container index. The test patches DRC_OPS to match, as
+        # clean_digital_health_data_test does for the same reason.
+        cls.drc_ops_dataset_id = os.environ.get('RDR_DATASET_ID')
+
         cls.kwargs = {
             'table_namer': 'table_namer',
             'api_project_id': 'foo-project-id'
@@ -71,7 +80,8 @@ class RemoveParticipantDataPastDeactivationDateTest(
             for tablename in cls.rule_instance.affected_tables
         ]
 
-        cls.fq_table_names.append(f"{project_id}.{DRC_OPS}.{PS_AWARDEE}")
+        cls.fq_table_names.append(
+            f"{project_id}.{cls.drc_ops_dataset_id}.{PS_AWARDEE}")
 
         cls.fq_obs_table = [
             table for table in cls.fq_table_names if 'observation' in table
@@ -249,7 +259,7 @@ class RemoveParticipantDataPastDeactivationDateTest(
                 f'{self.project_id}.{self.dataset_id}.{table}')
             if table == PS_AWARDEE:
                 fq_table = TableReference.from_string(
-                    f'{self.project_id}.{DRC_OPS}.{table}')
+                    f'{self.project_id}.{self.drc_ops_dataset_id}.{table}')
             query = TABLE_ROWS[table].render(table=fq_table)
             self.load_statements.append(query)
 
@@ -308,6 +318,9 @@ class RemoveParticipantDataPastDeactivationDateTest(
         self.assertDictEqual(expected, actual)
 
     #@mock.patch('DataFrame(table_dict_list)')
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date.DRC_OPS',
+        os.environ.get('RDR_DATASET_ID'))
     def test_removing_data_past_deactivated_date(self):
         """
         Validate deactivated participant records are dropped via cleaning rule.

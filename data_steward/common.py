@@ -307,6 +307,37 @@ AIAN_LIST = 'aian_list'
 
 UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
 
+# CDR tiers, and the dataset naming they drive
+REGISTERED = 'registered'
+CONTROLLED = 'controlled'
+CONTROLLED_PLUS = 'controlled_plus'
+
+TIER_LIST = [REGISTERED, CONTROLLED, CONTROLLED_PLUS]
+
+# Tiers built from the controlled tier's inputs. Anything staged for the controlled
+# tier is staged for these too, so widen membership rather than adding an equality
+# check when a new CT-derived tier appears.
+CT_DERIVED_TIERS = frozenset({CONTROLLED, CONTROLLED_PLUS})
+
+# Prefix each tier's datasets carry. Replaces tier[0].upper(), which returns 'C' for
+# both controlled and controlled_plus and would have CT+ overwrite the controlled tier.
+TIER_DATASET_PREFIX = {
+    REGISTERED: 'R',
+    CONTROLLED: 'C',
+    CONTROLLED_PLUS: 'CP',
+}
+
+# Suffix create_tier appends to its own output. The controlled_plus pipeline output is
+# CT-keyed and must never be published; regenerate_ct_plus_ids.py writes the unsuffixed
+# CP name that reaches output prod. The suffix frees that name and puts the warning on
+# the dataset that is unsafe to publish. Empty for any tier whose pipeline output is
+# itself publishable.
+PIPELINE_DATASET_SUFFIX = {
+    REGISTERED: '',
+    CONTROLLED: '',
+    CONTROLLED_PLUS: '_pre_rekey',
+}
+
 # Participant Summary
 EHR_OPS = 'ehr_ops'
 DRC_OPS = 'drc_ops'

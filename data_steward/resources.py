@@ -19,7 +19,7 @@ from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
                     PROCEDURE_OCCURRENCE, SPECIMEN, VISIT_OCCURRENCE,
                     VISIT_DETAIL, CONDITION_ERA, DRUG_ERA, DOSE_ERA,
                     PAYER_PLAN_PERIOD, OBSERVATION_PERIOD, NOTE_NLP, JINJA_ENV,
-                    AOU_DEATH)
+                    AOU_DEATH, TIER_DATASET_PREFIX, PIPELINE_DATASET_SUFFIX)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -840,3 +840,41 @@ def replace_special_characters_for_labels(label_name: str):
     return label_name.lower().replace('.', '_').replace(',',
                                                         '_').replace(' ',
                                                                      '_')[:63]
+
+
+def get_tier_dataset_prefix(tier: str) -> str:
+    """
+    Look up the dataset name prefix for a tier.
+
+    Raises rather than defaulting, so a tier added to TIER_LIST without a prefix
+    fails here instead of silently inheriting another tier's namespace.
+
+    :param tier: a tier name, one of common.TIER_LIST
+    :return: the prefix that tier's dataset names carry
+    """
+    try:
+        return TIER_DATASET_PREFIX[tier]
+    except KeyError:
+        raise ValueError(
+            f'No dataset prefix is defined for tier {tier}. Add it to '
+            f'common.TIER_DATASET_PREFIX; it must not fall back to a default.')
+
+
+def get_pipeline_dataset_suffix(tier: str) -> str:
+    """
+    Look up the suffix create_tier appends to its own output for a tier.
+
+    Raises rather than defaulting, for the same reason as get_tier_dataset_prefix:
+    a missing entry here would publish a CT-keyed dataset under the name reserved
+    for the re-keyed one.
+
+    :param tier: a tier name, one of common.TIER_LIST
+    :return: the suffix, empty for tiers whose pipeline output is publishable
+    """
+    try:
+        return PIPELINE_DATASET_SUFFIX[tier]
+    except KeyError:
+        raise ValueError(
+            f'No pipeline dataset suffix is defined for tier {tier}. Add it to '
+            f'common.PIPELINE_DATASET_SUFFIX; it must not fall back to a default.'
+        )
