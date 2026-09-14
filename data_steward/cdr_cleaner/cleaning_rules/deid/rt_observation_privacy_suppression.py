@@ -146,7 +146,7 @@ class RTObservationPrivacySuppression(BaseCleaningRule):
 
         df_all = pd.read_csv(RT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
         df_pr = pd.read_csv(CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH).drop(
-                columns='ct_plus_suppressed')
+            columns='ct_plus_suppressed')
         df = pd.concat([df_all, df_pr], ignore_index=True)
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
