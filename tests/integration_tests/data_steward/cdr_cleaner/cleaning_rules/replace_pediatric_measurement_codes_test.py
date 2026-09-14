@@ -83,14 +83,16 @@ class ReplacePediatricMeasurementCodesTest(BaseTest.CleaningRulesTestBase):
           (806, 6, 3036277, '2026-05-01', "2026-05-01 05:30:00+00", NULL, 0, 0, 110, 0, 0, NULL, NULL, NULL, NULL, NULL, "height", 903133, "cm", ""),
         -- LOINC code outside the replacement map, must not be modified --
           (807, 7, 3013762, '2026-05-01', "2026-05-01 05:30:00+00", NULL, 0, 0, 18, 0, 0, NULL, NULL, NULL, NULL, NULL, "8302-2", 0, "", ""),
-        -- PMI code for a growth percentile, unresolved. Out of scope: the predicate
-        -- keys on the placeholder code only, so this row must not be modified. If the
-        -- RDR row shape is confirmed to be this one, this expectation flips. --
+        -- PMI code for a growth percentile, unresolved. Out of scope: the --
+        -- predicate keys on the placeholder code only, so this row must not --
+        -- be modified. If the RDR row shape is confirmed to be this one, --
+        -- this expectation flips. --
           (808, 8, 0, '2026-05-01', "2026-05-01 05:30:00+00", NULL, 0, 0, 55, 0, 0, NULL, NULL, NULL, NULL, NULL, "growth-percentile-weight-for-age", 0, "", ""),
-        -- PMI code for a growth percentile, already resolved, must not be modified.
-        -- Forward-looking rather than observed: no growth-percentile PMI concept
-        -- exists in the vocabulary today, so this shape can only arise once one is
-        -- minted, which is what a confirmed PMI row shape would require. --
+        -- PMI code for a growth percentile, already resolved, must not be --
+        -- modified. Forward-looking rather than observed: no growth-percentile --
+        -- PMI concept exists in the vocabulary today, so this shape can only --
+        -- arise once one is minted, which is what a confirmed PMI row shape --
+        -- would require. --
           (809, 9, 40762638, '2026-05-01', "2026-05-01 05:30:00+00", NULL, 0, 0, 48, 0, 0, NULL, NULL, NULL, NULL, NULL, "growth-percentile-bmi-for-age", 903124, "", "")
         """).render(project=self.project_id, dataset=self.dataset_id)
 
