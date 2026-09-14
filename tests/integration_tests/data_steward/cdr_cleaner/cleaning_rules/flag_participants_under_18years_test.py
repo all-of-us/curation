@@ -113,5 +113,5 @@ class FlagParticipantsUnder18YearsTest(BaseTest.CleaningRulesTestBase):
     def test_flag_participants_under_18years(self):
         self.default_test([])
         self.assertTableValuesMatch(self.fq_sandbox_table_names[0],
-                                    ['person_id','age_at_consent','age_band'], 
+                                    ['person_id', 'age_at_consent', 'age_band'],
                                     [(3, 17, '7-17'), (4, 1, '0-6')])
