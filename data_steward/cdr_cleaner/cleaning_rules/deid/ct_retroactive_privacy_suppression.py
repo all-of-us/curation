@@ -6,7 +6,6 @@ Original Issue: DC-3812
 """
 
 # Python imports
-import os
 import logging
 import pandas as pd
 
@@ -17,16 +16,13 @@ from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
     AbstractBqLookupTableConceptSuppression
-from resources import (ADDITIONAL_PRIVACY_CONCEPTS_PATH)
+from resources import CT_RETROACTIVE_PRIVACY_CONCEPTS_PATH
 
 # Third party imports
 from google.cloud.exceptions import GoogleCloudError
 
 LOGGER = logging.getLogger(__name__)
 ISSUE_NUMBERS = ['dc3812']
-
-PRIVACY_CONCEPTS_PATH = os.path.join(ADDITIONAL_PRIVACY_CONCEPTS_PATH,
-                                     'ct_retroactive_privacy_suppression.csv')
 
 
 class CTRetroactivePrivacyConceptSuppression(
@@ -63,7 +59,7 @@ class CTRetroactivePrivacyConceptSuppression(
                          table_namer=table_namer)
 
     def create_suppression_lookup_table(self, client):
-        df = pd.read_csv(PRIVACY_CONCEPTS_PATH)
+        df = pd.read_csv(CT_RETROACTIVE_PRIVACY_CONCEPTS_PATH)
 
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
