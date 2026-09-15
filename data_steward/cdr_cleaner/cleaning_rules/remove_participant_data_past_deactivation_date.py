@@ -16,7 +16,8 @@ import logging
 from pandas import DataFrame
 
 # Project imports
-from common import AOU_DEATH, FITBIT_TABLES, JINJA_ENV, PS_API_VALUES
+from common import (AOU_DEATH, DRC_OPS, FITBIT_TABLES, JINJA_ENV, PS_API_VALUES,
+                    PS_AWARDEE)
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import utils.participant_summary_requests as psr
 from google.cloud.bigquery import Table
@@ -318,9 +319,9 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         q = POPULATE_DEACTIVATED_PARTICIPANTS_TABLE_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
-            drc_ops='drc_ops',
+            drc_ops=DRC_OPS,
             deactivated_participants=DEACTIVATED_PARTICIPANTS,
-            ps_awardee_values_view='ps_awardee_values_view')
+            ps_awardee_values_view=PS_AWARDEE)
         query_job = client.query(q)
         df = query_job.result().to_dataframe()
 

@@ -49,6 +49,7 @@ from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import RemoveReco
 from cdr_cleaner.cleaning_rules.flag_participants_under_18years import FlagParticipantsUnder18Years
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
 from cdr_cleaner.cleaning_rules.replace_freetext_notes import ReplaceFreeTextNotes
+from cdr_cleaner.cleaning_rules.replace_pediatric_measurement_codes import ReplacePediatricMeasurementCodes
 from cdr_cleaner.cleaning_rules.deid.eponymous_condition_suppression import EponymousConditionSuppression
 from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import UpdateFamilyHistoryCodes
 from cdr_cleaner.cleaning_rules.remove_operational_pii_fields import RemoveOperationalPiiFields
@@ -73,6 +74,8 @@ from cdr_cleaner.cleaning_rules.deid.fitbit_deid_src_id import FitbitDeidSrcID
 from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
     RemoveFitbitDataIfMaxAgeExceeded
+from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import \
+    RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus
 from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     RepopulatePersonControlledTier
@@ -229,6 +232,7 @@ RDR_CLEANING_CLASSES = [
     (CleanSmokingPpi,),
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
+    (ReplacePediatricMeasurementCodes,),
     (CalculateBmi,),
     (DropExtremeMeasurements,),
     (DropMultipleMeasurements,),
@@ -299,6 +303,11 @@ FITBIT_CLEANING_CLASSES = [
 
 REGISTERED_TIER_PRE_DEID_CLEANING_CLASSES = [
     (MoveNLPtoDomains,),
+    # Must run while person_id is still the participant ID. The deid module
+    # runs between this stage and REGISTERED_TIER_DEID and replaces person_id
+    # with research IDs, which the _under18_participants lookup is not keyed by.
+    (
+        RemoveFlaggedUnder18Participants,),
 ]
 
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [
@@ -388,6 +397,10 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (MoveNLPtoDomains,),
+    # Must run while person_id is still the participant ID, so before RtCtPIDtoRID
+    # re-keys it to the research ID.
+    (
+        RemoveFlaggedUnder18Participants,),
     (RtCtPIDtoRID,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (TruncateEraTables,),
@@ -470,6 +483,10 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
 # on any divergence not listed there.
 CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (MoveNLPtoDomains,),
+    # Must run while person_id is still the participant ID, so before RtCtPIDtoRID
+    # re-keys it to the research ID. The CT+ variant retains the '0-6' band.
+    (
+        RemoveFlaggedUnder18ParticipantsCtPlus,),
     (RtCtPIDtoRID,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (TruncateEraTables,),

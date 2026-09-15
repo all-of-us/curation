@@ -11,6 +11,8 @@ from cdr_cleaner.cleaning_rules.deid.ct_observation_privacy_suppression import (
 from cdr_cleaner.cleaning_rules.deid.ct_retroactive_privacy_suppression import (
     CTRetroactivePrivacyConceptSuppression,
     CTRetroactivePrivacyConceptSuppressionCtPlus)
+from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import (
+    RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus)
 from constants.cdr_cleaner.clean_cdr import DataStage
 from tests.test_util import FakeRuleClass, fake_rule_func
 
@@ -24,6 +26,8 @@ CT_PLUS_SUBSTITUTIONS = {
         CTObservationPrivacySuppressionCtPlus,
     CTRetroactivePrivacyConceptSuppression:
         CTRetroactivePrivacyConceptSuppressionCtPlus,
+    RemoveFlaggedUnder18Participants:
+        RemoveFlaggedUnder18ParticipantsCtPlus,
 }
 
 
