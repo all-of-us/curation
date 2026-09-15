@@ -3,8 +3,10 @@ import unittest
 from mock import patch
 
 import cdr_cleaner.clean_cdr as cc
+from cdr_cleaner.cleaning_rules.deid.ct_plus_pid_rid_map import CtPlusPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import (
     RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus)
+from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
 from constants.cdr_cleaner.clean_cdr import DataStage
 from tests.test_util import FakeRuleClass, fake_rule_func
 
@@ -13,6 +15,7 @@ from tests.test_util import FakeRuleClass, fake_rule_func
 # difference; anything else fails the copy-policy test below.
 CT_PLUS_SUBSTITUTIONS = {
     RemoveFlaggedUnder18Participants: RemoveFlaggedUnder18ParticipantsCtPlus,
+    RtCtPIDtoRID: CtPlusPIDtoRID,
 }
 
 
@@ -92,6 +95,25 @@ class CleanCDRTest(unittest.TestCase):
         for _, ct_classes in self._ct_plus_pairs():
             for entry in ct_classes:
                 self.assertNotIn(entry[0], ct_plus_rules)
+
+    def test_controlled_tier_plus_deid_substitutes_pid_rid(self):
+        """CT+ runs CtPlusPIDtoRID where CT runs RtCtPIDtoRID.
+
+        CT+ cannot reuse RtCtPIDtoRID because that rule sources _deid_map from
+        primary_pid_rid_mapping, which does not cover pediatric participants, and
+        PIDtoRID deletes every participant the map omits rather than failing.
+        Position and length are covered by the copy-policy test above, through the
+        substitution declared at the top of this module.
+        """
+        ct_plus = cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        ct = cc.CONTROLLED_TIER_DEID_CLEANING_CLASSES
+
+        self.assertIn((CtPlusPIDtoRID,), ct_plus)
+        self.assertNotIn((RtCtPIDtoRID,), ct_plus)
+
+        # The registered and controlled tiers keep the original rule and its source.
+        self.assertIn((RtCtPIDtoRID,), ct)
+        self.assertNotIn((CtPlusPIDtoRID,), ct)
 
     def test_parser_controlled_tier_plus_data_stages(self):
         """The parser accepts the CT+ stages and resolves them to the CT+ rules."""
