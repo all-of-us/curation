@@ -15,8 +15,9 @@ from gcloud.bq import bigquery
 from common import AOU_DEATH, CDM_TABLES
 from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
-    AbstractBqLookupTableConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.concept_suppression import (
+    AbstractBqLookupTableConceptSuppression, CT_PLUS_LOOKUP_SUFFIX,
+    keep_ct_plus_suppressed)
 from resources import (ADDITIONAL_PRIVACY_CONCEPTS_PATH)
 
 # Third party imports
@@ -62,8 +63,17 @@ class CTRetroactivePrivacyConceptSuppression(
                          concept_suppression_lookup_table=privacy_concept_table,
                          table_namer=table_namer)
 
+    def get_suppression_concepts_df(self):
+        """
+        Concept rows that make up the retroactive suppression lookup.
+
+        Split out from create_suppression_lookup_table so the CT+ variant has
+        a single method to override.
+        """
+        return pd.read_csv(PRIVACY_CONCEPTS_PATH)
+
     def create_suppression_lookup_table(self, client):
-        df = pd.read_csv(PRIVACY_CONCEPTS_PATH)
+        df = self.get_suppression_concepts_df()
 
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
@@ -108,6 +118,30 @@ class CTRetroactivePrivacyConceptSuppression(
 
         """
         raise NotImplementedError("Please fix me.")
+
+
+class CTRetroactivePrivacyConceptSuppressionCtPlus(
+        CTRetroactivePrivacyConceptSuppression):
+    """
+    CT+ variant: suppress only the concepts not expanded in CT+.
+
+    Runs at deid_base and deid_clean, which is where a retroactive fix would
+    otherwise remove a concept the deid-stage variant deliberately kept.
+
+    Original Issue: DL-2429
+    """
+
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
+        super().__init__(project_id, dataset_id, sandbox_dataset_id,
+                         table_namer)
+        self._concept_suppression_lookup_table += CT_PLUS_LOOKUP_SUFFIX
+
+    def get_suppression_concepts_df(self):
+        return keep_ct_plus_suppressed(super().get_suppression_concepts_df())
 
 
 if __name__ == '__main__':
