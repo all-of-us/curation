@@ -67,17 +67,17 @@ class FlagParticipantsUnder18Years(BaseCleaningRule):
         )
 
     def get_query_specs(self):
-        return [
-            {
-                cdr_consts.QUERY: PARTICIPANTS_UNDER_18_AT_CONSENT_QUERY.render(
+        return [{
+            cdr_consts.QUERY:
+                PARTICIPANTS_UNDER_18_AT_CONSENT_QUERY.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
                     pipeline_tables=common.PIPELINE_TABLES,
-                    under18_participant_lookup_table=common.UNDER18_PARTICIPANTS_LOOKUP_TABLE,
+                    under18_participant_lookup_table=common.
+                    UNDER18_PARTICIPANTS_LOOKUP_TABLE,
                 )
-            }
-        ]
+        }]
 
     def setup_rule(self, client):
         """

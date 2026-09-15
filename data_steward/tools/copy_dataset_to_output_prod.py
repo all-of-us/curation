@@ -8,7 +8,9 @@ import logging
 import argparse
 
 # Project imports
+from common import CONTROLLED, TIER_LIST
 from gcloud.bq import BigQueryClient
+from resources import get_tier_dataset_prefix
 from tools.populate_death import populate_death
 from tools.recreate_person import update_person
 from utils import auth, pipeline_logging
@@ -21,7 +23,6 @@ SCOPES = [
 ]
 LOGGER = logging.getLogger(__name__)
 
-TIER_LIST = ['controlled', 'registered']
 DEID_STAGE_LIST = ['deid', 'base', 'clean']
 
 # modes for running script
@@ -35,19 +36,22 @@ def get_dataset_name(tier, release_tag, deid_stage):
     """
     Helper function to create the output prod dataset name based on the given criteria
     This function should return a name for the final dataset only (not all steps along the way)
-    The function returns a string in the form: [C|R]{release_tag}[_base|_clean]
+    The function returns a string in the form: [R|C|CP]{release_tag}[_base|_clean]
 
-    :param tier: controlled or registered tier intended for the output dataset
+    No pipeline suffix is applied here. This tool's source dataset arrives through -d,
+    so the destination is the published name for every tier.
+
+    :param tier: tier intended for the output dataset, one of TIER_LIST
     :param release_tag: release tag for dataset in the format of YYYYQ#R#
     :param deid_stage: deid stage (deid, base or clean)
     :return: a string for the dataset name
     """
 
-    tier = tier[0].upper()
+    prefix = get_tier_dataset_prefix(tier)
     release_tag = release_tag.upper()
     deid_stage = f'_{deid_stage}' if deid_stage == 'base' else ''
 
-    dataset_name = f"{tier}{release_tag}{deid_stage}"
+    dataset_name = f"{prefix}{release_tag}{deid_stage}"
 
     return dataset_name
 
@@ -97,7 +101,8 @@ def get_arg_parser() -> argparse.ArgumentParser:
                                         '--tier',
                                         action='store',
                                         dest='tier',
-                                        help='controlled or registered tier',
+                                        help=('registered, controlled or '
+                                              'controlled_plus tier'),
                                         required=True,
                                         choices=TIER_LIST)
     parent_argument_parser.add_argument('--deid_stage',
@@ -213,7 +218,10 @@ def generate_output_prod(tier,
     LOGGER.info(f'Populating death table using aou_death table...')
     populate_death(bq_client, output_prod_project_id, output_dataset_name)
 
-    if tier == 'controlled' and deid_stage == 'clean':
+    # Equality, not membership in CT_DERIVED_TIERS: serology is a controlled-tier
+    # dataset only. CT+ must not receive it, so do not widen this for symmetry with
+    # the zip3_ses_map copy in create_tier.py.
+    if tier == CONTROLLED and deid_stage == 'clean':
         serology_input = src_dataset_id.replace("deid_clean", "antibody_quest")
         serology_output = f"{output_dataset_name}_serology"
         description = f'Serology dataset created from {serology_input} for {tier}{release_tag} CDR run'
