@@ -77,6 +77,22 @@ IDENTIFY_DUPLICATE_ID_TEMPLATE = JINJA_ENV.from_string("""
         WHERE observation_source_concept_id != 1586099  /* exclude EHRConsentPII_ConsentPermission */
         AND observation_id NOT IN (
             SELECT
+                ob.observation_id
+            FROM
+                `{{project}}.{{dataset}}.observation` ob
+            JOIN
+                `{{project}}.{{dataset}}.survey_conduct` sc
+            ON
+                sc.survey_conduct_id = ob.questionnaire_response_id
+            WHERE ob.person_id != sc.person_id
+            /* exclude records emitted onto a linked adult from a pediatric survey.
+               They are the only rows whose observation belongs to a different
+               participant than the survey that produced them. Without this the
+               adult's own enrollment answer ranks below the later pediatric
+               reassessment and is deleted. */
+        )
+        AND observation_id NOT IN (
+            SELECT
                 observation_id
             FROM
                 `{{project}}.{{dataset}}.observation` ob
