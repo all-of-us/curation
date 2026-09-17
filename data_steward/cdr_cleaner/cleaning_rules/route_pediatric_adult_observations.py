@@ -2,15 +2,10 @@
 Emit observation records on the linked adult's person_id for the twelve Pediatric
 Basics items collected about the parent or guardian.
 
-The items are reassessments of the adult and are already mapped to standard concepts
-for the adult surveys. The PRD requires observation records on the adult's person_id so
-researchers can read them as observations about the adult. Its verb is create, so the
-pediatric participant's own row is left in place.
-
-One thing this deliberately does not collapse: an adult linked to several pediatric
-participants gets one record per child per item. Each comes from a separate survey
-completion and carries its own questionnaire_response_id, so the rows stay
-distinguishable. Follows the COPE precedent for the same question re-asked.
+The PRD's verb is create, so the pediatric participant's own row is left in place. An
+adult linked to several pediatric participants gets one record per child per item,
+deliberately: each carries its own questionnaire_response_id, following the COPE
+precedent for a question re-asked.
 
 Original Issues: DL2483
 """
@@ -27,25 +22,16 @@ from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
-# Identified by survey_source_value, not survey_concept_id: no pediatric concept exists
-# in the vocabulary yet, so survey_concept_id arrives as 0 here, as it does for
-# HPOSitePairing and ProgramUpdate.
-#
-# Matched with LOWER(), so these must stay lowercase. survey_source_value mixes
-# conventions across surveys ('TheBasics' beside 'sdoh'), and raw_rdr_export_qc.py
-# matches it with (?i) for the same reason.
+# Identified by survey_source_value because no pediatric survey concept exists yet, so
+# survey_concept_id arrives as 0 here as it does for HPOSitePairing. Matched with
+# LOWER(), so these must stay lowercase.
 PEDIATRIC_BASICS_SURVEY_SOURCE_VALUES = ['ped_basics']
 
-# Relationship concepts that can appear on a pediatric-to-adult row, the inverse
-# direction of the pairs DL-2482 emits.
+# Relationship concepts that can appear on a pediatric-to-adult row, the inverse of the
+# pairs DL-2482 emits. Three of them are symmetric, so this narrows the candidates but
+# cannot identify the adult alone; excluding pediatric counterparts is the real guard.
 #
-# TODO(DL-2482): confirm against the ids that rule emits. It is not built yet, and the
-# relationship proposal lists no inverse for the Other and Prefer-not-to-answer answers.
-#
-# This narrows the candidates but cannot identify the adult on its own: Natural Sibling,
-# Second Degree Blood Relative and Cousin are symmetric, so a sibling-to-sibling row
-# carries the same concept as a child-to-adult row. Excluding counterparts who are
-# themselves pediatric is the primary guard.
+# TODO(DL-2482): confirm against the ids that rule emits once it is built.
 ADULT_LINK_RELATIONSHIP_CONCEPT_IDS = [
     4326600,  # Natural Child
     4311425,  # Grandchild
@@ -55,21 +41,16 @@ ADULT_LINK_RELATIONSHIP_CONCEPT_IDS = [
     4032151,  # Legal Child
 ]
 
-# The twelve Pediatric Basics items that are about the parent or guardian. The
-# numbering is the survey's own and is non-contiguous: the omitted numbers are items
-# about the child.
+# The twelve guardian-about Pediatric Basics items. The numbering is the survey's own
+# and is non-contiguous: the omitted numbers are items about the child.
 #
-# mapped_concept_id is what the pediatric survey mapping assigns to the question.
-# standard_concept_id is the concept the export actually emits for that item, which is
-# not always the vocabulary's 'Maps to' target. MaritalStatus_CurrentMaritalStatus is
-# the case in point: 1332833 is a PPI Question concept that is standard and maps to
-# itself, but the export uses LOINC 3046344 on 733,908 rows of 2025q4r5_rdr. Taking the
-# vocabulary answer there would put every emitted record out of step with every adult
-# row for the same item. Checked against the export 2026-09-17: eleven items matched the
-# vocabulary answer, marital status did not.
+# mapped_concept_id is matched against observation_source_concept_id; standard_concept_id
+# is written into observation_concept_id.
 #
-# standard_concept_id is what the emitted record carries, so it tracks the export rather
-# than the vocabulary. See EMIT_QUERY.
+# Both must be checked against a real RDR dataset, not against the vocabulary. The
+# mapping workbook gives 1332833 for marital status, which is standard and maps to
+# itself, so a vocabulary check passes it while no row anywhere carries it: the data uses
+# 1585892 and 3046344. Verified item by item on 2026-09-17.
 GUARDIAN_ABOUT_ITEMS = [
     {
         'item': 4,
@@ -80,7 +61,7 @@ GUARDIAN_ABOUT_ITEMS = [
     {
         'item': 5,
         'field': 'maritalstatus_currentmaritalstatus',
-        'mapped_concept_id': 1332833,
+        'mapped_concept_id': 1585892,
         'standard_concept_id': 3046344
     },
     {
@@ -173,10 +154,9 @@ pediatric_responses AS (
       ON ps.survey_conduct_id = o.questionnaire_response_id
 ),
 matched_responses AS (
-    /* Source value first, concept id only as a fallback: a pediatric row can arrive
-       with observation_source_concept_id = 0 while carrying the PPI code, and matching
-       on either with an OR would emit two records when the columns disagree. Each join
-       matches at most one item, since field and mapped_concept_id are both unique. */
+    /* Source value first, concept id only as a fallback. Matching on either with an OR
+       would emit two records when the columns disagree. Each join matches at most one
+       item, since field and mapped_concept_id are both unique. */
     SELECT
         r.*,
         COALESCE(by_value.field, by_concept.field) AS matched_field,
@@ -210,10 +190,9 @@ person_pairs AS (
     ) fr
 ),
 linkage AS (
-    /* One row per pediatric participant with any person domain pair. Disqualified
-       counterparts are classified, not filtered out, so the unresolved lookup can name
-       which of the four ways a participant failed to resolve. ANY_VALUE ignores NULLs,
-       returning the single qualifying counterpart when n_adults = 1. */
+    /* Disqualified counterparts are classified, not filtered out, so the unresolved
+       lookup can name which of the four ways a participant failed to resolve.
+       ANY_VALUE ignores NULLs, returning the one counterpart when n_adults = 1. */
     SELECT
         pediatric_person_id,
         COUNT(*) AS n_pairs,
@@ -236,12 +215,9 @@ SELECT
       + (SELECT MAX(observation_id) FROM `{{project}}.{{dataset}}.{{obs}}`)
       AS observation_id,
     l.adult_person_id AS person_id,
-    /* The declared concept for the item, not the source row's observation_concept_id.
-       All twelve were checked against what the export emits on 2026-09-17 and all
-       twelve match, so this is the value the source row carries, stated once. The list
-       is therefore authoritative and has to be re-checked against the export whenever
-       the vocabulary moves: that check is what caught marital status declared as
-       1332833 while the data carried 3046344. */
+    /* The declared concept, which is also what the source row carries: all twelve
+       were checked against the export. That makes the list authoritative, so re-check
+       it against an RDR dataset whenever the vocabulary moves. */
     r.standard_concept_id AS observation_concept_id,
     r.observation_date,
     r.observation_datetime,
@@ -260,9 +236,9 @@ SELECT
     r.qualifier_source_value,
     r.value_source_concept_id,
     r.value_source_value,
-    /* Resolves the emitted record to the pediatric survey's survey_conduct row, which
-       distinguishes it from the adult's own answer to the same question and is the key
-       the duplicate-response exclusion reads. */
+    /* Resolves the emitted record to the pediatric survey_conduct row, which is what
+       distinguishes it from the adult's own answer and what the duplicate-response
+       exclusion keys on. */
     r.questionnaire_response_id,
     m.src_id
 FROM guardian_about_responses r
