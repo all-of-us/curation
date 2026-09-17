@@ -1,34 +1,16 @@
 """
-Emit observation records on the linked adult's person_id for the guardian-about
-Pediatric Basics survey items.
+Emit observation records on the linked adult's person_id for the twelve Pediatric
+Basics items collected about the parent or guardian.
 
-The Pediatric Basics survey collects twelve items about the parent or guardian rather
-than the child: education, marital status, living situation, employment, income, home
-ownership, and two housing vitality items. They are reassessments of the adult and are
-already mapped to standard concepts for the adult surveys. The Pediatrics CT+ PRD
-requires that they produce observation records on the adult's person_id, so researchers
-can read them as observations about the adult.
+The items are reassessments of the adult and are already mapped to standard concepts
+for the adult surveys. The PRD requires observation records on the adult's person_id so
+researchers can read them as observations about the adult. Its verb is create, so the
+pediatric participant's own row is left in place.
 
-The pediatric participant's own row is left in place. The PRD's verb is create, and
-under the relationship extension table it states that observation "Preserves the
-original participant-provided responses", so preservation is the default here.
-
-Two adults' worth of notes on what this deliberately does not collapse.
-
-An adult linked to more than one pediatric participant gets one record per child per
-item, so an adult with two children answering the same question ends up with two rows
-for that concept. That is intended. Each row comes from a separate survey completion
-and carries its own questionnaire_response_id, so the two stay distinguishable, and
-collapsing them would discard the fact that the adult answered twice. It follows the
-COPE precedent, where the same question re-asked across waves is kept rather than
-deduplicated.
-
-This rule runs before SetConceptIdsForSurveyQuestionsAnswers and FixUnmappedSurveyAnswers,
-so an emitted copy can carry a resolved observation_concept_id while the pediatric
-participant's own row still carries 0 until those later rules reach it. The two rows
-for one response therefore disagree on that column for part of the RDR run. That is
-expected: the later rules key on observation_source_concept_id, which both rows share,
-so both converge before the stage ends.
+One thing this deliberately does not collapse: an adult linked to several pediatric
+participants gets one record per child per item. Each comes from a separate survey
+completion and carries its own questionnaire_response_id, so the rows stay
+distinguishable. Follows the COPE precedent for the same question re-asked.
 
 Original Issues: DL2483
 """
@@ -45,35 +27,25 @@ from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
-# The survey is identified by survey_source_value rather than survey_concept_id. No
-# pediatric concept exists in the vocabulary yet, so survey_conduct.survey_concept_id
-# arrives as 0 for these responses, exactly as it does today for HPOSitePairing and
-# ProgramUpdate. survey_source_value carries the instrument name either way, so this
-# predicate keeps working unchanged once a concept is minted.
+# Identified by survey_source_value, not survey_concept_id: no pediatric concept exists
+# in the vocabulary yet, so survey_concept_id arrives as 0 here, as it does for
+# HPOSitePairing and ProgramUpdate.
 #
-# Matched case-insensitively, so these must stay lowercase. survey_source_value mixes
-# conventions across surveys ('TheBasics' beside 'sdoh' and 'cope_vaccine1'), and a
-# casing change upstream would otherwise make this rule emit nothing and route every
-# response to the unresolved lookup, which is indistinguishable from the state before
-# the linkage rule lands. raw_rdr_export_qc.py matches these values with (?i) for the
-# same reason.
+# Matched with LOWER(), so these must stay lowercase. survey_source_value mixes
+# conventions across surveys ('TheBasics' beside 'sdoh'), and raw_rdr_export_qc.py
+# matches it with (?i) for the same reason.
 PEDIATRIC_BASICS_SURVEY_SOURCE_VALUES = ['ped_basics']
 
-# Relationship concepts that can legitimately appear on a pediatric-to-adult row, which
-# is the inverse direction of the pairs DL-2482 emits: Natural Child, Grandchild,
-# Natural Sibling, Second Degree Blood Relative, Cousin, and the Legal Child derived
-# when the genetic-relation question is answered No.
+# Relationship concepts that can appear on a pediatric-to-adult row, the inverse
+# direction of the pairs DL-2482 emits.
 #
-# TODO(DL-2482): confirm against the ids that rule actually emits. It is not built yet,
-# and the Peds Relationship OMOP Management Proposal's inverse table lists no inverse
-# for the Other and Prefer-not-to-answer answers, so those may need adding here.
+# TODO(DL-2482): confirm against the ids that rule emits. It is not built yet, and the
+# relationship proposal lists no inverse for the Other and Prefer-not-to-answer answers.
 #
-# This narrows the candidates; it cannot fully identify the adult on its own. Natural
-# Sibling, Second Degree Blood Relative and Cousin are symmetric, so a sibling-to-
-# sibling row carries the same concept as a child-to-adult row for a participant whose
-# consenting adult is their sibling, which the real data does contain. Excluding
-# counterparts who are themselves pediatric is what separates those two, and it stays
-# the primary guard.
+# This narrows the candidates but cannot identify the adult on its own: Natural Sibling,
+# Second Degree Blood Relative and Cousin are symmetric, so a sibling-to-sibling row
+# carries the same concept as a child-to-adult row. Excluding counterparts who are
+# themselves pediatric is the primary guard.
 ADULT_LINK_RELATIONSHIP_CONCEPT_IDS = [
     4326600,  # Natural Child
     4311425,  # Grandchild
@@ -88,13 +60,16 @@ ADULT_LINK_RELATIONSHIP_CONCEPT_IDS = [
 # about the child.
 #
 # mapped_concept_id is what the pediatric survey mapping assigns to the question.
-# standard_concept_id is what it resolves to through 'Maps to'. Six of the twelve are
-# non-standard PPI Question concepts whose target is a different standard Observation
-# concept, which is why this carries two columns rather than one. All twelve were
-# re-verified against the vocabulary: every mapped concept exists, every target is
-# standard and domain Observation, and the six standard ones map to themselves.
+# standard_concept_id is the concept the export actually emits for that item, which is
+# not always the vocabulary's 'Maps to' target. MaritalStatus_CurrentMaritalStatus is
+# the case in point: 1332833 is a PPI Question concept that is standard and maps to
+# itself, but the export uses LOINC 3046344 on 733,908 rows of 2025q4r5_rdr. Taking the
+# vocabulary answer there would put every emitted record out of step with every adult
+# row for the same item. Checked against the export 2026-09-17: eleven items matched the
+# vocabulary answer, marital status did not.
 #
-# standard_concept_id is a fallback, not an override. See EMIT_QUERY.
+# standard_concept_id is what the emitted record carries, so it tracks the export rather
+# than the vocabulary. See EMIT_QUERY.
 GUARDIAN_ABOUT_ITEMS = [
     {
         'item': 4,
@@ -106,7 +81,7 @@ GUARDIAN_ABOUT_ITEMS = [
         'item': 5,
         'field': 'maritalstatus_currentmaritalstatus',
         'mapped_concept_id': 1332833,
-        'standard_concept_id': 1332833
+        'standard_concept_id': 3046344
     },
     {
         'item': 6,
@@ -198,14 +173,10 @@ pediatric_responses AS (
       ON ps.survey_conduct_id = o.questionnaire_response_id
 ),
 matched_responses AS (
-    /* Source value first, concept id only as a fallback. A pediatric row can arrive
-       with observation_source_concept_id = 0 while carrying the PPI code, so keying
-       on the concept id alone would silently skip it, but matching on either with an
-       OR would emit two records for one response if the two columns disagree, which
-       is the dirty-data case the fallback exists for. Each join matches at most one
-       item: field and mapped_concept_id are both unique across the twelve. The survey
-       filter is applied first, so this cannot reach an adult row carrying the same
-       PPI code. */
+    /* Source value first, concept id only as a fallback: a pediatric row can arrive
+       with observation_source_concept_id = 0 while carrying the PPI code, and matching
+       on either with an OR would emit two records when the columns disagree. Each join
+       matches at most one item, since field and mapped_concept_id are both unique. */
     SELECT
         r.*,
         COALESCE(by_value.field, by_concept.field) AS matched_field,
@@ -239,13 +210,10 @@ person_pairs AS (
     ) fr
 ),
 linkage AS (
-    /* One row per pediatric participant that has any person domain pair at all.
-       Disqualified counterparts are classified rather than filtered out, so the
-       unresolved lookup can say which of the four ways a participant failed to
-       resolve rather than reporting every one of them as having no linkage row.
-       n_adults is carried so an ambiguous participant is recorded rather than fanned
-       out into one record per candidate adult. ANY_VALUE ignores NULLs, so it returns
-       the single qualifying counterpart when there is exactly one. */
+    /* One row per pediatric participant with any person domain pair. Disqualified
+       counterparts are classified, not filtered out, so the unresolved lookup can name
+       which of the four ways a participant failed to resolve. ANY_VALUE ignores NULLs,
+       returning the single qualifying counterpart when n_adults = 1. */
     SELECT
         pediatric_person_id,
         COUNT(*) AS n_pairs,
@@ -268,13 +236,13 @@ SELECT
       + (SELECT MAX(observation_id) FROM `{{project}}.{{dataset}}.{{obs}}`)
       AS observation_id,
     l.adult_person_id AS person_id,
-    /* The export already resolves observation_concept_id, including the cases where
-       a refusal carries 903102 PMI instead of the item's own standard concept.
-       Copying it keeps that shape; the declared standard concept only fills in when
-       the export left the row unmapped, which pediatric rows have been observed
-       doing. */
-    IF(r.observation_concept_id = 0, r.standard_concept_id, r.observation_concept_id)
-      AS observation_concept_id,
+    /* The declared concept for the item, not the source row's observation_concept_id.
+       All twelve were checked against what the export emits on 2026-09-17 and all
+       twelve match, so this is the value the source row carries, stated once. The list
+       is therefore authoritative and has to be re-checked against the export whenever
+       the vocabulary moves: that check is what caught marital status declared as
+       1332833 while the data carried 3046344. */
+    r.standard_concept_id AS observation_concept_id,
     r.observation_date,
     r.observation_datetime,
     r.observation_type_concept_id,
@@ -292,10 +260,9 @@ SELECT
     r.qualifier_source_value,
     r.value_source_concept_id,
     r.value_source_value,
-    /* Carried so the emitted record resolves to the pediatric survey's
-       survey_conduct row. That is what makes it distinguishable from the adult's own
-       answer to the same question, and it is the key the duplicate-response
-       exclusion reads. */
+    /* Resolves the emitted record to the pediatric survey's survey_conduct row, which
+       distinguishes it from the adult's own answer to the same question and is the key
+       the duplicate-response exclusion reads. */
     r.questionnaire_response_id,
     m.src_id
 FROM guardian_about_responses r

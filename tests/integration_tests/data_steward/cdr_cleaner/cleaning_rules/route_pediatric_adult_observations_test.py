@@ -3,19 +3,16 @@ Integration test for the route_pediatric_adult_observations module.
 
 Original Issues: DL-2483
 
-Asserts that each of the guardian-about Pediatric Basics items produces an observation
-record on the linked adult's person_id, that the pediatric participant's own row is
-left in place, and that an item about the child is not emitted. Also asserts the four
-ways a linkage can fail to resolve, each of which must record the response with its own
-reason and leave it unchanged rather than emitting a record: no person domain row at
-all, every counterpart pediatric, no counterpart carrying an adult link relationship,
-and more than one linked adult.
+Asserts that a guardian-about item produces an observation record on the linked adult's
+person_id, that the pediatric participant's own row is left in place, and that an item
+about the child is not emitted. Also asserts the four ways a linkage can fail to
+resolve, each of which records the response with its own reason and leaves it unchanged:
+no person domain row at all, every counterpart pediatric, no counterpart carrying an
+adult link relationship, and more than one linked adult.
 
-On AC2: the expected standard concept ids are written into this fixture rather than
-resolved through 'Maps to' at test time. The integration test datasets carry no
-vocabulary tables, so a live resolution is not available here. All twelve mappings are
-verified against `aou-warehouse-preprod.aou_vocabulary` separately, by
-`verify_twelve_concepts.sh`, which is what backs criterion 2.
+Expected concept ids are written into the fixture rather than resolved at test time,
+since the integration test datasets carry no vocabulary tables. The declared fallbacks
+are checked against a real RDR dataset separately, which is what backs criterion 2.
 """
 # Python Imports
 import os
@@ -38,14 +35,14 @@ VALUES
 -- what proves the survey filter and not the concept list is doing the work. --
   (601, 100, 40771091, DATE('2020-01-01'), TIMESTAMP('2020-01-01'), 45905771,
    'EducationLevel_HighestGrade', 1585940, 'HighestGrade_CollegeGraduate', 5005),
--- Child 101, guardian-about item, mapped by the export. Emitted onto adult 100. --
+-- Child 101, guardian-about item. Emitted onto adult 100 with the declared concept. --
   (602, 101, 40771091, DATE('2026-01-01'), TIMESTAMP('2026-01-01'), 45905771,
    'EducationLevel_HighestGrade', 1585940, 'HighestGrade_AdvancedDegree', 5001),
 -- Child 101, an item about the child. Outside the twelve, must not be emitted. --
   (603, 101, 0, DATE('2026-01-01'), TIMESTAMP('2026-01-01'), 45905771,
    'aou_1', 0, 'PMI_Skip', 5001),
--- Child 101, guardian-about item the export left unmapped. The declared standard
--- concept 46235933 fills in, which is the only case where it is used. --
+-- Child 101, guardian-about item whose own row is unmapped. The emitted record still
+-- carries the declared concept 46235933, since it does not read the source row. --
   (604, 101, 0, DATE('2026-01-01'), TIMESTAMP('2026-01-01'), 45905771,
    'Income_AnnualIncome', 1585375, 'AnnualIncome_50k75k', 5001),
 -- Child 102, a second child of the same adult 100. --
