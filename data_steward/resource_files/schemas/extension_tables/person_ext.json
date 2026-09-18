@@ -40,23 +40,5 @@
         "name": "sex_at_birth_source_value",
         "mode": "nullable",
         "description": "[All of Us OMOP extension] The source code for the biological sex at birth."
-    },
-    {
-        "type": "integer",
-        "name": "self_reported_category_concept_id",
-        "mode": "nullable",
-        "description": "[All of Us OMOP extension] A foreign key to the participant's self-reported population concept."
-    },
-    {
-        "type": "integer",
-        "name": "self_reported_category_source_concept_id",
-        "mode": "nullable",
-        "description": "[All of Us OMOP extension] A foreign key to the participant's self-reported population source concept."
-    },
-    {
-        "type": "string",
-        "name": "self_reported_category_source_value",
-        "mode": "nullable",
-        "description": "[All of Us OMOP extension] The source code for the participant's self reported population."
     }
 ]
