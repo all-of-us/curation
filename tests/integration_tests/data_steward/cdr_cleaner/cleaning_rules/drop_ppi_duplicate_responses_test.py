@@ -192,12 +192,12 @@ VALUES
 
         survey_conduct_tmpl = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.survey_conduct`
-        (survey_conduct_id, person_id, survey_concept_id, survey_source_value)
+        (survey_conduct_id, person_id, survey_concept_id, survey_source_value, survey_end_datetime)
         VALUES
-          (700, 500, 1586134, 'TheBasics'),
-          (701, 500, 1586134, 'TheBasics'),
+          (700, 500, 1586134, 'TheBasics', TIMESTAMP('2015-01-01')),
+          (701, 500, 1586134, 'TheBasics', TIMESTAMP('2016-01-01')),
         -- keyed to the child, which is what marks 1002 as emitted --
-          (800, 501, 0, 'ped_basics')
+          (800, 501, 0, 'ped_basics', TIMESTAMP('2026-01-01'))
         """)
 
         self.load_test_data([

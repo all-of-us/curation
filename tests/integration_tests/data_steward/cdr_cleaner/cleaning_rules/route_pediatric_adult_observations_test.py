@@ -75,18 +75,18 @@ VALUES
 
 SURVEY_CONDUCT_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.survey_conduct`
-(survey_conduct_id, person_id, survey_concept_id, survey_source_value)
+(survey_conduct_id, person_id, survey_concept_id, survey_source_value, survey_end_datetime)
 VALUES
 -- The pediatric survey concept has not been minted, so survey_concept_id arrives as 0
 -- and survey_source_value is what identifies the instrument. The mixed casing here is
 -- deliberate: the predicate is case-insensitive. --
-  (5001, 101, 0, 'ped_basics'),
-  (5002, 102, 0, 'Ped_Basics'),
-  (5003, 200, 0, 'ped_basics'),
-  (5004, 300, 0, 'ped_basics'),
-  (5005, 100, 1586134, 'TheBasics'),
-  (5006, 400, 0, 'ped_basics'),
-  (5007, 500, 0, 'ped_basics')
+  (5001, 101, 0, 'ped_basics', TIMESTAMP('2026-01-01')),
+  (5002, 102, 0, 'Ped_Basics', TIMESTAMP('2026-02-01')),
+  (5003, 200, 0, 'ped_basics', TIMESTAMP('2026-01-01')),
+  (5004, 300, 0, 'ped_basics', TIMESTAMP('2026-01-01')),
+  (5005, 100, 1586134, 'TheBasics', TIMESTAMP('2020-01-01')),
+  (5006, 400, 0, 'ped_basics', TIMESTAMP('2026-01-01')),
+  (5007, 500, 0, 'ped_basics', TIMESTAMP('2026-01-01'))
 """)
 
 FACT_RELATIONSHIP_TMPL = JINJA_ENV.from_string("""
