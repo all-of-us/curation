@@ -165,7 +165,13 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
               -- participant, which is what the mapping table could not deliver. --
               (10, 4, 0, 0, '2020-01-01', '', 0, 1586140, 1586141),
               (11, 4, 0, 0, '2020-01-01', '432**', 0, 1585250, 0),
-              (12, 4, 0, 0, '2020-01-01', '', 1234234, 1585249, 0)
+              (12, 4, 0, 0, '2020-01-01', '', 1234234, 1585249, 0),
+              -- Fourth AIAN participant, in aian_list but with no row in the view at --
+              -- all. The join drops them and their rows are left at full precision. --
+              -- Pinning current behavior: the drop is silent, and nothing counts it. --
+              (13, 5, 0, 0, '2020-01-01', '', 0, 1586140, 1586141),
+              (14, 5, 0, 0, '2020-01-01', '567**', 0, 1585250, 0),
+              (15, 5, 0, 0, '2020-01-01', '', 1234234, 1585249, 0)
             """)
 
         insert_observation_query = observation_data_template.render(
@@ -183,7 +189,8 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
               (50),
               (34),
               (77),
-              (88)
+              (88),
+              (99)
             """)
 
         insert_aian_query = aian_template.render(project_id=self.project_id,
@@ -209,9 +216,11 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
         self.client.create_table(Table(view_name, RESEARCH_IDS_VIEW_SCHEMA))
         self.fq_table_names.append(view_name)
 
-        # Load the test data. Participant 77 is absent from primary_pid_rid_mapping
-        # and participant 88 has no controlled tier id yet. The aian column is 'no'
-        # throughout, because aian_list rather than that column is the cohort test.
+        # Load the test data. Participant 77 is absent from primary_pid_rid_mapping,
+        # participant 88 has no controlled tier id yet, and participant 99 is absent
+        # from the view entirely, so each of the three ways out of the cohort is
+        # covered. The aian column is 'no' throughout, because aian_list rather than
+        # that column is the cohort test.
         view_template = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.rdr_participant_research_ids_view`
             (participant_id, research_id, registered_tier_id, controlled_tier_id,
@@ -243,7 +252,7 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
             'sandboxed_ids': [3, 4, 8, 9, 11, 12],
             'fields': [
                 'observation_id',
@@ -264,7 +273,10 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
                                (9, 3, None, 1234234, 1585249, 0),
                                (10, 4, '', 0, 1586140, 1586141),
                                (11, 4, '000**', 0, 1585250, 0),
-                               (12, 4, None, 1234234, 1585249, 0)]
+                               (12, 4, None, 1234234, 1585249, 0),
+                               (13, 5, '', 0, 1586140, 1586141),
+                               (14, 5, '567**', 0, 1585250, 0),
+                               (15, 5, '', 1234234, 1585249, 0)]
         }]
 
         self.default_test(tables_and_counts)
