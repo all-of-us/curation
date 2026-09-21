@@ -194,11 +194,13 @@ class PediatricLifecycleCascadesTest(BaseTest.CleaningRulesTestBase):
         """
         Create the pairs lookup and load the fixture.
         """
+        super().setUp()
+
         self.client.create_table(Table(self.fq_links_table,
                                        PEDIATRIC_LINKS_SCHEMA),
                                  exists_ok=True)
 
-        self.load_statements = [
+        self.load_test_data([
             PEDIATRIC_LINKS_TEMPLATE.render(
                 project_id=self.project_id,
                 sandbox_id=self.rdr_sandbox_id,
@@ -210,9 +212,7 @@ class PediatricLifecycleCascadesTest(BaseTest.CleaningRulesTestBase):
             PS_AWARDEE_TEMPLATE.render(project_id=self.project_id,
                                        drc_ops=DRC_OPS,
                                        ps_awardee=PS_AWARDEE),
-        ]
-
-        super().setUp()
+        ])
 
     def tearDown(self):
         """
