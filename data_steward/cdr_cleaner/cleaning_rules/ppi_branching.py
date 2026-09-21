@@ -243,7 +243,7 @@ SELECT oc_observation_id
 """)
 
 CLEANED_ROWS_QUERY = JINJA_ENV.from_string("""
-SELECT {{ scope or 'src.*' }} 
+SELECT {{ scope | default('src.*', true) }}
 FROM `{{src.project}}.{{src.dataset_id}}.{{src.table_id}}` src
 WHERE NOT EXISTS
  (SELECT 1 
