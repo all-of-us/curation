@@ -596,7 +596,7 @@ def assert_output_dataset_is_safe(client, output_dataset_id, allow_replace):
     if allow_replace:
         LOGGER.info(
             f'--allow_replace given, existing tables in {output_dataset_id} '
-            f'will be replaced.')
+            f'will be deleted before the run writes.')
         return
 
     try:
@@ -1279,6 +1279,44 @@ def copy_table_to_output(client, project_id, input_dataset_id,
     job.result()
 
 
+def clear_output_dataset(client, project_id, output_dataset_id,
+                         other_dataset_ids):
+    """
+    Delete every table in the output dataset, so a rerun starts from what a first run does.
+
+    The load phases make each table the run writes repeatable, but none of them removes
+    a table the run does not write. A Fitbit, vocabulary or Achilles table a previous
+    attempt copied, or a discovered table since dropped from the input, would otherwise
+    stay in the output while the run reports success. main() calls this only under
+    --allow_replace, which is the caller accepting that existing tables go away.
+
+    :param client: BigQueryClient
+    :param project_id: identifies the GCP project
+    :param output_dataset_id: identifies the dataset to clear
+    :param other_dataset_ids: the run's input, pipeline and mapping datasets, none of
+        which may be the output dataset, since clearing it would delete their tables
+    :raises ValueError: if the output dataset is one of other_dataset_ids
+    """
+    if output_dataset_id in other_dataset_ids:
+        raise ValueError(
+            f'{output_dataset_id} is also an input, pipeline or mapping dataset of this '
+            f'run. --allow_replace deletes every table in the output dataset, so it '
+            f'has to be a dataset of its own.')
+
+    try:
+        existing = [
+            table.table_id for table in client.list_tables(output_dataset_id)
+        ]
+    except Exception:
+        # No dataset yet. main() creates it further down.
+        return
+
+    LOGGER.info(f'Deleting {len(existing)} tables from {output_dataset_id}...')
+    for table_id in existing:
+        client.delete_table(f'{project_id}.{output_dataset_id}.{table_id}',
+                            not_found_ok=True)
+
+
 def create_empty_output_table(client, project_id, output_dataset_id, table):
     """
     Drop and recreate one output table, so its load writes into a known schema.
@@ -1325,7 +1363,8 @@ def main(input_dataset_id,
     :param pipeline_dataset_id: dataset containing rdr_participant_research_ids_view for person mapping
     :param ct_plus_ids_view: view containing person_id to CT+ id mapping
     :param mapping_namespace: original dataset used to create the mappings
-    :param allow_replace: True to permit deleting tables already in the output dataset
+    :param allow_replace: True to delete every table already in the output dataset
+        before writing, so a rerun leaves nothing a previous attempt wrote
     :returns: list of tables generated successfully
     """
     bq_client = BigQueryClient(project_id)
@@ -1363,6 +1402,13 @@ def main(input_dataset_id,
     assert_person_mapping_covers_input(bq_client, project_id, input_dataset_id,
                                        pipeline_dataset_id, ct_plus_ids_view)
 
+    # Remove what a previous attempt left, including tables this run will not write.
+    # Placed after every assert, so a run that fails one leaves the dataset untouched.
+    if allow_replace:
+        clear_output_dataset(
+            bq_client, project_id, output_dataset_id,
+            (input_dataset_id, pipeline_dataset_id, mapping_dataset_id))
+
     # Create output dataset if it doesn't exist
     try:
         bq_client.get_dataset(output_dataset_id)
@@ -1374,7 +1420,8 @@ def main(input_dataset_id,
     # Create empty output tables to ensure proper schema, clustering, etc. Only the
     # CDM tables are prepared this way: every other group defines its own destination
     # schema at load time and is made rerunnable by its write disposition instead, so a
-    # rerun with --allow_replace does not meet an already-populated table anywhere.
+    # load never meets an already-populated table, even when a previous attempt was
+    # interrupted after clear_output_dataset() ran.
     for table in CDM_TABLES:
         create_empty_output_table(bq_client, project_id, output_dataset_id,
                                   table)

@@ -527,12 +527,18 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertLess(source.index('assert_person_mapping_covers_input'),
                         source.index('create_empty_output_table'))
 
-    def _run_main(self, discovery_tables=(), fitbit_in_input=True):
-        """Runs main() with every write mocked out. Returns the client and load mocks."""
+    def _patch_main(self,
+                    discovery_tables=(),
+                    fitbit_in_input=True,
+                    output_tables=()):
+        """Mocks every write main() makes. Returns the client and load mocks.
+
+        assert_output_dataset_is_safe is left real, so the refusal to write into a
+        non-empty output dataset is exercised through main() and not only on its own.
+        """
         self.addCleanup(mock.patch.stopall)
         for name in ('assert_person_mapping_is_ct_plus',
                      'assert_person_ids_have_not_moved',
-                     'assert_output_dataset_is_safe',
                      'assert_person_mapping_covers_input',
                      'assert_person_mapping_is_one_to_one', 'mapping',
                      'update_ext_table', 'copy_table_to_output'):
@@ -546,18 +552,26 @@ class RegenerateCtPlusIds(unittest.TestCase):
             field.name = name
             return field
 
+        listed = {
+            self.input_dataset_id: discovery_tables,
+            self.output_dataset_id: output_tables
+        }
+
         bq_client = client.return_value
         bq_client.get_table_schema.return_value = []
         bq_client.table_exists.side_effect = (
             lambda table, dataset: fitbit_in_input or table not in FITBIT_TABLES
         )
-        bq_client.list_tables.return_value = [
-            mock.Mock(table_id=table) for table in discovery_tables
+        bq_client.list_tables.side_effect = lambda dataset: [
+            mock.Mock(table_id=table) for table in listed.get(dataset, ())
         ]
         bq_client.get_table.return_value.schema = [
             _field('person_id'), _field(f'{AOU_DEATH}_id')
         ]
 
+        return bq_client, load
+
+    def _call_main(self, allow_replace=True):
         ct.main(self.input_dataset_id,
                 self.output_dataset_id,
                 self.project_id,
@@ -565,9 +579,83 @@ class RegenerateCtPlusIds(unittest.TestCase):
                 self.ids_view,
                 self.mapping_dataset_id,
                 ct.DEFAULT_MAPPING_NAMESPACE,
-                allow_replace=True)
+                allow_replace=allow_replace)
 
+    def _run_main(self, discovery_tables=(), fitbit_in_input=True):
+        """Runs main() with --allow_replace and every write mocked out."""
+        bq_client, load = self._patch_main(discovery_tables, fitbit_in_input)
+        self._call_main()
         return bq_client, load
+
+    def _deleted(self, bq_client):
+        """Names of the output tables main() deleted, in order."""
+        prefix = f'{self.project_id}.{self.output_dataset_id}.'
+        return [
+            call.args[0][len(prefix):]
+            for call in bq_client.delete_table.call_args_list
+            if call.args[0].startswith(prefix)
+        ]
+
+    def test_without_allow_replace_main_refuses_a_non_empty_output(self):
+        """The refusal has to hold in main(), before any table is deleted or written."""
+        bq_client, load = self._patch_main(output_tables=[OBSERVATION])
+
+        with self.assertRaises(RuntimeError):
+            self._call_main(allow_replace=False)
+
+        bq_client.delete_table.assert_not_called()
+        bq_client.create_table.assert_not_called()
+        load.assert_not_called()
+
+    def test_without_allow_replace_main_writes_into_an_empty_output(self):
+        bq_client, load = self._patch_main()
+
+        self._call_main(allow_replace=False)
+
+        self.assertTrue(load.called)
+
+    def test_a_rerun_removes_a_table_the_input_no_longer_has(self):
+        """A Fitbit table a previous attempt wrote must not survive the rerun."""
+        stale = FITBIT_TABLES[0]
+        bq_client, load = self._patch_main(fitbit_in_input=False,
+                                           output_tables=[stale])
+
+        self._call_main()
+
+        self.assertIn(stale, self._deleted(bq_client))
+        self.assertEqual(self._dispositions(load, [stale]), {})
+
+    def test_the_output_is_cleared_only_after_every_assert(self):
+        """A run that fails an assert has to leave the output dataset as it found it."""
+        source = inspect.getsource(ct.main)
+
+        self.assertLess(source.index('assert_person_mapping_covers_input('),
+                        source.index('clear_output_dataset('))
+        self.assertLess(source.index('clear_output_dataset('),
+                        source.index('create_empty_output_table('))
+
+    def test_clearing_refuses_an_output_that_is_another_dataset_of_the_run(
+            self):
+        """Clearing the mapping dataset would delete _mapping_person."""
+        client = mock.MagicMock()
+
+        with self.assertRaises(ValueError):
+            ct.clear_output_dataset(
+                client, self.project_id, self.mapping_dataset_id,
+                (self.input_dataset_id, self.pipeline_dataset_id,
+                 self.mapping_dataset_id))
+
+        client.list_tables.assert_not_called()
+        client.delete_table.assert_not_called()
+
+    def test_clearing_an_absent_output_dataset_deletes_nothing(self):
+        client = mock.MagicMock()
+        client.list_tables.side_effect = Exception('404 Not found')
+
+        ct.clear_output_dataset(client, self.project_id, self.output_dataset_id,
+                                (self.input_dataset_id,))
+
+        client.delete_table.assert_not_called()
 
     @staticmethod
     def _dispositions(load, tables):
