@@ -15,6 +15,8 @@ from cdr_cleaner.cleaning_rules.backfill_overall_health import BackfillOverallHe
 from cdr_cleaner.cleaning_rules.backfill_the_basics import BackfillTheBasics
 from cdr_cleaner.cleaning_rules.calculate_bmi import CalculateBmi
 from cdr_cleaner.cleaning_rules.calculate_primary_death_record import CalculatePrimaryDeathRecord
+from cdr_cleaner.cleaning_rules.capture_ct_plus_pediatric_cohort import (
+    CaptureCtPlusPediatricCohort, ConvertCtPlusPediatricCohortIds)
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
@@ -488,6 +490,10 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     # re-keys it to the research ID. The CT+ variant retains the '0-6' band.
     (
         RemoveFlaggedUnder18ParticipantsCtPlus,),
+    # Immediately after the removal, so the retained band and the captured band
+    # cannot differ. CT+ only.
+    (
+        CaptureCtPlusPediatricCohort,),
     (RtCtPIDtoRID,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (TruncateEraTables,),
@@ -524,6 +530,9 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (FilterNLPfromDomains,),
     (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+    # Last, because it reads the _deid_map the PID to RID rule builds. CT+ only.
+    (
+        ConvertCtPlusPediatricCohortIds,),
 ]
 
 CONTROLLED_TIER_PLUS_DEID_BASE_CLEANING_CLASSES = [
