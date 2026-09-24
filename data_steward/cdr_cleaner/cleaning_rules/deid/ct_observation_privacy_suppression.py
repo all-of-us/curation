@@ -16,6 +16,8 @@ import logging
 import pandas as pd
 
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.deid.concept_suppression import (
+    CT_PLUS_LOOKUP_SUFFIX, keep_ct_plus_suppressed, lookup_load_job_config)
 # Project imports
 from resources import CT_OBSERVATION_PRIVACY_CONCEPTS_PATH, CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH, \
     CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH
@@ -103,6 +105,10 @@ WHERE observation_id IN (
 
 class CTObservationPrivacySuppression(BaseCleaningRule):
 
+    # None keeps the client's default load, which appends, so CT behaves as it
+    # always has. The CT+ variant replaces it with a truncating load.
+    lookup_job_config = None
+
     def __init__(self,
                  project_id,
                  dataset_id,
@@ -128,29 +134,46 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
                          affected_tables=[OBSERVATION],
                          table_namer=table_namer)
 
+    def get_postc_concepts_df(self):
+        """
+        Concept rows for the post-coordinated lookup.
+
+        Split out from setup_rule so the CT+ variant has a single method to
+        override.
+        """
+        return pd.read_csv(CT_OBSERVATION_PRIVACY_CONCEPTS_PATH)
+
+    def get_rest_concepts_df(self):
+        """
+        Concept rows for the second, non-post-coordinated lookup.
+        """
+        df_all = pd.read_csv(CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
+        df_pr = pd.read_csv(CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH)
+        return pd.concat([df_all, df_pr], ignore_index=True)
+
     def setup_rule(self, client, *args, **keyword_args):
         """
         Create the suppression lookup table in the sandbox dataset
         :param client:
         """
-        df = pd.read_csv(CT_OBSERVATION_PRIVACY_CONCEPTS_PATH)
+        df = self.get_postc_concepts_df()
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
         table_ref = dataset_ref.table(self.ct_observation_postc_concept_table)
-        result = client.load_table_from_dataframe(df, table_ref).result()
+        result = client.load_table_from_dataframe(
+            df, table_ref, job_config=self.lookup_job_config).result()
 
         if hasattr(result, 'errors') and result.errors:
             LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
             raise GoogleCloudError(
                 f"Error running job {result.job_id}: {result.errors}")
 
-        df_all = pd.read_csv(CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH)
-        df_pr = pd.read_csv(CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH)
-        df = pd.concat([df_all, df_pr], ignore_index=True)
+        df = self.get_rest_concepts_df()
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
         table_ref = dataset_ref.table(self.ct_observation_rest_concept_table)
-        result = client.load_table_from_dataframe(df, table_ref).result()
+        result = client.load_table_from_dataframe(
+            df, table_ref, job_config=self.lookup_job_config).result()
 
         if hasattr(result, 'errors') and result.errors:
             LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
@@ -203,6 +226,34 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(table) for table in self.affected_tables]
+
+
+class CTObservationPrivacySuppressionCtPlus(CTObservationPrivacySuppression):
+    """
+    CT+ variant: suppress only the concepts not expanded in CT+.
+
+    Both lookups are narrowed, so an expanded concept survives whether it is
+    reached through the post-coordinated path or the other one.
+
+    Original Issue: DL-2428
+    """
+
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
+        super().__init__(project_id, dataset_id, sandbox_dataset_id,
+                         table_namer)
+        self.ct_observation_postc_concept_table += CT_PLUS_LOOKUP_SUFFIX
+        self.ct_observation_rest_concept_table += CT_PLUS_LOOKUP_SUFFIX
+        self.lookup_job_config = lookup_load_job_config()
+
+    def get_postc_concepts_df(self):
+        return keep_ct_plus_suppressed(super().get_postc_concepts_df())
+
+    def get_rest_concepts_df(self):
+        return keep_ct_plus_suppressed(super().get_rest_concepts_df())
 
 
 if __name__ == '__main__':
