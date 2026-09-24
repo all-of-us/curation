@@ -3,6 +3,8 @@ import unittest
 from mock import patch
 
 import cdr_cleaner.clean_cdr as cc
+from cdr_cleaner.cleaning_rules.capture_ct_plus_pediatric_cohort import (
+    CaptureCtPlusPediatricCohort, ConvertCtPlusPediatricCohortIds)
 from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import (
     CTAdditionalPrivacyConceptSuppression,
     CTAdditionalPrivacyConceptSuppressionCtPlus)
@@ -19,8 +21,9 @@ from constants.cdr_cleaner.clean_cdr import DataStage
 from tests.test_util import FakeRuleClass, fake_rule_func
 
 # The CT+ lists are hard copies of the CT lists, so drift is otherwise
-# invisible. Swapping in a CT+ variant at the same position is the only allowed
-# difference; anything else fails the copy-policy test below.
+# invisible. Two differences are allowed, and anything else fails the
+# copy-policy test below: swapping in a CT+ variant at the same position, and
+# inserting a rule that exists only in CT+.
 CT_PLUS_SUBSTITUTIONS = {
     CTAdditionalPrivacyConceptSuppression:
         CTAdditionalPrivacyConceptSuppressionCtPlus,
@@ -34,16 +37,32 @@ CT_PLUS_SUBSTITUTIONS = {
         CtPlusPIDtoRID,
 }
 
+CT_PLUS_ONLY_RULES = {
+    CaptureCtPlusPediatricCohort,
+    ConvertCtPlusPediatricCohortIds,
+}
+
 
 def expected_ct_plus_classes(ct_classes):
     """
-    A CT list rewritten the way its CT+ copy is allowed to differ.
+    A CT list rewritten the way its CT+ copy is allowed to differ, apart from
+    insertions of CT_PLUS_ONLY_RULES.
 
     :param ct_classes: the CT cleaning-classes list
-    :return: the CT+ list it should produce
+    :return: the CT+ list it should produce, less any CT+ only rules
     """
     return [(CT_PLUS_SUBSTITUTIONS.get(entry[0], entry[0]),) + tuple(entry[1:])
             for entry in ct_classes]
+
+
+def without_ct_plus_only_rules(ct_plus_classes):
+    """
+    :param ct_plus_classes: a CT+ cleaning-classes list
+    :return: the list with CT_PLUS_ONLY_RULES removed
+    """
+    return [
+        entry for entry in ct_plus_classes if entry[0] not in CT_PLUS_ONLY_RULES
+    ]
 
 
 class CleanCDRTest(unittest.TestCase):
@@ -97,16 +116,39 @@ class CleanCDRTest(unittest.TestCase):
         """
         for ct_plus_classes, ct_classes in self._ct_plus_pairs():
             self.assertEqual(expected_ct_plus_classes(ct_classes),
-                             ct_plus_classes)
+                             without_ct_plus_only_rules(ct_plus_classes))
             self.assertIsNot(ct_plus_classes, ct_classes)
 
+    def test_pediatric_cohort_rules_are_placed_around_the_deid_stage(self):
+        """The capture directly follows the CT+ under-18 removal, so the retained
+        band and the captured band cannot differ, and the conversion is last,
+        because it reads the _deid_map the PID to RID rule builds."""
+        rules = [
+            entry[0] for entry in cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        ]
+
+        self.assertEqual(
+            rules.index(CaptureCtPlusPediatricCohort),
+            rules.index(RemoveFlaggedUnder18ParticipantsCtPlus) + 1)
+        self.assertEqual(rules[-1], ConvertCtPlusPediatricCohortIds)
+
+    def test_ct_plus_only_rules_are_registered_once_in_the_deid_stage(self):
+        """Neither pediatric cohort rule appears in any other CT+ stage."""
+        for ct_plus_classes, _ in self._ct_plus_pairs():
+            rules = [entry[0] for entry in ct_plus_classes]
+            for rule in CT_PLUS_ONLY_RULES:
+                expected = (1 if ct_plus_classes
+                            is cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+                            else 0)
+                self.assertEqual(rules.count(rule), expected)
+
     def test_only_ct_plus_lists_carry_ct_plus_variants(self):
-        """No CT+ variant leaks into a CT, RT or fitbit list.
+        """No CT+ variant or CT+ only rule leaks into a CT, RT or fitbit list.
 
         A CT+ subclass registered elsewhere would under-suppress that tier.
         Scans every cleaning-classes list, not only the three CT ones.
         """
-        ct_plus_rules = set(CT_PLUS_SUBSTITUTIONS.values())
+        ct_plus_rules = set(CT_PLUS_SUBSTITUTIONS.values()) | CT_PLUS_ONLY_RULES
         scanned = 0
 
         for name in dir(cc):
@@ -159,7 +201,8 @@ class CleanCDRTest(unittest.TestCase):
             self.assertIn(args.data_stage, DataStage)
             self.assertEqual(args.data_stage.value, stage_value)
             self.assertEqual(
-                cc.DATA_STAGE_RULES_MAPPING[args.data_stage.value],
+                without_ct_plus_only_rules(
+                    cc.DATA_STAGE_RULES_MAPPING[args.data_stage.value]),
                 expected_ct_plus_classes(
                     cc.DATA_STAGE_RULES_MAPPING[ct_stage_value]))
 
