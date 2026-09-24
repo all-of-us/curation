@@ -176,6 +176,15 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertNotIn(
             f"src_table_id = '{ct.DEFAULT_MAPPING_NAMESPACE}.{PERSON}'", actual)
 
+    def test_fact_relationship_person_side_resolves_only_input_persons(self):
+        """_mapping_person mirrors the ids view, which can hold participants the
+        input person table does not. Their links would dangle in the output."""
+        actual = self._table_query(ct.FACT_RELATIONSHIP)
+        input_person = f'{self.project_id}.{self.input_dataset_id}.{PERSON}'
+
+        self.assertEqual(actual.count(f'JOIN `{input_person}` AS p'), 2)
+        self.assertIn('ON p.person_id = mp.src_person_id', actual)
+
     def test_fact_relationship_keeps_the_namespace_src_table_id_for_other_domains(
             self):
         """Only the person domain takes the special src_table_id."""
@@ -433,19 +442,20 @@ class RegenerateCtPlusIds(unittest.TestCase):
                         source.index('Generating mapping tables'))
 
     @staticmethod
-    def _linkage_client(in_count, out_count, exists=True):
+    def _linkage_client(in_count, out_count, absent_count=0, exists=True):
         client = mock.MagicMock()
         client.table_exists.return_value = exists
         client.query.return_value.result.return_value = [{
             'in_count': in_count,
+            'absent_count': absent_count,
             'out_count': out_count
         }]
         return client
 
     def _assert_linkage_survived(self, client):
-        ct.assert_person_linkage_survived_the_remap(client, self.project_id,
-                                                    self.input_dataset_id,
-                                                    self.output_dataset_id)
+        return ct.assert_person_linkage_survived_the_remap(
+            client, self.project_id, self.input_dataset_id,
+            self.output_dataset_id)
 
     def test_every_linkage_row_surviving_is_accepted(self):
         self._assert_linkage_survived(self._linkage_client(2, 2))
@@ -464,21 +474,43 @@ class RegenerateCtPlusIds(unittest.TestCase):
 
         self.assertIn('kept 1 of 2', str(ctx.exception))
 
+    def test_a_row_naming_a_person_absent_from_input_is_counted_not_fatal(self):
+        """Its link would dangle, so the remap drops it by design."""
+        client = self._linkage_client(1, 1, absent_count=1)
+
+        self.assertEqual(self._assert_linkage_survived(client), 1)
+
+    def test_an_absent_person_does_not_excuse_a_dropped_linkage_row(self):
+        client = self._linkage_client(2, 1, absent_count=1)
+
+        with self.assertRaises(RuntimeError):
+            self._assert_linkage_survived(client)
+
     def test_missing_fact_relationship_skips_the_linkage_check(self):
         client = self._linkage_client(0, 0, exists=False)
 
-        self._assert_linkage_survived(client)
+        self.assertEqual(self._assert_linkage_survived(client), 0)
 
         client.query.assert_not_called()
 
-    def test_linkage_check_counts_the_person_domain_on_both_sides(self):
+    def test_linkage_check_tests_each_person_side_against_input_person(self):
         client = self._linkage_client(0, 0)
 
         self._assert_linkage_survived(client)
 
         q = client.query.call_args.args[0]
-        self.assertIn(f'domain_concept_id_1 = {ct.PERSON_DOMAIN_CONCEPT_ID}', q)
-        self.assertIn(f'domain_concept_id_2 = {ct.PERSON_DOMAIN_CONCEPT_ID}', q)
+        input_person = f'{self.project_id}.{self.input_dataset_id}.{PERSON}'
+        for side in ('1', '2'):
+            with self.subTest(side=side):
+                self.assertIn(
+                    f'domain_concept_id_{side} != {ct.PERSON_DOMAIN_CONCEPT_ID}',
+                    q)
+                self.assertIn(
+                    f'fact_id_{side} IN (SELECT person_id FROM `{input_person}`)',
+                    q)
+        self.assertIn(
+            f'{ct.PERSON_DOMAIN_CONCEPT_ID} IN '
+            f'(domain_concept_id_1, domain_concept_id_2)', q)
 
     def test_linkage_check_runs_after_fact_relationship_is_loaded(self):
         """It reads the output table, so it cannot precede the load loop."""

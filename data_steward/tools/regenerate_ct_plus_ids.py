@@ -687,9 +687,14 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
     Person domain joins match on person_mapping_src_table_id() rather than
     '<mapping_namespace>.person', because _mapping_person mirrors the CT+ ids view
     instead of being minted by mapping_query(). The generic stamp matches no row, so
-    every person domain row would be dropped with no error. A person_id missing from
-    _mapping_person is dropped the same way; assert_person_linkage_survived_the_remap()
-    catches that case.
+    every person domain row would be dropped with no error.
+
+    The same mirroring means _mapping_person can hold participants the input person
+    table does not, so the person side resolves only ids present in input person.
+    Without that, a linkage row naming an adult who is in the view but not in the
+    dataset would survive pointing at a person row that does not exist. Such rows are
+    dropped and counted by assert_person_linkage_survived_the_remap(), which also stops
+    the run for any other person domain row the remap dropped.
 
     :param input_dataset_id: identifies dataset containing source data
     :param project_id: identifies the GCP project
@@ -710,16 +715,27 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
             mapping_tbl = mapping_table_for(domain_table)
             src_field = f'src_{domain_table}_id'
             id_field = f'{domain_table}_id'
-            src_table_id = (person_src_table_id if domain_table == PERSON else
-                            f'{mapping_namespace}.{domain_table}')
             whens.append(
                 f'''WHEN fr.domain_concept_id_{side} = {domain_concept_id}
               THEN {alias}.{id_field}''')
+            if domain_table == PERSON:
+                # Restricted to the input person table, see the docstring
+                join_exprs.append(f'''
+    LEFT JOIN (
+        SELECT mp.{src_field}, mp.{id_field}
+        FROM `{project_id}.{mapping_dataset_id}.{mapping_tbl}` AS mp
+        JOIN `{project_id}.{input_dataset_id}.{PERSON}` AS p
+          ON p.person_id = mp.{src_field}
+        WHERE mp.src_table_id = '{person_src_table_id}'
+    ) AS {alias}
+      ON fr.fact_id_{side} = {alias}.{src_field}
+     AND fr.domain_concept_id_{side} = {domain_concept_id} ''')
+                continue
             join_exprs.append(f'''
     LEFT JOIN `{project_id}.{mapping_dataset_id}.{mapping_tbl}` AS {alias}
       ON fr.fact_id_{side} = {alias}.{src_field}
      AND fr.domain_concept_id_{side} = {domain_concept_id}
-     AND {alias}.src_table_id = '{src_table_id}' ''')
+     AND {alias}.src_table_id = '{mapping_namespace}.{domain_table}' ''')
         case_exprs[side] = '\n            '.join(whens)
 
     joins = ''.join(join_exprs)
@@ -750,14 +766,16 @@ def assert_person_linkage_survived_the_remap(client, project_id,
                                              input_dataset_id,
                                              output_dataset_id):
     """
-    Stop the run if the remap dropped person domain fact_relationship rows.
+    Count the person domain fact_relationship rows the remap dropped, and stop the run
+    on any it should have kept.
 
-    Person domain rows are adult-child linkage records, and both fact ids resolve
-    through _mapping_person. A fact id with no mapping row resolves to NULL and the
-    NOT NULL filter in fact_relationship_query() drops the record without error. That
-    happens when the CT+ ids view does not cover the participant, as for pediatric
-    participants while it is capped at primary_pid_rid_mapping, or when the fact id is
-    not a controlled tier id in the first place.
+    Person domain rows are adult-child linkage records. A row naming a person absent
+    from the input person table is dropped by design, since its link would dangle, and
+    is only counted. Any other dropped row names a person_id with no _mapping_person
+    row: the CT+ ids view does not cover the participant, as for pediatric participants
+    while it is capped at primary_pid_rid_mapping, or the fact id is not a controlled
+    tier id in the first place. fact_relationship_query() drops those without error, so
+    this stops the run.
 
     Inert while the input holds no linkage rows, since zero in is zero out.
 
@@ -765,32 +783,56 @@ def assert_person_linkage_survived_the_remap(client, project_id,
     :param project_id: identifies the GCP project
     :param input_dataset_id: identifies the dataset the remap read
     :param output_dataset_id: identifies the dataset the remap wrote
-    :raises RuntimeError: if fewer person domain rows came out than went in
+    :return: the number of rows dropped for naming a person absent from input person
+    :raises RuntimeError: if fewer rows came out than named only persons in input person
     """
     if not (client.table_exists(FACT_RELATIONSHIP, input_dataset_id) and
             client.table_exists(FACT_RELATIONSHIP, output_dataset_id)):
-        return
+        return 0
 
+    input_person = f'`{project_id}.{input_dataset_id}.{PERSON}`'
+    person_domain = (f'{PERSON_DOMAIN_CONCEPT_ID} IN '
+                     f'(domain_concept_id_1, domain_concept_id_2)')
+
+    # A side is in person when it is not person domain or its fact id is in input
+    # person. Every column involved is REQUIRED, so in_person is never NULL.
     q = f'''
     SELECT
-        (SELECT COUNT(*)
-         FROM `{project_id}.{input_dataset_id}.{FACT_RELATIONSHIP}`
-         WHERE domain_concept_id_1 = {PERSON_DOMAIN_CONCEPT_ID}
-            OR domain_concept_id_2 = {PERSON_DOMAIN_CONCEPT_ID}) AS in_count,
+        COUNTIF(in_person) AS in_count,
+        COUNTIF(NOT in_person) AS absent_count,
         (SELECT COUNT(*)
          FROM `{project_id}.{output_dataset_id}.{FACT_RELATIONSHIP}`
-         WHERE domain_concept_id_1 = {PERSON_DOMAIN_CONCEPT_ID}
-            OR domain_concept_id_2 = {PERSON_DOMAIN_CONCEPT_ID}) AS out_count
+         WHERE {person_domain}) AS out_count
+    FROM (
+        SELECT
+            (domain_concept_id_1 != {PERSON_DOMAIN_CONCEPT_ID} OR
+             fact_id_1 IN (SELECT person_id FROM {input_person}))
+            AND
+            (domain_concept_id_2 != {PERSON_DOMAIN_CONCEPT_ID} OR
+             fact_id_2 IN (SELECT person_id FROM {input_person}))
+            AS in_person
+        FROM `{project_id}.{input_dataset_id}.{FACT_RELATIONSHIP}`
+        WHERE {person_domain}
+    )
     '''
     row = list(client.query(q).result())[0]
-    in_count, out_count = row['in_count'], row['out_count']
+    in_count, absent_count, out_count = (row['in_count'], row['absent_count'],
+                                         row['out_count'])
+
+    if absent_count:
+        LOGGER.info(
+            f'Dropped {absent_count} person domain linkage rows naming a person '
+            f'absent from {input_dataset_id}.{PERSON}.')
 
     if out_count < in_count:
         raise RuntimeError(
             f'{output_dataset_id}.{FACT_RELATIONSHIP} kept {out_count} of '
-            f'{in_count} person domain linkage rows. The rest name a person_id '
-            f'with no _mapping_person row: either the CT+ ids view does not cover '
-            f'the participant, or the fact id is not a controlled tier id.')
+            f'{in_count} person domain linkage rows whose persons are all in '
+            f'{input_dataset_id}.{PERSON}. The rest name a person_id with no '
+            f'_mapping_person row: either the CT+ ids view does not cover the '
+            f'participant, or the fact id is not a controlled tier id.')
+
+    return absent_count
 
 
 def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
