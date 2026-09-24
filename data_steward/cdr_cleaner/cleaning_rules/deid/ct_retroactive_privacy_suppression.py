@@ -17,7 +17,7 @@ from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import (
     AbstractBqLookupTableConceptSuppression, CT_PLUS_LOOKUP_SUFFIX,
-    keep_ct_plus_suppressed)
+    keep_ct_plus_suppressed, lookup_load_job_config)
 from resources import (ADDITIONAL_PRIVACY_CONCEPTS_PATH)
 
 # Third party imports
@@ -32,6 +32,12 @@ PRIVACY_CONCEPTS_PATH = os.path.join(ADDITIONAL_PRIVACY_CONCEPTS_PATH,
 
 class CTRetroactivePrivacyConceptSuppression(
         AbstractBqLookupTableConceptSuppression):
+
+    # None keeps the client's default load, which appends. The CT+ variant
+    # replaces it with a truncating load; CT keeps appending because its
+    # retroactive lookup shares a table name and sandbox with RT's, and
+    # truncating would change which concepts CT suppresses.
+    lookup_job_config = None
 
     def __init__(self,
                  project_id,
@@ -78,7 +84,8 @@ class CTRetroactivePrivacyConceptSuppression(
         dataset_ref = bigquery.DatasetReference(self.project_id,
                                                 self.sandbox_dataset_id)
         table_ref = dataset_ref.table(self.concept_suppression_lookup_table)
-        result = client.load_table_from_dataframe(df, table_ref).result()
+        result = client.load_table_from_dataframe(
+            df, table_ref, job_config=self.lookup_job_config).result()
 
         if hasattr(result, 'errors') and result.errors:
             LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
@@ -139,6 +146,7 @@ class CTRetroactivePrivacyConceptSuppressionCtPlus(
         super().__init__(project_id, dataset_id, sandbox_dataset_id,
                          table_namer)
         self._concept_suppression_lookup_table += CT_PLUS_LOOKUP_SUFFIX
+        self.lookup_job_config = lookup_load_job_config()
 
     def get_suppression_concepts_df(self):
         return keep_ct_plus_suppressed(super().get_suppression_concepts_df())

@@ -1,5 +1,6 @@
 import logging
 from abc import abstractmethod
+from google.cloud.bigquery import LoadJobConfig, WriteDisposition
 from google.cloud.bigquery.client import Client
 from google.cloud.exceptions import GoogleCloudError
 from pandas.api.types import is_bool_dtype
@@ -18,11 +19,21 @@ LOGGER = logging.getLogger(__name__)
 # suppressed in CT+. Added by DL-2419, populated by DL-2421.
 CT_PLUS_SUPPRESSED = 'ct_plus_suppressed'
 
-# Appended to a CT lookup table name by the CT+ variants. The lookup loads
-# append rather than truncate, so a CT stage and a CT+ stage sharing a sandbox
-# dataset would otherwise union their concept sets and silently re-suppress the
-# concepts CT+ exists to keep.
+# Appended to a CT lookup table name by the CT+ variants, so a CT stage and a
+# CT+ stage sharing a sandbox dataset never load into the same lookup table.
 CT_PLUS_LOOKUP_SUFFIX = '_ct_plus'
+
+
+def lookup_load_job_config():
+    """
+    Job config for loading a CT+ suppression lookup into the sandbox.
+
+    Truncates, so a rerun against the same sandbox dataset replaces the lookup
+    rather than appending to it. An appended lookup keeps concepts from an
+    earlier run, which re-suppresses a concept whose ct_plus_suppressed flag
+    has since been flipped to false.
+    """
+    return LoadJobConfig(write_disposition=WriteDisposition.WRITE_TRUNCATE)
 
 
 def keep_ct_plus_suppressed(df):

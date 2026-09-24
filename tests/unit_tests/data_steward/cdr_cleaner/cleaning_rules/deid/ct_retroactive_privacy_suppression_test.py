@@ -14,6 +14,9 @@ import tempfile
 import unittest
 from unittest import mock
 
+# Third party imports
+from google.cloud.bigquery import WriteDisposition
+
 # Project Imports
 import cdr_cleaner.cleaning_rules.deid.ct_retroactive_privacy_suppression as rule_module
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
@@ -81,8 +84,8 @@ class CTRetroactivePrivacyConceptSuppressionCtPlusTest(unittest.TestCase):
 
     def test_variant_uses_its_own_lookup_table(self):
         """
-        The lookup load appends, so sharing CT's table name in one sandbox
-        dataset would union the two concept sets.
+        Sharing CT's table name in one sandbox dataset would mix the CT and
+        CT+ concept sets in one lookup.
         """
         base = CTRetroactivePrivacyConceptSuppression(*self.args)
         variant = CTRetroactivePrivacyConceptSuppressionCtPlus(*self.args)
@@ -90,3 +93,22 @@ class CTRetroactivePrivacyConceptSuppressionCtPlusTest(unittest.TestCase):
         self.assertEqual(
             base.concept_suppression_lookup_table + CT_PLUS_LOOKUP_SUFFIX,
             variant.concept_suppression_lookup_table)
+
+    def test_only_the_variant_replaces_its_lookup(self):
+        """
+        A CT+ rerun against the same sandbox must not keep a concept whose flag
+        was flipped to false since the last run, which an appending load would.
+        CT keeps the client's default append, so its behaviour is unchanged.
+        """
+        client = mock.MagicMock()
+        client.load_table_from_dataframe.return_value.result.return_value.errors = None
+
+        CTRetroactivePrivacyConceptSuppression(
+            *self.args).create_suppression_lookup_table(client)
+        CTRetroactivePrivacyConceptSuppressionCtPlus(
+            *self.args).create_suppression_lookup_table(client)
+
+        base_call, variant_call = client.load_table_from_dataframe.call_args_list
+        self.assertIsNone(base_call.kwargs['job_config'])
+        self.assertEqual(WriteDisposition.WRITE_TRUNCATE,
+                         variant_call.kwargs['job_config'].write_disposition)
