@@ -293,6 +293,7 @@ PIPELINE_TABLES = 'pipeline_tables'
 SITE_MASKING_TABLE_ID = 'site_maskings'
 PID_RID_MAPPING = 'pid_rid_mapping'
 PRIMARY_PID_RID_MAPPING = 'primary_pid_rid_mapping'
+RDR_PARTICIPANT_RESEARCH_IDS_VIEW = 'rdr_participant_research_ids_view'
 IDENTICAL_LABS_LOOKUP_TABLE = 'identical_labs_modification'
 ZIP3_LOOKUP = 'zip3_lookup'
 ZIP3_SES_MAP = 'zip3_ses_map'
@@ -306,6 +307,14 @@ DEID_QUESTIONNAIRE_RESPONSE_MAP = '_deid_questionnaire_response_map'
 AIAN_LIST = 'aian_list'
 
 UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
+
+# CT+ capture tables, written to the controlled_plus deid stage sandbox and read after
+# the re-key by the add-on dataset producers
+CT_PLUS_PEDIATRIC_COHORT = 'ct_plus_pediatric_cohort'
+
+# Written against the re-keyed CT+ dataset; identifies participants in
+# subject_person_id and related_person_id rather than person_id
+PEDIATRIC_RELATIONSHIP_EXT = 'pediatric_relationship_ext'
 
 # CDR tiers, and the dataset naming they drive
 REGISTERED = 'registered'
@@ -337,6 +346,63 @@ PIPELINE_DATASET_SUFFIX = {
     CONTROLLED: '',
     CONTROLLED_PLUS: '_pre_rekey',
 }
+
+# Suffix on the CT+ re-key output, which still holds every add-on component inline.
+# The add-on producers and the mainline assembly all read the dataset carrying it.
+CT_PLUS_PRE_SPLIT_SUFFIX = '_pre_split'
+
+# CT+ add-on components. Only ELEMENT_DELTA is one dataset per data element; the other
+# three are one dataset each, however many data elements they carry.
+CT_PLUS_ELEMENT_DELTA = 'element_delta'
+CT_PLUS_ZIP5 = 'zip5'
+CT_PLUS_DOB_INDICATORS = 'dob_indicators'
+CT_PLUS_PEDIATRICS = 'pediatrics'
+
+CT_PLUS_COMPONENT_DATASET_SUFFIX = {
+    CT_PLUS_ZIP5: 'zip5',
+    CT_PLUS_DOB_INDICATORS: 'dob',
+    CT_PLUS_PEDIATRICS: 'pediatrics',
+}
+
+
+def get_ct_plus_addon_dataset_name(release_tag,
+                                   ct_plus_component,
+                                   data_element=None):
+    """
+    Get the curation-prod name of a CT+ add-on dataset.
+
+    Every add-on producer and the output prod copy derive their names from here rather
+    than formatting a string each.
+
+    :param release_tag: release tag, e.g. '2025q4r7'
+    :param ct_plus_component: one of CT_PLUS_ELEMENT_DELTA or the keys of
+        CT_PLUS_COMPONENT_DATASET_SUFFIX
+    :param data_element: the data element, required for CT_PLUS_ELEMENT_DELTA and
+        refused for every other component
+    :return: the dataset name, e.g. 'CP2025q4r7_pediatrics'
+    :raises ValueError: on an unknown component or a misplaced data_element
+    """
+    prefix = f'{TIER_DATASET_PREFIX[CONTROLLED_PLUS]}{release_tag}'
+
+    if ct_plus_component == CT_PLUS_ELEMENT_DELTA:
+        if not data_element:
+            raise ValueError(
+                f'{CT_PLUS_ELEMENT_DELTA} datasets are one per data element, '
+                f'so data_element is required')
+        return f'{prefix}_{data_element}'
+
+    if ct_plus_component not in CT_PLUS_COMPONENT_DATASET_SUFFIX:
+        raise ValueError(
+            f'Unknown ct_plus_component {ct_plus_component!r}. Expected one of '
+            f'{sorted([CT_PLUS_ELEMENT_DELTA, *CT_PLUS_COMPONENT_DATASET_SUFFIX])}'
+        )
+    if data_element:
+        raise ValueError(
+            f'{ct_plus_component} is one dataset however many data elements it '
+            f'carries, so data_element must not be given')
+
+    return f'{prefix}_{CT_PLUS_COMPONENT_DATASET_SUFFIX[ct_plus_component]}'
+
 
 # Participant Summary
 EHR_OPS = 'ehr_ops'
