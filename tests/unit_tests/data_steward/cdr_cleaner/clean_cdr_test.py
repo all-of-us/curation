@@ -111,9 +111,17 @@ class CleanCDRTest(unittest.TestCase):
         self.assertIn((CtPlusPIDtoRID,), ct_plus)
         self.assertNotIn((RtCtPIDtoRID,), ct_plus)
 
-        # The registered and controlled tiers keep the original rule and its source.
+        # The controlled tier keeps the original rule and its source.
         self.assertIn((RtCtPIDtoRID,), ct)
         self.assertNotIn((CtPlusPIDtoRID,), ct)
+
+        # The registered tier re-keys in the legacy deid step, so RtCtPIDtoRID is
+        # commented out of its lists and not asserted here. What matters for this
+        # change is that the CT+ rule reaches none of them.
+        for rt_classes in (cc.REGISTERED_TIER_DEID_CLEANING_CLASSES,
+                           cc.REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES,
+                           cc.REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES):
+            self.assertNotIn((CtPlusPIDtoRID,), rt_classes)
 
     def test_parser_controlled_tier_plus_data_stages(self):
         """The parser accepts the CT+ stages and resolves them to the CT+ rules."""

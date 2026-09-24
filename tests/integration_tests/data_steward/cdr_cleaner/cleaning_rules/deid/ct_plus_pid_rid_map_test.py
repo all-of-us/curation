@@ -129,7 +129,7 @@ class CtPlusPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
          registered_tier_date_shift)
         VALUES
             ({{mainline_pid}}, {{mainline_rid}}, 3001, 100),
-            -- byte identical duplicate, collapsed by the rule's SELECT DISTINCT --
+            -- byte identical duplicate, collapsed by the rule's GROUP BY --
             ({{mainline_pid}}, {{mainline_rid}}, 3001, 100),
             ({{pediatric_pid}}, {{pediatric_rid}}, 3002, 101),
             -- no controlled_tier_id, so no RID to substitute --
@@ -232,9 +232,9 @@ class CtPlusPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
     def test_disagreeing_view_rows_abort(self):
         """A participant with two conflicting rows stops the run before anything is written.
 
-        SELECT DISTINCT removes byte identical duplicates only. A pair disagreeing on
-        the ID or the shift would put the participant in the map twice and make
-        PIDtoRID's UPDATE match two source rows for one target row.
+        The map's GROUP BY cannot collapse a pair disagreeing on the ID, which would
+        put the participant in the map twice and make PIDtoRID's UPDATE match two
+        source rows for one target row.
         """
         # same participant, different controlled_tier_id
         self.load_ids_view(
@@ -244,6 +244,28 @@ class CtPlusPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             self.rule_instance.setup_rule(self.client)
 
         self.assertIn(str(PEDIATRIC_PID), str(cm.exception))
+
+    def test_a_null_shift_beside_a_valid_one_keeps_the_valid_one(self):
+        """A NULL shift is not a disagreement, so it neither aborts nor duplicates.
+
+        The pediatric cohort arrives with a NULL shift, so NULL cannot be filtered
+        out; but a participant carrying a NULL row beside a valued one must still map
+        once, with the valued shift.
+        """
+        self.load_fixtures()
+        self.load_test_data([
+            f'INSERT INTO `{self.fq_ids_view_table}` '
+            f'(participant_id, controlled_tier_id, controlled_tier_plus_id, '
+            f'registered_tier_date_shift) '
+            f'VALUES ({MAINLINE_PID}, {MAINLINE_RID}, 3001, NULL)'
+        ])
+
+        self.rule_instance.setup_rule(self.client)
+
+        self.assertEqual(self.read_deid_map(), [
+            (MAINLINE_PID, MAINLINE_RID, 100),
+            (PEDIATRIC_PID, PEDIATRIC_RID, 101),
+        ])
 
     def test_field_cleaning(self):
         """The pediatric participant survives and every survivor carries its CT ID.
