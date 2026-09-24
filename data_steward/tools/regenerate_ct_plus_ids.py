@@ -127,16 +127,12 @@ CT_PLUS_PERSON_MAPPING_SUFFIX = 'ct_plus'
 # releases with no error. Do not override this without changing both call sites.
 DEFAULT_MAPPING_NAMESPACE = 'ct_plus'
 
-# fact_relationship stores a domain concept id beside each fact id rather than a
-# foreign key column, so the remap has to switch on it. The domains below are the
-# ones observed in the CT input, plus person, which the CT+ pediatric adult-child
-# linkage records use; anything else is left for the unmapped domain handling in
-# fact_relationship_query(). Concept ids resolve as:
+# fact_relationship qualifies each fact id with a domain concept id rather than a
+# foreign key column, so the remap switches on it. These are the domains observed in
+# the CT input plus person, which the CT+ pediatric adult-child linkage uses. Any
+# other domain resolves to NULL and is dropped in fact_relationship_query().
 #   10 Procedure, 13 Drug, 19 Condition, 21 Measurement, 27 Observation,
 #   56 Person, 57 Care site
-# On a person domain row both fact ids are person_ids, so they are re-keyed from
-# _mapping_person like every person_id in the dataset. That mapping is stamped with
-# a different src_table_id from the rest, which fact_relationship_query() handles.
 DOMAIN_CONCEPT_ID_TO_TABLE = {
     10: PROCEDURE_OCCURRENCE,
     13: DRUG_EXPOSURE,
@@ -688,18 +684,12 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
     table (see constants/tools/create_combined_backup_dataset.py FACT_RELATIONSHIP_QUERY,
     which applies the same filter after remapping measurement and observation).
 
-    The person domain needs its own src_table_id. Every other mapping table is stamped
-    '<mapping_namespace>.<table>' by mapping_query(), but _mapping_person is not minted
-    here at all: it mirrors the CT+ ids view and is stamped with
-    person_mapping_src_table_id(). Deriving it the generic way matches no row, and
-    because the join is a LEFT JOIN under a NOT NULL filter, every person domain row
-    would be dropped with no error rather than failing the run.
-
-    A person domain row is dropped just as quietly when _mapping_person simply holds no
-    row for the participant, which is the state of every pediatric participant while the
-    CT+ ids view stays capped at primary_pid_rid_mapping. The src_table_id above is what
-    makes the join reachable; assert_person_linkage_survived_the_remap() is what reports
-    the rows that were reachable and still found nothing.
+    Person domain joins match on person_mapping_src_table_id() rather than
+    '<mapping_namespace>.person', because _mapping_person mirrors the CT+ ids view
+    instead of being minted by mapping_query(). The generic stamp matches no row, so
+    every person domain row would be dropped with no error. A person_id missing from
+    _mapping_person is dropped the same way; assert_person_linkage_survived_the_remap()
+    catches that case.
 
     :param input_dataset_id: identifies dataset containing source data
     :param project_id: identifies the GCP project
@@ -762,21 +752,14 @@ def assert_person_linkage_survived_the_remap(client, project_id,
     """
     Stop the run if the remap dropped person domain fact_relationship rows.
 
-    A person domain row is an adult-child linkage record, and both of its fact ids are
-    person_ids resolved through _mapping_person. That mapping is built entirely from
-    the CT+ ids view, which inner joins pipeline_tables.primary_pid_rid_mapping and is
-    capped at its population. The view omits every pediatric participant today, so a
-    linkage row naming one finds no mapping row, resolves to NULL, and is removed by
-    the NOT NULL filter in fact_relationship_query() with no error.
+    Person domain rows are adult-child linkage records, and both fact ids resolve
+    through _mapping_person. A fact id with no mapping row resolves to NULL and the
+    NOT NULL filter in fact_relationship_query() drops the record without error. That
+    happens when the CT+ ids view does not cover the participant, as for pediatric
+    participants while it is capped at primary_pid_rid_mapping, or when the fact id is
+    not a controlled tier id in the first place.
 
-    That is the same failure the per domain src_table_id fixes, reached a different
-    way: one is a predicate that matches no row, this is a mapping that holds no row.
-    Neither raises on its own, because dropping unresolvable fact ids is what the
-    filter is for.
-
-    The check is inert while no linkage rows exist, since zero in is zero out. It fires
-    the first time linkage records are emitted against an ids view that does not cover
-    the participants they name.
+    Inert while the input holds no linkage rows, since zero in is zero out.
 
     :param client: BigQueryClient
     :param project_id: identifies the GCP project
@@ -805,9 +788,9 @@ def assert_person_linkage_survived_the_remap(client, project_id,
     if out_count < in_count:
         raise RuntimeError(
             f'{output_dataset_id}.{FACT_RELATIONSHIP} kept {out_count} of '
-            f'{in_count} person domain linkage rows. The missing rows name a '
-            f'participant the CT+ ids view does not cover, so _mapping_person '
-            f'holds no row for them and the remap dropped them silently.')
+            f'{in_count} person domain linkage rows. The rest name a person_id '
+            f'with no _mapping_person row: either the CT+ ids view does not cover '
+            f'the participant, or the fact id is not a controlled tier id.')
 
 
 def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
@@ -1530,8 +1513,7 @@ def main(input_dataset_id,
              project_id, pipeline_dataset_id, ct_plus_ids_view,
              mapping_dataset_id, mapping_namespace)
 
-    # Refuse to finish having silently dropped adult-child linkage records. This has to
-    # come after the load loop that writes fact_relationship.
+    # Reads the loaded fact_relationship, so it must follow the load loop
     assert_person_linkage_survived_the_remap(bq_client, project_id,
                                              input_dataset_id,
                                              output_dataset_id)

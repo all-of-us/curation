@@ -150,8 +150,8 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertIn('AND fact_id_2 IS NOT NULL', actual)
 
     def test_fact_relationship_domain_map_covers_the_observed_domains(self):
-        """Domains seen in the CT input, plus person for the CT+ pediatric
-        adult-child linkage records. Anything else resolves to NULL and is dropped."""
+        """Domains seen in the CT input plus person for the pediatric linkage.
+        Anything else resolves to NULL and is dropped."""
         expected = {
             10: PROCEDURE_OCCURRENCE,
             13: DRUG_EXPOSURE,
@@ -166,10 +166,8 @@ class RegenerateCtPlusIds(unittest.TestCase):
 
     def test_fact_relationship_person_side_uses_the_person_mapping_src_table_id(
             self):
-        """_mapping_person is stamped by person_mapping_src_table_id(), not
-        '<namespace>.person'. The generic predicate matches no row, and the join is a
-        LEFT JOIN under a NOT NULL filter, so every linkage row would be dropped with
-        no error."""
+        """_mapping_person is stamped by person_mapping_src_table_id(). The generic
+        '<namespace>.person' stamp matches no row and would drop every linkage row."""
         actual = self._table_query(ct.FACT_RELATIONSHIP)
         expected = ct.person_mapping_src_table_id(self.pipeline_dataset_id,
                                                   self.ids_view)
@@ -457,8 +455,8 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self._assert_linkage_survived(self._linkage_client(0, 0))
 
     def test_a_dropped_linkage_row_stops_the_run(self):
-        """The participant is absent from the ids view, so _mapping_person has no row
-        and the NOT NULL filter removes the linkage record with no error."""
+        """A person_id with no _mapping_person row is dropped by the NOT NULL
+        filter without error, so the check has to stop the run."""
         client = self._linkage_client(2, 1)
 
         with self.assertRaises(RuntimeError) as ctx:
