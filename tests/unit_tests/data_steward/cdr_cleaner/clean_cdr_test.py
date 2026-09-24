@@ -3,7 +3,15 @@ import unittest
 from mock import patch
 
 import cdr_cleaner.clean_cdr as cc
+from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import (
+    CTAdditionalPrivacyConceptSuppression,
+    CTAdditionalPrivacyConceptSuppressionCtPlus)
+from cdr_cleaner.cleaning_rules.deid.ct_observation_privacy_suppression import (
+    CTObservationPrivacySuppression, CTObservationPrivacySuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.deid.ct_plus_pid_rid_map import CtPlusPIDtoRID
+from cdr_cleaner.cleaning_rules.deid.ct_retroactive_privacy_suppression import (
+    CTRetroactivePrivacyConceptSuppression,
+    CTRetroactivePrivacyConceptSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import (
     RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus)
 from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
@@ -14,8 +22,16 @@ from tests.test_util import FakeRuleClass, fake_rule_func
 # invisible. Swapping in a CT+ variant at the same position is the only allowed
 # difference; anything else fails the copy-policy test below.
 CT_PLUS_SUBSTITUTIONS = {
-    RemoveFlaggedUnder18Participants: RemoveFlaggedUnder18ParticipantsCtPlus,
-    RtCtPIDtoRID: CtPlusPIDtoRID,
+    CTAdditionalPrivacyConceptSuppression:
+        CTAdditionalPrivacyConceptSuppressionCtPlus,
+    CTObservationPrivacySuppression:
+        CTObservationPrivacySuppressionCtPlus,
+    CTRetroactivePrivacyConceptSuppression:
+        CTRetroactivePrivacyConceptSuppressionCtPlus,
+    RemoveFlaggedUnder18Participants:
+        RemoveFlaggedUnder18ParticipantsCtPlus,
+    RtCtPIDtoRID:
+        CtPlusPIDtoRID,
 }
 
 
@@ -84,17 +100,25 @@ class CleanCDRTest(unittest.TestCase):
                              ct_plus_classes)
             self.assertIsNot(ct_plus_classes, ct_classes)
 
-    def test_controlled_tier_lists_carry_no_ct_plus_variant(self):
-        """No CT+ variant leaks into a CT list.
+    def test_only_ct_plus_lists_carry_ct_plus_variants(self):
+        """No CT+ variant leaks into a CT, RT or fitbit list.
 
-        A CT+ subclass registered in a CT list would under-suppress the
-        controlled tier.
+        A CT+ subclass registered elsewhere would under-suppress that tier.
+        Scans every cleaning-classes list, not only the three CT ones.
         """
         ct_plus_rules = set(CT_PLUS_SUBSTITUTIONS.values())
+        scanned = 0
 
-        for _, ct_classes in self._ct_plus_pairs():
-            for entry in ct_classes:
-                self.assertNotIn(entry[0], ct_plus_rules)
+        for name in dir(cc):
+            if (not name.endswith('_CLEANING_CLASSES') or
+                    name.startswith('CONTROLLED_TIER_PLUS_')):
+                continue
+            scanned += 1
+            for entry in getattr(cc, name):
+                self.assertNotIn(entry[0], ct_plus_rules, name)
+
+        # Guards against the scan silently matching nothing.
+        self.assertGreater(scanned, 10)
 
     def test_controlled_tier_plus_deid_substitutes_pid_rid(self):
         """CT+ runs CtPlusPIDtoRID where CT runs RtCtPIDtoRID.
@@ -116,12 +140,8 @@ class CleanCDRTest(unittest.TestCase):
         self.assertNotIn((CtPlusPIDtoRID,), ct)
 
         # The registered tier re-keys in the legacy deid step, so RtCtPIDtoRID is
-        # commented out of its lists and not asserted here. What matters for this
-        # change is that the CT+ rule reaches none of them.
-        for rt_classes in (cc.REGISTERED_TIER_DEID_CLEANING_CLASSES,
-                           cc.REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES,
-                           cc.REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES):
-            self.assertNotIn((CtPlusPIDtoRID,), rt_classes)
+        # commented out of its lists and not asserted here. That CtPlusPIDtoRID
+        # reaches no RT, CT or fitbit list is test_only_ct_plus_lists_carry_ct_plus_variants.
 
     def test_parser_controlled_tier_plus_data_stages(self):
         """The parser accepts the CT+ stages and resolves them to the CT+ rules."""
