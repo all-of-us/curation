@@ -132,6 +132,10 @@ from cdr_cleaner.cleaning_rules.deid.controlled_cope_survey_suppression import C
 from cdr_cleaner.cleaning_rules.deid.registered_cope_survey_suppression import RegisteredCopeSurveyQuestionsSuppression
 from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
+from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
+    CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
+from cdr_cleaner.cleaning_rules.capture_ct_plus_birthdate import (
+    CaptureCtPlusBirthdate, ConvertCtPlusBirthdateIds, PruneCtPlusBirthdate)
 from cdr_cleaner.cleaning_rules.free_text_survey_response_suppression import FreeTextSurveyResponseSuppression
 from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
 from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSuppression
@@ -486,8 +490,9 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
 # CT+ cleaning classes, copied from the CONTROLLED_TIER_* lists above. A CT
 # change during the V9 window must be mirrored here deliberately. Where a CT+
 # variant stands in for its CT counterpart, the swap is declared in
-# CT_PLUS_SUBSTITUTIONS in tests/unit_tests/.../clean_cdr_test.py, which fails
-# on any divergence not listed there.
+# CT_PLUS_SUBSTITUTIONS in tests/unit_tests/.../clean_cdr_test.py, and a CT+-only
+# rule is declared in CT_PLUS_INSERTIONS there. The test fails on any
+# divergence not listed.
 CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (MoveNLPtoDomains,),
     # Must run while person_id is still the participant ID, so before RtCtPIDtoRID
@@ -495,6 +500,11 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (
         RemoveFlaggedUnder18ParticipantsCtPlus,),
     (RtCtPIDtoRID,),
+    # Must run after RtCtPIDtoRID and before GeneralizeZipCodes and
+    # NullPersonBirthdate
+    (
+        CaptureCtPlusZip5,),
+    (CaptureCtPlusBirthdate,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (TruncateEraTables,),
     (NullPersonBirthdate,),
@@ -523,6 +533,13 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (FreeTextSurveyResponseSuppression,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
+    # Prune after the last participant-removing rule, then convert. The prune
+    # compares CT ids, so reversing the two would empty the side table.
+    (
+        PruneCtPlusZip5,),
+    (ConvertCtPlusZip5Ids,),
+    (PruneCtPlusBirthdate,),
+    (ConvertCtPlusBirthdateIds,),
     (GenerateWearStudyTable,),
     (DropViaSurveyConduct,),  # should run after wear study table creation
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
