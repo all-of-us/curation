@@ -15,6 +15,9 @@ from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import 
     RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus)
 from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
     CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
+from cdr_cleaner.cleaning_rules.capture_ct_plus_birthdate import (
+    CaptureCtPlusBirthdate, ConvertCtPlusBirthdateIds, PruneCtPlusBirthdate)
+from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
 from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
@@ -38,8 +41,11 @@ CT_PLUS_SUBSTITUTIONS = {
 
 # CT rule -> CT+-only rules inserted right after it, in order.
 CT_PLUS_INSERTIONS = {
-    RtCtPIDtoRID: [CaptureCtPlusZip5],
-    DropOrphanedPIDS: [PruneCtPlusZip5, ConvertCtPlusZip5Ids],
+    RtCtPIDtoRID: [CaptureCtPlusZip5, CaptureCtPlusBirthdate],
+    DropOrphanedPIDS: [
+        PruneCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusBirthdate,
+        ConvertCtPlusBirthdateIds
+    ],
 }
 
 
@@ -114,25 +120,29 @@ class CleanCDRTest(unittest.TestCase):
                              ct_plus_classes)
             self.assertIsNot(ct_plus_classes, ct_classes)
 
-    def test_ct_plus_zip5_rule_order(self):
-        """Capture before GeneralizeZipCodes, prune after DropOrphanedPIDS,
-        convert after the prune.
+    def test_ct_plus_side_table_rule_order(self):
+        """Each capture before the rule that destroys its values, prune after
+        DropOrphanedPIDS, convert after the prune.
 
         The insertions pin each rule to its anchor, but not the anchor to its
-        neighbours, so a CT reordering could still move the capture past the
-        generalization. Reversing prune and convert would empty the table.
+        neighbours, so a CT reordering could still move a capture past its
+        destroying rule. Reversing prune and convert would empty the table.
         """
         rules = [
             entry[0] for entry in cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
         ]
-        capture = rules.index(CaptureCtPlusZip5)
-        prune = rules.index(PruneCtPlusZip5)
-        convert = rules.index(ConvertCtPlusZip5Ids)
-
-        self.assertLess(rules.index(RtCtPIDtoRID), capture)
-        self.assertLess(capture, rules.index(GeneralizeZipCodes))
-        self.assertLess(rules.index(DropOrphanedPIDS), prune)
-        self.assertLess(prune, convert)
+        for capture, destroyer, prune, convert in [
+            (CaptureCtPlusZip5, GeneralizeZipCodes, PruneCtPlusZip5,
+             ConvertCtPlusZip5Ids),
+            (CaptureCtPlusBirthdate, NullPersonBirthdate, PruneCtPlusBirthdate,
+             ConvertCtPlusBirthdateIds),
+        ]:
+            with self.subTest(capture=capture.__name__):
+                self.assertLess(rules.index(RtCtPIDtoRID), rules.index(capture))
+                self.assertLess(rules.index(capture), rules.index(destroyer))
+                self.assertLess(rules.index(DropOrphanedPIDS),
+                                rules.index(prune))
+                self.assertLess(rules.index(prune), rules.index(convert))
 
     def test_only_ct_plus_lists_carry_ct_plus_variants(self):
         """No CT+ variant or CT+-only rule leaks into a CT, RT or fitbit list.

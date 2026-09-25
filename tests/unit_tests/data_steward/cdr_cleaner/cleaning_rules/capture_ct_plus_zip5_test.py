@@ -84,7 +84,7 @@ class CaptureCtPlusZip5Test(unittest.TestCase):
         client = self._client_returning(total_rows=5, unresolved_rows=0)
 
         with self.assertLogs(
-                'cdr_cleaner.cleaning_rules.capture_ct_plus_zip5') as logs:
+                'cdr_cleaner.cleaning_rules.ct_plus_side_tables') as logs:
             self.convert.setup_rule(client)
         self.assertIn('Converting 5 rows', logs.output[0])
 
