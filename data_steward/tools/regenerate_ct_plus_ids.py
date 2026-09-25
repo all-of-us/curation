@@ -97,7 +97,7 @@ from common import (AOU_DEATH, DEATH, MAPPING_PREFIX, PERSON, SURVEY_CONDUCT,
                     FACT_RELATIONSHIP, MEASUREMENT, OBSERVATION,
                     PROCEDURE_OCCURRENCE, PROVIDER,
                     MEASUREMENT_DOMAIN_CONCEPT_ID,
-                    OBSERVATION_DOMAIN_CONCEPT_ID)
+                    OBSERVATION_DOMAIN_CONCEPT_ID, PERSON_DOMAIN_CONCEPT_ID)
 
 from gcloud.bq import BigQueryClient
 from resources import fields_for, has_primary_key, CDM_TABLES
@@ -127,17 +127,19 @@ CT_PLUS_PERSON_MAPPING_SUFFIX = 'ct_plus'
 # releases with no error. Do not override this without changing both call sites.
 DEFAULT_MAPPING_NAMESPACE = 'ct_plus'
 
-# fact_relationship stores a domain concept id beside each fact id rather than a
-# foreign key column, so the remap has to switch on it. The domains below are the
-# ones observed in the CT input; anything else is left for the unmapped domain
-# handling in fact_relationship_query(). Concept ids resolve as:
-#   10 Procedure, 13 Drug, 19 Condition, 21 Measurement, 27 Observation, 57 Care site
+# fact_relationship qualifies each fact id with a domain concept id rather than a
+# foreign key column, so the remap switches on it. These are the domains observed in
+# the CT input plus person, which the CT+ pediatric adult-child linkage uses. Any
+# other domain resolves to NULL and is dropped in fact_relationship_query().
+#   10 Procedure, 13 Drug, 19 Condition, 21 Measurement, 27 Observation,
+#   56 Person, 57 Care site
 DOMAIN_CONCEPT_ID_TO_TABLE = {
     10: PROCEDURE_OCCURRENCE,
     13: DRUG_EXPOSURE,
     19: CONDITION_OCCURRENCE,
     MEASUREMENT_DOMAIN_CONCEPT_ID: MEASUREMENT,
     OBSERVATION_DOMAIN_CONCEPT_ID: OBSERVATION,
+    PERSON_DOMAIN_CONCEPT_ID: PERSON,
     57: CARE_SITE,
 }
 
@@ -668,7 +670,7 @@ def mapping(domain_table, input_dataset_id, output_dataset_id, project_id,
 
 
 def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
-                            mapping_namespace):
+                            mapping_namespace, person_src_table_id):
     """
     Returns a query that resolves fact_relationship fact ids to their new CT+ values.
 
@@ -682,10 +684,24 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
     table (see constants/tools/create_combined_backup_dataset.py FACT_RELATIONSHIP_QUERY,
     which applies the same filter after remapping measurement and observation).
 
+    Person domain joins match on person_mapping_src_table_id() rather than
+    '<mapping_namespace>.person', because _mapping_person mirrors the CT+ ids view
+    instead of being minted by mapping_query(). The generic stamp matches no row, so
+    every person domain row would be dropped with no error.
+
+    The same mirroring means _mapping_person can hold participants the input person
+    table does not, so the person side resolves only ids present in input person.
+    Without that, a linkage row naming an adult who is in the view but not in the
+    dataset would survive pointing at a person row that does not exist. Such rows are
+    dropped and counted by assert_person_linkage_survived_the_remap(), which also stops
+    the run for any other person domain row the remap dropped.
+
     :param input_dataset_id: identifies dataset containing source data
     :param project_id: identifies the GCP project
     :param mapping_dataset_id: identifies the dataset where mapping tables are stored
     :param mapping_namespace: original dataset used to create the mappings
+    :param person_src_table_id: src_table_id stamped on _mapping_person rows, from
+        person_mapping_src_table_id()
     :return: the query
     """
     case_exprs = {}
@@ -702,6 +718,19 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
             whens.append(
                 f'''WHEN fr.domain_concept_id_{side} = {domain_concept_id}
               THEN {alias}.{id_field}''')
+            if domain_table == PERSON:
+                # Restricted to the input person table, see the docstring
+                join_exprs.append(f'''
+    LEFT JOIN (
+        SELECT mp.{src_field}, mp.{id_field}
+        FROM `{project_id}.{mapping_dataset_id}.{mapping_tbl}` AS mp
+        JOIN `{project_id}.{input_dataset_id}.{PERSON}` AS p
+          ON p.person_id = mp.{src_field}
+        WHERE mp.src_table_id = '{person_src_table_id}'
+    ) AS {alias}
+      ON fr.fact_id_{side} = {alias}.{src_field}
+     AND fr.domain_concept_id_{side} = {domain_concept_id} ''')
+                continue
             join_exprs.append(f'''
     LEFT JOIN `{project_id}.{mapping_dataset_id}.{mapping_tbl}` AS {alias}
       ON fr.fact_id_{side} = {alias}.{src_field}
@@ -731,6 +760,79 @@ def fact_relationship_query(input_dataset_id, project_id, mapping_dataset_id,
     WHERE fact_id_1 IS NOT NULL
       AND fact_id_2 IS NOT NULL
     '''
+
+
+def assert_person_linkage_survived_the_remap(client, project_id,
+                                             input_dataset_id,
+                                             output_dataset_id):
+    """
+    Count the person domain fact_relationship rows the remap dropped, and stop the run
+    on any it should have kept.
+
+    Person domain rows are adult-child linkage records. A row naming a person absent
+    from the input person table is dropped by design, since its link would dangle, and
+    is only counted. Any other dropped row names a person_id with no _mapping_person
+    row: the CT+ ids view does not cover the participant, as for pediatric participants
+    while it is capped at primary_pid_rid_mapping, or the fact id is not a controlled
+    tier id in the first place. fact_relationship_query() drops those without error, so
+    this stops the run.
+
+    Inert while the input holds no linkage rows, since zero in is zero out.
+
+    :param client: BigQueryClient
+    :param project_id: identifies the GCP project
+    :param input_dataset_id: identifies the dataset the remap read
+    :param output_dataset_id: identifies the dataset the remap wrote
+    :return: the number of rows dropped for naming a person absent from input person
+    :raises RuntimeError: if fewer rows came out than named only persons in input person
+    """
+    if not (client.table_exists(FACT_RELATIONSHIP, input_dataset_id) and
+            client.table_exists(FACT_RELATIONSHIP, output_dataset_id)):
+        return 0
+
+    input_person = f'`{project_id}.{input_dataset_id}.{PERSON}`'
+    person_domain = (f'{PERSON_DOMAIN_CONCEPT_ID} IN '
+                     f'(domain_concept_id_1, domain_concept_id_2)')
+
+    # A side is in person when it is not person domain or its fact id is in input
+    # person. Every column involved is REQUIRED, so in_person is never NULL.
+    q = f'''
+    SELECT
+        COUNTIF(in_person) AS in_count,
+        COUNTIF(NOT in_person) AS absent_count,
+        (SELECT COUNT(*)
+         FROM `{project_id}.{output_dataset_id}.{FACT_RELATIONSHIP}`
+         WHERE {person_domain}) AS out_count
+    FROM (
+        SELECT
+            (domain_concept_id_1 != {PERSON_DOMAIN_CONCEPT_ID} OR
+             fact_id_1 IN (SELECT person_id FROM {input_person}))
+            AND
+            (domain_concept_id_2 != {PERSON_DOMAIN_CONCEPT_ID} OR
+             fact_id_2 IN (SELECT person_id FROM {input_person}))
+            AS in_person
+        FROM `{project_id}.{input_dataset_id}.{FACT_RELATIONSHIP}`
+        WHERE {person_domain}
+    )
+    '''
+    row = list(client.query(q).result())[0]
+    in_count, absent_count, out_count = (row['in_count'], row['absent_count'],
+                                         row['out_count'])
+
+    if absent_count:
+        LOGGER.info(
+            f'Dropped {absent_count} person domain linkage rows naming a person '
+            f'absent from {input_dataset_id}.{PERSON}.')
+
+    if out_count < in_count:
+        raise RuntimeError(
+            f'{output_dataset_id}.{FACT_RELATIONSHIP} kept {out_count} of '
+            f'{in_count} person domain linkage rows whose persons are all in '
+            f'{input_dataset_id}.{PERSON}. The rest name a person_id with no '
+            f'_mapping_person row: either the CT+ ids view does not cover the '
+            f'participant, or the fact id is not a controlled tier id.')
+
+    return absent_count
 
 
 def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
@@ -771,7 +873,8 @@ def table_query(table_name, input_dataset_id, output_dataset_id, project_id,
 
     if table_name == FACT_RELATIONSHIP:
         return fact_relationship_query(input_dataset_id, project_id,
-                                       mapping_dataset_id, mapping_namespace)
+                                       mapping_dataset_id, mapping_namespace,
+                                       person_src_table_id)
 
     # Fitbit tables do not have a domain-specific primary key. They only need person_id updated.
     # This logic is similar to tables without a primary key.
@@ -1451,6 +1554,11 @@ def main(input_dataset_id,
         load(bq_client, table_name, input_dataset_id, output_dataset_id,
              project_id, pipeline_dataset_id, ct_plus_ids_view,
              mapping_dataset_id, mapping_namespace)
+
+    # Reads the loaded fact_relationship, so it must follow the load loop
+    assert_person_linkage_survived_the_remap(bq_client, project_id,
+                                             input_dataset_id,
+                                             output_dataset_id)
 
     # Load Fitbit tables if they exist
     LOGGER.info('Processing Fitbit tables (if they exist)...')

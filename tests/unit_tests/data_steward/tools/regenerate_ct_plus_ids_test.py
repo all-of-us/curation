@@ -150,17 +150,51 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertIn('AND fact_id_2 IS NOT NULL', actual)
 
     def test_fact_relationship_domain_map_covers_the_observed_domains(self):
-        """Domains seen in the CT input. Anything else resolves to NULL and is dropped."""
+        """Domains seen in the CT input plus person for the pediatric linkage.
+        Anything else resolves to NULL and is dropped."""
         expected = {
             10: PROCEDURE_OCCURRENCE,
             13: DRUG_EXPOSURE,
             19: CONDITION_OCCURRENCE,
             21: MEASUREMENT,
             27: OBSERVATION,
+            56: PERSON,
             57: CARE_SITE,
         }
 
         self.assertDictEqual(ct.DOMAIN_CONCEPT_ID_TO_TABLE, expected)
+
+    def test_fact_relationship_person_side_uses_the_person_mapping_src_table_id(
+            self):
+        """_mapping_person is stamped by person_mapping_src_table_id(). The generic
+        '<namespace>.person' stamp matches no row and would drop every linkage row."""
+        actual = self._table_query(ct.FACT_RELATIONSHIP)
+        expected = ct.person_mapping_src_table_id(self.pipeline_dataset_id,
+                                                  self.ids_view)
+
+        self.assertIn(f"src_table_id = '{expected}'", actual)
+        self.assertNotIn(
+            f"src_table_id = '{ct.DEFAULT_MAPPING_NAMESPACE}.{PERSON}'", actual)
+
+    def test_fact_relationship_person_side_resolves_only_input_persons(self):
+        """_mapping_person mirrors the ids view, which can hold participants the
+        input person table does not. Their links would dangle in the output."""
+        actual = self._table_query(ct.FACT_RELATIONSHIP)
+        input_person = f'{self.project_id}.{self.input_dataset_id}.{PERSON}'
+
+        self.assertEqual(actual.count(f'JOIN `{input_person}` AS p'), 2)
+        self.assertIn('ON p.person_id = mp.src_person_id', actual)
+
+    def test_fact_relationship_keeps_the_namespace_src_table_id_for_other_domains(
+            self):
+        """Only the person domain takes the special src_table_id."""
+        actual = self._table_query(ct.FACT_RELATIONSHIP)
+
+        for domain_table in (MEASUREMENT, OBSERVATION, CARE_SITE):
+            with self.subTest(domain_table=domain_table):
+                self.assertIn(
+                    f"src_table_id = '{ct.DEFAULT_MAPPING_NAMESPACE}.{domain_table}'",
+                    actual)
 
     def test_aou_death_id_is_preserved(self):
         """aou_death_id is a GUID and is shared with CT, matching RT."""
@@ -407,6 +441,84 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertLess(source.index('assert_person_ids_have_not_moved'),
                         source.index('Generating mapping tables'))
 
+    @staticmethod
+    def _linkage_client(in_count, out_count, absent_count=0, exists=True):
+        client = mock.MagicMock()
+        client.table_exists.return_value = exists
+        client.query.return_value.result.return_value = [{
+            'in_count': in_count,
+            'absent_count': absent_count,
+            'out_count': out_count
+        }]
+        return client
+
+    def _assert_linkage_survived(self, client):
+        return ct.assert_person_linkage_survived_the_remap(
+            client, self.project_id, self.input_dataset_id,
+            self.output_dataset_id)
+
+    def test_every_linkage_row_surviving_is_accepted(self):
+        self._assert_linkage_survived(self._linkage_client(2, 2))
+
+    def test_no_linkage_rows_leaves_the_check_inert(self):
+        """The state today: the export carries no person domain row."""
+        self._assert_linkage_survived(self._linkage_client(0, 0))
+
+    def test_a_dropped_linkage_row_stops_the_run(self):
+        """A person_id with no _mapping_person row is dropped by the NOT NULL
+        filter without error, so the check has to stop the run."""
+        client = self._linkage_client(2, 1)
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self._assert_linkage_survived(client)
+
+        self.assertIn('kept 1 of 2', str(ctx.exception))
+
+    def test_a_row_naming_a_person_absent_from_input_is_counted_not_fatal(self):
+        """Its link would dangle, so the remap drops it by design."""
+        client = self._linkage_client(1, 1, absent_count=1)
+
+        self.assertEqual(self._assert_linkage_survived(client), 1)
+
+    def test_an_absent_person_does_not_excuse_a_dropped_linkage_row(self):
+        client = self._linkage_client(2, 1, absent_count=1)
+
+        with self.assertRaises(RuntimeError):
+            self._assert_linkage_survived(client)
+
+    def test_missing_fact_relationship_skips_the_linkage_check(self):
+        client = self._linkage_client(0, 0, exists=False)
+
+        self.assertEqual(self._assert_linkage_survived(client), 0)
+
+        client.query.assert_not_called()
+
+    def test_linkage_check_tests_each_person_side_against_input_person(self):
+        client = self._linkage_client(0, 0)
+
+        self._assert_linkage_survived(client)
+
+        q = client.query.call_args.args[0]
+        input_person = f'{self.project_id}.{self.input_dataset_id}.{PERSON}'
+        for side in ('1', '2'):
+            with self.subTest(side=side):
+                self.assertIn(
+                    f'domain_concept_id_{side} != {ct.PERSON_DOMAIN_CONCEPT_ID}',
+                    q)
+                self.assertIn(
+                    f'fact_id_{side} IN (SELECT person_id FROM `{input_person}`)',
+                    q)
+        self.assertIn(
+            f'{ct.PERSON_DOMAIN_CONCEPT_ID} IN '
+            f'(domain_concept_id_1, domain_concept_id_2)', q)
+
+    def test_linkage_check_runs_after_fact_relationship_is_loaded(self):
+        """It reads the output table, so it cannot precede the load loop."""
+        source = inspect.getsource(ct.main)
+        self.assertLess(
+            source.index('Loading table'),
+            source.index('assert_person_linkage_survived_the_remap'))
+
     def test_non_empty_output_dataset_stops_the_run(self):
         """main() drops every CDM table in the output dataset before loading."""
         client = mock.MagicMock()
@@ -540,7 +652,8 @@ class RegenerateCtPlusIds(unittest.TestCase):
         for name in ('assert_person_mapping_is_ct_plus',
                      'assert_person_ids_have_not_moved',
                      'assert_person_mapping_covers_input',
-                     'assert_person_mapping_is_one_to_one', 'mapping',
+                     'assert_person_mapping_is_one_to_one',
+                     'assert_person_linkage_survived_the_remap', 'mapping',
                      'update_ext_table', 'copy_table_to_output'):
             mock.patch(f'tools.regenerate_ct_plus_ids.{name}').start()
         load = mock.patch('tools.regenerate_ct_plus_ids.load').start()
