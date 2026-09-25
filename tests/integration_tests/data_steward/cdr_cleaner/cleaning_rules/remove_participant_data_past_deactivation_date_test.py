@@ -59,13 +59,9 @@ class RemoveParticipantDataPastDeactivationDateTest(
         # clean_digital_health_data_test does for the same reason.
         cls.drc_ops_dataset_id = os.environ.get('RDR_DATASET_ID')
 
-        # The rule resolves the adult to pediatric pairs from a lookup written at
-        # the RDR stage, so it needs that sandbox by name. This test carries no
-        # linked pair, so the lookup is created empty and every expectation below
-        # is the pre-cascade behaviour, unchanged.
-        # The base class already creates this dataset, so the pairs lookup can
-        # live in it. The parameter only names a dataset; the point of the test
-        # is that the rule requires it and reads it.
+        # The pairs lookup lives in the sandbox the base class already creates.
+        # This test has no linked pair, so the lookup is empty and every
+        # expectation below is the adult-only behaviour.
         cls.rdr_sandbox_id = sandbox_id
 
         cls.kwargs = {
@@ -263,8 +259,7 @@ class RemoveParticipantDataPastDeactivationDateTest(
                 """)
         }
 
-        # An empty pairs lookup: this test asserts the adult-only behaviour is
-        # unchanged, so nothing should cascade.
+        # Empty pairs lookup, so nothing cascades.
         self.client.create_table(Table(
             f'{self.project_id}.{self.rdr_sandbox_id}.'
             f'{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}', [{
@@ -293,9 +288,8 @@ class RemoveParticipantDataPastDeactivationDateTest(
 
     def tearDown(self):
         """
-        Drop the pairs lookup, which is not in `fq_sandbox_table_names` because
-        it has to exist before the rule runs and the base class asserts every
-        table in that list is absent at that point.
+        Drop the pairs lookup. It is kept out of `fq_sandbox_table_names`
+        because the base class asserts those are absent before the rule runs.
         """
         self.client.delete_table(
             f'{self.project_id}.{self.rdr_sandbox_id}.'

@@ -1,13 +1,10 @@
 """
-Unit test for the constructor contract of RemoveParticipantDataPastDeactivationDate.
+Unit tests for the `rdr_sandbox_dataset_id` contract of
+RemoveParticipantDataPastDeactivationDate.
 
-The rule reads the adult to pediatric pairs from a lookup written at the RDR
-stage, and the fitbit dataset carries neither `fact_relationship` nor `person`,
-so the dataset holding that lookup has to be named explicitly. Giving the
-parameter a default would let the rule construct with no linkage and cascade to
-nobody, silently. `get_custom_kwargs` raises only for a parameter that has none,
-so the absence of a default is what makes the failure loud. That is the contract
-these tests hold in place.
+The parameter names the RDR stage sandbox holding the adult to pediatric pairs.
+It has no default, so `get_custom_kwargs` fails a run that omits it rather than
+letting the rule cascade to nobody.
 
 Original Issues: DL2486
 """
@@ -30,9 +27,7 @@ class RemoveParticipantDataPastDeactivationDateTest(unittest.TestCase):
 
     def test_omitting_the_rdr_sandbox_dataset_fails_and_names_it(self):
         """
-        A run that does not supply the RDR stage sandbox must fail at
-        construction naming the parameter, rather than proceeding against a
-        lookup it cannot read.
+        Omitting the RDR stage sandbox fails at construction, naming it.
         """
         with self.assertRaises(ValueError) as context:
             get_custom_kwargs(RemoveParticipantDataPastDeactivationDate,
@@ -46,8 +41,7 @@ class RemoveParticipantDataPastDeactivationDateTest(unittest.TestCase):
 
     def test_supplying_the_rdr_sandbox_dataset_is_accepted(self):
         """
-        The same call succeeds once the parameter is supplied, so the assertion
-        above is about that one parameter and not about the call shape.
+        Supplying it succeeds, so the failure above is about that parameter.
         """
         kwargs = get_custom_kwargs(RemoveParticipantDataPastDeactivationDate,
                                    api_project_id='foo-project-id',
@@ -59,9 +53,7 @@ class RemoveParticipantDataPastDeactivationDateTest(unittest.TestCase):
 
     def test_the_parameter_has_no_default(self):
         """
-        The fail-fast above is bought entirely by the absence of a default, so
-        assert that directly. A later edit adding `=None` would otherwise turn
-        the two tests above green by accident only if the caller kept passing it.
+        The fail-fast depends on the missing default, so assert it directly.
         """
         import inspect
 
@@ -69,6 +61,6 @@ class RemoveParticipantDataPastDeactivationDateTest(unittest.TestCase):
                                      ).parameters['rdr_sandbox_dataset_id']
 
         self.assertIs(parameter.default, inspect.Parameter.empty)
-        # Positional rather than keyword-only, because `reporter.get_stage_elements`
-        # instantiates every rule with positional arguments.
+        # Positional, because `reporter.get_stage_elements` instantiates rules
+        # positionally.
         self.assertIs(parameter.kind, inspect.Parameter.POSITIONAL_OR_KEYWORD)

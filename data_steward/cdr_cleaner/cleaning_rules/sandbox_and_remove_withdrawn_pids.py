@@ -20,100 +20,72 @@ ISSUE_NUMBERS = ['DC3442', 'DL2486']
 # The band of `_under18_participants` that is the CT+ pediatric cohort.
 PEDIATRIC_AGE_BAND = '0-6'
 
-# Concepts that mark a person to person row as a family relationship. This is a
-# membership filter, never a direction signal: which side is the child is decided
-# by the age band, not by the concept. Both orientations are listed because
-# `fact_relationship` rows are emitted in both directions, and because the two
-# sources that specify these ids disagree. The workbook gives Grandparent 4244389
-# and Sibling 4292398 where the PRD gives Natural grandparent 4301632 and Natural
-# sibling 4218412, and that choice is open against DL-2482.
+# Every person to person `fact_relationship` row links a child to the guardian
+# who enrolled them; nothing else writes such rows today. `relationship_concept_id`
+# only describes that guardian (Parent, Guardian 40567635, 0 if skipped), so it is
+# not filtered on: a concept filter cannot tell a guardian from another relative,
+# and would drop the Guardian and skipped cases.
 #
-# THIS FILTER IS DELIBERATELY TOO WIDE AND IS NOT A FINISHED RULE. The release
-# requirements cascade from the adult who consented for the child, and nothing
-# here identifies that adult. Any relative absent from the pediatric cohort
-# lookup qualifies, so an adult cousin's withdrawal deactivates a linked 0-6
-# participant. Trimming data is the safe direction to be wrong in, and the real
-# filter cannot exist until the emitting rule says which edge is the consent
-# link. 4053608 is the widest edge by a distance: it resolves as `Blood
-# relative` in the vocabulary, not as a parent concept, so on its own it admits
-# almost any relative. It is listed only because both source lists name it as
-# the value for Parent.
-# TODO(DL-2482): replace this list with the consent-link edge that rule emits,
-# and import it rather than restating it here. Narrowing it is the point; this
-# is a placeholder, not a set to preserve.
-FAMILY_RELATIONSHIP_CONCEPT_IDS = [
-    # Adult described from the child's side.
-    4053608,  # `Blood relative` in the vocabulary; both sources use it for Parent
-    4301632,  # Natural Grandparent
-    4244389,  # Grandparent
-    4292398,  # Sibling
-    # Child described from the adult's side.
-    4326600,  # Natural Child
-    4311425,  # Grandchild
-    4032151,  # Legal Child
-    # Symmetric, so they appear from either side.
-    4218412,  # Natural Sibling
-    44783070,  # Second Degree Blood Relative
-    4206333,  # Cousin
-]
+# Each row is classified against `_under18_participants`:
+#   pair            one side 0-6, the other absent from the lookup (18+)
+#   outside_cohort  one side 7-17, neither side 0-6; 7-17 is removed everywhere
+#   unresolved      anything else, such as a child missing from the lookup
+# An unresolved row stops the run, since a child missing from the lookup would
+# keep their data after their guardian withdraws.
+# TODO(DL-2482): confirm every person to person row RDR delivers is a guardian
+# link.
+LINKAGE_ROWS_CTES = """
+    linkage_rows AS (
+        SELECT
+            fr.fact_id_1 AS person_id_1,
+            fr.fact_id_2 AS person_id_2,
+            c1.age_band AS band_1,
+            c2.age_band AS band_2
+        FROM `{{project_id}}.{{dataset_id}}.{{fact_relationship}}` fr
+        LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{under18_table}}` c1
+            ON c1.person_id = fr.fact_id_1
+        LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{under18_table}}` c2
+            ON c2.person_id = fr.fact_id_2
+        WHERE fr.domain_concept_id_1 = {{person_domain_concept_id}}
+          AND fr.domain_concept_id_2 = {{person_domain_concept_id}}
+    ),
+    classified AS (
+        SELECT
+            *,
+            CASE
+                WHEN band_1 = '{{pediatric_age_band}}' AND band_2 IS NULL
+                    THEN 'pair'
+                WHEN band_2 = '{{pediatric_age_band}}' AND band_1 IS NULL
+                    THEN 'pair'
+                WHEN '{{pediatric_age_band}}' IN (band_1, band_2)
+                    THEN 'unresolved'
+                WHEN band_1 IS NULL AND band_2 IS NULL
+                    THEN 'unresolved'
+                ELSE 'outside_cohort'
+            END AS link_class
+        FROM linkage_rows
+    )
+"""
 
-# Resolve the adult-child pairs while `fact_relationship` and the pediatric
-# cohort lookup are both in reach. The deactivation rule consumes this at the
-# combined and fitbit stages, and the fitbit dataset carries neither table.
-#
-# Orientation-agnostic on purpose. Reading the pair direction out of the
-# relationship concept would make the whole cascade depend on DL-2482 emitting
-# the direction this rule guesses, and a mismatch would leave the lookup empty
-# with nothing failing anywhere. The age band already says which side is the
-# child, so both orientations are considered and the concept list is only a
-# family-relationship filter.
+# Resolved here because the fitbit stage, where the deactivation rule also reads
+# the pairs, carries neither table. Rows arrive in both directions, so the age
+# band, not the column order, picks the child.
 PEDIATRIC_GUARDIAN_LINKS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{links_table}}` AS (
-    WITH cohort AS (
-        SELECT person_id, age_band
-        FROM `{{project_id}}.{{sandbox_dataset_id}}.{{under18_table}}`
-    ),
-    person_pairs AS (
-        SELECT
-            fr.fact_id_1 AS left_person_id,
-            fr.fact_id_2 AS right_person_id,
-            fr.relationship_concept_id
-        FROM `{{project_id}}.{{dataset_id}}.{{fact_relationship}}` fr
-        WHERE fr.domain_concept_id_1 = {{person_domain_concept_id}}
-          AND fr.domain_concept_id_2 = {{person_domain_concept_id}}
-        UNION ALL
-        SELECT
-            fr.fact_id_2,
-            fr.fact_id_1,
-            fr.relationship_concept_id
-        FROM `{{project_id}}.{{dataset_id}}.{{fact_relationship}}` fr
-        WHERE fr.domain_concept_id_1 = {{person_domain_concept_id}}
-          AND fr.domain_concept_id_2 = {{person_domain_concept_id}}
-    )
+    WITH""" + LINKAGE_ROWS_CTES + """
     SELECT DISTINCT
-        pp.left_person_id AS adult_person_id,
-        pp.right_person_id AS pediatric_person_id
-    FROM person_pairs pp
-    JOIN cohort AS peds
-        ON peds.person_id = pp.right_person_id
-        AND peds.age_band = '{{pediatric_age_band}}'
-    LEFT JOIN cohort AS adult_side
-        ON adult_side.person_id = pp.left_person_id
-    WHERE pp.relationship_concept_id IN ({{family_relationship_concept_ids|join(', ')}})
-      AND pp.left_person_id != pp.right_person_id
-      /* The adult side must be absent from the under-18 lookup entirely, not
-         merely outside the 0-6 band. A 7-17 participant cannot consent for a
-         child, and several of these concepts are symmetric, so a 17 year old
-         sibling would otherwise be admitted as the guardian and their
-         withdrawal would cascade onto the child. Anyone 18+ never enters the
-         lookup, so absence from it is the test. */
-      AND adult_side.person_id IS NULL
+        IF(band_1 = '{{pediatric_age_band}}', person_id_2, person_id_1)
+            AS adult_person_id,
+        IF(band_1 = '{{pediatric_age_band}}', person_id_1, person_id_2)
+            AS pediatric_person_id
+    FROM classified
+    WHERE link_class = 'pair'
 )
 """)
 
-# Counts logged at run time so an empty cohort is visible in the log rather than
-# only inferable from a zero further downstream.
+# Counts for the log, plus the unresolved rows that stop the run.
 PEDIATRIC_LINK_COUNTS_QUERY = JINJA_ENV.from_string("""
+WITH""" + LINKAGE_ROWS_CTES + """
 SELECT
     (SELECT COUNT(*)
      FROM `{{project_id}}.{{sandbox_dataset_id}}.{{under18_table}}`
@@ -121,7 +93,10 @@ SELECT
     (SELECT COUNT(*)
      FROM `{{project_id}}.{{sandbox_dataset_id}}.{{links_table}}`) AS pairs,
     (SELECT COUNT(DISTINCT pediatric_person_id)
-     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{links_table}}`) AS linked_children
+     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{links_table}}`) AS linked_children,
+    (SELECT COUNT(*)
+     FROM classified
+     WHERE link_class = 'unresolved') AS unresolved_rows
 """)
 
 # Query template to copy withdrawn_dups_table from rdr dataset to combined sandbox dataset
@@ -198,13 +173,13 @@ class SandboxAndRemoveWithdrawnPids(SandboxAndRemovePids):
 
     def derive_pediatric_guardian_links(self, client: BigQueryClient):
         """
-        Build the adult to pediatric pairs and report what was found.
+        Write the adult to pediatric pairs, log the counts, and stop the run on
+        any unresolved linkage row.
 
-        This runs in `setup_rule` rather than as a query spec so the counts can be
-        logged: the engine calls `setup_rule` before `get_query_specs`, and the
-        pair count does not exist until the table has been written. The removal
-        queries that follow never touch `fact_relationship`, which carries no
-        `person_id` column, so the pairs are unaffected by ordering either way.
+        Runs in `setup_rule` so the counts can be checked before any removal. The
+        removal never touches `fact_relationship`, which has no `person_id`.
+
+        :raises RuntimeError: if any person domain linkage row is unresolved
         """
         client.query(
             PEDIATRIC_GUARDIAN_LINKS_QUERY.render(
@@ -215,17 +190,18 @@ class SandboxAndRemoveWithdrawnPids(SandboxAndRemovePids):
                 under18_table=UNDER18_PARTICIPANTS_LOOKUP_TABLE,
                 fact_relationship=FACT_RELATIONSHIP,
                 person_domain_concept_id=PERSON_DOMAIN_CONCEPT_ID,
-                pediatric_age_band=PEDIATRIC_AGE_BAND,
-                family_relationship_concept_ids=FAMILY_RELATIONSHIP_CONCEPT_IDS)
-        ).result()
+                pediatric_age_band=PEDIATRIC_AGE_BAND)).result()
 
         counts = list(
             client.query(
                 PEDIATRIC_LINK_COUNTS_QUERY.render(
                     project_id=self.project_id,
+                    dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     links_table=PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE,
                     under18_table=UNDER18_PARTICIPANTS_LOOKUP_TABLE,
+                    fact_relationship=FACT_RELATIONSHIP,
+                    person_domain_concept_id=PERSON_DOMAIN_CONCEPT_ID,
                     pediatric_age_band=PEDIATRIC_AGE_BAND)).result())[0]
 
         LOGGER.info(
@@ -235,18 +211,29 @@ class SandboxAndRemoveWithdrawnPids(SandboxAndRemovePids):
             f"pediatric pairs covering {counts.linked_children} of them into "
             f"`{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}`.")
 
+        if counts.unresolved_rows:
+            raise RuntimeError(
+                f"{counts.unresolved_rows} person domain `{FACT_RELATIONSHIP}` "
+                f"rows do not resolve to one adult and one participant in the "
+                f"'{PEDIATRIC_AGE_BAND}' band of "
+                f"`{UNDER18_PARTICIPANTS_LOOKUP_TABLE}`. A linked child missing "
+                f"from that lookup would keep their data after their guardian "
+                f"withdraws, so the run stops. The usual cause is an age at "
+                f"consent that `FlagParticipantsUnder18Years` did not derive.")
+
         if not counts.pediatric_cohort:
             LOGGER.warning(
                 f"The '{PEDIATRIC_AGE_BAND}' band of "
-                f"`{UNDER18_PARTICIPANTS_LOOKUP_TABLE}` is empty, so no "
-                f"pediatric lifecycle cascade can apply downstream. On a "
-                f"pediatric input this is an upstream age derivation failure.")
+                f"`{UNDER18_PARTICIPANTS_LOOKUP_TABLE}` is empty and no "
+                f"linkage rows name a child, so the pediatric cascade was not "
+                f"evaluated. This is not the same as a passing run.")
         elif not counts.pairs:
             LOGGER.warning(
                 f"No adult to pediatric pairs were derived from "
                 f"`{FACT_RELATIONSHIP}` despite a non-empty "
-                f"'{PEDIATRIC_AGE_BAND}' band. Expected until the rule that "
-                f"emits the person domain linkage rows lands.")
+                f"'{PEDIATRIC_AGE_BAND}' band, so the cascade was not "
+                f"evaluated. Expected until the pediatric export carries the "
+                f"person domain linkage rows.")
 
     def get_query_specs(self) -> list:
         sandbox_records_queries = self.get_sandbox_queries(

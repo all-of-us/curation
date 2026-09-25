@@ -54,7 +54,7 @@ WITH ps AS (
     FROM `{{project}}.{{drc_ops}}.{{ps_awardee_values_view}}`
 ),
 own_deactivations AS (
-    /* Unchanged: a participant deactivated in their own right, whatever their age. */
+    /* Participants deactivated in their own right, adult or child. */
     SELECT
         person_id,
         suspension_status,
@@ -63,10 +63,9 @@ own_deactivations AS (
     WHERE suspension_status <> 'not_deactivated'
 ),
 adult_events AS (
-    /* A lifecycle event on an adult that a linked pediatric participant inherits
-       as a deactivation. Keyed on the participant summary rather than on the RDR
-       withdrawals list: that list is a removal list rather than a withdrawal
-       list, and half of it is marked NOT_WITHDRAWN and carries no date. */
+    /* Adult events a linked child inherits as a deactivation. Keyed on the
+       participant summary, not the RDR withdrawals list, which is a removal
+       list: half of it is NOT_WITHDRAWN and undated. */
     SELECT
         person_id,
         withdrawal_time AS event_datetime,
@@ -93,20 +92,16 @@ derived_deactivations AS (
         ON adult_events.person_id = links.adult_person_id
 ),
 all_deactivations AS (
-    /* Columns are listed rather than starred: UNION ALL matches on position, so
-       a column added to one branch and not the other would misalign silently
-       wherever the types happen to agree. */
+    /* Columns listed, not starred, because UNION ALL matches by position. */
     SELECT person_id, suspension_status, deactivated_datetime
     FROM own_deactivations
     UNION ALL
     SELECT person_id, suspension_status, deactivated_datetime
     FROM derived_deactivations
 )
-/* One row per participant. A pediatric participant reachable by more than one
-   route keeps the earliest date, so the most protective cut-off wins, and the
-   status reported is the one belonging to that date. A group whose every
-   candidate date is NULL yields NULL here and fails the load on the required
-   `deactivated_datetime` column, which is the pre-existing behaviour. */
+/* One row per participant, with the earliest date and its status, so the
+   most protective cut-off wins. An all-NULL group fails the load on the
+   required `deactivated_datetime`, as before. */
 SELECT
     person_id,
     ANY_VALUE(suspension_status HAVING MIN deactivated_datetime)
@@ -213,18 +208,13 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
 
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
 
-        `rdr_sandbox_dataset_id` is the RDR stage sandbox, which is where the
-        adult to pediatric pairs are written. It is deliberately declared with no
-        default, unlike `rdr_dataset_id` and `api_project_id`: `get_custom_kwargs`
-        raises only for a parameter that has none, and a default would let this
-        rule construct with no linkage and cascade to nobody. It is not the same
-        thing as `rdr_dataset_id`, which is the RDR dataset itself.
-
-        It sits ahead of `table_namer` rather than after `api_project_id` because
-        a parameter with no default cannot follow one that has a default, and
-        because `reporter.get_stage_elements` instantiates every rule with
-        positional arguments, so a keyword-only parameter would break the report
-        for every rule in the combined and fitbit stages.
+        `rdr_sandbox_dataset_id` is the RDR stage sandbox holding the adult to
+        pediatric pairs, not the RDR dataset `rdr_dataset_id` names. It has no
+        default so `get_custom_kwargs` fails a run that omits it, rather than
+        building a rule that cascades to nobody. It precedes `table_namer`
+        because a parameter without a default cannot follow one with a default,
+        and stays positional because `reporter.get_stage_elements` instantiates
+        rules positionally.
         """
         desc = (
             'Sandbox and drop records dated after the date of deactivation for participants'

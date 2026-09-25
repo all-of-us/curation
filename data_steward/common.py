@@ -307,8 +307,8 @@ AIAN_LIST = 'aian_list'
 
 UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
 
-# Adult to pediatric participant pairs, derived once at the RDR stage and read by
-# the later stages, which do not all carry `fact_relationship`.
+# Adult to pediatric pairs, written at the RDR stage for later stages that lack
+# `fact_relationship`.
 PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE = '_pediatric_guardian_links'
 
 # CDR tiers, and the dataset naming they drive
