@@ -652,7 +652,8 @@ class RegenerateCtPlusIds(unittest.TestCase):
         for name in ('assert_person_mapping_is_ct_plus',
                      'assert_person_ids_have_not_moved',
                      'assert_person_mapping_covers_input',
-                     'assert_person_mapping_is_one_to_one', 'mapping',
+                     'assert_person_mapping_is_one_to_one',
+                     'assert_person_linkage_survived_the_remap', 'mapping',
                      'update_ext_table', 'copy_table_to_output'):
             mock.patch(f'tools.regenerate_ct_plus_ids.{name}').start()
         load = mock.patch('tools.regenerate_ct_plus_ids.load').start()
