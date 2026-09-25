@@ -43,18 +43,32 @@ class CreateAIANLookupTest(BaseTest.CleaningRulesTestBase):
         observation_tmpl = self.jinja_env.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.{{table}}`
           (observation_id, person_id, observation_source_concept_id, value_source_concept_id,
-          observation_concept_id, observation_date, observation_type_concept_id)
+          observation_source_value, observation_concept_id, observation_date,
+          observation_type_concept_id)
         VALUES
           -- Meets the AIAN criteria --
-          (101, 11, 1586140, 1586141, 0, '2000-01-01', 0),
-          (102, 12, 1586150, 0, 0, '2000-01-01', 0),
-          (103, 13, 1585599, 0, 0, '2000-01-01', 0),
-          (104, 14, 1586139, 0, 0, '2000-01-01', 0),
-          (105, 15, 1585604, 0, 0, '2000-01-01', 0),
+          (101, 11, 1586140, 1586141, NULL, 0, '2000-01-01', 0),
+          (102, 12, 1586150, 0, NULL, 0, '2000-01-01', 0),
+          (103, 13, 1585599, 0, NULL, 0, '2000-01-01', 0),
+          (104, 14, 1586139, 0, NULL, 0, '2000-01-01', 0),
+          (105, 15, 1585604, 0, NULL, 0, '2000-01-01', 0),
+          -- Pediatric rows carry observation_source_concept_id 0. The mixed case --
+          -- on 301 checks the match is case-insensitive. --
+          -- Race question answered AIAN --
+          (301, 31, 0, 1586141, 'Race_WhatRaceEthnicity_Ped', 0, '2000-01-01', 0),
+          -- Follow-up question answered with a skip code --
+          (302, 32, 0, 903096, 'aian_aianspecific_ped', 0, '2000-01-01', 0),
+          -- Follow-up question answered with 0 --
+          (303, 33, 0, 0, 'aian_tribe_ped', 0, '2000-01-01', 0),
+          -- Matched by an adult and a pediatric branch, must appear once --
+          (305, 35, 1586150, 0, NULL, 0, '2000-01-01', 0),
+          (306, 35, 0, 903096, 'aiannoneofthesedescribeme_aianfreetext_ped', 0, '2000-01-01', 0),
           -- Not meet the AIAN criteria --
-          (201, 21, 1586140, 0, 0, '2000-01-01', 0),
-          (202, 22, 0, 1586141, 0, '2000-01-01', 0),
-          (203, 23, 0, 0, 0, '2000-01-01', 0)
+          (201, 21, 1586140, 0, NULL, 0, '2000-01-01', 0),
+          (202, 22, 0, 1586141, NULL, 0, '2000-01-01', 0),
+          (203, 23, 0, 0, NULL, 0, '2000-01-01', 0),
+          -- Pediatric race question answered with a non-AIAN race --
+          (304, 34, 0, 1586142, 'race_whatraceethnicity_ped', 0, '2000-01-01', 0)
         """).render(project=self.project_id,
                     dataset=self.dataset_id,
                     table=OBSERVATION)
@@ -66,4 +80,5 @@ class CreateAIANLookupTest(BaseTest.CleaningRulesTestBase):
         self.default_test([])
         self.assertTableValuesMatch(self.fq_sandbox_table_names[0],
                                     ['person_id'], [(11,), (12,), (13,), (14,),
-                                                    (15,)])
+                                                    (15,), (31,), (32,), (33,),
+                                                    (35,)])
