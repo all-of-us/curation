@@ -13,12 +13,18 @@ from cdr_cleaner.cleaning_rules.deid.ct_retroactive_privacy_suppression import (
     CTRetroactivePrivacyConceptSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import (
     RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus)
+from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
+    CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
+from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
+from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
+from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from constants.cdr_cleaner.clean_cdr import DataStage
 from tests.test_util import FakeRuleClass, fake_rule_func
 
 # The CT+ lists are hard copies of the CT lists, so drift is otherwise
-# invisible. Swapping in a CT+ variant at the same position is the only allowed
-# difference; anything else fails the copy-policy test below.
+# invisible. The only allowed differences are swapping in a CT+ variant at the
+# same position, and inserting a CT+-only rule after a named CT rule; anything
+# else fails the copy-policy test below.
 CT_PLUS_SUBSTITUTIONS = {
     CTAdditionalPrivacyConceptSuppression:
         CTAdditionalPrivacyConceptSuppressionCtPlus,
@@ -30,6 +36,12 @@ CT_PLUS_SUBSTITUTIONS = {
         RemoveFlaggedUnder18ParticipantsCtPlus,
 }
 
+# CT rule -> CT+-only rules inserted right after it, in order.
+CT_PLUS_INSERTIONS = {
+    RtCtPIDtoRID: [CaptureCtPlusZip5],
+    DropOrphanedPIDS: [PruneCtPlusZip5, ConvertCtPlusZip5Ids],
+}
+
 
 def expected_ct_plus_classes(ct_classes):
     """
@@ -38,8 +50,13 @@ def expected_ct_plus_classes(ct_classes):
     :param ct_classes: the CT cleaning-classes list
     :return: the CT+ list it should produce
     """
-    return [(CT_PLUS_SUBSTITUTIONS.get(entry[0], entry[0]),) + tuple(entry[1:])
-            for entry in ct_classes]
+    expected = []
+    for entry in ct_classes:
+        expected.append((CT_PLUS_SUBSTITUTIONS.get(entry[0], entry[0]),) +
+                        tuple(entry[1:]))
+        expected.extend(
+            (rule,) for rule in CT_PLUS_INSERTIONS.get(entry[0], []))
+    return expected
 
 
 class CleanCDRTest(unittest.TestCase):
@@ -87,7 +104,8 @@ class CleanCDRTest(unittest.TestCase):
 
     def test_controlled_tier_plus_lists_copy_controlled_tier(self):
         """Each CT+ list is an independent copy of its CT counterpart, apart
-        from the substitutions declared at the top of this module.
+        from the substitutions and insertions declared at the top of this
+        module.
 
         Any other divergence fails here. The identity checks are permanent.
         """
@@ -96,13 +114,34 @@ class CleanCDRTest(unittest.TestCase):
                              ct_plus_classes)
             self.assertIsNot(ct_plus_classes, ct_classes)
 
+    def test_ct_plus_zip5_rule_order(self):
+        """Capture before GeneralizeZipCodes, prune after DropOrphanedPIDS,
+        convert after the prune.
+
+        The insertions pin each rule to its anchor, but not the anchor to its
+        neighbours, so a CT reordering could still move the capture past the
+        generalization. Reversing prune and convert would empty the table.
+        """
+        rules = [
+            entry[0] for entry in cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        ]
+        capture = rules.index(CaptureCtPlusZip5)
+        prune = rules.index(PruneCtPlusZip5)
+        convert = rules.index(ConvertCtPlusZip5Ids)
+
+        self.assertLess(rules.index(RtCtPIDtoRID), capture)
+        self.assertLess(capture, rules.index(GeneralizeZipCodes))
+        self.assertLess(rules.index(DropOrphanedPIDS), prune)
+        self.assertLess(prune, convert)
+
     def test_only_ct_plus_lists_carry_ct_plus_variants(self):
-        """No CT+ variant leaks into a CT, RT or fitbit list.
+        """No CT+ variant or CT+-only rule leaks into a CT, RT or fitbit list.
 
         A CT+ subclass registered elsewhere would under-suppress that tier.
         Scans every cleaning-classes list, not only the three CT ones.
         """
-        ct_plus_rules = set(CT_PLUS_SUBSTITUTIONS.values())
+        ct_plus_rules = set(
+            CT_PLUS_SUBSTITUTIONS.values()).union(*CT_PLUS_INSERTIONS.values())
         scanned = 0
 
         for name in dir(cc):

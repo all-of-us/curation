@@ -307,6 +307,9 @@ AIAN_LIST = 'aian_list'
 
 UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
 
+# CT+ Zip5 linked dataset, captured into the CT+ deid stage sandbox
+CT_PLUS_ZIP5 = 'ct_plus_zip5'
+
 # CDR tiers, and the dataset naming they drive
 REGISTERED = 'registered'
 CONTROLLED = 'controlled'
