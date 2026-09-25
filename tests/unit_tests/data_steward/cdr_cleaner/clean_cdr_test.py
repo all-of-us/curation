@@ -13,12 +13,17 @@ from cdr_cleaner.cleaning_rules.deid.ct_retroactive_privacy_suppression import (
     CTRetroactivePrivacyConceptSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import (
     RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus)
+from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import (
+    MotorVehicleAccidentSuppression)
+from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import (
+    VehicularAccidentConceptSuppression)
 from constants.cdr_cleaner.clean_cdr import DataStage
 from tests.test_util import FakeRuleClass, fake_rule_func
 
 # The CT+ lists are hard copies of the CT lists, so drift is otherwise
-# invisible. Swapping in a CT+ variant at the same position is the only allowed
-# difference; anything else fails the copy-policy test below.
+# invisible. The only allowed differences are swapping in a CT+ variant at the
+# same position, and dropping a CT rule that must not run in CT+; anything else
+# fails the copy-policy test below.
 CT_PLUS_SUBSTITUTIONS = {
     CTAdditionalPrivacyConceptSuppression:
         CTAdditionalPrivacyConceptSuppressionCtPlus,
@@ -30,6 +35,14 @@ CT_PLUS_SUBSTITUTIONS = {
         RemoveFlaggedUnder18ParticipantsCtPlus,
 }
 
+# CT rules that do not run in CT+. Motor vehicle accident codes are released in
+# CT+, and these two rules build their concept lists from the vocabulary rather
+# than reading ct_plus_suppressed, so they cannot be relaxed by a variant.
+CT_PLUS_REMOVALS = {
+    MotorVehicleAccidentSuppression,
+    VehicularAccidentConceptSuppression,
+}
+
 
 def expected_ct_plus_classes(ct_classes):
     """
@@ -39,7 +52,8 @@ def expected_ct_plus_classes(ct_classes):
     :return: the CT+ list it should produce
     """
     return [(CT_PLUS_SUBSTITUTIONS.get(entry[0], entry[0]),) + tuple(entry[1:])
-            for entry in ct_classes]
+            for entry in ct_classes
+            if entry[0] not in CT_PLUS_REMOVALS]
 
 
 class CleanCDRTest(unittest.TestCase):
@@ -87,7 +101,7 @@ class CleanCDRTest(unittest.TestCase):
 
     def test_controlled_tier_plus_lists_copy_controlled_tier(self):
         """Each CT+ list is an independent copy of its CT counterpart, apart
-        from the substitutions declared at the top of this module.
+        from the substitutions and removals declared at the top of this module.
 
         Any other divergence fails here. The identity checks are permanent.
         """
@@ -95,6 +109,27 @@ class CleanCDRTest(unittest.TestCase):
             self.assertEqual(expected_ct_plus_classes(ct_classes),
                              ct_plus_classes)
             self.assertIsNot(ct_plus_classes, ct_classes)
+
+    def test_vehicle_rules_run_in_rt_and_ct_but_not_ct_plus(self):
+        """The two vehicle rules are dropped from CT+ only.
+
+        The copy test above cannot see a rule dropped from CT as well, so the
+        RT and CT registrations are asserted here directly.
+        """
+        ct_deid_rules = {
+            entry[0] for entry in cc.CONTROLLED_TIER_DEID_CLEANING_CLASSES
+        }
+        ct_plus_deid_rules = {
+            entry[0] for entry in cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        }
+        rt_deid_rules = {
+            entry[0] for entry in cc.REGISTERED_TIER_DEID_CLEANING_CLASSES
+        }
+
+        for rule in CT_PLUS_REMOVALS:
+            self.assertIn(rule, ct_deid_rules)
+            self.assertNotIn(rule, ct_plus_deid_rules)
+        self.assertIn(VehicularAccidentConceptSuppression, rt_deid_rules)
 
     def test_only_ct_plus_lists_carry_ct_plus_variants(self):
         """No CT+ variant leaks into a CT, RT or fitbit list.

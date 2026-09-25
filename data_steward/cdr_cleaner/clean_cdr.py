@@ -486,8 +486,9 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
 # CT+ cleaning classes, copied from the CONTROLLED_TIER_* lists above. A CT
 # change during the V9 window must be mirrored here deliberately. Where a CT+
 # variant stands in for its CT counterpart, the swap is declared in
-# CT_PLUS_SUBSTITUTIONS in tests/unit_tests/.../clean_cdr_test.py, which fails
-# on any divergence not listed there.
+# CT_PLUS_SUBSTITUTIONS, and where a CT rule does not run in CT+, the removal is
+# declared in CT_PLUS_REMOVALS, both in tests/unit_tests/.../clean_cdr_test.py,
+# which fails on any divergence not listed there.
 CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (MoveNLPtoDomains,),
     # Must run while person_id is still the participant ID, so before RtCtPIDtoRID
@@ -502,10 +503,12 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (ControlledTierReplacedConceptSuppression,),
     (GeneralizeZipCodes,),  # Should run after any data remapping rules
     # (RaceEthnicityRecordSuppression,),  # Should run after any data remapping rules
+    # MotorVehicleAccidentSuppression and VehicularAccidentConceptSuppression
+    # are omitted: motor vehicle accident codes are released in CT+, and both
+    # rules build their concept lists from the vocabulary rather than reading
+    # ct_plus_suppressed, so no CT+ variant could release them.
     (
-        MotorVehicleAccidentSuppression,),
-    (VehicularAccidentConceptSuppression,),
-    (ExplicitIdentifierSuppression,),
+        ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
     (BirthInformationSuppression,),
     (YearOfBirthRecordsSuppression,),
