@@ -316,6 +316,7 @@ DEID_QUESTIONNAIRE_RESPONSE_MAP = '_deid_questionnaire_response_map'
 AIAN_LIST = 'aian_list'
 
 UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
+UNRESOLVED_CONSENT_DATE_LOOKUP_TABLE = '_unresolved_consent_date_participants'
 
 # CDR tiers, and the dataset naming they drive
 REGISTERED = 'registered'
