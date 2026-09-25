@@ -322,8 +322,10 @@ UNRESOLVED_CONSENT_DATE_LOOKUP_TABLE = '_unresolved_consent_date_participants'
 # `fact_relationship`.
 PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE = '_pediatric_guardian_links'
 
-# CT+ Zip5 linked dataset, captured into the CT+ deid stage sandbox
+# CT+ Zip5 and date-of-birth linked datasets, captured into the CT+ deid stage
+# sandbox
 CT_PLUS_ZIP5 = 'ct_plus_zip5'
+CT_PLUS_BIRTHDATE = 'ct_plus_birthdate'
 
 # CDR tiers, and the dataset naming they drive
 REGISTERED = 'registered'

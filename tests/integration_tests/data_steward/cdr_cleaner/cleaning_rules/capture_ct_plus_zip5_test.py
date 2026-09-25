@@ -117,7 +117,7 @@ VALUES
 """)
 
 
-@mock.patch('cdr_cleaner.cleaning_rules.capture_ct_plus_zip5.PIPELINE_TABLES',
+@mock.patch('cdr_cleaner.cleaning_rules.ct_plus_side_tables.PIPELINE_TABLES',
             os.environ.get('RDR_DATASET_ID'))
 class CaptureCtPlusZip5Test(BaseTest.CleaningRulesTestBase):
 

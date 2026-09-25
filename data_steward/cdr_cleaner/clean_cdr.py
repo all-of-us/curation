@@ -135,6 +135,8 @@ from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDto
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
     CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
+from cdr_cleaner.cleaning_rules.capture_ct_plus_birthdate import (
+    CaptureCtPlusBirthdate, ConvertCtPlusBirthdateIds, PruneCtPlusBirthdate)
 from cdr_cleaner.cleaning_rules.free_text_survey_response_suppression import FreeTextSurveyResponseSuppression
 from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
 from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSuppression
@@ -499,9 +501,11 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (
         RemoveFlaggedUnder18ParticipantsCtPlus,),
     (CtPlusPIDtoRID,),  # CT+ sources _deid_map from the research IDs view
-    # Must run after CtPlusPIDtoRID and before GeneralizeZipCodes
+    # Must run after CtPlusPIDtoRID and before GeneralizeZipCodes and
+    # NullPersonBirthdate
     (
         CaptureCtPlusZip5,),
+    (CaptureCtPlusBirthdate,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (TruncateEraTables,),
     (NullPersonBirthdate,),
@@ -535,6 +539,8 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (
         PruneCtPlusZip5,),
     (ConvertCtPlusZip5Ids,),
+    (PruneCtPlusBirthdate,),
+    (ConvertCtPlusBirthdateIds,),
     (GenerateWearStudyTable,),
     (DropViaSurveyConduct,),  # should run after wear study table creation
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
