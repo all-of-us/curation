@@ -78,6 +78,7 @@ from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded impo
 from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import \
     RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus
 from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
+from cdr_cleaner.cleaning_rules.deid.ct_plus_pid_rid_map import CtPlusPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     RepopulatePersonControlledTier
 from cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization import \
@@ -490,11 +491,11 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
 # on any divergence not listed there.
 CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (MoveNLPtoDomains,),
-    # Must run while person_id is still the participant ID, so before RtCtPIDtoRID
+    # Must run while person_id is still the participant ID, so before CtPlusPIDtoRID
     # re-keys it to the research ID. The CT+ variant retains the '0-6' band.
     (
         RemoveFlaggedUnder18ParticipantsCtPlus,),
-    (RtCtPIDtoRID,),
+    (CtPlusPIDtoRID,),  # CT+ sources _deid_map from the research IDs view
     (QRIDtoRID,),  # Should run before any row suppression rules
     (TruncateEraTables,),
     (NullPersonBirthdate,),
