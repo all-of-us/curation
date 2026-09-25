@@ -49,7 +49,8 @@ RETROACTIVE_CSV = _fixture_csv('retroactive.csv', [
 ])
 
 PATCHES = [
-    mock.patch.object(rule_module, 'PRIVACY_CONCEPTS_PATH', RETROACTIVE_CSV),
+    mock.patch.object(rule_module, 'CT_RETROACTIVE_PRIVACY_CONCEPTS_PATH',
+                      RETROACTIVE_CSV),
 ]
 
 

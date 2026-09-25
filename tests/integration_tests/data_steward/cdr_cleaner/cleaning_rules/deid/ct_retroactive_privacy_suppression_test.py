@@ -140,7 +140,8 @@ class CTRetroactivePrivacyConceptSuppressionTest(BaseTest.CleaningRulesTestBase
             ]
         }]
 
-    @mock.patch.object(rule_module, 'PRIVACY_CONCEPTS_PATH', RETROACTIVE_CSV)
+    @mock.patch.object(rule_module, 'CT_RETROACTIVE_PRIVACY_CONCEPTS_PATH',
+                       RETROACTIVE_CSV)
     def test_base_rule_suppresses_every_retroactive_concept(self):
         """
         The CT rule is unchanged by the refactor: it loads every CSV row.
@@ -150,7 +151,8 @@ class CTRetroactivePrivacyConceptSuppressionTest(BaseTest.CleaningRulesTestBase
 
         self.default_test(self._tables_and_counts(surviving_concepts=[]))
 
-    @mock.patch.object(rule_module, 'PRIVACY_CONCEPTS_PATH', RETROACTIVE_CSV)
+    @mock.patch.object(rule_module, 'CT_RETROACTIVE_PRIVACY_CONCEPTS_PATH',
+                       RETROACTIVE_CSV)
     def test_ct_plus_variant_keeps_the_expanded_concept(self):
         """
         Without this variant a retroactive fix would remove at deid_base what
