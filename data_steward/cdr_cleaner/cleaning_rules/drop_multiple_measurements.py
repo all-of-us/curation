@@ -16,7 +16,8 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
-from common import JINJA_ENV, MEASUREMENT
+from common import (BMI_SOURCE_CONCEPT_ID, HEIGHT_SOURCE_CONCEPT_ID, JINJA_ENV,
+                    MEASUREMENT, WEIGHT_SOURCE_CONCEPT_ID)
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from utils import pipeline_logging
 
@@ -58,7 +59,7 @@ FROM (
             ORDER BY measurement_datetime DESC
         ) AS row_num
     FROM `{{project}}.{{dataset}}.measurement`
-    WHERE measurement_source_concept_id IN (903133, 903121, 903124)
+    WHERE measurement_source_concept_id IN ({{height_concept_id}}, {{weight_concept_id}}, {{bmi_concept_id}})
 )
 WHERE row_num != 1
 """)
@@ -123,7 +124,10 @@ class DropMultipleMeasurements(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    intermediary_table=self.get_sandbox_tablenames()[0])
+                    intermediary_table=self.get_sandbox_tablenames()[0],
+                    height_concept_id=HEIGHT_SOURCE_CONCEPT_ID,
+                    weight_concept_id=WEIGHT_SOURCE_CONCEPT_ID,
+                    bmi_concept_id=BMI_SOURCE_CONCEPT_ID)
         }
 
         delete_invalid_rows = {
