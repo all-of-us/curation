@@ -687,7 +687,7 @@ class EhrUnionAllDeathTest(BaseTest.BigQueryTestBase):
             VALUES
             (4, '2019-12-31', '2019-12-31 00:00:00', 0, NULL, NULL, NULL),
             (5, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL)
-        """).render(projecti_id=self.project_id,
+        """).render(project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     hpo=PITT_HPO_ID,
                     death=DEATH)

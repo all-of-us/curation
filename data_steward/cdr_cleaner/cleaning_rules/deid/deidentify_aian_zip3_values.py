@@ -51,7 +51,7 @@ WHERE
   SELECT
     person_id
   FROM
-    `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`)
+    `{{project}}.{{sandbox_id}}.{{sandbox_table}}`)
 """)
 
 

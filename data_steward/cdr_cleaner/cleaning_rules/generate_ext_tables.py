@@ -179,6 +179,7 @@ class GenerateExtTables(BaseCleaningRule):
                 ext_table=ext_table_id,
                 ext_table_fields=ext_table_fields_str,
                 additional_fields=additional_field_names,
+                mapping_fields=mapping_field_names,
                 cdm_table_id=cdm_table_id,
                 mapping_table_id=mapping_table_id,
                 shared_sandbox_id=self.sandbox_dataset_id,

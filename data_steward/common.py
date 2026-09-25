@@ -377,7 +377,12 @@ JINJA_ENV = jinja2.Environment(
     comment_end_string=' --',
     # in jinja2 autoescape is for html; jinjasql supports autoescape for sql
     # TODO Look into jinjasql for sql templating
-    autoescape=False)
+    autoescape=False,
+    # a variable the render call does not supply raises instead of rendering
+    # empty. BigQuery accepts a table reference with an empty project segment
+    # and resolves it against the job's default project, so without this a
+    # mismatched keyword silently retargets the query
+    undefined=jinja2.StrictUndefined)
 
 # Google scopes for running CDR pipeline stages
 CDR_SCOPES = [

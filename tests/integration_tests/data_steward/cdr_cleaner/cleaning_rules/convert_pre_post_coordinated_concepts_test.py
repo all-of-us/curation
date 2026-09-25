@@ -33,7 +33,7 @@ LOAD_QUERY = JINJA_ENV.from_string("""
 """)
 
 LOAD_MAPPING_QUERY = JINJA_ENV.from_string("""
-    CREATE OR REPLACE TABLE `{{project}}.{{dataset_id}}._mapping_observation`
+    CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}._mapping_observation`
     (observation_id INT64, src_id STRING)
     ;
     INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_observation` 

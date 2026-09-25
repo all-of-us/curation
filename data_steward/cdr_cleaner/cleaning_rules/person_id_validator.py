@@ -58,7 +58,7 @@ CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
         SELECT 
             hpo_id
         FROM
-            `{{project_id}}.pipeline_tables.site_maskings`
+            `{{project}}.pipeline_tables.site_maskings`
         WHERE NOT
             REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
      )

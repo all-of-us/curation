@@ -45,7 +45,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}` (
 {% for field in schema -%}
   {{ field.name }} {{ field.field_type }} {% if field.mode.lower() == 'required' -%} NOT NULL {%- endif %}
   {% if field.description %} OPTIONS (description="{{ field.description }}") {%- endif %}
-  {% if loop.nextitem %},{% endif -%}
+  {% if loop.nextitem is defined %},{% endif -%}
 {%- endfor %} )
 {% if opts -%}
 OPTIONS (
