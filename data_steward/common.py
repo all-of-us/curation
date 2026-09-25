@@ -318,6 +318,10 @@ AIAN_LIST = 'aian_list'
 UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
 UNRESOLVED_CONSENT_DATE_LOOKUP_TABLE = '_unresolved_consent_date_participants'
 
+# Adult to pediatric pairs, written at the RDR stage for later stages that lack
+# `fact_relationship`.
+PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE = '_pediatric_guardian_links'
+
 # CDR tiers, and the dataset naming they drive
 REGISTERED = 'registered'
 CONTROLLED = 'controlled'

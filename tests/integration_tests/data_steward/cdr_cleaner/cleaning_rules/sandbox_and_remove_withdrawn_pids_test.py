@@ -10,7 +10,9 @@ from google.cloud.bigquery import Table
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, RDR_DATASET_ID, OBSERVATION, PERSON, AOU_DEATH
+from common import (AOU_DEATH, FACT_RELATIONSHIP, JINJA_ENV, OBSERVATION,
+                    PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE, PERSON,
+                    RDR_DATASET_ID, UNDER18_PARTICIPANTS_LOOKUP_TABLE)
 from cdr_cleaner.cleaning_rules.sandbox_and_remove_withdrawn_pids import SandboxAndRemoveWithdrawnPids
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -110,6 +112,69 @@ LOOKUP_TABLE_TEMPLATE = JINJA_ENV.from_string("""
         (403)
 """)
 
+UNDER18_SCHEMA = [{
+    "type": "integer",
+    "name": "person_id",
+    "mode": "nullable"
+}, {
+    "type": "integer",
+    "name": "age_at_consent",
+    "mode": "nullable"
+}, {
+    "type": "string",
+    "name": "age_band",
+    "mode": "nullable"
+}]
+
+UNDER18_TEMPLATE = JINJA_ENV.from_string("""
+    INSERT INTO `{{project_id}}.{{sandbox_id}}.{{under18_table}}`
+        (person_id, age_at_consent, age_band)
+    VALUES
+        (201, 3, '0-6'),
+        (202, 5, '0-6'),
+        (203, 2, '0-6'),
+        (220, 4, '0-6'),
+        -- 210 is under 18 but outside the CT+ pediatric cohort. --
+        (210, 12, '7-17')
+""")
+
+FACT_RELATIONSHIP_TEMPLATE = JINJA_ENV.from_string("""
+    INSERT INTO `{{project_id}}.{{dataset_id}}.fact_relationship`
+        (domain_concept_id_1, fact_id_1, domain_concept_id_2, fact_id_2, relationship_concept_id)
+    VALUES
+        -- Adult 101 is linked to two pediatric participants. The 101 to 201 link --
+        -- arrives in both directions and is one pair. --
+        (56, 101, 56, 201, 4053608),
+        (56, 201, 56, 101, 4326600),
+        (56, 101, 56, 202, 4053608),
+        -- The child can sit on either side of the row. --
+        (56, 203, 56, 102, 4301632),
+        -- The guardian skipped the relationship question, so the concept is 0. --
+        -- It is still the consent link, and still a pair. --
+        (56, 105, 56, 220, 0),
+        -- 210 is in the 7-17 band, which every tier removes, so this is not a --
+        -- CT+ pair and not an error either. --
+        (56, 103, 56, 210, 4053608),
+        -- A measurement to observation row, which this query must ignore. --
+        (21, 5, 27, 6, 4326600)
+""")
+
+# Rows that do not resolve to one adult and one 0-6 participant. Each stops the
+# run, so only the test expecting that loads them.
+UNRESOLVED_FACT_RELATIONSHIP_TEMPLATE = JINJA_ENV.from_string("""
+    INSERT INTO `{{project_id}}.{{dataset_id}}.fact_relationship`
+        (domain_concept_id_1, fact_id_1, domain_concept_id_2, fact_id_2, relationship_concept_id)
+    VALUES
+        -- Neither side is in the lookup: the child's age was not derived. --
+        (56, 104, 56, 999, 4053608),
+        -- A 7-17 participant cannot be the adult side of a 0-6 child. --
+        (56, 210, 56, 201, 4218412),
+        -- Both sides are 0-6, so neither is the guardian. --
+        (56, 203, 56, 220, 4218412),
+        -- A self reference. --
+        (56, 201, 56, 201, 4053608)
+""")
+
 LOOKUP_TABLE_SCHEMA = [{
     "type": "integer",
     "name": "person_id",
@@ -172,6 +237,22 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
                 f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_name)}'
             )
 
+        # The rule writes the pairs lookup, so it goes in the sandbox list, which
+        # is cleaned up and asserted absent before the run.
+        cls.fq_links_table = (f'{cls.project_id}.{cls.sandbox_id}.'
+                              f'{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}')
+        cls.fq_sandbox_table_names.append(cls.fq_links_table)
+
+        # Source of the pairs. It has no `person_id`, so the removal leaves it.
+        cls.fq_table_names.append(
+            f'{cls.project_id}.{cls.dataset_id}.{FACT_RELATIONSHIP}')
+
+        # No schema files, so created and dropped by this class.
+        cls.fq_withdrawn_dups_table = (
+            f'{cls.project_id}.{cls.dataset_id}.{cls.withdrawn_dups_table}')
+        cls.fq_under18_table = (f'{cls.project_id}.{cls.sandbox_id}.'
+                                f'{UNDER18_PARTICIPANTS_LOOKUP_TABLE}')
+
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
 
@@ -181,16 +262,30 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
-        # Create a temp lookup_table in rdr dataset for testing
-        lookup_table_name = f'{self.project_id}.{self.dataset_id}.{self.withdrawn_dups_table}'
-        self.client.create_table(Table(lookup_table_name, LOOKUP_TABLE_SCHEMA))
-        self.fq_table_names.append(lookup_table_name)
+        # Kept out of `fq_table_names`: `BaseTest.setUp` cannot resolve a table
+        # without a schema file, and appending to that class attribute would leak
+        # across test methods.
+        self.client.create_table(Table(self.fq_withdrawn_dups_table,
+                                       LOOKUP_TABLE_SCHEMA),
+                                 exists_ok=True)
 
         # Build temp records lookup table query
         lookup_table_query = LOOKUP_TABLE_TEMPLATE.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             lookup_table=self.withdrawn_dups_table)
+
+        # Written by FlagParticipantsUnder18Years at this stage, not this rule.
+        self.client.create_table(Table(self.fq_under18_table, UNDER18_SCHEMA),
+                                 exists_ok=True)
+
+        under18_query = UNDER18_TEMPLATE.render(
+            project_id=self.project_id,
+            sandbox_id=self.sandbox_id,
+            under18_table=UNDER18_PARTICIPANTS_LOOKUP_TABLE)
+
+        fact_relationship_query = FACT_RELATIONSHIP_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Build test data queries
         observation_records_query = OBSERVATION_TABLE_TEMPLATE.render(
@@ -202,11 +297,62 @@ class SandboxAndRemovePidsListTest(BaseTest.CleaningRulesTestBase):
 
         table_test_queries = [
             observation_records_query, person_records_query,
-            aou_death_records_query
+            aou_death_records_query, under18_query, fact_relationship_query
         ]
 
         # Load test data
         self.load_test_data([lookup_table_query] + table_test_queries)
+
+    def tearDown(self):
+        """
+        Drop the two fixture tables kept out of `fq_table_names`.
+        """
+        for fq_table in [self.fq_withdrawn_dups_table, self.fq_under18_table]:
+            self.client.delete_table(fq_table, not_found_ok=True)
+        super().tearDown()
+
+    def test_pediatric_guardian_links_are_derived(self):
+        """
+        The rule writes the adult to pediatric pairs at the RDR stage, where
+        `fact_relationship` and the cohort lookup are both in reach.
+        """
+        loaded = list(
+            self.client.query(
+                f'SELECT COUNT(*) AS n FROM '
+                f'`{self.project_id}.{self.dataset_id}.{FACT_RELATIONSHIP}`').
+            result())[0].n
+        self.assertEqual(loaded, 7,
+                         'the fact_relationship fixture did not load')
+
+        # Only the pairs lookup is asserted on.
+        self.default_test([])
+
+        pairs = sorted((row.adult_person_id, row.pediatric_person_id)
+                       for row in self.client.query(f"""
+                SELECT adult_person_id, pediatric_person_id
+                FROM `{self.fq_links_table}`
+            """).result())
+
+        # 101 to 201 collapses to one pair across both directions, 203 is found
+        # on side 1, and 105 to 220 pairs despite concept 0. 103 to 210 is
+        # outside the CT+ cohort and 21 to 27 is not person to person.
+        self.assertEqual(pairs, [(101, 201), (101, 202), (102, 203),
+                                 (105, 220)])
+
+    def test_unresolved_linkage_rows_stop_the_run(self):
+        """
+        An unresolved linkage row would keep a child's data after their guardian
+        withdraws, so the rule raises.
+        """
+        self.load_test_data([
+            UNRESOLVED_FACT_RELATIONSHIP_TEMPLATE.render(
+                project_id=self.project_id, dataset_id=self.dataset_id)
+        ])
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self.rule_instance.derive_pediatric_guardian_links(self.client)
+
+        self.assertIn('4 person domain', str(ctx.exception))
 
     def test_sandbox_and_remove_pids_list(self):
         """

@@ -14,12 +14,13 @@ from unittest import mock
 
 # Third party imports
 import pandas as pd
-from google.cloud.bigquery import TableReference
+from google.cloud.bigquery import Table, TableReference
 
 # Project imports
 from common import (AOU_DEATH, JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH,
                     PERSON, SURVEY_CONDUCT, HEART_RATE_INTRADAY, SLEEP_LEVEL,
-                    STEPS_INTRADAY, DEVICE, SLEEP_LEVEL_SHORT, PS_AWARDEE)
+                    STEPS_INTRADAY, DEVICE, SLEEP_LEVEL_SHORT, PS_AWARDEE,
+                    DRC_OPS, PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE)
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
@@ -58,9 +59,15 @@ class RemoveParticipantDataPastDeactivationDateTest(
         # clean_digital_health_data_test does for the same reason.
         cls.drc_ops_dataset_id = os.environ.get('RDR_DATASET_ID')
 
+        # The pairs lookup lives in the sandbox the base class already creates.
+        # This test has no linked pair, so the lookup is empty and every
+        # expectation below is the adult-only behaviour.
+        cls.rdr_sandbox_id = sandbox_id
+
         cls.kwargs = {
             'table_namer': 'table_namer',
-            'api_project_id': 'foo-project-id'
+            'api_project_id': 'foo-project-id',
+            'rdr_sandbox_dataset_id': cls.rdr_sandbox_id
         }
         cls.rule_instance = RemoveParticipantDataPastDeactivationDate(
             project_id, dataset_id, sandbox_id, **cls.kwargs)
@@ -252,6 +259,20 @@ class RemoveParticipantDataPastDeactivationDateTest(
                 """)
         }
 
+        # Empty pairs lookup, so nothing cascades.
+        self.client.create_table(Table(
+            f'{self.project_id}.{self.rdr_sandbox_id}.'
+            f'{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}', [{
+                'type': 'integer',
+                'name': 'adult_person_id',
+                'mode': 'nullable'
+            }, {
+                'type': 'integer',
+                'name': 'pediatric_person_id',
+                'mode': 'nullable'
+            }]),
+                                 exists_ok=True)
+
         self.load_statements = []
         # create the string(s) to load the data
         for table in TABLE_ROWS:
@@ -264,6 +285,17 @@ class RemoveParticipantDataPastDeactivationDateTest(
             self.load_statements.append(query)
 
         super().setUp()
+
+    def tearDown(self):
+        """
+        Drop the pairs lookup. It is kept out of `fq_sandbox_table_names`
+        because the base class asserts those are absent before the rule runs.
+        """
+        self.client.delete_table(
+            f'{self.project_id}.{self.rdr_sandbox_id}.'
+            f'{PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE}',
+            not_found_ok=True)
+        super().tearDown()
 
     def get_dates_info(self):
         # preconditions

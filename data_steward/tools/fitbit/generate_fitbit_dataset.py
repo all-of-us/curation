@@ -194,6 +194,14 @@ def get_fitbit_parser():
         required=True)
 
     parser.add_argument(
+        '--rdr_sandbox_dataset_id',
+        action='store',
+        dest='rdr_sandbox_dataset_id',
+        help=('Identifies the RDR stage sandbox holding the adult to pediatric '
+              'participant pairs'),
+        required=True)
+
+    parser.add_argument(
         '--truncation_date',
         dest='truncation_date',
         action='store',
@@ -255,6 +263,8 @@ def main(raw_args=None):
         args.run_as_email,
         '--api_project_id',
         args.api_project_id,
+        '--rdr_sandbox_dataset_id',
+        args.rdr_sandbox_dataset_id,
         '--reference_dataset_id',
         args.reference_dataset_id,
         '--truncation_date',
