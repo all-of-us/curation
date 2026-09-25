@@ -16,7 +16,7 @@ import logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, OBSERVATION, AIAN_LIST, PRIMARY_PID_RID_MAPPING, PIPELINE_TABLES
+from common import JINJA_ENV, OBSERVATION, AIAN_LIST, RDR_PARTICIPANT_RESEARCH_IDS_VIEW, PIPELINE_TABLES
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -27,10 +27,15 @@ SELECT *
 FROM `{{project}}.{{dataset}}.observation`
 WHERE person_id IN (
   -- Query to identify AI/AN participants --
-  SELECT research_id
-  FROM `{{project}}.{{rdr_sandbox_id}}.{{aian_list}}`
-  LEFT JOIN `{{project}}.{{pipeline_lookup_tables}}.{{primary_pid_rid_mapping}}`
-  USING (person_id))
+  -- aian_list is keyed by participant id while this dataset is keyed by research id, --
+  -- so the cohort has to be translated. The research ids view is used rather than --
+  -- primary_pid_rid_mapping because that table's coverage lags the ids it is being --
+  -- asked to reproduce, and an uncovered participant would leave the cohort silently. --
+  SELECT v.controlled_tier_id
+  FROM `{{project}}.{{rdr_sandbox_id}}.{{aian_list}}` AS a
+  JOIN `{{project}}.{{pipeline_lookup_tables}}.{{research_ids_view}}` AS v
+  ON v.participant_id = a.person_id
+  WHERE v.controlled_tier_id IS NOT NULL)
 -- Filter to identify State and zip records for AI/AN participants --
 AND observation_source_concept_id IN (1585250, 1585249)
 )
@@ -51,7 +56,7 @@ WHERE
   SELECT
     person_id
   FROM
-    `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`)
+    `{{project}}.{{sandbox_id}}.{{sandbox_table}}`)
 """)
 
 
@@ -106,7 +111,7 @@ class DeidentifyAIANZip3Values(BaseCleaningRule):
             sandbox_table=self.sandbox_table_for(OBSERVATION),
             rdr_sandbox_id=self.rdr_sandbox_id,
             pipeline_lookup_tables=PIPELINE_TABLES,
-            primary_pid_rid_mapping=PRIMARY_PID_RID_MAPPING,
+            research_ids_view=RDR_PARTICIPANT_RESEARCH_IDS_VIEW,
             aian_list=AIAN_LIST,
             dataset=self.dataset_id)
 
