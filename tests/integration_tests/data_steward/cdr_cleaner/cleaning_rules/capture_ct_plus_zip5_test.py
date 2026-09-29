@@ -17,8 +17,8 @@ from google.cloud.bigquery import Table
 # Project Imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
 from app_identity import PROJECT_ID
-from common import (AIAN_LIST, CT_PLUS_ZIP5, DEID_MAP, JINJA_ENV, OBSERVATION,
-                    PERSON, UNDER18_PARTICIPANTS_LOOKUP_TABLE)
+from common import (AIAN_LIST, CT_PLUS_ZIP5_TABLE, DEID_MAP, JINJA_ENV,
+                    OBSERVATION, PERSON, UNDER18_PARTICIPANTS_LOOKUP_TABLE)
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
     CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
@@ -145,7 +145,7 @@ class CaptureCtPlusZip5Test(BaseTest.CleaningRulesTestBase):
         for table_name in [OBSERVATION, PERSON]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
-        cls.fq_zip5_table = f'{cls.project_id}.{cls.sandbox_id}.{CT_PLUS_ZIP5}'
+        cls.fq_zip5_table = f'{cls.project_id}.{cls.sandbox_id}.{CT_PLUS_ZIP5_TABLE}'
         cls.fq_sandbox_table_names.append(cls.fq_zip5_table)
 
         # Not via fq_table_names, whose tables are created from schema files by

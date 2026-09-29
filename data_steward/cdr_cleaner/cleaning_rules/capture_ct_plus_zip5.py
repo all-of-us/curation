@@ -15,7 +15,7 @@ import logging
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from common import CT_PLUS_ZIP5, JINJA_ENV, OBSERVATION, PERSON
+from common import CT_PLUS_ZIP5_TABLE, JINJA_ENV, OBSERVATION, PERSON
 from cdr_cleaner.cleaning_rules.ct_plus_side_tables import (
     ConvertCtPlusSideTableIds, CtPlusSideTableRule, PruneCtPlusSideTable,
     excluded_participants)
@@ -50,7 +50,7 @@ class CaptureCtPlusZip5(CtPlusSideTableRule):
     Copy each eligible participant's latest five-digit zip into the side table,
     before GeneralizeZipCodes cuts it to three digits.
     """
-    storage_table = CT_PLUS_ZIP5
+    storage_table = CT_PLUS_ZIP5_TABLE
 
     def __init__(self,
                  project_id,
@@ -100,7 +100,7 @@ class PruneCtPlusZip5(PruneCtPlusSideTable):
     """
     Drop captured zip codes for participants no longer in person.
     """
-    storage_table = CT_PLUS_ZIP5
+    storage_table = CT_PLUS_ZIP5_TABLE
 
     def __init__(self,
                  project_id,
@@ -125,7 +125,7 @@ class ConvertCtPlusZip5Ids(ConvertCtPlusSideTableIds):
     """
     Re-key the captured zip codes from CT research ids to CT+ research ids.
     """
-    storage_table = CT_PLUS_ZIP5
+    storage_table = CT_PLUS_ZIP5_TABLE
 
     def __init__(self,
                  project_id,

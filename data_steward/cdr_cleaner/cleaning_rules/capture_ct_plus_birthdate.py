@@ -18,7 +18,7 @@ import logging
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from common import CT_PLUS_BIRTHDATE, JINJA_ENV, PERSON
+from common import CT_PLUS_BIRTHDATE_TABLE, JINJA_ENV, PERSON
 from cdr_cleaner.cleaning_rules.ct_plus_side_tables import (
     ConvertCtPlusSideTableIds, CtPlusSideTableRule, PruneCtPlusSideTable,
     excluded_participants)
@@ -45,7 +45,7 @@ class CaptureCtPlusBirthdate(CtPlusSideTableRule):
     Copy each eligible participant's date of birth into the side table, before
     NullPersonBirthdate nulls it.
     """
-    storage_table = CT_PLUS_BIRTHDATE
+    storage_table = CT_PLUS_BIRTHDATE_TABLE
 
     def __init__(self,
                  project_id,
@@ -94,7 +94,7 @@ class PruneCtPlusBirthdate(PruneCtPlusSideTable):
     """
     Drop captured dates of birth for participants no longer in person.
     """
-    storage_table = CT_PLUS_BIRTHDATE
+    storage_table = CT_PLUS_BIRTHDATE_TABLE
 
     def __init__(self,
                  project_id,
@@ -119,7 +119,7 @@ class ConvertCtPlusBirthdateIds(ConvertCtPlusSideTableIds):
     """
     Re-key the captured dates of birth from CT research ids to CT+ research ids.
     """
-    storage_table = CT_PLUS_BIRTHDATE
+    storage_table = CT_PLUS_BIRTHDATE_TABLE
 
     def __init__(self,
                  project_id,

@@ -18,8 +18,8 @@ from google.cloud.bigquery import Table
 # Project Imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
 from app_identity import PROJECT_ID
-from common import (AIAN_LIST, CT_PLUS_BIRTHDATE, DEID_MAP, JINJA_ENV, PERSON,
-                    UNDER18_PARTICIPANTS_LOOKUP_TABLE)
+from common import (AIAN_LIST, CT_PLUS_BIRTHDATE_TABLE, DEID_MAP, JINJA_ENV,
+                    PERSON, UNDER18_PARTICIPANTS_LOOKUP_TABLE)
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.capture_ct_plus_birthdate import (
     CaptureCtPlusBirthdate, ConvertCtPlusBirthdateIds, PruneCtPlusBirthdate)
@@ -131,7 +131,7 @@ class CaptureCtPlusBirthdateTest(BaseTest.CleaningRulesTestBase):
         cls.fq_person_table = f'{cls.project_id}.{cls.dataset_id}.{PERSON}'
         cls.fq_table_names.append(cls.fq_person_table)
         cls.fq_birthdate_table = (f'{cls.project_id}.{cls.sandbox_id}.'
-                                  f'{CT_PLUS_BIRTHDATE}')
+                                  f'{CT_PLUS_BIRTHDATE_TABLE}')
         cls.fq_sandbox_table_names.append(cls.fq_birthdate_table)
 
         # Not via fq_table_names, whose tables are created from schema files by

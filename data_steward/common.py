@@ -324,8 +324,8 @@ PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE = '_pediatric_guardian_links'
 
 # CT+ Zip5 and date-of-birth linked datasets, captured into the CT+ deid stage
 # sandbox
-CT_PLUS_ZIP5 = 'ct_plus_zip5'
-CT_PLUS_BIRTHDATE = 'ct_plus_birthdate'
+CT_PLUS_ZIP5_TABLE = 'ct_plus_zip5'
+CT_PLUS_BIRTHDATE_TABLE = 'ct_plus_birthdate'
 
 # CDR tiers, and the dataset naming they drive
 REGISTERED = 'registered'

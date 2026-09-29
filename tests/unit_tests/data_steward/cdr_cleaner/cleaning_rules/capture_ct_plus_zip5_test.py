@@ -10,7 +10,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 # Project imports
-from common import AIAN_LIST, CT_PLUS_ZIP5, UNDER18_PARTICIPANTS_LOOKUP_TABLE
+from common import AIAN_LIST, CT_PLUS_ZIP5_TABLE, UNDER18_PARTICIPANTS_LOOKUP_TABLE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
     CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
@@ -45,13 +45,15 @@ class CaptureCtPlusZip5Test(unittest.TestCase):
         for rule in [self.capture, self.prune, self.convert]:
             self.assertEqual(rule.affected_datasets,
                              [cdr_consts.CONTROLLED_TIER_PLUS_DEID])
-            self.assertEqual(rule.get_sandbox_tablenames(), [CT_PLUS_ZIP5])
+            self.assertEqual(rule.get_sandbox_tablenames(),
+                             [CT_PLUS_ZIP5_TABLE])
 
     def test_capture_excludes_aian_and_pediatric_participants(self):
         query = self.capture.get_query_specs()[0][cdr_consts.QUERY]
 
-        self.assertIn(f'`{self.project_id}.{self.sandbox_id}.{CT_PLUS_ZIP5}`',
-                      query)
+        self.assertIn(
+            f'`{self.project_id}.{self.sandbox_id}.{CT_PLUS_ZIP5_TABLE}`',
+            query)
         self.assertIn(f'`{self.project_id}.{self.rdr_sandbox_id}.{AIAN_LIST}`',
                       query)
         self.assertIn(

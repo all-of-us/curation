@@ -12,7 +12,7 @@ wiring.
 import unittest
 
 # Project imports
-from common import (AIAN_LIST, CT_PLUS_BIRTHDATE,
+from common import (AIAN_LIST, CT_PLUS_BIRTHDATE_TABLE,
                     UNDER18_PARTICIPANTS_LOOKUP_TABLE)
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.capture_ct_plus_birthdate import (
@@ -49,8 +49,9 @@ class CaptureCtPlusBirthdateTest(unittest.TestCase):
         for rule in [self.capture, self.prune, self.convert]:
             self.assertEqual(rule.affected_datasets,
                              [cdr_consts.CONTROLLED_TIER_PLUS_DEID])
-            self.assertEqual(rule.get_sandbox_tablenames(), [CT_PLUS_BIRTHDATE])
-            self.assertIn(f'.{CT_PLUS_BIRTHDATE}`',
+            self.assertEqual(rule.get_sandbox_tablenames(),
+                             [CT_PLUS_BIRTHDATE_TABLE])
+            self.assertIn(f'.{CT_PLUS_BIRTHDATE_TABLE}`',
                           rule.get_query_specs()[0][cdr_consts.QUERY])
 
     def test_capture_reads_person_and_excludes_aian_and_pediatric(self):
