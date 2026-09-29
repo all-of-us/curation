@@ -351,7 +351,7 @@ TIER_DATASET_PREFIX = {
 }
 
 # Suffix create_tier appends to its own output. The controlled_plus pipeline output is
-# CT-keyed and must never be published; regenerate_ct_plus_ids.py writes the unsuffixed
+# CT-keyed and must never be published; build_ct_plus_mainline.py writes the unsuffixed
 # CP name that reaches output prod. The suffix frees that name and puts the warning on
 # the dataset that is unsafe to publish. Empty for any tier whose pipeline output is
 # itself publishable.
@@ -362,7 +362,8 @@ PIPELINE_DATASET_SUFFIX = {
 }
 
 # Suffix on the CT+ re-key output, which still holds every add-on component inline.
-# The add-on producers and the mainline assembly all read the dataset carrying it.
+# The add-on producers and the mainline assembly all read the dataset carrying it, and
+# regenerate_ct_plus_ids.py refuses an output name without it.
 CT_PLUS_PRE_SPLIT_SUFFIX = '_pre_split'
 
 # CT+ add-on components. Only ELEMENT_DELTA is one dataset per data element; the other
@@ -417,6 +418,28 @@ def get_ct_plus_addon_dataset_name(release_tag,
 
     return f'{prefix}_{CT_PLUS_COMPONENT_DATASET_SUFFIX[ct_plus_component]}'
 
+
+# Tables a published CT+ dataset may carry. The re-key copies verbatim any input table
+# it cannot key, and the output prod copy copies its source whole, so without this set
+# an internal table reaching the re-key output would be published. The mainline
+# assembly refuses any input table outside it. Checked against CP2025q4r6_deid_clean on
+# 2026-09-29. Achilles tables are left out: the re-key copies them when present, but
+# nothing requires them in a researcher dataset.
+CT_PLUS_EXT_BASE_TABLES = CDM_TABLES + ALL_ADDITIONAL_TABLES + [SURVEY_CONDUCT]
+# The tables regenerate_etm_ct_plus_ids.py re-keys into the same dataset, and the two
+# views over each, which the mainline assembly recreates rather than copies.
+CT_PLUS_ETM_TABLES = ['delaydiscounting', 'emorecog', 'flanker', 'gradcpt']
+CT_PLUS_ETM_VIEWS = [
+    f'{table}_{view}' for table in CT_PLUS_ETM_TABLES
+    for view in ['task_view', 'trial_level_view']
+]
+CT_PLUS_PUBLISHABLE_TABLES = frozenset(
+    CDM_TABLES + ALL_ADDITIONAL_TABLES + [
+        SURVEY_CONDUCT, AOU_DEATH, QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
+        WEAR_STUDY, COPE_SURVEY_MAP
+    ] + FITBIT_TABLES + VOCABULARY_TABLES + CT_PLUS_ETM_TABLES +
+    CT_PLUS_ETM_VIEWS +
+    [f'{table}{EXT_SUFFIX}' for table in CT_PLUS_EXT_BASE_TABLES])
 
 # Participant Summary
 EHR_OPS = 'ehr_ops'
