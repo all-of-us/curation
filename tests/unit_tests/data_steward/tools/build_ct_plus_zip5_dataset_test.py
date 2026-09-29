@@ -9,7 +9,7 @@ from unittest import mock
 from google.api_core.exceptions import NotFound
 
 # Project imports
-from common import CT_PLUS_ZIP5_TABLE
+from common import CT_PLUS_ZIP5_TABLE, UNDER18_PARTICIPANTS_LOOKUP_TABLE
 from tools import build_ct_plus_zip5_dataset as zip5
 
 CLEAN_CHECKS = {
@@ -18,6 +18,7 @@ CLEAN_CHECKS = {
     'unresolved_rows': 0,
     'non_ct_plus_rows': 0,
     'aian_rows': 0,
+    'pediatric_rows': 0,
     'not_five_digit_rows': 0
 }
 
@@ -29,6 +30,7 @@ class BuildCtPlusZip5DatasetTest(unittest.TestCase):
         self.input_dataset_id = 'CP2025q4r7_deid_clean_pre_split'
         self.capture_dataset_id = 'CP2025q4r7_deid_sandbox'
         self.rdr_sandbox_id = 'R2025q4r7_rdr_sandbox'
+        self.under18_lookup_dataset_id = 'R2025q4r7_under18_sandbox'
         self.ids_dataset_id = 'pipeline_tables'
         self.ids_view_id = 'rdr_participant_research_ids_view'
 
@@ -53,6 +55,8 @@ class BuildCtPlusZip5DatasetTest(unittest.TestCase):
             capture_table=CT_PLUS_ZIP5_TABLE,
             rdr_sandbox=self.rdr_sandbox_id,
             aian_list='aian_list',
+            under18_dataset=self.under18_lookup_dataset_id,
+            under18_table=UNDER18_PARTICIPANTS_LOOKUP_TABLE,
             ids_dataset=self.ids_dataset_id,
             ids_view=self.ids_view_id,
             person='person')
@@ -61,6 +65,10 @@ class BuildCtPlusZip5DatasetTest(unittest.TestCase):
         self.assertIn(f'{self.input_dataset_id}.person`', query)
         self.assertIn(f'{self.rdr_sandbox_id}.aian_list`', query)
         self.assertIn('v.participant_id = al.person_id', query)
+        self.assertIn(
+            f'{self.under18_lookup_dataset_id}.'
+            f'{UNDER18_PARTICIPANTS_LOOKUP_TABLE}`', query)
+        self.assertIn('v.participant_id = un.person_id', query)
         self.assertIn(r"r'^[0-9]{5}$'", query)
 
     def test_delivered_table_lists_its_columns(self):
@@ -77,21 +85,22 @@ class BuildCtPlusZip5DatasetTest(unittest.TestCase):
         self.assertNotIn('*', query)
         self.assertIn(', '.join(zip5.DELIVERED_COLUMNS), query)
 
-    def _client(self, aian_count=5, **overrides):
+    def _client(self, aian_count=5, under18_count=5, **overrides):
         checks = dict(CLEAN_CHECKS, **overrides)
         client = mock.MagicMock()
         client.query.return_value.result.side_effect = [[{
-            'aian_count': aian_count
+            'lookup_count': aian_count
+        }], [{
+            'lookup_count': under18_count
         }], [checks]]
         return client
 
     def _assert_capture(self, client):
-        return zip5.assert_capture_is_publishable(client, self.project_id,
-                                                  self.input_dataset_id,
-                                                  self.capture_dataset_id,
-                                                  self.rdr_sandbox_id,
-                                                  self.ids_dataset_id,
-                                                  self.ids_view_id)
+        return zip5.assert_capture_is_publishable(
+            client, self.project_id, self.input_dataset_id,
+            self.capture_dataset_id, self.rdr_sandbox_id,
+            self.under18_lookup_dataset_id, self.ids_dataset_id,
+            self.ids_view_id)
 
     def test_clean_capture_is_accepted(self):
         self.assertEqual(self._assert_capture(self._client()), 3)
@@ -103,7 +112,19 @@ class BuildCtPlusZip5DatasetTest(unittest.TestCase):
             self._assert_capture(client)
 
         self.assertIn('aian_list is empty', str(ctx.exception))
+        self.assertIn('--rdr_sandbox_id', str(ctx.exception))
         self.assertEqual(client.query.call_count, 1)
+
+    def test_empty_under18_lookup_is_refused_before_the_checks(self):
+        client = self._client(under18_count=0)
+
+        with self.assertRaises(RuntimeError) as ctx:
+            self._assert_capture(client)
+
+        self.assertIn(f'{UNDER18_PARTICIPANTS_LOOKUP_TABLE} is empty',
+                      str(ctx.exception))
+        self.assertIn('--under18_lookup_dataset_id', str(ctx.exception))
+        self.assertEqual(client.query.call_count, 2)
 
     def test_empty_capture_is_refused(self):
         with self.assertRaises(RuntimeError) as ctx:
@@ -117,6 +138,7 @@ class BuildCtPlusZip5DatasetTest(unittest.TestCase):
             ('unresolved_rows', 'no person row'),
             ('non_ct_plus_rows', 'not a CT+ research ID'),
             ('aian_rows', 'AIAN'),
+            ('pediatric_rows', 'pediatric'),
             ('not_five_digit_rows', 'five digits'),
         ]:
             with self.subTest(column=column):
@@ -166,10 +188,13 @@ class BuildCtPlusZip5DatasetTest(unittest.TestCase):
 
         zip5.main(self.project_id, '2025q4r7', self.input_dataset_id,
                   self.capture_dataset_id, self.rdr_sandbox_id,
-                  self.ids_view_id)
+                  self.under18_lookup_dataset_id, self.ids_view_id)
 
         self.assertEqual([call[0] for call in order.mock_calls],
                          ['absent', 'capture', 'create_dataset', 'write'])
+        self.assertEqual(mock_capture.call_args.args[4:],
+                         (self.rdr_sandbox_id, self.under18_lookup_dataset_id,
+                          'pipeline_tables', self.ids_view_id))
         client.define_dataset.assert_called_once()
         self.assertEqual(client.define_dataset.call_args.args[0],
                          'CP2025q4r7_zip5')
