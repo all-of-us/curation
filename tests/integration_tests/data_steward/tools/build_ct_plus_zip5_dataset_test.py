@@ -5,8 +5,8 @@ Original Issues: DL2536
 
 Participants 1 and 2 are in the input. The clean fixture captures both; each refusal
 test adds one row the tool must not publish: a participant absent from the input, a
-repeated participant, a row still on its CT research ID, an AIAN participant, and a
-generalized three-digit value.
+repeated participant, a row still on its CT research ID, an AIAN participant, a
+pediatric participant, and a generalized three-digit value.
 """
 # Python imports
 import os
@@ -16,7 +16,8 @@ from google.cloud.bigquery import Table
 
 # Project imports
 from app_identity import PROJECT_ID
-from common import AIAN_LIST, CT_PLUS_ZIP5_TABLE, JINJA_ENV, PERSON
+from common import (AIAN_LIST, CT_PLUS_ZIP5_TABLE, JINJA_ENV, PERSON,
+                    UNDER18_PARTICIPANTS_LOOKUP_TABLE)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 from tools import build_ct_plus_zip5_dataset as zip5
@@ -50,21 +51,28 @@ IDS_SCHEMA = [
     ['participant_id', 'controlled_tier_id', 'controlled_tier_plus_id']
 ]
 
-AIAN_SCHEMA = [{"type": "integer", "name": "person_id", "mode": "nullable"}]
+# Both lookups are keyed by participant ID; the tool reads only person_id from each.
+LOOKUP_SCHEMA = [{"type": "integer", "name": "person_id", "mode": "nullable"}]
 
-# Participant IDs 900x, CT IDs 800x, CT+ IDs x. Participant 9003 is AIAN, is in the
-# input, and would only reach the capture if the capture's exclusion regressed.
+# Participant IDs 900x, CT IDs 800x, CT+ IDs x. Participant 9003 is AIAN and 9005 is
+# pediatric. Both are in the input, and would only reach the capture if the capture's
+# exclusion regressed.
 LOAD_DATA = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{input}}.person`
 (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
-VALUES (1, 0, 1985, 0, 0), (2, 0, 1990, 0, 0), (3, 0, 1970, 0, 0);
+VALUES (1, 0, 1985, 0, 0), (2, 0, 1990, 0, 0), (3, 0, 1970, 0, 0),
+  (5, 0, 2021, 0, 0);
 
 INSERT INTO `{{project}}.{{ids_dataset}}.{{ids_view}}`
 (participant_id, controlled_tier_id, controlled_tier_plus_id)
-VALUES (9001, 8001, 1), (9002, 8002, 2), (9003, 8003, 3), (9004, 8004, 4);
+VALUES (9001, 8001, 1), (9002, 8002, 2), (9003, 8003, 3), (9004, 8004, 4),
+  (9005, 8005, 5);
 
 INSERT INTO `{{project}}.{{rdr_sandbox}}.{{aian_list}}` (person_id)
 VALUES (9003);
+
+INSERT INTO `{{project}}.{{rdr_sandbox}}.{{under18_table}}` (person_id)
+VALUES (9005);
 
 INSERT INTO `{{project}}.{{capture}}.{{capture_table}}`
 (person_id, observation_source_concept_id, observation_datetime, value_as_string)
@@ -78,6 +86,7 @@ BAD_ROWS = {
     'duplicate_rows': (1, '35402'),
     'non_ct_plus_rows': (8002, '10002'),
     'aian_rows': (3, '87501'),
+    'pediatric_rows': (5, '94105'),
     'not_five_digit_rows': (2, '354**'),
 }
 
@@ -113,10 +122,13 @@ class BuildCtPlusZip5DatasetTest(BaseTest.BigQueryTestBase):
                           f'{CT_PLUS_ZIP5_TABLE}')
         cls.fq_ids = f'{cls.project_id}.{cls.capture_dataset_id}.{IDS_VIEW}'
         cls.fq_aian = f'{cls.project_id}.{cls.capture_dataset_id}.{AIAN_LIST}'
+        cls.fq_under18 = (f'{cls.project_id}.{cls.capture_dataset_id}.'
+                          f'{UNDER18_PARTICIPANTS_LOOKUP_TABLE}')
         cls.fq_output = (f'{cls.project_id}.{cls.output_dataset_id}.'
                          f'{zip5.DELIVERED_TABLE}')
         cls.fq_sandbox_table_names = [
-            cls.fq_capture, cls.fq_ids, cls.fq_aian, cls.fq_output
+            cls.fq_capture, cls.fq_ids, cls.fq_aian, cls.fq_under18,
+            cls.fq_output
         ]
 
         super().setUpClass()
@@ -126,7 +138,8 @@ class BuildCtPlusZip5DatasetTest(BaseTest.BigQueryTestBase):
 
         self.client.create_table(Table(self.fq_capture, CAPTURE_SCHEMA))
         self.client.create_table(Table(self.fq_ids, IDS_SCHEMA))
-        self.client.create_table(Table(self.fq_aian, AIAN_SCHEMA))
+        self.client.create_table(Table(self.fq_aian, LOOKUP_SCHEMA))
+        self.client.create_table(Table(self.fq_under18, LOOKUP_SCHEMA))
         self.load_test_data([
             LOAD_DATA.render(project=self.project_id,
                              input=self.input_dataset_id,
@@ -134,17 +147,18 @@ class BuildCtPlusZip5DatasetTest(BaseTest.BigQueryTestBase):
                              ids_view=IDS_VIEW,
                              rdr_sandbox=self.capture_dataset_id,
                              aian_list=AIAN_LIST,
+                             under18_table=UNDER18_PARTICIPANTS_LOOKUP_TABLE,
                              capture=self.capture_dataset_id,
                              capture_table=CT_PLUS_ZIP5_TABLE)
         ])
 
     def _assert_capture(self):
-        return zip5.assert_capture_is_publishable(self.client, self.project_id,
-                                                  self.input_dataset_id,
-                                                  self.capture_dataset_id,
-                                                  self.capture_dataset_id,
-                                                  self.capture_dataset_id,
-                                                  IDS_VIEW)
+        # The fixture keeps the capture, both lookups and the ids stand-in in one
+        # dataset.
+        return zip5.assert_capture_is_publishable(
+            self.client, self.project_id, self.input_dataset_id,
+            self.capture_dataset_id, self.capture_dataset_id,
+            self.capture_dataset_id, self.capture_dataset_id, IDS_VIEW)
 
     def test_clean_capture_is_promoted(self):
         self.assertEqual(self._assert_capture(), 2)
@@ -177,6 +191,8 @@ class BuildCtPlusZip5DatasetTest(BaseTest.BigQueryTestBase):
                             capture_table=CT_PLUS_ZIP5_TABLE,
                             rdr_sandbox=self.capture_dataset_id,
                             aian_list=AIAN_LIST,
+                            under18_dataset=self.capture_dataset_id,
+                            under18_table=UNDER18_PARTICIPANTS_LOOKUP_TABLE,
                             ids_dataset=self.capture_dataset_id,
                             ids_view=IDS_VIEW,
                             person=PERSON)).result())[0]
