@@ -55,6 +55,14 @@ class RegenerateCtPlusIds(unittest.TestCase):
 
         self.assertIn('SELECT DISTINCT', actual)
 
+    def test_person_mapping_excludes_rows_missing_either_id(self):
+        """The ids view left-joins, so a NULL id must be filtered, not joined away."""
+        actual = self._mapping_query(PERSON)
+        where_clause = actual.split('WHERE', 1)[1]
+
+        self.assertIn('controlled_tier_id IS NOT NULL', where_clause)
+        self.assertIn('controlled_tier_plus_id IS NOT NULL', where_clause)
+
     def test_person_mapping_src_table_id_is_ct_plus_specific(self):
         """An RT person mapping must not satisfy the CT+ join predicate."""
         src_table_id = ct.person_mapping_src_table_id(self.pipeline_dataset_id,
