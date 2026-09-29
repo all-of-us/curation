@@ -1,14 +1,20 @@
 """
-Write the CT+ Zip5 add-on dataset from the captured five-digit zip codes.
+Add the captured dates of birth to the CT+ date-of-birth add-on dataset.
 
-CaptureCtPlusZip5 copies each eligible participant's latest five-digit zip into the
-controlled_plus deid stage sandbox before GeneralizeZipCodes cuts it to three digits;
-PruneCtPlusZip5 and ConvertCtPlusZip5Ids then reconcile it with person and re-key it to
-CT+ research IDs. That sandbox is not a deliverable, so this tool promotes the table
-into CP{release_tag}_zip5 as its one table, zip5.
+CaptureCtPlusBirthdate copies each eligible participant's birth_datetime,
+month_of_birth and day_of_birth into the controlled_plus deid stage sandbox before
+NullPersonBirthdate nulls them; PruneCtPlusBirthdate and ConvertCtPlusBirthdateIds
+then reconcile the table with person and re-key it to CT+ research IDs. That sandbox
+is not a deliverable, so this tool promotes the table into CP{release_tag}_dob as dob.
 
-This is a promotion, not a split: nothing is subtracted from the mainline, because the
-generalization already left it with three-digit values. person, visit_occurrence,
+split_ct_plus_dob_indicators.py creates CP{release_tag}_dob and writes its
+indicators-of-birth event tables, so this tool runs after it: it refuses if the
+dataset is missing or holds no tables, and adds its one table without touching the
+others. The split in turn refuses a dataset that already holds tables, so the order
+is enforced from both sides.
+
+This is a promotion, not a split: nothing is subtracted from the mainline, because
+NullPersonBirthdate already removed these values from it. person, visit_occurrence,
 provider and care_site are not written; every person_id resolves in the base.
 
 Each property checked before writing is already guaranteed by a capture rule, and each
@@ -17,7 +23,7 @@ exclusion, and an UPDATE that matches nothing leaves a CT research ID in place. 
 run stops here, where the rows become a deliverable, rather than warning.
 
 Usage:
-  python build_ct_plus_zip5_dataset.py \
+  python build_ct_plus_dob_dataset.py \
     --project_id <project> \
     --release_tag <e.g. 2025q4r7> \
     --input_dataset_id <CP{release_tag}_deid_clean_pre_split> \
@@ -34,55 +40,50 @@ import logging
 from google.api_core.exceptions import NotFound
 
 # Project imports
-from common import (AIAN_LIST, CONTROLLED_PLUS, CT_PLUS_PRE_SPLIT_SUFFIX,
-                    CT_PLUS_ZIP5, CT_PLUS_ZIP5_TABLE, JINJA_ENV, PERSON,
-                    PIPELINE_TABLES, TIER_DATASET_PREFIX,
-                    UNDER18_PARTICIPANTS_LOOKUP_TABLE,
+from common import (AIAN_LIST, CT_PLUS_BIRTHDATE_TABLE, CT_PLUS_DOB_INDICATORS,
+                    CT_PLUS_PRE_SPLIT_SUFFIX, JINJA_ENV, PERSON,
+                    PIPELINE_TABLES, UNDER18_PARTICIPANTS_LOOKUP_TABLE,
                     get_ct_plus_addon_dataset_name)
 from gcloud.bq import BigQueryClient
+from tools.build_ct_plus_zip5_dataset import (assert_lookups_are_populated,
+                                              validate_dataset_names)
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
-# The researcher-facing table name inside CP{release_tag}_zip5.
-DELIVERED_TABLE = 'zip5'
+# The researcher-facing table name inside CP{release_tag}_dob. It sits beside the
+# split's tables, which are named after CDM tables, so it cannot collide with them.
+DELIVERED_TABLE = 'dob'
 
 # Listed rather than SELECT *, so a column added to the capture is not published
-# without a decision.
+# without a decision. year_of_birth is absent: the mainline already publishes it.
 DELIVERED_COLUMNS = [
-    'person_id', 'observation_source_concept_id', 'observation_datetime',
-    'value_as_string'
+    'person_id', 'birth_datetime', 'month_of_birth', 'day_of_birth'
 ]
-
-LOOKUP_COUNT = JINJA_ENV.from_string("""
-SELECT COUNT(*) AS lookup_count
-FROM `{{project}}.{{lookup_dataset}}.{{lookup_table}}`
-""")
 
 # Each joined set is made distinct first, so no join can multiply capture rows and
 # the duplicate count reads the capture alone.
 CAPTURE_CHECKS = JINJA_ENV.from_string("""
 SELECT
   COUNT(*) AS total_rows,
-  COUNT(*) - COUNT(DISTINCT z.person_id) AS duplicate_rows,
+  COUNT(*) - COUNT(DISTINCT b.person_id) AS duplicate_rows,
   COUNTIF(p.person_id IS NULL) AS unresolved_rows,
   COUNTIF(c.person_id IS NULL) AS non_ct_plus_rows,
   COUNTIF(a.person_id IS NOT NULL) AS aian_rows,
   COUNTIF(u.person_id IS NOT NULL) AS pediatric_rows,
-  COUNTIF(NOT REGEXP_CONTAINS(IFNULL(z.value_as_string, ''), r'^[0-9]{5}$'))
-    AS not_five_digit_rows
-FROM `{{project}}.{{capture_dataset}}.{{capture_table}}` z
+  COUNTIF(b.birth_datetime IS NULL) AS missing_birth_datetime_rows
+FROM `{{project}}.{{capture_dataset}}.{{capture_table}}` b
 LEFT JOIN (
   SELECT DISTINCT person_id
   FROM `{{project}}.{{input_dataset}}.{{person}}`
 ) p
-  ON p.person_id = z.person_id
+  ON p.person_id = b.person_id
 LEFT JOIN (
   SELECT DISTINCT controlled_tier_plus_id AS person_id
   FROM `{{project}}.{{ids_dataset}}.{{ids_view}}`
   WHERE controlled_tier_plus_id IS NOT NULL
 ) c
-  ON c.person_id = z.person_id
+  ON c.person_id = b.person_id
 LEFT JOIN (
   -- aian_list is keyed by participant ID, so it is mapped to CT+ IDs --
   SELECT DISTINCT v.controlled_tier_plus_id AS person_id
@@ -91,7 +92,7 @@ LEFT JOIN (
     ON v.participant_id = al.person_id
   WHERE v.controlled_tier_plus_id IS NOT NULL
 ) a
-  ON a.person_id = z.person_id
+  ON a.person_id = b.person_id
 LEFT JOIN (
   -- _under18_participants is keyed by participant ID too --
   SELECT DISTINCT v.controlled_tier_plus_id AS person_id
@@ -100,19 +101,19 @@ LEFT JOIN (
     ON v.participant_id = un.person_id
   WHERE v.controlled_tier_plus_id IS NOT NULL
 ) u
-  ON u.person_id = z.person_id
+  ON u.person_id = b.person_id
 """)
 
 COVERAGE = JINJA_ENV.from_string("""
 SELECT
   COUNT(*) AS input_participants,
-  COUNTIF(z.person_id IS NULL) AS without_zip5
+  COUNTIF(b.person_id IS NULL) AS without_dob
 FROM `{{project}}.{{input_dataset}}.{{person}}` p
 LEFT JOIN (
   SELECT DISTINCT person_id
   FROM `{{project}}.{{capture_dataset}}.{{capture_table}}`
-) z
-  ON z.person_id = p.person_id
+) b
+  ON b.person_id = p.person_id
 """)
 
 WRITE_DELIVERED_TABLE = JINJA_ENV.from_string("""
@@ -120,52 +121,6 @@ CREATE TABLE `{{project}}.{{output_dataset}}.{{delivered_table}}` AS
 SELECT {{columns | join(', ')}}
 FROM `{{project}}.{{capture_dataset}}.{{capture_table}}`
 """)
-
-
-def validate_dataset_names(release_tag, input_dataset_id):
-    """
-    Stop the run unless the input is this release's pre-split re-key output.
-
-    The resolve check reads that dataset's person table, since the mainline is
-    assembled from it after every producer has run. Another release's input would
-    resolve nothing, and a published dataset is not what the mainline is built from.
-
-    :param release_tag: release tag, e.g. '2025q4r7'
-    :param input_dataset_id: dataset the resolve check reads
-    :raises ValueError: if the input is not CP{release_tag}_..._pre_split
-    """
-    prefix = f'{TIER_DATASET_PREFIX[CONTROLLED_PLUS]}{release_tag}_'
-    if not (input_dataset_id.startswith(prefix) and
-            input_dataset_id.endswith(CT_PLUS_PRE_SPLIT_SUFFIX)):
-        raise ValueError(
-            f'--input_dataset_id {input_dataset_id} must start with {prefix} and end '
-            f'with {CT_PLUS_PRE_SPLIT_SUFFIX}: it is the re-key output the mainline '
-            f'is assembled from.')
-
-
-def assert_lookups_are_populated(client, project_id, rdr_sandbox_id,
-                                 under18_lookup_dataset_id):
-    """
-    Stop the run if aian_list or _under18_participants is empty, since an empty
-    lookup satisfies its exclusion vacuously.
-
-    :raises RuntimeError: naming the flag that points at the empty lookup
-    """
-    for lookup_dataset, lookup_table, flag in [
-        (rdr_sandbox_id, AIAN_LIST, '--rdr_sandbox_id'),
-        (under18_lookup_dataset_id, UNDER18_PARTICIPANTS_LOOKUP_TABLE,
-         '--under18_lookup_dataset_id'),
-    ]:
-        lookup = list(
-            client.query(
-                LOOKUP_COUNT.render(project=project_id,
-                                    lookup_dataset=lookup_dataset,
-                                    lookup_table=lookup_table)).result())[0]
-        if not lookup['lookup_count']:
-            raise RuntimeError(
-                f'{lookup_dataset}.{lookup_table} is empty, so its exclusion cannot '
-                f'be checked. Point {flag} at the RDR stage sandbox the CT+ run '
-                f'read.')
 
 
 def assert_capture_is_publishable(client, project_id, input_dataset_id,
@@ -180,37 +135,36 @@ def assert_capture_is_publishable(client, project_id, input_dataset_id,
     - The capture is non-empty.
     - At most one row per participant.
     - Every person_id resolves in the input's person table.
-    - Every person_id is a CT+ research ID, so a row ConvertCtPlusZip5Ids left on
-      its CT research ID cannot ship. This assumes no value is both a CT and a CT+
-      research ID in the ids view: a CT research ID equal to some participant's CT+
-      research ID would pass. Nothing here checks that the two ID spaces are
-      disjoint.
+    - Every person_id is a CT+ research ID, so a row ConvertCtPlusBirthdateIds left
+      on its CT research ID cannot ship. As in the Zip5 tool, this assumes no value
+      is both a CT and a CT+ research ID in the ids view.
     - No AIAN participant.
-    - No pediatric participant, since pediatric values reach a study only through
-      the pediatrics add-on.
-    - Every value is exactly five digits, so a generalized value such as '354**'
-      cannot stand in for the one this dataset preserves.
+    - No pediatric participant, since pediatric dates of birth reach a study only
+      through the pediatrics add-on.
+    - Every row carries a birth_datetime, so a capture that ran after
+      NullPersonBirthdate cannot publish nulls as dates of birth.
 
     :return: rows in the capture table
     :raises RuntimeError: listing every failed property
     """
-    params = dict(project=project_id,
-                  input_dataset=input_dataset_id,
-                  capture_dataset=capture_dataset_id,
-                  capture_table=CT_PLUS_ZIP5_TABLE,
-                  rdr_sandbox=rdr_sandbox_id,
-                  aian_list=AIAN_LIST,
-                  under18_dataset=under18_lookup_dataset_id,
-                  under18_table=UNDER18_PARTICIPANTS_LOOKUP_TABLE,
-                  ids_dataset=ids_dataset_id,
-                  ids_view=ids_view_id,
-                  person=PERSON)
-
     assert_lookups_are_populated(client, project_id, rdr_sandbox_id,
                                  under18_lookup_dataset_id)
 
-    row = list(client.query(CAPTURE_CHECKS.render(**params)).result())[0]
-    source = f'{capture_dataset_id}.{CT_PLUS_ZIP5_TABLE}'
+    row = list(
+        client.query(
+            CAPTURE_CHECKS.render(
+                project=project_id,
+                input_dataset=input_dataset_id,
+                capture_dataset=capture_dataset_id,
+                capture_table=CT_PLUS_BIRTHDATE_TABLE,
+                rdr_sandbox=rdr_sandbox_id,
+                aian_list=AIAN_LIST,
+                under18_dataset=under18_lookup_dataset_id,
+                under18_table=UNDER18_PARTICIPANTS_LOOKUP_TABLE,
+                ids_dataset=ids_dataset_id,
+                ids_view=ids_view_id,
+                person=PERSON)).result())[0]
+    source = f'{capture_dataset_id}.{CT_PLUS_BIRTHDATE_TABLE}'
 
     if not row['total_rows']:
         raise RuntimeError(
@@ -227,15 +181,15 @@ def assert_capture_is_publishable(client, project_id, input_dataset_id,
         failures.append(
             f'{row["non_ct_plus_rows"]} rows carry a person_id that is not a CT+ '
             f'research ID in {ids_dataset_id}.{ids_view_id}, most likely a CT '
-            f'research ID ConvertCtPlusZip5Ids did not convert')
+            f'research ID ConvertCtPlusBirthdateIds did not convert')
     if row['aian_rows']:
         failures.append(f'{row["aian_rows"]} rows belong to AIAN participants')
     if row['pediatric_rows']:
         failures.append(
             f'{row["pediatric_rows"]} rows belong to pediatric participants')
-    if row['not_five_digit_rows']:
-        failures.append(
-            f'{row["not_five_digit_rows"]} values are not exactly five digits')
+    if row['missing_birth_datetime_rows']:
+        failures.append(f'{row["missing_birth_datetime_rows"]} rows carry no '
+                        f'birth_datetime')
 
     if failures:
         raise RuntimeError(f'{source} is not publishable: ' +
@@ -247,40 +201,65 @@ def assert_capture_is_publishable(client, project_id, input_dataset_id,
 
 def log_coverage(client, project_id, input_dataset_id, capture_dataset_id):
     """
-    Log how many input participants carry no captured zip.
+    Log how many input participants carry no captured date of birth.
 
     It separates a partial capture from a complete one, but it is a reading, not a
-    threshold: participants whose zip was never five digits, and the AIAN and
-    pediatric participants the capture excludes, legitimately have none.
+    threshold: participants with no birth_datetime, and the AIAN and pediatric
+    participants the capture excludes, legitimately have none.
     """
     row = list(
         client.query(
             COVERAGE.render(project=project_id,
                             input_dataset=input_dataset_id,
                             capture_dataset=capture_dataset_id,
-                            capture_table=CT_PLUS_ZIP5_TABLE,
+                            capture_table=CT_PLUS_BIRTHDATE_TABLE,
                             person=PERSON)).result())[0]
     LOGGER.info(
-        f'{row["without_zip5"]} of {row["input_participants"]} participants in '
-        f'{input_dataset_id} have no captured zip5.')
+        f'{row["without_dob"]} of {row["input_participants"]} participants in '
+        f'{input_dataset_id} have no captured date of birth.')
 
 
-def assert_output_dataset_is_absent(client, project_id, output_dataset_id):
+def assert_output_dataset_is_ready(client, project_id, output_dataset_id):
     """
-    Stop the run if the output dataset exists.
+    Stop the run unless the indicators-of-birth split has created and filled the
+    output dataset, and this tool has not written to it yet.
 
-    Nothing here deletes or overwrites; clearing a previous attempt is the
+    Publishing the dates of birth without the birth events delivers half of the
+    add-on, so a missing or empty dataset stops the run rather than being created
+    here. Nothing here deletes or overwrites; clearing a previous attempt is the
     operator's decision.
 
-    :raises RuntimeError: if the dataset exists
+    :raises RuntimeError: if the dataset is missing, is not the date-of-birth
+        add-on, holds no tables, or already holds the delivered table
     """
     try:
-        client.get_dataset(f'{project_id}.{output_dataset_id}')
+        dataset = client.get_dataset(f'{project_id}.{output_dataset_id}')
     except NotFound:
-        return
+        raise RuntimeError(
+            f'{output_dataset_id} does not exist. Run '
+            f'split_ct_plus_dob_indicators.py first; it creates the dataset and '
+            f'writes the indicators-of-birth tables.')
 
-    raise RuntimeError(
-        f'{output_dataset_id} already exists. Remove it before rerunning.')
+    component = (dataset.labels or {}).get('ct_plus_component')
+    if component != CT_PLUS_DOB_INDICATORS:
+        raise RuntimeError(
+            f'{output_dataset_id} is labelled ct_plus_component={component}, not '
+            f'{CT_PLUS_DOB_INDICATORS}, so it was not created by the '
+            f'indicators-of-birth split.')
+
+    existing = {
+        table.table_id
+        for table in client.list_tables(f'{project_id}.{output_dataset_id}')
+    }
+    if DELIVERED_TABLE in existing:
+        raise RuntimeError(
+            f'{output_dataset_id}.{DELIVERED_TABLE} already exists. Remove it '
+            f'before rerunning.')
+    if not existing:
+        raise RuntimeError(
+            f'{output_dataset_id} holds no tables, so the indicators-of-birth '
+            f'split did not finish. Rerun split_ct_plus_dob_indicators.py first.'
+        )
 
 
 def write_delivered_table(client, project_id, capture_dataset_id,
@@ -288,7 +267,8 @@ def write_delivered_table(client, project_id, capture_dataset_id,
     """
     Copy the capture into the output dataset under its delivered name.
 
-    CREATE TABLE fails rather than replacing an existing table.
+    CREATE TABLE fails rather than replacing an existing table, and no other table
+    in the dataset is touched.
 
     :return: rows written
     """
@@ -297,7 +277,7 @@ def write_delivered_table(client, project_id, capture_dataset_id,
                                          delivered_table=DELIVERED_TABLE,
                                          columns=DELIVERED_COLUMNS,
                                          capture_dataset=capture_dataset_id,
-                                         capture_table=CT_PLUS_ZIP5_TABLE)
+                                         capture_table=CT_PLUS_BIRTHDATE_TABLE)
     client.query(query).result()
     return client.get_table(
         f'{project_id}.{output_dataset_id}.{DELIVERED_TABLE}').num_rows
@@ -312,31 +292,21 @@ def main(project_id,
          ct_plus_ids_view,
          ids_dataset_id=PIPELINE_TABLES):
     """
-    Validate the capture and write CP{release_tag}_zip5.
-
-    If the write fails after the dataset is created, the empty dataset stays behind
-    and the next run refuses on it. Remove it before rerunning.
+    Validate the capture and add it to CP{release_tag}_dob.
 
     :return: rows written
     """
     validate_dataset_names(release_tag, input_dataset_id)
     output_dataset_id = get_ct_plus_addon_dataset_name(release_tag,
-                                                       CT_PLUS_ZIP5)
+                                                       CT_PLUS_DOB_INDICATORS)
 
     client = BigQueryClient(project_id)
-    assert_output_dataset_is_absent(client, project_id, output_dataset_id)
+    assert_output_dataset_is_ready(client, project_id, output_dataset_id)
     assert_capture_is_publishable(client, project_id, input_dataset_id,
                                   capture_dataset_id, rdr_sandbox_id,
                                   under18_lookup_dataset_id, ids_dataset_id,
                                   ct_plus_ids_view)
     log_coverage(client, project_id, input_dataset_id, capture_dataset_id)
-
-    dataset = client.define_dataset(
-        output_dataset_id,
-        f'CT+ Zip5 add-on dataset for release {release_tag}, promoted from '
-        f'{capture_dataset_id}.{CT_PLUS_ZIP5_TABLE}',
-        {'ct_plus_component': CT_PLUS_ZIP5})
-    client.create_dataset(dataset, exists_ok=False)
 
     count = write_delivered_table(client, project_id, capture_dataset_id,
                                   output_dataset_id)
@@ -346,7 +316,8 @@ def main(project_id,
 
 def get_arg_parser():
     parser = argparse.ArgumentParser(
-        description='Write the CT+ Zip5 add-on dataset.')
+        description=('Add the captured dates of birth to the CT+ date-of-birth '
+                     'add-on dataset.'))
     parser.add_argument('--project_id',
                         required=True,
                         help='Project holding the input and output datasets')
@@ -362,7 +333,7 @@ def get_arg_parser():
         '--capture_dataset_id',
         required=True,
         help=(f'The controlled_plus deid stage sandbox, which holds '
-              f'{CT_PLUS_ZIP5_TABLE}'))
+              f'{CT_PLUS_BIRTHDATE_TABLE}'))
     parser.add_argument('--rdr_sandbox_id',
                         required=True,
                         help=f'The RDR stage sandbox, which holds {AIAN_LIST}')
