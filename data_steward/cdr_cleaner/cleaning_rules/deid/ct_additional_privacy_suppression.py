@@ -23,6 +23,8 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import (
     AbstractBqLookupTableConceptSuppression, CT_PLUS_LOOKUP_SUFFIX,
     keep_ct_plus_suppressed, lookup_load_job_config)
+from cdr_cleaner.cleaning_rules.deid.ct_plus_dob_indicators import \
+    drop_dob_indicators
 
 # Third party imports
 from google.cloud.exceptions import GoogleCloudError
@@ -128,9 +130,10 @@ class CTAdditionalPrivacyConceptSuppression(
 class CTAdditionalPrivacyConceptSuppressionCtPlus(
         CTAdditionalPrivacyConceptSuppression):
     """
-    CT+ variant: suppress only the concepts not expanded in CT+.
+    CT+ variant: suppress only the concepts not expanded in CT+, less the
+    indicators-of-birth set, whose rows the date-of-birth add-on delivers.
 
-    Original Issue: DL-2427
+    Original Issues: DL-2427, DL-2495
     """
 
     def __init__(self,
@@ -144,7 +147,8 @@ class CTAdditionalPrivacyConceptSuppressionCtPlus(
         self.lookup_job_config = lookup_load_job_config()
 
     def get_suppression_concepts_df(self):
-        return keep_ct_plus_suppressed(super().get_suppression_concepts_df())
+        return drop_dob_indicators(
+            keep_ct_plus_suppressed(super().get_suppression_concepts_df()))
 
 
 if __name__ == '__main__':

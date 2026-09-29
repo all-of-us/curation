@@ -9,6 +9,8 @@ from cdr_cleaner.cleaning_rules.capture_ct_plus_pediatric_cohort import (
     CaptureCtPlusPediatricCohort, ConvertCtPlusPediatricCohortIds)
 from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
     CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
+from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import (
+    BirthInformationSuppression, BirthInformationSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import (
     CTAdditionalPrivacyConceptSuppression,
     CTAdditionalPrivacyConceptSuppressionCtPlus)
@@ -23,6 +25,8 @@ from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import (
 from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import (
     RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus)
 from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
+from cdr_cleaner.cleaning_rules.deid.year_of_birth_records_suppression import (
+    YearOfBirthRecordsSuppression, YearOfBirthRecordsSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
@@ -37,6 +41,8 @@ from tests.test_util import FakeRuleClass, fake_rule_func
 # CT+-only rule after a named CT rule, and inserting a CT+-only rule whose
 # position its own test pins; anything else fails the copy-policy test below.
 CT_PLUS_SUBSTITUTIONS = {
+    BirthInformationSuppression:
+        BirthInformationSuppressionCtPlus,
     CTAdditionalPrivacyConceptSuppression:
         CTAdditionalPrivacyConceptSuppressionCtPlus,
     CTObservationPrivacySuppression:
@@ -47,6 +53,8 @@ CT_PLUS_SUBSTITUTIONS = {
         RemoveFlaggedUnder18ParticipantsCtPlus,
     RtCtPIDtoRID:
         CtPlusPIDtoRID,
+    YearOfBirthRecordsSuppression:
+        YearOfBirthRecordsSuppressionCtPlus,
 }
 
 # CT rule -> CT+-only rules inserted right after it, in order.
@@ -270,6 +278,27 @@ class CleanCDRTest(unittest.TestCase):
         # The registered tier re-keys in the legacy deid step, so RtCtPIDtoRID is
         # commented out of its lists and not asserted here. That CtPlusPIDtoRID
         # reaches no RT, CT or fitbit list is test_only_ct_plus_lists_carry_ct_plus_variants.
+
+    def test_dob_indicator_exclusion_runs_before_the_rules_that_release_them(
+            self):
+        """BirthInformationSuppressionCtPlus removes AIAN and pediatric
+        participants' birth rows, so it must follow CtPlusPIDtoRID, which writes
+        the _deid_map it reads, and precede every CT+ rule that leaves birth rows
+        inline. Run later, those participants' rows would already be released.
+        """
+        rules = [
+            entry[0] for entry in cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        ]
+        exclusion = rules.index(BirthInformationSuppressionCtPlus)
+
+        self.assertLess(rules.index(CtPlusPIDtoRID), exclusion)
+        for releasing_rule in [
+                YearOfBirthRecordsSuppressionCtPlus,
+                CTAdditionalPrivacyConceptSuppressionCtPlus,
+                CTObservationPrivacySuppressionCtPlus
+        ]:
+            self.assertLess(exclusion, rules.index(releasing_rule),
+                            releasing_rule.__name__)
 
     def test_parser_controlled_tier_plus_data_stages(self):
         """The parser accepts the CT+ stages and resolves them to the CT+ rules."""
