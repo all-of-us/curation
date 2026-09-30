@@ -1,11 +1,12 @@
 """
 Integration test for remove_flagged_under18_participants module
 
-Original Issues: DL2418
+Original Issues: DL2418, DL2553
 
 The intent is to remove data for participants flagged in the
 _under18_participants lookup at the tier stages, optionally retaining one age
-band so the CT+ pediatric run keeps ages 0 to 6.
+band so the CT+ pediatric run keeps ages 0 to 6, along with the guardian-about
+copies of a removed child's answers that sit on the linked adult.
 """
 
 # Python Imports
@@ -17,7 +18,8 @@ from google.cloud.bigquery import Table
 # Project Imports
 import cdr_cleaner.clean_cdr as clean_cdr
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, OBSERVATION, VISIT_OCCURRENCE, UNDER18_PARTICIPANTS_LOOKUP_TABLE
+from common import (JINJA_ENV, OBSERVATION, SURVEY_CONDUCT, VISIT_OCCURRENCE,
+                    UNDER18_PARTICIPANTS_LOOKUP_TABLE)
 from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import (
     RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
@@ -58,18 +60,34 @@ VALUES
       (4, 4, '2020-01-02', '2022-01-03', 0, 0)
 """)
 
+SURVEY_CONDUCT_DATA_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.survey_conduct`
+(survey_conduct_id, person_id, survey_concept_id, survey_end_datetime, assisted_concept_id,
+ respondent_type_concept_id, timing_concept_id, collection_method_concept_id,
+ survey_source_concept_id, validated_survey_concept_id)
+VALUES
+      (101, 1, 0, '2020-01-01 00:00:00', 0, 0, 0, 0, 0, 0),
+      (301, 3, 0, '2021-02-28 00:00:00', 0, 0, 0, 0, 0, 0),
+      (401, 4, 0, '2022-01-01 00:00:00', 0, 0, 0, 0, 0, 0)
+""")
+
 OBSERVATION_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
-(observation_id, person_id, observation_date, observation_concept_id, observation_source_concept_id, observation_type_concept_id)
+(observation_id, person_id, observation_date, observation_concept_id, observation_source_concept_id,
+ observation_type_concept_id, questionnaire_response_id)
 VALUES
-      (11, 1, '2020-01-01', 0, 0, 0),
-      (12, 1, '2020-01-01', 1585482, 0, 0),
-      (21, 2, '2020-01-01', 0, 0, 0),
-      (22, 2, '2020-01-01', 0, 1585482, 0),
-      (31, 3, '2020-03-01', 0, 0, 0),
-      (32, 3, '2021-02-28', 1585482, 0, 0),
-      (41, 4, '2022-01-01', 0, 0, 0),
-      (42, 4, '2022-01-01', 0, 1585482, 0)
+      /* Participant 1 is the adult linked to both children. 11 and 12 are their own. */
+      /* 13 and 14 are guardian-about copies of the children's answers, on the adult. */
+      (11, 1, '2020-01-01', 0, 0, 0, 101),
+      (12, 1, '2020-01-01', 1585482, 0, 0, NULL),
+      (13, 1, '2021-02-28', 0, 0, 0, 301),
+      (14, 1, '2022-01-01', 0, 0, 0, 401),
+      (21, 2, '2020-01-01', 0, 0, 0, NULL),
+      (22, 2, '2020-01-01', 0, 1585482, 0, NULL),
+      (31, 3, '2020-03-01', 0, 0, 0, NULL),
+      (32, 3, '2021-02-28', 1585482, 0, 0, 301),
+      (41, 4, '2022-01-01', 0, 0, 0, NULL),
+      (42, 4, '2022-01-01', 0, 1585482, 0, 401)
 """)
 
 
@@ -104,9 +122,9 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
                                     f'{cls.under18_lookup_dataset_id}.'
                                     f'{UNDER18_PARTICIPANTS_LOOKUP_TABLE}')
 
-        # Only the two tested domain tables. The rule narrows itself to the
+        # Only the tested domain tables. The rule narrows itself to the
         # tables that exist in the dataset.
-        for table_name in [VISIT_OCCURRENCE, OBSERVATION]:
+        for table_name in [VISIT_OCCURRENCE, OBSERVATION, SURVEY_CONDUCT]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
             cls.fq_sandbox_table_names.append(
@@ -136,12 +154,15 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
             project_id=self.project_id, dataset_id=self.dataset_id)
         observation_data_query = OBSERVATION_DATA_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
+        survey_conduct_data_query = SURVEY_CONDUCT_DATA_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Load test data
         self.load_test_data([
             f'''{under18_lookup_data_query};
                 {visit_occurrence_data_query};
-                {observation_data_query}'''
+                {observation_data_query};
+                {survey_conduct_data_query}'''
         ])
 
     def tearDown(self):
@@ -152,13 +173,18 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
 
         super().tearDown()
 
-    def _tables_and_counts(self, sandboxed_visit_ids, cleaned_visit_values,
+    def _tables_and_counts(self,
+                           sandboxed_visit_ids,
+                           cleaned_visit_values,
                            sandboxed_observation_ids,
-                           cleaned_observation_values):
+                           cleaned_observation_values,
+                           sandboxed_survey_conduct_ids=None,
+                           cleaned_survey_conduct_values=None):
         """
-        Build the default_test expectations for the two tested domain tables.
+        Build the default_test expectations for the tested domain tables.
+        survey_conduct is checked only when its expectations are given.
         """
-        return [{
+        tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{VISIT_OCCURRENCE}',
             'fq_sandbox_table_name':
@@ -176,7 +202,7 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for(OBSERVATION)}',
-            'loaded_ids': [11, 12, 21, 22, 31, 32, 41, 42],
+            'loaded_ids': [11, 12, 13, 14, 21, 22, 31, 32, 41, 42],
             'sandboxed_ids':
                 sandboxed_observation_ids,
             'fields': ['observation_id', 'person_id'],
@@ -184,24 +210,46 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
                 cleaned_observation_values
         }]
 
+        if sandboxed_survey_conduct_ids is not None:
+            tables_and_counts.append({
+                'fq_table_name':
+                    f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}',
+                'fq_sandbox_table_name':
+                    f'{self.project_id}.{self.sandbox_id}.'
+                    f'{self.rule_instance.sandbox_table_for(SURVEY_CONDUCT)}',
+                'loaded_ids': [101, 301, 401],
+                'sandboxed_ids':
+                    sandboxed_survey_conduct_ids,
+                'fields': ['survey_conduct_id', 'person_id'],
+                'cleaned_values':
+                    cleaned_survey_conduct_values
+            })
+
+        return tables_and_counts
+
     def test_remove_all_flagged_participants(self):
         """
-        With no age band to retain, every flagged participant is removed.
+        With no age band to retain, every flagged participant is removed, and
+        so are both children's guardian-about copies on the adult (13, 14).
+        The adult's own rows stay, with or without a questionnaire_response_id.
         """
         self.rule_instance = RemoveFlaggedUnder18Participants(
             self.project_id, self.dataset_id, self.sandbox_id, **self.kwargs)
 
         self.default_test(
-            self._tables_and_counts(sandboxed_visit_ids=[3, 4],
-                                    cleaned_visit_values=[(1, 1), (2, 2)],
-                                    sandboxed_observation_ids=[31, 32, 41, 42],
-                                    cleaned_observation_values=[
-                                        (11, 1), (12, 1), (21, 2), (22, 2)
-                                    ]))
+            self._tables_and_counts(
+                sandboxed_visit_ids=[3, 4],
+                cleaned_visit_values=[(1, 1), (2, 2)],
+                sandboxed_observation_ids=[13, 14, 31, 32, 41, 42],
+                cleaned_observation_values=[(11, 1), (12, 1), (21, 2), (22, 2)],
+                sandboxed_survey_conduct_ids=[301, 401],
+                cleaned_survey_conduct_values=[(101, 1)]))
 
     def test_ct_plus_retains_the_pediatric_band(self):
         """
-        The CT+ variant keeps the '0-6' band and removes '7-17'.
+        The CT+ variant keeps the '0-6' band and removes '7-17'. The retained
+        child's guardian-about copy (14) stays on the adult for the pediatric
+        split; the removed child's (13) goes.
 
         age_band_to_retain is passed on purpose: the subclass does not declare
         it, so the engine drops it and the pinned '0-6' stands. Were it
@@ -215,10 +263,32 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
             self._tables_and_counts(sandboxed_visit_ids=[3],
                                     cleaned_visit_values=[(1, 1), (2, 2),
                                                           (4, 4)],
-                                    sandboxed_observation_ids=[31, 32],
+                                    sandboxed_observation_ids=[13, 31, 32],
                                     cleaned_observation_values=[
-                                        (11, 1), (12, 1), (21, 2), (22, 2),
-                                        (41, 4), (42, 4)
+                                        (11, 1), (12, 1), (14, 1), (21, 2),
+                                        (22, 2), (41, 4), (42, 4)
+                                    ],
+                                    sandboxed_survey_conduct_ids=[301],
+                                    cleaned_survey_conduct_values=[(101, 1),
+                                                                   (401, 4)]))
+
+    def test_without_survey_conduct_matches_on_person_only(self):
+        """
+        With no survey_conduct table the rule still runs, removing by person_id
+        alone, so the guardian-about copies (13, 14) stay on the adult.
+        """
+        self.client.delete_table(
+            f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}')
+        self.rule_instance = RemoveFlaggedUnder18Participants(
+            self.project_id, self.dataset_id, self.sandbox_id, **self.kwargs)
+
+        self.default_test(
+            self._tables_and_counts(sandboxed_visit_ids=[3, 4],
+                                    cleaned_visit_values=[(1, 1), (2, 2)],
+                                    sandboxed_observation_ids=[31, 32, 41, 42],
+                                    cleaned_observation_values=[
+                                        (11, 1), (12, 1), (13, 1), (14, 1),
+                                        (21, 2), (22, 2)
                                     ]))
 
     def test_invalid_age_band_is_rejected(self):

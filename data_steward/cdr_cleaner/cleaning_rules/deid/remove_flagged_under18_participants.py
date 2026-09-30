@@ -9,7 +9,14 @@ so it must run before person IDs are re-keyed to research IDs.
 `age_band_to_retain` keeps one band; `RemoveFlaggedUnder18ParticipantsCtPlus`
 pins '0-6' for the CT+ pediatric run.
 
-Original Issues: DL2418
+`RoutePediatricAdultObservations` copies a child's guardian-about answers onto
+the linked adult, keeping the child's `questionnaire_response_id`. Those copies
+carry the adult's `person_id`, so `observation` also drops rows whose
+`questionnaire_response_id` is a removed participant's `survey_conduct_id`,
+read from this rule's `survey_conduct` sandbox table. Copies of a retained
+band's answers stay on the adult for the CT+ pediatric split.
+
+Original Issues: DL2418, DL2553
 """
 
 # Python imports
@@ -53,6 +60,14 @@ CREATE OR REPLACE TABLE
     WHERE age_band IS DISTINCT FROM '{{age_band_to_retain}}'
     {% endif %}
     )
+    {% if survey_conduct_sandbox_table %}
+    OR questionnaire_response_id IN (
+    SELECT
+      survey_conduct_id
+    FROM
+      `{{project}}.{{sandbox_dataset}}.{{survey_conduct_sandbox_table}}`
+    )
+    {% endif %}
   )
 """)
 
@@ -70,6 +85,14 @@ WHERE
   WHERE age_band IS DISTINCT FROM '{{age_band_to_retain}}'
   {% endif %}
   )
+  {% if survey_conduct_sandbox_table %}
+  OR questionnaire_response_id IN (
+  SELECT
+    survey_conduct_id
+  FROM
+    `{{project}}.{{sandbox_dataset}}.{{survey_conduct_sandbox_table}}`
+  )
+  {% endif %}
 """)
 
 
@@ -100,11 +123,13 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
         """
         desc = (
             'All data associated with a participant flagged as younger than 18 years old '
-            'at consent is sandboxed and dropped, except for the retained age band, if any.'
+            'at consent is sandboxed and dropped, except for the retained age band, if any. '
+            'Observation rows answering a dropped participant\'s survey_conduct row are '
+            'dropped too, including the guardian-about copies on the linked adult.'
         )
 
         super().__init__(
-            issue_numbers=['DL2418'],
+            issue_numbers=['DL2418', 'DL2553'],
             description=desc,
             affected_datasets=[
                 cdr_consts.REGISTERED_TIER_PRE_DEID,
@@ -132,7 +157,20 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
         sandbox_queries = []
         drop_queries = []
 
-        for table in self.affected_tables:
+        # Without survey_conduct, observation falls back to person_id alone.
+        survey_conduct_sandbox_table = (self.sandbox_table_for(
+            common.SURVEY_CONDUCT) if common.SURVEY_CONDUCT
+                                        in self.affected_tables else None)
+
+        # survey_conduct goes first: observation's sandbox query reads its
+        # sandbox table. Every drop runs after every sandbox, so the drops can
+        # read it too, whichever order the tables are deleted in.
+        tables = sorted(self.affected_tables,
+                        key=lambda table: table != common.SURVEY_CONDUCT)
+
+        for table in tables:
+            survey_conduct_filter = (survey_conduct_sandbox_table
+                                     if table == common.OBSERVATION else None)
 
             sandbox_query = {
                 cdr_consts.QUERY:
@@ -145,7 +183,8 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
                         lookup_dataset=self.under18_lookup_dataset_id,
                         under18_participant_lookup_table=common.
                         UNDER18_PARTICIPANTS_LOOKUP_TABLE,
-                        age_band_to_retain=self.age_band_to_retain)
+                        age_band_to_retain=self.age_band_to_retain,
+                        survey_conduct_sandbox_table=survey_conduct_filter)
             }
             sandbox_queries.append(sandbox_query)
 
@@ -154,11 +193,13 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
                     DROP_ROWS.render(
                         project=self.project_id,
                         dataset=self.dataset_id,
+                        sandbox_dataset=self.sandbox_dataset_id,
                         domain_table=table,
                         lookup_dataset=self.under18_lookup_dataset_id,
                         under18_participant_lookup_table=common.
                         UNDER18_PARTICIPANTS_LOOKUP_TABLE,
-                        age_band_to_retain=self.age_band_to_retain)
+                        age_band_to_retain=self.age_band_to_retain,
+                        survey_conduct_sandbox_table=survey_conduct_filter)
             }
             drop_queries.append(drop_query)
 
