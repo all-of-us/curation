@@ -291,6 +291,26 @@ class RemoveFlaggedUnder18ParticipantsTest(BaseTest.CleaningRulesTestBase):
                                         (21, 2), (22, 2)
                                     ]))
 
+    def test_ct_plus_without_survey_conduct_matches_on_person_only(self):
+        """
+        The CT+ variant also runs without survey_conduct, removing only the
+        '7-17' child by person_id and leaving both copies (13, 14) on the adult.
+        """
+        self.client.delete_table(
+            f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}')
+        self.rule_instance = RemoveFlaggedUnder18ParticipantsCtPlus(
+            self.project_id, self.dataset_id, self.sandbox_id, **self.kwargs)
+
+        self.default_test(
+            self._tables_and_counts(sandboxed_visit_ids=[3],
+                                    cleaned_visit_values=[(1, 1), (2, 2),
+                                                          (4, 4)],
+                                    sandboxed_observation_ids=[31, 32],
+                                    cleaned_observation_values=[
+                                        (11, 1), (12, 1), (13, 1), (14, 1),
+                                        (21, 2), (22, 2), (41, 4), (42, 4)
+                                    ]))
+
     def test_invalid_age_band_is_rejected(self):
         """
         An age band outside the two the lookup writes fails in setup_rule,

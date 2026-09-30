@@ -158,9 +158,10 @@ class RemoveFlaggedUnder18Participants(BaseCleaningRule):
         drop_queries = []
 
         # Without survey_conduct, observation falls back to person_id alone.
-        survey_conduct_sandbox_table = (self.sandbox_table_for(
-            common.SURVEY_CONDUCT) if common.SURVEY_CONDUCT
-                                        in self.affected_tables else None)
+        survey_conduct_sandbox_table = None
+        if common.SURVEY_CONDUCT in self.affected_tables:
+            survey_conduct_sandbox_table = self.sandbox_table_for(
+                common.SURVEY_CONDUCT)
 
         # survey_conduct goes first: observation's sandbox query reads its
         # sandbox table. Every drop runs after every sandbox, so the drops can
