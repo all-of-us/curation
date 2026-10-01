@@ -31,23 +31,23 @@ The failed query was generated from the below module:
 
 The failed query ran with the following configuration:
     project_id={{project_id}}
-    {% if query_job %}
+    {% if query_job is defined and query_job %}
     job_id={{query_job.job_id}}
     {% if query_job.errors %}
     job_errors={{query_job.errors}}
     {% endif %}
     {% endif %}
-    {% if destination_dataset_id %}
+    {% if destination_dataset_id is defined and destination_dataset_id %}
     destination_dataset_id={{destination_dataset_id}}
     {% endif %}
-    {% if destination_table %}
+    {% if destination_table_id is defined and destination_table_id %}
     destination_table_id={{destination_table_id}}
     {% endif %}
-    {% if disposition %}
-    disposition={{disposition}}
+    {% if write_disposition is defined and write_disposition %}
+    write_disposition={{write_disposition}}
     {% endif %}
     query={{query}}
-    {% if exception %}
+    {% if exception is defined and exception %}
     exception={{exception}}
     {% endif %}
 """

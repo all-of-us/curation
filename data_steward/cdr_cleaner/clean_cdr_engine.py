@@ -130,7 +130,10 @@ def run_queries(client, query_list, rule_info):
             if query_job.errors:
                 raise RuntimeError(
                     ce_consts.FAILURE_MESSAGE_TEMPLATE.render(
-                        client.project, query_job, **rule_info, **query_dict))
+                        project_id=client.project,
+                        query_job=query_job,
+                        **rule_info,
+                        **query_dict))
             LOGGER.info(
                 ce_consts.SUCCESS_MESSAGE_TEMPLATE.render(
                     project_id=client.project,
