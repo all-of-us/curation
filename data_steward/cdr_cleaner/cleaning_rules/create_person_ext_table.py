@@ -39,10 +39,7 @@ SET
   t.state_of_residence_source_value = c.concept_name,
   t.sex_at_birth_concept_id = COALESCE(os.value_as_concept_id, 0),
   t.sex_at_birth_source_concept_id = COALESCE(os.value_source_concept_id, 0),
-  t.sex_at_birth_source_value = COALESCE(sc.concept_code, 'No matching concept'),
-  t.self_reported_category_concept_id = COALESCE(srp.value_as_concept_id, 0),
-  t.self_reported_category_source_concept_id = COALESCE(srp.value_source_concept_id, 0),
-  t.self_reported_category_source_value = COALESCE(srp.value_source_value, 'No matching concept')
+  t.sex_at_birth_source_value = COALESCE(sc.concept_code, 'No matching concept')
 FROM
   `{{project}}.{{dataset}}.person` p
 LEFT JOIN
