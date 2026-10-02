@@ -340,7 +340,7 @@ WITH qc_aou_death AS (
                     src_id ASC -- EHR site that alphabetically comes first is chosen --
             ) = 1   
         ) THEN TRUE ELSE FALSE END AS primary_death_record
-    FROM `{{project}}.{{dataset}}.aou_death`    
+    FROM `{{project_id}}.{{dataset}}.aou_death`    
 )
 SELECT ad.aou_death_id
 FROM `{{project_id}}.{{dataset}}.aou_death` ad

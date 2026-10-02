@@ -8,6 +8,12 @@ potential AIAN participants in our datasets.
 The criteria of AIAN defition comes from the existing cleaning rules and retractions from the past.
 See DC-3402 and its related tickets and comments for more context.
 
+The pediatric AIAN questions are not mapped to concepts yet, so their rows carry
+observation_source_concept_id 0 and the adult branches cannot see them. Two pediatric
+branches match on observation_source_value instead, each mirroring one adult branch:
+the race question answered AIAN, and the presence of an AIAN follow-up question. They
+can be re-keyed on concept ids once the pediatric mapping lands.
+
 Original JIRA ticket: DC-3402
 """
 # Python imports
@@ -27,6 +33,13 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{storage_table_n
     SELECT DISTINCT person_id FROM `{{project_id}}.{{dataset_id}}.observation`
     WHERE (observation_source_concept_id = 1586140 AND value_source_concept_id = 1586141)
     OR observation_source_concept_id in (1586150, 1585599, 1586139, 1585604)
+    -- Pediatric branches. Source value case is not dependable, so match with --
+    -- LOWER() and keep these literals lowercase. --
+    OR (LOWER(observation_source_value) = 'race_whatraceethnicity_ped'
+        AND value_source_concept_id = 1586141)
+    OR LOWER(observation_source_value) IN ('aian_aianspecific_ped',
+                                           'aian_tribe_ped',
+                                           'aiannoneofthesedescribeme_aianfreetext_ped')
 )""")
 
 
@@ -44,7 +57,7 @@ class CreateAIANLookup(BaseCleaningRule):
                 'We create it in case we need AIAN-specific ETL process '
                 '(retraction, etc).')
 
-        super().__init__(issue_numbers=['DC3402'],
+        super().__init__(issue_numbers=['DC3402', 'DL2541'],
                          description=desc,
                          affected_datasets=[],
                          project_id=project_id,

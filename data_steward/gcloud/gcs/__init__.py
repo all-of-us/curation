@@ -170,7 +170,7 @@ class StorageClient(Client):
 
         hpo_bucket_query = JINJA_ENV.from_string(
             SELECT_BUCKET_NAME_QUERY).render(
-                project_Id=self.project,
+                project_id=self.project,
                 dataset_id=LOOKUP_TABLES_DATASET_ID,
                 table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
                 hpo_id=hpo_id,

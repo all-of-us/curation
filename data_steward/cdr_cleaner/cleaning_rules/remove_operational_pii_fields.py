@@ -71,7 +71,7 @@ WHERE
 observation_id
 IN (SELECT
     observation_id
-    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` )
+    FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` )
 """)
 
 

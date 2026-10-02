@@ -307,6 +307,7 @@ def get_retraction_queries_fact_relationship(
                         sandbox=action == 'sandbox',
                         sb_dataset=sb_dataset_id,
                         sb_table=sb_table,
+                        project=client.project,
                         dataset=dataset_id,
                         person_id=person_id,
                         lookup_table_id=lookup_table_id,
