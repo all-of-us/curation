@@ -22,7 +22,7 @@ class RegenerateCtPlusIds(unittest.TestCase):
     def setUp(self):
         self.project_id = 'fake_project'
         self.input_dataset_id = 'fake_controlled_tier'
-        self.output_dataset_id = 'fake_controlled_tier_plus'
+        self.output_dataset_id = 'fake_controlled_tier_plus_pre_split'
         self.mapping_dataset_id = 'fake_mapping'
         self.pipeline_dataset_id = 'fake_pipeline'
         self.ids_view = 'fake_ids_view'
@@ -526,6 +526,21 @@ class RegenerateCtPlusIds(unittest.TestCase):
         self.assertLess(
             source.index('Loading table'),
             source.index('assert_person_linkage_survived_the_remap'))
+
+    def test_pre_split_output_name_is_accepted(self):
+        ct.assert_output_dataset_is_pre_split('CP2025q4r7_deid_clean_pre_split')
+
+    @mock.patch('tools.regenerate_ct_plus_ids.BigQueryClient')
+    def test_output_name_without_pre_split_stops_the_run_before_any_write(
+            self, mock_client):
+        """The researcher-facing name belongs to build_ct_plus_mainline.py."""
+        with self.assertRaises(ValueError) as ctx:
+            ct.main(self.input_dataset_id, 'CP2025q4r7_deid_clean',
+                    self.project_id, self.pipeline_dataset_id, self.ids_view,
+                    self.mapping_dataset_id, ct.DEFAULT_MAPPING_NAMESPACE)
+
+        self.assertIn('_pre_split', str(ctx.exception))
+        mock_client.assert_not_called()
 
     def test_non_empty_output_dataset_stops_the_run(self):
         """main() drops every CDM table in the output dataset before loading."""
