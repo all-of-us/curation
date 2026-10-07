@@ -145,6 +145,15 @@ class CtPlusDobIndicatorsTest(BaseTest.CleaningRulesTestBase):
 
         super().setUpClass()
 
+        # BaseTest creates only the datasets of fq_table_names and
+        # fq_sandbox_table_names, and the two lookups above live in the RDR
+        # dataset, which neither list names.
+        desc = (f'dataset created by {cls.__name__} to test a cleaning rule.  '
+                f'deletion candidate.')
+        dataset = cls.client.define_dataset(cls.rdr_dataset_id, desc,
+                                            {'test': ''})
+        cls.client.create_dataset(dataset, exists_ok=True)
+
     def setUp(self):
         super().setUp()
 
