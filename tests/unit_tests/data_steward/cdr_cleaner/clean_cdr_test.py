@@ -3,10 +3,14 @@ import unittest
 from mock import patch
 
 import cdr_cleaner.clean_cdr as cc
-from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import (
-    BirthInformationSuppression, BirthInformationSuppressionCtPlus)
+from cdr_cleaner.cleaning_rules.capture_ct_plus_birthdate import (
+    CaptureCtPlusBirthdate, ConvertCtPlusBirthdateIds, PruneCtPlusBirthdate)
 from cdr_cleaner.cleaning_rules.capture_ct_plus_pediatric_cohort import (
     CaptureCtPlusPediatricCohort, ConvertCtPlusPediatricCohortIds)
+from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
+    CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
+from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import (
+    BirthInformationSuppression, BirthInformationSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import (
     CTAdditionalPrivacyConceptSuppression,
     CTAdditionalPrivacyConceptSuppressionCtPlus)
@@ -23,16 +27,19 @@ from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import 
 from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.year_of_birth_records_suppression import (
     YearOfBirthRecordsSuppression, YearOfBirthRecordsSuppressionCtPlus)
+from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
+from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
+from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import (
     VehicularAccidentConceptSuppression)
 from constants.cdr_cleaner.clean_cdr import DataStage
 from tests.test_util import FakeRuleClass, fake_rule_func
 
 # The CT+ lists are hard copies of the CT lists, so drift is otherwise
-# invisible. Three differences are allowed, and anything else fails the
-# copy-policy test below: swapping in a CT+ variant at the same position,
-# dropping a CT rule that must not run in CT+, and inserting a rule that exists
-# only in CT+.
+# invisible. The only allowed differences are swapping in a CT+ variant at the
+# same position, dropping a CT rule that must not run in CT+, inserting a
+# CT+-only rule after a named CT rule, and inserting a CT+-only rule whose
+# position its own test pins; anything else fails the copy-policy test below.
 CT_PLUS_SUBSTITUTIONS = {
     BirthInformationSuppression:
         BirthInformationSuppressionCtPlus,
@@ -50,6 +57,15 @@ CT_PLUS_SUBSTITUTIONS = {
         YearOfBirthRecordsSuppressionCtPlus,
 }
 
+# CT rule -> CT+-only rules inserted right after it, in order.
+CT_PLUS_INSERTIONS = {
+    RtCtPIDtoRID: [CaptureCtPlusZip5, CaptureCtPlusBirthdate],
+    DropOrphanedPIDS: [
+        PruneCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusBirthdate,
+        ConvertCtPlusBirthdateIds
+    ],
+}
+
 # CT rules that do not run in CT+. Motor vehicle accident codes are released in
 # CT+, and these two rules build their concept lists from the vocabulary rather
 # than reading ct_plus_suppressed, so they cannot be relaxed by a variant.
@@ -58,6 +74,8 @@ CT_PLUS_REMOVALS = {
     VehicularAccidentConceptSuppression,
 }
 
+# CT+-only rules placed by test_pediatric_cohort_rules_are_placed_around_the_deid_stage
+# rather than by an anchor.
 CT_PLUS_ONLY_RULES = {
     CaptureCtPlusPediatricCohort,
     ConvertCtPlusPediatricCohortIds,
@@ -72,9 +90,15 @@ def expected_ct_plus_classes(ct_classes):
     :param ct_classes: the CT cleaning-classes list
     :return: the CT+ list it should produce, less any CT+ only rules
     """
-    return [(CT_PLUS_SUBSTITUTIONS.get(entry[0], entry[0]),) + tuple(entry[1:])
-            for entry in ct_classes
-            if entry[0] not in CT_PLUS_REMOVALS]
+    expected = []
+    for entry in ct_classes:
+        if entry[0] in CT_PLUS_REMOVALS:
+            continue
+        expected.append((CT_PLUS_SUBSTITUTIONS.get(entry[0], entry[0]),) +
+                        tuple(entry[1:]))
+        expected.extend(
+            (rule,) for rule in CT_PLUS_INSERTIONS.get(entry[0], []))
+    return expected
 
 
 def without_ct_plus_only_rules(ct_plus_classes):
@@ -132,7 +156,8 @@ class CleanCDRTest(unittest.TestCase):
 
     def test_controlled_tier_plus_lists_copy_controlled_tier(self):
         """Each CT+ list is an independent copy of its CT counterpart, apart
-        from the substitutions and removals declared at the top of this module.
+        from the substitutions, removals and insertions declared at the top of
+        this module.
 
         Any other divergence fails here. The identity checks are permanent.
         """
@@ -140,6 +165,31 @@ class CleanCDRTest(unittest.TestCase):
             self.assertEqual(expected_ct_plus_classes(ct_classes),
                              without_ct_plus_only_rules(ct_plus_classes))
             self.assertIsNot(ct_plus_classes, ct_classes)
+
+    def test_ct_plus_side_table_rule_order(self):
+        """Each capture before the rule that destroys its values, prune after
+        DropOrphanedPIDS, convert after the prune.
+
+        The insertions pin each rule to its anchor, but not the anchor to its
+        neighbours, so a CT reordering could still move a capture past its
+        destroying rule. Reversing prune and convert would empty the table.
+        """
+        rules = [
+            entry[0] for entry in cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        ]
+        for capture, destroyer, prune, convert in [
+            (CaptureCtPlusZip5, GeneralizeZipCodes, PruneCtPlusZip5,
+             ConvertCtPlusZip5Ids),
+            (CaptureCtPlusBirthdate, NullPersonBirthdate, PruneCtPlusBirthdate,
+             ConvertCtPlusBirthdateIds),
+        ]:
+            with self.subTest(capture=capture.__name__):
+                self.assertLess(rules.index(CtPlusPIDtoRID),
+                                rules.index(capture))
+                self.assertLess(rules.index(capture), rules.index(destroyer))
+                self.assertLess(rules.index(DropOrphanedPIDS),
+                                rules.index(prune))
+                self.assertLess(rules.index(prune), rules.index(convert))
 
     def test_vehicle_rules_run_in_rt_and_ct_but_not_ct_plus(self):
         """The two vehicle rules are dropped from CT+ only.
@@ -186,12 +236,13 @@ class CleanCDRTest(unittest.TestCase):
                 self.assertEqual(rules.count(rule), expected)
 
     def test_only_ct_plus_lists_carry_ct_plus_variants(self):
-        """No CT+ variant or CT+ only rule leaks into a CT, RT or fitbit list.
+        """No CT+ variant or CT+-only rule leaks into a CT, RT or fitbit list.
 
         A CT+ subclass registered elsewhere would under-suppress that tier.
         Scans every cleaning-classes list, not only the three CT ones.
         """
-        ct_plus_rules = set(CT_PLUS_SUBSTITUTIONS.values()) | CT_PLUS_ONLY_RULES
+        ct_plus_rules = set(CT_PLUS_SUBSTITUTIONS.values()).union(
+            *CT_PLUS_INSERTIONS.values()) | CT_PLUS_ONLY_RULES
         scanned = 0
 
         for name in dir(cc):
