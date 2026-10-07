@@ -5,8 +5,12 @@ from mock import patch
 import cdr_cleaner.clean_cdr as cc
 from cdr_cleaner.cleaning_rules.capture_ct_plus_birthdate import (
     CaptureCtPlusBirthdate, ConvertCtPlusBirthdateIds, PruneCtPlusBirthdate)
+from cdr_cleaner.cleaning_rules.capture_ct_plus_pediatric_cohort import (
+    CaptureCtPlusPediatricCohort, ConvertCtPlusPediatricCohortIds)
 from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
     CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
+from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import (
+    BirthInformationSuppression, BirthInformationSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import (
     CTAdditionalPrivacyConceptSuppression,
     CTAdditionalPrivacyConceptSuppressionCtPlus)
@@ -21,6 +25,8 @@ from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import (
 from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import (
     RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus)
 from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
+from cdr_cleaner.cleaning_rules.deid.year_of_birth_records_suppression import (
+    YearOfBirthRecordsSuppression, YearOfBirthRecordsSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
@@ -31,10 +37,12 @@ from tests.test_util import FakeRuleClass, fake_rule_func
 
 # The CT+ lists are hard copies of the CT lists, so drift is otherwise
 # invisible. The only allowed differences are swapping in a CT+ variant at the
-# same position, dropping a CT rule that must not run in CT+, and inserting a
-# CT+-only rule after a named CT rule; anything else fails the copy-policy test
-# below.
+# same position, dropping a CT rule that must not run in CT+, inserting a
+# CT+-only rule after a named CT rule, and inserting a CT+-only rule whose
+# position its own test pins; anything else fails the copy-policy test below.
 CT_PLUS_SUBSTITUTIONS = {
+    BirthInformationSuppression:
+        BirthInformationSuppressionCtPlus,
     CTAdditionalPrivacyConceptSuppression:
         CTAdditionalPrivacyConceptSuppressionCtPlus,
     CTObservationPrivacySuppression:
@@ -45,6 +53,8 @@ CT_PLUS_SUBSTITUTIONS = {
         RemoveFlaggedUnder18ParticipantsCtPlus,
     RtCtPIDtoRID:
         CtPlusPIDtoRID,
+    YearOfBirthRecordsSuppression:
+        YearOfBirthRecordsSuppressionCtPlus,
 }
 
 # CT rule -> CT+-only rules inserted right after it, in order.
@@ -64,13 +74,21 @@ CT_PLUS_REMOVALS = {
     VehicularAccidentConceptSuppression,
 }
 
+# CT+-only rules placed by test_pediatric_cohort_rules_are_placed_around_the_deid_stage
+# rather than by an anchor.
+CT_PLUS_ONLY_RULES = {
+    CaptureCtPlusPediatricCohort,
+    ConvertCtPlusPediatricCohortIds,
+}
+
 
 def expected_ct_plus_classes(ct_classes):
     """
-    A CT list rewritten the way its CT+ copy is allowed to differ.
+    A CT list rewritten the way its CT+ copy is allowed to differ, apart from
+    insertions of CT_PLUS_ONLY_RULES.
 
     :param ct_classes: the CT cleaning-classes list
-    :return: the CT+ list it should produce
+    :return: the CT+ list it should produce, less any CT+ only rules
     """
     expected = []
     for entry in ct_classes:
@@ -81,6 +99,16 @@ def expected_ct_plus_classes(ct_classes):
         expected.extend(
             (rule,) for rule in CT_PLUS_INSERTIONS.get(entry[0], []))
     return expected
+
+
+def without_ct_plus_only_rules(ct_plus_classes):
+    """
+    :param ct_plus_classes: a CT+ cleaning-classes list
+    :return: the list with CT_PLUS_ONLY_RULES removed
+    """
+    return [
+        entry for entry in ct_plus_classes if entry[0] not in CT_PLUS_ONLY_RULES
+    ]
 
 
 class CleanCDRTest(unittest.TestCase):
@@ -135,7 +163,7 @@ class CleanCDRTest(unittest.TestCase):
         """
         for ct_plus_classes, ct_classes in self._ct_plus_pairs():
             self.assertEqual(expected_ct_plus_classes(ct_classes),
-                             ct_plus_classes)
+                             without_ct_plus_only_rules(ct_plus_classes))
             self.assertIsNot(ct_plus_classes, ct_classes)
 
     def test_ct_plus_side_table_rule_order(self):
@@ -184,14 +212,37 @@ class CleanCDRTest(unittest.TestCase):
             self.assertNotIn(rule, ct_plus_deid_rules)
         self.assertIn(VehicularAccidentConceptSuppression, rt_deid_rules)
 
+    def test_pediatric_cohort_rules_are_placed_around_the_deid_stage(self):
+        """The capture directly follows the CT+ under-18 removal, so the retained
+        band and the captured band cannot differ, and the conversion is last,
+        because it reads the _deid_map the PID to RID rule builds."""
+        rules = [
+            entry[0] for entry in cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        ]
+
+        self.assertEqual(
+            rules.index(CaptureCtPlusPediatricCohort),
+            rules.index(RemoveFlaggedUnder18ParticipantsCtPlus) + 1)
+        self.assertEqual(rules[-1], ConvertCtPlusPediatricCohortIds)
+
+    def test_ct_plus_only_rules_are_registered_once_in_the_deid_stage(self):
+        """Neither pediatric cohort rule appears in any other CT+ stage."""
+        for ct_plus_classes, _ in self._ct_plus_pairs():
+            rules = [entry[0] for entry in ct_plus_classes]
+            for rule in CT_PLUS_ONLY_RULES:
+                expected = (1 if ct_plus_classes
+                            is cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+                            else 0)
+                self.assertEqual(rules.count(rule), expected)
+
     def test_only_ct_plus_lists_carry_ct_plus_variants(self):
         """No CT+ variant or CT+-only rule leaks into a CT, RT or fitbit list.
 
         A CT+ subclass registered elsewhere would under-suppress that tier.
         Scans every cleaning-classes list, not only the three CT ones.
         """
-        ct_plus_rules = set(
-            CT_PLUS_SUBSTITUTIONS.values()).union(*CT_PLUS_INSERTIONS.values())
+        ct_plus_rules = set(CT_PLUS_SUBSTITUTIONS.values()).union(
+            *CT_PLUS_INSERTIONS.values()) | CT_PLUS_ONLY_RULES
         scanned = 0
 
         for name in dir(cc):
@@ -228,6 +279,27 @@ class CleanCDRTest(unittest.TestCase):
         # commented out of its lists and not asserted here. That CtPlusPIDtoRID
         # reaches no RT, CT or fitbit list is test_only_ct_plus_lists_carry_ct_plus_variants.
 
+    def test_dob_indicator_exclusion_runs_before_the_rules_that_release_them(
+            self):
+        """BirthInformationSuppressionCtPlus removes AIAN and pediatric
+        participants' birth rows, so it must follow CtPlusPIDtoRID, which writes
+        the _deid_map it reads, and precede every CT+ rule that leaves birth rows
+        inline. Run later, those participants' rows would already be released.
+        """
+        rules = [
+            entry[0] for entry in cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        ]
+        exclusion = rules.index(BirthInformationSuppressionCtPlus)
+
+        self.assertLess(rules.index(CtPlusPIDtoRID), exclusion)
+        for releasing_rule in [
+                YearOfBirthRecordsSuppressionCtPlus,
+                CTAdditionalPrivacyConceptSuppressionCtPlus,
+                CTObservationPrivacySuppressionCtPlus
+        ]:
+            self.assertLess(exclusion, rules.index(releasing_rule),
+                            releasing_rule.__name__)
+
     def test_parser_controlled_tier_plus_data_stages(self):
         """The parser accepts the CT+ stages and resolves them to the CT+ rules."""
         parser = cc.get_parser()
@@ -244,7 +316,8 @@ class CleanCDRTest(unittest.TestCase):
             self.assertIn(args.data_stage, DataStage)
             self.assertEqual(args.data_stage.value, stage_value)
             self.assertEqual(
-                cc.DATA_STAGE_RULES_MAPPING[args.data_stage.value],
+                without_ct_plus_only_rules(
+                    cc.DATA_STAGE_RULES_MAPPING[args.data_stage.value]),
                 expected_ct_plus_classes(
                     cc.DATA_STAGE_RULES_MAPPING[ct_stage_value]))
 

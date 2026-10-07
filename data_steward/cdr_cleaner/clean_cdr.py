@@ -15,6 +15,8 @@ from cdr_cleaner.cleaning_rules.backfill_overall_health import BackfillOverallHe
 from cdr_cleaner.cleaning_rules.backfill_the_basics import BackfillTheBasics
 from cdr_cleaner.cleaning_rules.calculate_bmi import CalculateBmi
 from cdr_cleaner.cleaning_rules.calculate_primary_death_record import CalculatePrimaryDeathRecord
+from cdr_cleaner.cleaning_rules.capture_ct_plus_pediatric_cohort import (
+    CaptureCtPlusPediatricCohort, ConvertCtPlusPediatricCohortIds)
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
@@ -107,10 +109,10 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
 from cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers import RemoveMultipleRaceEthnicityAnswersQueries
 from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import \
     MotorVehicleAccidentSuppression
-from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import \
-    BirthInformationSuppression
-from cdr_cleaner.cleaning_rules.deid.year_of_birth_records_suppression import \
-    YearOfBirthRecordsSuppression
+from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import (
+    BirthInformationSuppression, BirthInformationSuppressionCtPlus)
+from cdr_cleaner.cleaning_rules.deid.year_of_birth_records_suppression import (
+    YearOfBirthRecordsSuppression, YearOfBirthRecordsSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
     ReplaceWithStandardConceptId
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import \
@@ -493,14 +495,19 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
 # variant stands in for its CT counterpart, the swap is declared in
 # CT_PLUS_SUBSTITUTIONS, where a CT rule does not run in CT+ the removal is
 # declared in CT_PLUS_REMOVALS, and a CT+-only rule is declared in
-# CT_PLUS_INSERTIONS, all in tests/unit_tests/.../clean_cdr_test.py, which fails
-# on any divergence not listed there.
+# CT_PLUS_INSERTIONS or CT_PLUS_ONLY_RULES, all in
+# tests/unit_tests/.../clean_cdr_test.py, which fails on any divergence not
+# listed there.
 CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (MoveNLPtoDomains,),
     # Must run while person_id is still the participant ID, so before CtPlusPIDtoRID
     # re-keys it to the research ID. The CT+ variant retains the '0-6' band.
     (
         RemoveFlaggedUnder18ParticipantsCtPlus,),
+    # Immediately after the removal, so the retained band and the captured band
+    # cannot differ. CT+ only.
+    (
+        CaptureCtPlusPediatricCohort,),
     (CtPlusPIDtoRID,),  # CT+ sources _deid_map from the research IDs view
     # Must run after CtPlusPIDtoRID and before GeneralizeZipCodes and
     # NullPersonBirthdate
@@ -521,8 +528,12 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (
         ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
-    (BirthInformationSuppression,),
-    (YearOfBirthRecordsSuppression,),
+    # Removes AIAN and pediatric participants' indicators-of-birth rows, so every
+    # later CT+ rule can leave the rest inline for the date-of-birth add-on. Must
+    # run after CtPlusPIDtoRID and before YearOfBirthRecordsSuppressionCtPlus.
+    (
+        BirthInformationSuppressionCtPlus,),
+    (YearOfBirthRecordsSuppressionCtPlus,),
     (ControlledCopeSurveySuppression,),
     (IDFieldSuppression,),  # Should run after any data remapping
     (CancerConceptSuppression,),  # Should run after any data remapping rules
@@ -551,6 +562,9 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (FilterNLPfromDomains,),
     (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+    # Last, because it reads the _deid_map the PID to RID rule builds. CT+ only.
+    (
+        ConvertCtPlusPediatricCohortIds,),
 ]
 
 CONTROLLED_TIER_PLUS_DEID_BASE_CLEANING_CLASSES = [
