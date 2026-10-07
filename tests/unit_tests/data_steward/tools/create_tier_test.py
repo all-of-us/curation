@@ -507,7 +507,7 @@ class CreateTierControlledPlusTest(unittest.TestCase):
                              f'dataset names collide at {deid_stage}: {names}')
 
     def test_controlled_plus_pipeline_output_is_not_the_published_name(self):
-        """create_tier must not write the name regenerate_ct_plus_ids.py publishes."""
+        """create_tier must not write the name build_ct_plus_mainline.py publishes."""
         name = get_dataset_name(CONTROLLED_PLUS, self.release_tag, 'deid_clean')
         self.assertEqual(name, f'CP{self.release_tag}_deid_clean_pre_rekey')
         self.assertNotEqual(name, f'CP{self.release_tag}_deid_clean')

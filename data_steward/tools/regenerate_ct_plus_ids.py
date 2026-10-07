@@ -66,8 +66,11 @@ script at a mapping dataset an RT run produced would otherwise reuse that run's
 _mapping_person and hand CT+ the RT person_ids; the script fails fast instead. Point
 every release at the same mapping dataset, or ids will not persist between them.
 
-When to run: after the deid_clean stage, as the last step before the dataset is
-published, never between deid and deid_base. Two reasons. CreateDerivedTables runs in
+Output: CP{release_tag}_deid_clean_pre_split, which is never published. The add-on
+producers read it, and build_ct_plus_mainline.py writes the published dataset from it.
+
+When to run: after the deid_clean stage, never between deid and deid_base. Two
+reasons. CreateDerivedTables runs in
 both CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES and
 CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES and mints observation_period_id,
 drug_era_id and condition_era_id from scratch, and MoveNLPtoDomains mints
@@ -80,7 +83,7 @@ Usage:
   python regenerate_ct_plus_ids.py \
     --project_id <project> \
     --input_dataset_id <controlled_tier_dataset> \
-    --output_dataset_id <controlled_tier_plus_dataset> \
+    --output_dataset_id <CP{release_tag}_deid_clean_pre_split> \
     --pipeline_dataset_id <pipeline_tables_dataset> \
     --ct_plus_ids_view <rdr_participant_research_ids_view> \
     --mapping_dataset_id <mapping_tables_dataset> \
@@ -90,12 +93,12 @@ import argparse
 import logging
 from google.cloud.bigquery import CopyJobConfig, QueryJobConfig, Table
 
-from common import (AOU_DEATH, DEATH, MAPPING_PREFIX, PERSON, SURVEY_CONDUCT,
-                    VISIT_DETAIL, VISIT_OCCURRENCE, CARE_SITE, LOCATION, NOTE,
-                    NOTE_NLP, FITBIT_TABLES, VOCABULARY_TABLES, ACHILLES_TABLES,
-                    ACHILLES_HEEL_TABLES, CONDITION_OCCURRENCE, DRUG_EXPOSURE,
-                    FACT_RELATIONSHIP, MEASUREMENT, OBSERVATION,
-                    PROCEDURE_OCCURRENCE, PROVIDER,
+from common import (AOU_DEATH, CT_PLUS_PRE_SPLIT_SUFFIX, DEATH, MAPPING_PREFIX,
+                    PERSON, SURVEY_CONDUCT, VISIT_DETAIL, VISIT_OCCURRENCE,
+                    CARE_SITE, LOCATION, NOTE, NOTE_NLP, FITBIT_TABLES,
+                    VOCABULARY_TABLES, ACHILLES_TABLES, ACHILLES_HEEL_TABLES,
+                    CONDITION_OCCURRENCE, DRUG_EXPOSURE, FACT_RELATIONSHIP,
+                    MEASUREMENT, OBSERVATION, PROCEDURE_OCCURRENCE, PROVIDER,
                     MEASUREMENT_DOMAIN_CONCEPT_ID,
                     OBSERVATION_DOMAIN_CONCEPT_ID, PERSON_DOMAIN_CONCEPT_ID)
 
@@ -570,6 +573,26 @@ def assert_person_mapping_is_one_to_one(client, project_id, mapping_dataset_id):
         f'{"Some CT+ id is shared by more than one participant. " if ct_plus_count < row_count else ""}'
         f'Loading against this mapping would duplicate or merge participants across '
         f'every table. Fix the ids view before rerunning.')
+
+
+def assert_output_dataset_is_pre_split(output_dataset_id):
+    """
+    Stop the run unless the output name carries the pre-split suffix.
+
+    The re-key output still holds every add-on component inline, so it must never be
+    published. build_ct_plus_mainline.py subtracts the add-ons from it and owns the
+    researcher-facing name. The output name is an argument rather than derived, so
+    this refusal is what keeps that name out of this script's hands.
+
+    :param output_dataset_id: identifies the dataset the run would write to
+    :raises ValueError: if the name does not end with CT_PLUS_PRE_SPLIT_SUFFIX
+    """
+    if not output_dataset_id.endswith(CT_PLUS_PRE_SPLIT_SUFFIX):
+        raise ValueError(
+            f'--output_dataset_id {output_dataset_id} must end with '
+            f'{CT_PLUS_PRE_SPLIT_SUFFIX}. This output still holds every add-on '
+            f'component inline; build_ct_plus_mainline.py writes the name that is '
+            f'published.')
 
 
 def assert_output_dataset_is_safe(client, output_dataset_id, allow_replace):
@@ -1470,6 +1493,10 @@ def main(input_dataset_id,
         before writing, so a rerun leaves nothing a previous attempt wrote
     :returns: list of tables generated successfully
     """
+    # Before anything is created, so the researcher-facing name cannot be written here
+    # and published without passing through build_ct_plus_mainline.py.
+    assert_output_dataset_is_pre_split(output_dataset_id)
+
     bq_client = BigQueryClient(project_id)
     person_src_table_id = person_mapping_src_table_id(pipeline_dataset_id,
                                                       ct_plus_ids_view)
@@ -1699,10 +1726,12 @@ if __name__ == '__main__':
                         dest='input_dataset_id',
                         required=True,
                         help='Dataset containing source data')
-    parser.add_argument('--output_dataset_id',
-                        dest='output_dataset_id',
-                        required=True,
-                        help='Dataset where results should be stored')
+    parser.add_argument(
+        '--output_dataset_id',
+        dest='output_dataset_id',
+        required=True,
+        help='Dataset where results should be stored. Must end '
+        f'with {CT_PLUS_PRE_SPLIT_SUFFIX}; it is not published.')
     parser.add_argument(
         '--pipeline_dataset_id',
         dest='pipeline_dataset_id',
