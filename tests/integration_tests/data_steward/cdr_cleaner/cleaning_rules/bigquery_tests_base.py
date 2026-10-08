@@ -348,14 +348,23 @@ class BaseTest:
             """
             # Copy vocab tables over to the test dataset
             vocabulary_dataset = self.client.get_dataset(vocabulary_id)
+            job_config = bigquery.CopyJobConfig(
+                write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
+            jobs = []
             for src_table in self.client.list_tables(vocabulary_dataset):
                 schema = self.client.get_table_schema(src_table.table_id)
                 destination = f'{self.project_id}.{self.dataset_id}.{src_table.table_id}'
                 dst_table = self.client.create_table(bigquery.Table(
                     destination, schema=schema),
                                                      exists_ok=True)
-                self.client.copy_table(src_table, dst_table)
+                job = self.client.copy_table(src_table,
+                                             dst_table,
+                                             job_config=job_config)
+                jobs.append(job)
                 self.fq_table_names.append(destination)
+
+            for job in jobs:
+                job.result()
 
     class DeidRulesTestBase(CleaningRulesTestBase):
         """
