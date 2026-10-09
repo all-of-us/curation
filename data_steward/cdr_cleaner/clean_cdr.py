@@ -15,6 +15,8 @@ from cdr_cleaner.cleaning_rules.backfill_overall_health import BackfillOverallHe
 from cdr_cleaner.cleaning_rules.backfill_the_basics import BackfillTheBasics
 from cdr_cleaner.cleaning_rules.calculate_bmi import CalculateBmi
 from cdr_cleaner.cleaning_rules.calculate_primary_death_record import CalculatePrimaryDeathRecord
+from cdr_cleaner.cleaning_rules.capture_ct_plus_pediatric_cohort import (
+    CaptureCtPlusPediatricCohort, ConvertCtPlusPediatricCohortIds)
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from cdr_cleaner.cleaning_rules.create_aian_lookup import CreateAIANLookup
@@ -493,14 +495,19 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
 # variant stands in for its CT counterpart, the swap is declared in
 # CT_PLUS_SUBSTITUTIONS, where a CT rule does not run in CT+ the removal is
 # declared in CT_PLUS_REMOVALS, and a CT+-only rule is declared in
-# CT_PLUS_INSERTIONS, all in tests/unit_tests/.../clean_cdr_test.py, which fails
-# on any divergence not listed there.
+# CT_PLUS_INSERTIONS or CT_PLUS_ONLY_RULES, all in
+# tests/unit_tests/.../clean_cdr_test.py, which fails on any divergence not
+# listed there.
 CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (MoveNLPtoDomains,),
     # Must run while person_id is still the participant ID, so before CtPlusPIDtoRID
     # re-keys it to the research ID. The CT+ variant retains the '0-6' band.
     (
         RemoveFlaggedUnder18ParticipantsCtPlus,),
+    # Immediately after the removal, so the retained band and the captured band
+    # cannot differ. CT+ only.
+    (
+        CaptureCtPlusPediatricCohort,),
     (CtPlusPIDtoRID,),  # CT+ sources _deid_map from the research IDs view
     # Must run after CtPlusPIDtoRID and before GeneralizeZipCodes and
     # NullPersonBirthdate
@@ -551,6 +558,9 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (FilterNLPfromDomains,),
     (RemoveNoteUsingNLP,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+    # Last, because it reads the _deid_map the PID to RID rule builds. CT+ only.
+    (
+        ConvertCtPlusPediatricCohortIds,),
 ]
 
 CONTROLLED_TIER_PLUS_DEID_BASE_CLEANING_CLASSES = [
