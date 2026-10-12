@@ -11,7 +11,7 @@ from unittest import mock
 from google.cloud.bigquery import Table
 
 # Project Imports
-from common import OBSERVATION, AIAN_LIST, PRIMARY_PID_RID_MAPPING, RDR_PARTICIPANT_RESEARCH_IDS_VIEW
+from common import OBSERVATION, AIAN_LIST, RDR_PARTICIPANT_RESEARCH_IDS_VIEW
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
@@ -22,29 +22,6 @@ AIAN_LIST_SCHEMA = [{
     "name": "person_id",
     "mode": "nullable"
 }]
-
-PID_RID_SCHEMA = [
-    {
-        "type": "integer",
-        "name": "person_id",
-        "mode": "nullable"
-    },
-    {
-        "type": "integer",
-        "name": "research_id",
-        "mode": "nullable"
-    },
-    {
-        "type": "integer",
-        "name": "shift",
-        "mode": "nullable"
-    },
-    {
-        "type": "date",
-        "name": "import_date",
-        "mode": "nullable"
-    },
-]
 
 RESEARCH_IDS_VIEW_SCHEMA = [
     {
@@ -160,9 +137,8 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
               (7, 3, 0, 0, '2020-01-01', '', 0, 1586140, 1586141),
               (8, 3, 0, 0, '2020-01-01', '123**', 0, 1585250, 0),
               (9, 3, 0, 0, '2020-01-01', '', 1234234, 1585249, 0),
-              -- Third AIAN participant, resolvable through the research ids view but --
-              -- absent from primary_pid_rid_mapping. Generalized like any other AI/AN --
-              -- participant, which is what the mapping table could not deliver. --
+              -- Third AIAN participant, resolvable through the research ids view. --
+              -- Generalized like any other AI/AN participant. --
               (10, 4, 0, 0, '2020-01-01', '', 0, 1586140, 1586141),
               (11, 4, 0, 0, '2020-01-01', '432**', 0, 1585250, 0),
               (12, 4, 0, 0, '2020-01-01', '', 1234234, 1585249, 0),
@@ -196,31 +172,15 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
         insert_aian_query = aian_template.render(project_id=self.project_id,
                                                  dataset_id=self.rdr_sandbox_id)
 
-        pid_list_name = f'{self.project_id}.{self.rdr_sandbox_id}.{PRIMARY_PID_RID_MAPPING}'
-        self.client.create_table(Table(pid_list_name, PID_RID_SCHEMA))
-        self.fq_table_names.append(pid_list_name)
-
-        # Load the test data
-        pid_template = self.jinja_env.from_string("""
-            INSERT INTO `{{project_id}}.{{dataset_id}}.primary_pid_rid_mapping`
-            (person_id, research_id, shift, import_date)
-            VALUES
-              (50, 1, 200, "2020-01-01"),
-              (34, 3, 95, "2022-10-10")
-            """)
-
-        insert_pid_query = pid_template.render(project_id=self.project_id,
-                                               dataset_id=self.rdr_sandbox_id)
-
         view_name = f'{self.project_id}.{self.rdr_sandbox_id}.{RDR_PARTICIPANT_RESEARCH_IDS_VIEW}'
         self.client.create_table(Table(view_name, RESEARCH_IDS_VIEW_SCHEMA))
         self.fq_table_names.append(view_name)
 
-        # Load the test data. Participant 77 is absent from primary_pid_rid_mapping,
-        # participant 88 has no controlled tier id yet, and participant 99 is absent
-        # from the view entirely, so each of the three ways out of the cohort is
-        # covered. The aian column is 'no' throughout, because aian_list rather than
-        # that column is the cohort test.
+        # Load the test data. Participants 50, 34, and 77 are valid AI/AN participants
+        # with controlled tier IDs. Participant 88 has no controlled tier ID yet,
+        # and participant 99 is absent from the view entirely, so each exclusion
+        # path is covered. The aian column is 'no' throughout, because aian_list
+        # rather than that column is the cohort test.
         view_template = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.rdr_participant_research_ids_view`
             (participant_id, research_id, registered_tier_id, controlled_tier_id,
@@ -237,8 +197,7 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
 
         # Load test data
         self.load_test_data([
-            insert_observation_query, insert_aian_query, insert_pid_query,
-            insert_view_query
+            insert_observation_query, insert_aian_query, insert_view_query
         ])
 
     @mock.patch(
