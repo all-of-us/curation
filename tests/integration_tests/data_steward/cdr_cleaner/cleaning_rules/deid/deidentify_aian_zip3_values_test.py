@@ -196,9 +196,8 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
                                                  dataset_id=self.rdr_sandbox_id)
 
         # Load test data
-        self.load_test_data([
-            insert_observation_query, insert_aian_query, insert_view_query
-        ])
+        self.load_test_data(
+            [insert_observation_query, insert_aian_query, insert_view_query])
 
     @mock.patch(
         "cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values.PIPELINE_TABLES",
