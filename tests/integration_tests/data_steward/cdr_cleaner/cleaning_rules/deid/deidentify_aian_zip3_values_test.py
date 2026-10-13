@@ -11,7 +11,7 @@ from unittest import mock
 from google.cloud.bigquery import Table
 
 # Project Imports
-from common import OBSERVATION, AIAN_LIST, PRIMARY_PID_RID_MAPPING
+from common import OBSERVATION, AIAN_LIST, RDR_PARTICIPANT_RESEARCH_IDS_VIEW
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
@@ -23,10 +23,10 @@ AIAN_LIST_SCHEMA = [{
     "mode": "nullable"
 }]
 
-PID_RID_SCHEMA = [
+RESEARCH_IDS_VIEW_SCHEMA = [
     {
         "type": "integer",
-        "name": "person_id",
+        "name": "participant_id",
         "mode": "nullable"
     },
     {
@@ -36,12 +36,22 @@ PID_RID_SCHEMA = [
     },
     {
         "type": "integer",
-        "name": "shift",
+        "name": "registered_tier_id",
         "mode": "nullable"
     },
     {
-        "type": "date",
-        "name": "import_date",
+        "type": "integer",
+        "name": "controlled_tier_id",
+        "mode": "nullable"
+    },
+    {
+        "type": "integer",
+        "name": "controlled_tier_plus_id",
+        "mode": "nullable"
+    },
+    {
+        "type": "string",
+        "name": "aian",
         "mode": "nullable"
     },
 ]
@@ -126,7 +136,18 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
               -- Adding second AIAN participant --
               (7, 3, 0, 0, '2020-01-01', '', 0, 1586140, 1586141),
               (8, 3, 0, 0, '2020-01-01', '123**', 0, 1585250, 0),
-              (9, 3, 0, 0, '2020-01-01', '', 1234234, 1585249, 0)
+              (9, 3, 0, 0, '2020-01-01', '', 1234234, 1585249, 0),
+              -- Third AIAN participant, resolvable through the research ids view. --
+              -- Generalized like any other AI/AN participant. --
+              (10, 4, 0, 0, '2020-01-01', '', 0, 1586140, 1586141),
+              (11, 4, 0, 0, '2020-01-01', '432**', 0, 1585250, 0),
+              (12, 4, 0, 0, '2020-01-01', '', 1234234, 1585249, 0),
+              -- Fourth AIAN participant, in aian_list but with no row in the view at --
+              -- all. The join drops them and their rows are left at full precision. --
+              -- Pinning current behavior: the drop is silent, and nothing counts it. --
+              (13, 5, 0, 0, '2020-01-01', '', 0, 1586140, 1586141),
+              (14, 5, 0, 0, '2020-01-01', '567**', 0, 1585250, 0),
+              (15, 5, 0, 0, '2020-01-01', '', 1234234, 1585249, 0)
             """)
 
         insert_observation_query = observation_data_template.render(
@@ -142,31 +163,41 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
             (person_id)
             VALUES
               (50),
-              (34)
+              (34),
+              (77),
+              (88),
+              (99)
             """)
 
         insert_aian_query = aian_template.render(project_id=self.project_id,
                                                  dataset_id=self.rdr_sandbox_id)
 
-        pid_list_name = f'{self.project_id}.{self.rdr_sandbox_id}.{PRIMARY_PID_RID_MAPPING}'
-        self.client.create_table(Table(pid_list_name, PID_RID_SCHEMA))
-        self.fq_table_names.append(pid_list_name)
+        view_name = f'{self.project_id}.{self.rdr_sandbox_id}.{RDR_PARTICIPANT_RESEARCH_IDS_VIEW}'
+        self.client.create_table(Table(view_name, RESEARCH_IDS_VIEW_SCHEMA))
+        self.fq_table_names.append(view_name)
 
-        # Load the test data
-        pid_template = self.jinja_env.from_string("""
-            INSERT INTO `{{project_id}}.{{dataset_id}}.primary_pid_rid_mapping`
-            (person_id, research_id, shift, import_date)
+        # Load the test data. Participants 50, 34, and 77 are valid AI/AN participants
+        # with controlled tier IDs. Participant 88 has no controlled tier ID yet,
+        # and participant 99 is absent from the view entirely, so each exclusion
+        # path is covered. The aian column is 'no' throughout, because aian_list
+        # rather than that column is the cohort test.
+        view_template = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}.rdr_participant_research_ids_view`
+            (participant_id, research_id, registered_tier_id, controlled_tier_id,
+            controlled_tier_plus_id, aian)
             VALUES
-              (50, 1, 200, "2020-01-01"),
-              (34, 3, 95, "2022-10-10")
+              (50, 1, 101, 1, 1001, 'no'),
+              (34, 3, 103, 3, 1003, 'no'),
+              (77, 4, 104, 4, 1004, 'no'),
+              (88, NULL, NULL, NULL, NULL, 'no')
             """)
 
-        insert_pid_query = pid_template.render(project_id=self.project_id,
-                                               dataset_id=self.rdr_sandbox_id)
+        insert_view_query = view_template.render(project_id=self.project_id,
+                                                 dataset_id=self.rdr_sandbox_id)
 
         # Load test data
         self.load_test_data(
-            [insert_observation_query, insert_aian_query, insert_pid_query])
+            [insert_observation_query, insert_aian_query, insert_view_query])
 
     @mock.patch(
         "cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values.PIPELINE_TABLES",
@@ -179,8 +210,8 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9],
-            'sandboxed_ids': [3, 4, 8, 9],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            'sandboxed_ids': [3, 4, 8, 9, 11, 12],
             'fields': [
                 'observation_id',
                 'person_id',
@@ -197,7 +228,13 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
                                (6, 2, '123**', 0, 1585250, 0),
                                (7, 3, '', 0, 1586140, 1586141),
                                (8, 3, '000**', 0, 1585250, 0),
-                               (9, 3, None, 1234234, 1585249, 0)]
+                               (9, 3, None, 1234234, 1585249, 0),
+                               (10, 4, '', 0, 1586140, 1586141),
+                               (11, 4, '000**', 0, 1585250, 0),
+                               (12, 4, None, 1234234, 1585249, 0),
+                               (13, 5, '', 0, 1586140, 1586141),
+                               (14, 5, '567**', 0, 1585250, 0),
+                               (15, 5, '', 1234234, 1585249, 0)]
         }]
 
         self.default_test(tables_and_counts)
