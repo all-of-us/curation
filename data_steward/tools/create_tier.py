@@ -111,7 +111,7 @@ def get_dataset_name(tier, release_tag, deid_stage):
     The function returns a string in the form: [R|C|CP]{release_tag}_deid[_base|_clean][suffix]
 
     The controlled_plus suffix keeps this script's CT-keyed output clear of
-    CP{release_tag}_deid_clean, the name regenerate_ct_plus_ids.py publishes.
+    CP{release_tag}_deid_clean, the name build_ct_plus_mainline.py publishes.
 
     :param tier: tier intended for the output dataset, one of TIER_LIST
     :param release_tag: release tag for dataset in the format of YYYYq#r#
