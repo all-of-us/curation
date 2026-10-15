@@ -17,6 +17,8 @@ from google.cloud.exceptions import GoogleCloudError
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.deid.ct_plus_dob_indicators import \
+    get_dob_indicator_concept_ids
 from common import AOU_DEATH, AOU_REQUIRED, JINJA_ENV, DEATH, PERSON, FITBIT_TABLES, EHR_CONSENT_VALIDATION
 
 LOGGER = logging.getLogger(__name__)
@@ -29,6 +31,52 @@ all_concept_ids = [str(x) for x in EXCLUDED_CONCEPTS]
 all_concept_ids = ",".join(all_concept_ids)
 
 LOOKUP_TABLE = 'birth_columns_lookup'
+
+# The spared clause renders only for the CT+ variant, so CT's query is unchanged.
+SANDBOX_QUERY = JINJA_ENV.from_string("""
+    CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
+        SELECT
+          d.*
+        FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
+        JOIN `{{project}}.{{dataset}}.person` AS p
+        USING (person_id)
+        WHERE (
+        {% for column in columns_list %}
+            {% if loop.index > 1 %}
+                OR
+            {% endif %}
+            DATE(d.{{column}}) < DATE(CONCAT(p.year_of_birth + 2, '-01-01'))
+        {% endfor %}
+        )
+        {% if domain_table == 'observation' %}
+            AND (
+            {% for column in obs_columns %}
+                {% if loop.index > 1 %}
+                 AND
+                {% endif %}
+                ({{column}} not in ({{exceptions}})
+                OR {{column}} is null)
+            {% endfor %}
+            )
+        {% endif %}
+        {% if spared_concept_ids and spared_columns %}
+            AND NOT EXISTS (
+                SELECT 1
+                FROM UNNEST([{{spared_concept_ids | join(', ')}}]) AS c
+                WHERE c IN ({{spared_columns | join(', ')}})
+            )
+        {% endif %}
+    )
+""")
+
+CONCEPT_ID_COLUMNS_QUERY = JINJA_ENV.from_string("""
+SELECT
+  table_name, column_name
+FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
+WHERE LOWER(data_type) = 'int64'
+  AND ENDS_WITH(LOWER(column_name), 'concept_id')
+ORDER BY 1, 2
+""")
 
 
 class YearOfBirthRecordsSuppression(BaseCleaningRule):
@@ -58,6 +106,9 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
 
         self.tables_and_columns = {}
         self.observation_concept_id_columns = []
+        # Set by the CT+ variant only
+        self.spared_concept_ids = None
+        self.concept_id_columns = {}
 
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(table) for table in self.affected_tables]
@@ -175,38 +226,9 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         :param table_name:
         :return:
         """
-        bq_lookup_table_sandbox_query_template = JINJA_ENV.from_string("""
-            CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
-                SELECT
-                  d.*
-                FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
-                JOIN `{{project}}.{{dataset}}.person` AS p
-                USING (person_id)
-                WHERE ( 
-                {% for column in columns_list %}
-                    {% if loop.index > 1 %}
-                        OR
-                    {% endif %}
-                    DATE(d.{{column}}) < DATE(CONCAT(p.year_of_birth + 2, '-01-01'))
-                {% endfor %}
-                )
-                {% if domain_table == 'observation' %}
-                    AND (
-                    {% for column in obs_columns %}
-                        {% if loop.index > 1 %}
-                         AND
-                        {% endif %}
-                        ({{column}} not in ({{exceptions}})
-                        OR {{column}} is null)
-                    {% endfor %}
-                    )
-                {% endif %}
-            )
-        """)
-
         sandbox_queries = []
         for table_name, columns_list in self.tables_and_columns.items():
-            suppression_record_sandbox_query = bq_lookup_table_sandbox_query_template.render(
+            suppression_record_sandbox_query = SANDBOX_QUERY.render(
                 project=self.project_id,
                 dataset=self.dataset_id,
                 sandbox_dataset=self.sandbox_dataset_id,
@@ -214,7 +236,12 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
                 domain_table=table_name,
                 columns_list=columns_list,
                 obs_columns=self.observation_concept_id_columns,
-                exceptions=all_concept_ids)
+                exceptions=all_concept_ids,
+                spared_concept_ids=self.spared_concept_ids,
+                spared_columns=[
+                    f'd.{column}'
+                    for column in self.concept_id_columns.get(table_name, [])
+                ])
 
             sandbox_queries.append(
                 {cdr_consts.QUERY: suppression_record_sandbox_query})
@@ -265,6 +292,41 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
 
     def validate_rule(self, client, *args, **keyword_args):
         pass
+
+
+class YearOfBirthRecordsSuppressionCtPlus(YearOfBirthRecordsSuppression):
+    """
+    CT+ variant: leave in place a record carrying an indicators-of-birth concept
+    in any concept column.
+
+    A participant's own liveborn and perinatal records are dated in their birth
+    year, so the CT rule is what removes most of them. The CT+ date-of-birth
+    add-on delivers them instead: they stay inline and
+    split_ct_plus_dob_indicators.py moves them out at the end of the run. AIAN and
+    pediatric participants' rows are already gone, removed by
+    BirthInformationSuppressionCtPlus, which runs first.
+
+    Original Issues: DC-1977, DL-2495
+    """
+
+    def setup_rule(self, client):
+        super().setup_rule(client)
+        self._get_concept_id_columns(client)
+        self.spared_concept_ids = get_dob_indicator_concept_ids()
+
+    def _get_concept_id_columns(self, client):
+        """
+        Read every table's integer concept_id columns, which the spared clause
+        checks.
+        """
+        query = CONCEPT_ID_COLUMNS_QUERY.render(project=self.project_id,
+                                                dataset=self.dataset_id)
+        columns = {}
+        for row in client.query(query,
+                                job_id_prefix='ct_plus_yob_setup_').result():
+            columns.setdefault(row[0], []).append(row[1])
+
+        self.concept_id_columns = columns
 
 
 if __name__ == '__main__':

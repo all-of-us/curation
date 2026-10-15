@@ -1,7 +1,7 @@
 """
 Unit test for ct_observation_privacy_suppression module
 
-Original Issues: DC-3749, DL-2428
+Original Issues: DC-3749, DL-2428, DL-2495
 
 The CT+ variant must narrow its lookup to the concepts still suppressed in CT+.
 Asserted on the frame directly, so a concept this fixture does not place in a
@@ -19,6 +19,7 @@ from google.cloud.bigquery import WriteDisposition
 
 # Project Imports
 import cdr_cleaner.cleaning_rules.deid.ct_observation_privacy_suppression as rule_module
+import cdr_cleaner.cleaning_rules.deid.ct_plus_dob_indicators as dob_module
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
     CT_PLUS_LOOKUP_SUFFIX
 from cdr_cleaner.cleaning_rules.deid.ct_observation_privacy_suppression import (
@@ -102,6 +103,21 @@ class CTObservationPrivacySuppressionCtPlusTest(unittest.TestCase):
         self.assertEqual(
             [333, 777],
             sorted(rule.get_rest_concepts_df()['concept_id'].tolist()))
+
+    def test_variant_drops_the_indicators_of_birth_from_both_lookups(self):
+        """
+        A still-suppressed birth concept stays inline whichever lookup would
+        have reached it, for the date-of-birth add-on to claim.
+        """
+        with mock.patch.object(dob_module,
+                               'get_dob_indicator_concept_ids',
+                               return_value=[111, 777]):
+            rule = CTObservationPrivacySuppressionCtPlus(*self.args)
+            postc = rule.get_postc_concepts_df()['concept_id']
+            rest = rule.get_rest_concepts_df()['concept_id']
+
+        self.assertEqual([], postc.tolist())
+        self.assertEqual([333], sorted(rest.tolist()))
 
     def test_variant_uses_its_own_lookup_tables(self):
         """

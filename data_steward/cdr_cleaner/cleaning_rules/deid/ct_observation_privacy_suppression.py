@@ -18,6 +18,8 @@ import pandas as pd
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import (
     CT_PLUS_LOOKUP_SUFFIX, keep_ct_plus_suppressed, lookup_load_job_config)
+from cdr_cleaner.cleaning_rules.deid.ct_plus_dob_indicators import \
+    drop_dob_indicators
 # Project imports
 from resources import CT_OBSERVATION_PRIVACY_CONCEPTS_PATH, CT_ADDITIONAL_PRIVACY_CONCEPTS_PATH, \
     CT_RT_PUBLICLY_REPORTABLE_CONCEPTS_PATH
@@ -230,12 +232,13 @@ class CTObservationPrivacySuppression(BaseCleaningRule):
 
 class CTObservationPrivacySuppressionCtPlus(CTObservationPrivacySuppression):
     """
-    CT+ variant: suppress only the concepts not expanded in CT+.
+    CT+ variant: suppress only the concepts not expanded in CT+, less the
+    indicators-of-birth set, whose rows the date-of-birth add-on delivers.
 
-    Both lookups are narrowed, so an expanded concept survives whether it is
-    reached through the post-coordinated path or the other one.
+    Both lookups are narrowed, so an expanded or birth concept survives whether
+    it is reached through the post-coordinated path or the other one.
 
-    Original Issue: DL-2428
+    Original Issues: DL-2428, DL-2495
     """
 
     def __init__(self,
@@ -250,10 +253,12 @@ class CTObservationPrivacySuppressionCtPlus(CTObservationPrivacySuppression):
         self.lookup_job_config = lookup_load_job_config()
 
     def get_postc_concepts_df(self):
-        return keep_ct_plus_suppressed(super().get_postc_concepts_df())
+        return drop_dob_indicators(
+            keep_ct_plus_suppressed(super().get_postc_concepts_df()))
 
     def get_rest_concepts_df(self):
-        return keep_ct_plus_suppressed(super().get_rest_concepts_df())
+        return drop_dob_indicators(
+            keep_ct_plus_suppressed(super().get_rest_concepts_df()))
 
 
 if __name__ == '__main__':
