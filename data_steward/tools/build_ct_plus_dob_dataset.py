@@ -31,6 +31,8 @@ Usage:
     --rdr_sandbox_id <RDR stage sandbox, holding aian_list> \
     --under18_lookup_dataset_id <RDR stage sandbox, holding _under18_participants> \
     --ct_plus_ids_view rdr_participant_research_ids_view
+
+Original Issues: DL2535
 """
 # Python imports
 import argparse
