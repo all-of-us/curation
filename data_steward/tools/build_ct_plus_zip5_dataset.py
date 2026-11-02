@@ -143,6 +143,31 @@ def validate_dataset_names(release_tag, input_dataset_id):
             f'is assembled from.')
 
 
+def assert_lookups_are_populated(client, project_id, rdr_sandbox_id,
+                                 under18_lookup_dataset_id):
+    """
+    Stop the run if aian_list or _under18_participants is empty, since an empty
+    lookup satisfies its exclusion vacuously.
+
+    :raises RuntimeError: naming the flag that points at the empty lookup
+    """
+    for lookup_dataset, lookup_table, flag in [
+        (rdr_sandbox_id, AIAN_LIST, '--rdr_sandbox_id'),
+        (under18_lookup_dataset_id, UNDER18_PARTICIPANTS_LOOKUP_TABLE,
+         '--under18_lookup_dataset_id'),
+    ]:
+        lookup = list(
+            client.query(
+                LOOKUP_COUNT.render(project=project_id,
+                                    lookup_dataset=lookup_dataset,
+                                    lookup_table=lookup_table)).result())[0]
+        if not lookup['lookup_count']:
+            raise RuntimeError(
+                f'{lookup_dataset}.{lookup_table} is empty, so its exclusion cannot '
+                f'be checked. Point {flag} at the RDR stage sandbox the CT+ run '
+                f'read.')
+
+
 def assert_capture_is_publishable(client, project_id, input_dataset_id,
                                   capture_dataset_id, rdr_sandbox_id,
                                   under18_lookup_dataset_id, ids_dataset_id,
@@ -181,21 +206,8 @@ def assert_capture_is_publishable(client, project_id, input_dataset_id,
                   ids_view=ids_view_id,
                   person=PERSON)
 
-    for lookup_dataset, lookup_table, flag in [
-        (rdr_sandbox_id, AIAN_LIST, '--rdr_sandbox_id'),
-        (under18_lookup_dataset_id, UNDER18_PARTICIPANTS_LOOKUP_TABLE,
-         '--under18_lookup_dataset_id'),
-    ]:
-        lookup = list(
-            client.query(
-                LOOKUP_COUNT.render(project=project_id,
-                                    lookup_dataset=lookup_dataset,
-                                    lookup_table=lookup_table)).result())[0]
-        if not lookup['lookup_count']:
-            raise RuntimeError(
-                f'{lookup_dataset}.{lookup_table} is empty, so its exclusion cannot '
-                f'be checked. Point {flag} at the RDR stage sandbox the CT+ run '
-                f'read.')
+    assert_lookups_are_populated(client, project_id, rdr_sandbox_id,
+                                 under18_lookup_dataset_id)
 
     row = list(client.query(CAPTURE_CHECKS.render(**params)).result())[0]
     source = f'{capture_dataset_id}.{CT_PLUS_ZIP5_TABLE}'
