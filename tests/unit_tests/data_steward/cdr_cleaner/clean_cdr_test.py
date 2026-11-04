@@ -9,6 +9,8 @@ from cdr_cleaner.cleaning_rules.capture_ct_plus_pediatric_cohort import (
     CaptureCtPlusPediatricCohort, ConvertCtPlusPediatricCohortIds)
 from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
     CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
+from cdr_cleaner.cleaning_rules.deid.aian_expanded_concept_suppression import \
+    AianExpandedConceptSuppressionCtPlus
 from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import (
     BirthInformationSuppression, BirthInformationSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import (
@@ -33,6 +35,7 @@ from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import (
     VehicularAccidentConceptSuppression)
 from constants.cdr_cleaner.clean_cdr import DataStage
+from resources import has_person_id
 from tests.test_util import FakeRuleClass, fake_rule_func
 
 # The CT+ lists are hard copies of the CT lists, so drift is otherwise
@@ -59,6 +62,7 @@ CT_PLUS_SUBSTITUTIONS = {
 
 # CT rule -> CT+-only rules inserted right after it, in order.
 CT_PLUS_INSERTIONS = {
+    CTObservationPrivacySuppression: [AianExpandedConceptSuppressionCtPlus],
     RtCtPIDtoRID: [CaptureCtPlusZip5, CaptureCtPlusBirthdate],
     DropOrphanedPIDS: [
         PruneCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusBirthdate,
@@ -299,6 +303,30 @@ class CleanCDRTest(unittest.TestCase):
         ]:
             self.assertLess(exclusion, rules.index(releasing_rule),
                             releasing_rule.__name__)
+
+    def test_aian_expanded_exclusion_follows_the_map_it_reads(self):
+        """AianExpandedConceptSuppressionCtPlus reads the _deid_map CtPlusPIDtoRID
+        writes, so run earlier it would match nobody and remove nothing.
+        """
+        rules = [
+            entry[0] for entry in cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        ]
+
+        self.assertLess(rules.index(CtPlusPIDtoRID),
+                        rules.index(AianExpandedConceptSuppressionCtPlus))
+
+    def test_aian_expanded_exclusion_reaches_only_tables_with_an_owner(self):
+        """A table with no route to a participant would fail in BigQuery, on the rule's
+        person_id predicate, partway through a CT+ deid run.
+        """
+        rule = AianExpandedConceptSuppressionCtPlus('fake_project', 'deid',
+                                                    'deid_sandbox',
+                                                    'rdr_sandbox')
+
+        self.assertNotIn('person', rule.affected_tables)
+        for table in rule.affected_tables:
+            with self.subTest(table=table):
+                self.assertTrue(has_person_id(table) or table == 'note_nlp')
 
     def test_parser_controlled_tier_plus_data_stages(self):
         """The parser accepts the CT+ stages and resolves them to the CT+ rules."""

@@ -80,6 +80,8 @@ from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded impo
 from cdr_cleaner.cleaning_rules.deid.remove_flagged_under18_participants import \
     RemoveFlaggedUnder18Participants, RemoveFlaggedUnder18ParticipantsCtPlus
 from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
+from cdr_cleaner.cleaning_rules.deid.aian_expanded_concept_suppression import \
+    AianExpandedConceptSuppressionCtPlus
 from cdr_cleaner.cleaning_rules.deid.ct_plus_pid_rid_map import CtPlusPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     RepopulatePersonControlledTier
@@ -540,6 +542,10 @@ CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES = [
     (SectionParticipationConceptSuppression,),
     (CTAdditionalPrivacyConceptSuppressionCtPlus,),
     (CTObservationPrivacySuppressionCtPlus,),
+    # AIAN participants are in no add-on, so their expanded rows must not reach the
+    # split. Must run after CtPlusPIDtoRID, which writes the _deid_map it reads.
+    (
+        AianExpandedConceptSuppressionCtPlus,),
     # (CTNPHObservationPrivacySuppression,), # Applies only to NPH data
     (
         StringFieldsSuppression,),

@@ -88,6 +88,8 @@ CT_RETROACTIVE_PRIVACY_CONCEPTS_PATH = os.path.join(
     ADDITIONAL_PRIVACY_CONCEPTS_PATH, 'ct_retroactive_privacy_suppression.csv')
 PRIVACY_RULE_DEFINITIONS_PATH = os.path.join(ADDITIONAL_PRIVACY_CONCEPTS_PATH,
                                              'privacy_rule_definitions.csv')
+CT_PLUS_LABEL_MAP_PATH = os.path.join(resource_files_path, 'ct_plus',
+                                      'ct_plus_label_map.csv')
 COPE_SUPPRESSION_PATH = os.path.join(CDR_CLEANER_PATH, 'cope_suppression')
 RT_CT_COPE_SUPPRESSION_CSV_PATH = os.path.join(COPE_SUPPRESSION_PATH,
                                                'rt_ct_cope_suppression.csv')
