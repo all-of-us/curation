@@ -255,6 +255,25 @@ class SplitCtPlusExpandedConceptsTest(unittest.TestCase):
         self.assertIn('3 expanded rows sit in visit_occurrence',
                       str(ctx.exception))
 
+    def test_pediatric_rows_in_uncarriable_tables_are_left_to_their_add_on(
+            self):
+        client = self._client()
+
+        self._assert(client)
+
+        query = client.query.call_args_list[1].args[0]
+        self.assertIn('ct_plus_pediatric_cohort', query)
+        self.assertIn('c.person_id = t.person_id', query)
+
+    def test_a_table_with_no_person_id_has_no_cohort_to_exclude(self):
+        self.uncarriable = {'provider': ['specialty_concept_id']}
+        client = self._client()
+
+        self._assert(client)
+
+        self.assertNotIn('ct_plus_pediatric_cohort',
+                         client.query.call_args_list[1].args[0])
+
     @mock.patch.object(split, 'write_table', return_value=2)
     def test_element_writes_rows_then_ext_then_the_empty_tables(
             self, mock_write):
@@ -277,7 +296,8 @@ class SplitCtPlusExpandedConceptsTest(unittest.TestCase):
         client = mock.MagicMock()
         client.query.return_value.result.return_value = [{
             'input_rows': 3,
-            'claimed_rows': 2
+            'claimed_rows': 2,
+            'repeated_rows': 0
         }]
 
         with self.assertRaises(RuntimeError) as ctx:
@@ -290,11 +310,30 @@ class SplitCtPlusExpandedConceptsTest(unittest.TestCase):
         self.assertIn('observation: 3 expanded rows', str(ctx.exception))
         self.assertIn('CP2025q4r7_suicide', str(ctx.exception))
 
+    def test_a_row_repeated_inside_one_dataset_is_refused(self):
+        client = mock.MagicMock()
+        client.query.return_value.result.return_value = [{
+            'input_rows': 2,
+            'claimed_rows': 2,
+            'repeated_rows': 1
+        }]
+
+        with self.assertRaises(RuntimeError) as ctx:
+            split.assert_nothing_left_behind(client, self.project_id,
+                                             self.input_dataset_id,
+                                             self.sandbox_id,
+                                             ['CP2025q4r7_suicide'],
+                                             self.carried)
+
+        self.assertIn('observation: 1 rows written more than once',
+                      str(ctx.exception))
+
     def test_union_counts_overlapping_rows_once(self):
         client = mock.MagicMock()
         client.query.return_value.result.return_value = [{
             'input_rows': 2,
-            'claimed_rows': 2
+            'claimed_rows': 2,
+            'repeated_rows': 0
         }]
 
         split.assert_nothing_left_behind(client, self.project_id,

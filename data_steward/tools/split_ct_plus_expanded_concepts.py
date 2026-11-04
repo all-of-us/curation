@@ -14,10 +14,10 @@ to each, so the datasets overlap and their union is what the mainline loses.
 
 What is not:
 
-- Parent rows. person, visit_occurrence, visit_detail, provider and care_site stay empty,
-  since a concept add-on's rows resolve into the mainline. A table the add-on cannot
-  carry must hold no expanded row, since the assembly could not subtract it; the run
-  stops if one does.
+- Parent rows. person, death, visit_occurrence, visit_detail, provider and care_site
+  stay empty, since a concept add-on's rows resolve into the mainline. A table the
+  add-on cannot carry must hold no expanded row outside the pediatric cohort, since the
+  assembly could not subtract it; the run stops if one does.
 - The pediatric cohort's rows. Their parents are not in the mainline, and pediatric
   values reach a study only through the pediatrics add-on, which already holds them
   whole.
@@ -54,6 +54,7 @@ from common import (AIAN_LIST, AOU_DEATH, CARE_SITE, CDM_TABLES,
                     VISIT_DETAIL, VISIT_OCCURRENCE,
                     get_ct_plus_addon_dataset_name)
 from gcloud.bq import BigQueryClient
+from resources import has_person_id
 from tools.build_ct_plus_mainline import (get_subtraction_key,
                                           get_table_columns, get_views)
 from tools.split_ct_plus_pediatric_dataset import (
@@ -80,6 +81,7 @@ UNCARRIABLE_ROWS = JINJA_ENV.from_string("""
 SELECT COUNT(*) AS expanded_rows
 FROM `{{project}}.{{input_dataset}}.{{table}}` t
 WHERE {{expanded_row}}
+{% if not_in_cohort %}  AND {{not_in_cohort}}{% endif %}
 """)
 
 # Each row is mapped back to its participant through the ids view, since aian_list is
@@ -125,7 +127,9 @@ WHERE FALSE
 """)
 
 # input_rows reads the input and claimed_rows the element datasets, so a row left behind
-# or written twice shows up as a difference between the two.
+# shows up as a difference between the two. The datasets overlap by design, so
+# claimed_rows counts a row once however many hold it, and repeated_rows is what catches
+# a row written twice to one dataset.
 COMPLETENESS = JINJA_ENV.from_string("""
 SELECT
   (SELECT COUNT(*)
@@ -142,7 +146,13 @@ SELECT
 {% endif %}
 {% endfor %}
    )
-  ) AS claimed_rows
+  ) AS claimed_rows,
+  (0
+{% for dataset in output_datasets %}
+   + (SELECT COUNT(*) - COUNT(DISTINCT {{key}})
+      FROM `{{project}}.{{dataset}}.{{table}}`)
+{% endfor %}
+  ) AS repeated_rows
 """)
 
 FAILURES = {
@@ -213,9 +223,13 @@ def assert_split_is_publishable(client, project_id, input_dataset_id,
     So AIAN is checked again here, where the rows become a deliverable. Every failure is
     reported together.
 
+    A pediatric row in a table the add-on cannot carry is not a failure: the pediatrics
+    add-on claims every table with a person_id, so the assembly subtracts it through
+    that dataset.
+
     :raises RuntimeError: on an empty aian_list, or any expanded row that belongs to an
-        AIAN participant, is not keyed to a CT+ research ID, or sits in a table the
-        add-on cannot carry
+        AIAN participant, is not keyed to a CT+ research ID, or sits outside the
+        pediatric cohort in a table the add-on cannot carry
     """
     row = list(
         client.query(
@@ -231,13 +245,15 @@ def assert_split_is_publishable(client, project_id, input_dataset_id,
     for table, concept_fields in sorted(uncarriable.items()):
         row = list(
             client.query(
-                UNCARRIABLE_ROWS.render(project=project_id,
-                                        input_dataset=input_dataset_id,
-                                        table=table,
-                                        expanded_row=expanded_row(
-                                            project_id, sandbox_dataset_id,
-                                            table, concept_fields,
-                                            't'))).result())[0]
+                UNCARRIABLE_ROWS.render(
+                    project=project_id,
+                    input_dataset=input_dataset_id,
+                    table=table,
+                    expanded_row=expanded_row(project_id, sandbox_dataset_id,
+                                              table, concept_fields, 't'),
+                    not_in_cohort=not_in_cohort(project_id, sandbox_dataset_id,
+                                                't.person_id')
+                    if has_person_id(table) else None)).result())[0]
         if row['expanded_rows']:
             failures.append(
                 f'{row["expanded_rows"]} expanded rows sit in {table}, which an '
@@ -361,6 +377,10 @@ def assert_nothing_left_behind(client, project_id, input_dataset_id,
             failures.append(
                 f'{table}: {row["input_rows"]} expanded rows in the '
                 f'input, {row["claimed_rows"]} in the add-ons')
+        if row['repeated_rows']:
+            failures.append(
+                f'{table}: {row["repeated_rows"]} rows written more than once to '
+                f'one add-on')
 
     if failures:
         raise RuntimeError(

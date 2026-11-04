@@ -19,9 +19,15 @@ claims cannot drift apart. The set has two sources:
   reach. Neither runs in CT+, and both build their lists from the vocabulary rather
   than a CSV, so most of those rows are on no CSV.
 
-A row is expanded only where a CT rule would have removed it, since the mainline equals
-CT once these rows are gone. So each source applies to the tables and columns of the
-rule it stands in for: the two vehicle lists reach fewer tables than the CSVs do.
+A row is expanded only where a CT rule would have removed it, since the mainline must
+keep the rows CT keeps. So each source applies to the tables and columns of the rule it
+stands in for: the two vehicle lists reach fewer tables than the CSVs do.
+
+That parity is row-level only. CreateDerivedTables, CalculatePrimaryDeathRecord and
+NoDataAfterDeath run while these rows are inline, and the mainline assembly recomputes
+none of them. So the eras, observation_period and primary_death_record still reflect
+expanded rows after the split, and rows NoDataAfterDeath removed on an expanded death
+record stay removed.
 
 Original Issues: DL-2538
 """
@@ -121,6 +127,9 @@ def get_label_map(path=None):
 def resolve_concept_elements(labels, label_map):
     """
     Resolve each expanded concept to every data element its labels name.
+
+    A blank label is refused, not matched to the map's (unlabelled) row. The registry
+    marks that element suppressed, so a row carrying it must not reach an add-on.
 
     :param labels: frame of concept_id and privacy_rule
     :param label_map: {privacy_rule label: data element}

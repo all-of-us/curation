@@ -35,6 +35,7 @@ from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import (
     VehicularAccidentConceptSuppression)
 from constants.cdr_cleaner.clean_cdr import DataStage
+from resources import has_person_id
 from tests.test_util import FakeRuleClass, fake_rule_func
 
 # The CT+ lists are hard copies of the CT lists, so drift is otherwise
@@ -313,6 +314,19 @@ class CleanCDRTest(unittest.TestCase):
 
         self.assertLess(rules.index(CtPlusPIDtoRID),
                         rules.index(AianExpandedConceptSuppressionCtPlus))
+
+    def test_aian_expanded_exclusion_reaches_only_tables_with_an_owner(self):
+        """A table with no route to a participant would fail in BigQuery, on the rule's
+        person_id predicate, partway through a CT+ deid run.
+        """
+        rule = AianExpandedConceptSuppressionCtPlus('fake_project', 'deid',
+                                                    'deid_sandbox',
+                                                    'rdr_sandbox')
+
+        self.assertNotIn('person', rule.affected_tables)
+        for table in rule.affected_tables:
+            with self.subTest(table=table):
+                self.assertTrue(has_person_id(table) or table == 'note_nlp')
 
     def test_parser_controlled_tier_plus_data_stages(self):
         """The parser accepts the CT+ stages and resolves them to the CT+ rules."""

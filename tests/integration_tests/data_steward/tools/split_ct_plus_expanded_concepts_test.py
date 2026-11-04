@@ -290,6 +290,21 @@ class SplitCtPlusExpandedConceptsTest(BaseTest.BigQueryTestBase):
 
         self.assertIn(CONDITION_OCCURRENCE, str(ctx.exception))
 
+    def test_a_pediatric_parent_row_is_left_to_the_pediatrics_add_on(self):
+        carried, uncarriable, _ = self._classify()
+        fq_input = f'{self.project_id}.{self.input_dataset_id}'
+        self.client.query(
+            f"INSERT INTO `{fq_input}.visit_occurrence` "
+            f"(visit_occurrence_id, person_id, visit_concept_id, visit_start_date, "
+            f"visit_end_date, visit_type_concept_id, visit_source_concept_id) "
+            f"VALUES (2, 5, 0, '2022-01-01', '2022-01-01', 0, {SUICIDE})"
+        ).result()
+
+        self._assert(carried, uncarriable)
+
+        self.client.query(
+            f"DELETE FROM `{fq_input}.visit_occurrence` WHERE TRUE").result()
+
     def test_each_unpublishable_row_is_refused(self):
         carried, uncarriable, _ = self._classify()
         fq_input = f'{self.project_id}.{self.input_dataset_id}'
