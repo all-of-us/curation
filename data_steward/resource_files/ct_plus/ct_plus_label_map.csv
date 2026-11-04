@@ -1,0 +1,44 @@
+privacy_rule,data_element
+assault/homicide,assault_homicide
+assault.csv,assault_homicide
+Assault/Homicide,assault_homicide
+motor vehicle accident,motor_vehicle_accident
+vehicle.csv,motor_vehicle_accident
+military_operations,military_operations
+operations_of_war,military_operations
+military.csv,military_operations
+legal_intervention,legal_intervention
+legal.csv,legal_intervention
+Legal Intervention,legal_intervention
+drowning.csv,drowning
+suffocation,suffocation
+suffocation.csv,suffocation
+suicide,suicide
+suicide.csv,suicide
+Suicide,suicide
+terrorism,terrorism
+terrorism.csv,terrorism
+multiples,multiples
+space.csv,prolonged_weightlessness
+abortion,abortion
+liveborn,liveborn
+liveborn_infants,liveborn
+Liveborn infants,liveborn
+perinatal,perinatal
+perinatal.csv,perinatal
+Perinatal (including birth trauma),perinatal
+stillborn,stillborn
+pregnancy,pregnancy
+delivery-proc.csv,delivery
+date of birth,date_of_birth
+birth.csv,date_of_birth
+Geolocation,geolocation
+location,location
+free text,free_text
+Free Text,free_text
+Gender/Sex,gender_sex
+Living situation,living_situation
+unknown COD.csv,unknown_cause_of_death
+06apr20 NIH List,unclassified_nih_list_06apr20
+old_spreadsheet_list,unclassified_old_spreadsheet_list
+(unlabelled),unlabelled

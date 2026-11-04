@@ -326,6 +326,10 @@ PEDIATRIC_GUARDIAN_LINKS_LOOKUP_TABLE = '_pediatric_guardian_links'
 # the re-key by the add-on dataset producers
 CT_PLUS_PEDIATRIC_COHORT = 'ct_plus_pediatric_cohort'
 
+# Expanded concepts with their data elements, written to the same sandbox by the CT+
+# rule and the split that both read it
+CT_PLUS_EXPANDED_CONCEPTS = 'ct_plus_expanded_concepts'
+
 # Written against the re-keyed CT+ dataset; identifies participants in
 # subject_person_id and related_person_id rather than person_id
 PEDIATRIC_RELATIONSHIP_EXT = 'pediatric_relationship_ext'

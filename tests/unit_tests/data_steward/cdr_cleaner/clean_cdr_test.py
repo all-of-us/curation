@@ -9,6 +9,8 @@ from cdr_cleaner.cleaning_rules.capture_ct_plus_pediatric_cohort import (
     CaptureCtPlusPediatricCohort, ConvertCtPlusPediatricCohortIds)
 from cdr_cleaner.cleaning_rules.capture_ct_plus_zip5 import (
     CaptureCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusZip5)
+from cdr_cleaner.cleaning_rules.deid.aian_expanded_concept_suppression import \
+    AianExpandedConceptSuppressionCtPlus
 from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import (
     BirthInformationSuppression, BirthInformationSuppressionCtPlus)
 from cdr_cleaner.cleaning_rules.deid.ct_additional_privacy_suppression import (
@@ -59,6 +61,7 @@ CT_PLUS_SUBSTITUTIONS = {
 
 # CT rule -> CT+-only rules inserted right after it, in order.
 CT_PLUS_INSERTIONS = {
+    CTObservationPrivacySuppression: [AianExpandedConceptSuppressionCtPlus],
     RtCtPIDtoRID: [CaptureCtPlusZip5, CaptureCtPlusBirthdate],
     DropOrphanedPIDS: [
         PruneCtPlusZip5, ConvertCtPlusZip5Ids, PruneCtPlusBirthdate,
@@ -299,6 +302,17 @@ class CleanCDRTest(unittest.TestCase):
         ]:
             self.assertLess(exclusion, rules.index(releasing_rule),
                             releasing_rule.__name__)
+
+    def test_aian_expanded_exclusion_follows_the_map_it_reads(self):
+        """AianExpandedConceptSuppressionCtPlus reads the _deid_map CtPlusPIDtoRID
+        writes, so run earlier it would match nobody and remove nothing.
+        """
+        rules = [
+            entry[0] for entry in cc.CONTROLLED_TIER_PLUS_DEID_CLEANING_CLASSES
+        ]
+
+        self.assertLess(rules.index(CtPlusPIDtoRID),
+                        rules.index(AianExpandedConceptSuppressionCtPlus))
 
     def test_parser_controlled_tier_plus_data_stages(self):
         """The parser accepts the CT+ stages and resolves them to the CT+ rules."""
